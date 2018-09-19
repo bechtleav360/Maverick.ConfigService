@@ -15,14 +15,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             _store = store;
         }
 
-        [HttpGet]
-        public ActionResult<DomainEvent[]> GetAll()
-        {
-            var result = _store.GetAll();
-
-            return Ok(result);
-        }
-
         [HttpPost]
         public async Task<ActionResult> CreateDummy()
         {

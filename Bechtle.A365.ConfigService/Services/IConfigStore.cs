@@ -6,7 +6,5 @@ namespace Bechtle.A365.ConfigService.Services
     public interface IConfigStore
     {
         Task WriteEvent(DomainEvent domainEvent);
-
-        DomainEvent[] GetAll();
     }
 }
