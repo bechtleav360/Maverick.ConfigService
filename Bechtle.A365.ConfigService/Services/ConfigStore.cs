@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.DomainEvents;
+using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Dto.EventFactories;
 using Bechtle.A365.ConfigService.Utilities;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,8 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
 {
+    /// <summary>
+    /// </summary>
     public class ConfigStore : IConfigStore
     {
         private readonly IEventStoreConnection _eventStore;
@@ -18,6 +21,9 @@ namespace Bechtle.A365.ConfigService.Services
 
         private readonly string _stream;
 
+        /// <summary>
+        /// </summary>
+        /// <param name="provider"></param>
         public ConfigStore(IServiceProvider provider)
         {
             _stream = "ConfigStream";
@@ -35,15 +41,21 @@ namespace Bechtle.A365.ConfigService.Services
             _eventStore.ConnectAsync().RunSync();
         }
 
+        /// <summary>
+        /// </summary>
+        /// <param name="domainEvent"></param>
+        /// <returns></returns>
         public async Task WriteEvent(DomainEvent domainEvent)
         {
             _logger.LogDebug($"{nameof(WriteEvent)}('{domainEvent.GetType().Name}')");
 
+            var (data, metadata) = DomainEventFactory.Serialize(domainEvent);
+
             var eventData = new EventData(Guid.NewGuid(),
                                           domainEvent.EventType,
                                           false,
-                                          domainEvent.Serialize(),
-                                          domainEvent.SerializeMetadata());
+                                          data,
+                                          metadata);
 
             _logger.LogInformation("sending " +
                                    $"EventId: '{eventData.EventId}'; " +

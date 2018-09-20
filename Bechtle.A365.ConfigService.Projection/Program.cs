@@ -25,9 +25,6 @@ namespace Bechtle.A365.ConfigService.Projection
 
             IServiceProvider serviceProvider = services.BuildServiceProvider();
 
-            serviceProvider.GetService<ILoggerFactory>()
-                           .AddConsole(LogLevel.Debug);
-
             var logger = serviceProvider.GetService<ILoggerFactory>()
                                         .CreateLogger<Program>();
 

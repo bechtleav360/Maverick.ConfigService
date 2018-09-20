@@ -22,4 +22,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="3.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Bechtle.A365.ConfigService.Dto\Bechtle.A365.ConfigService.Dto.csproj" />
+  </ItemGroup>
+
 </Project>

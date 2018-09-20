@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Dto.EventFactories;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Logging;
 
@@ -8,37 +11,44 @@ namespace Bechtle.A365.ConfigService.Projection
 {
     public class Projection : IProjection
     {
-        public ILogger<Projection> Logger { get; }
-        public ProjectionConfiguration Configuration { get; }
+        private ILogger<Projection> Logger { get; }
+        private ProjectionConfiguration Configuration { get; }
+        private IEventStoreConnection Store { get; set; }
+        private IConfigurationDatabase Database { get; set; }
 
-        private IEventStoreConnection _eventStore;
-
-        public Projection(ILoggerFactory loggerFactory, ProjectionConfiguration configuration)
+        public Projection(ILoggerFactory loggerFactory,
+                          ProjectionConfiguration configuration,
+                          IConfigurationDatabase database,
+                          IEventStoreConnection store)
         {
             Logger = loggerFactory.CreateLogger<Projection>();
-            Configuration = configuration;
+
+            Logger.LogInformation("starting projection...");
+
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
+            Database = database ?? throw new ArgumentNullException(nameof(IConfigurationDatabase));
+            Store = store ?? throw new ArgumentNullException(nameof(IEventStoreConnection));
         }
 
         /// <inheritdoc />
         public async Task Start(CancellationToken cancellationToken)
         {
-            Logger.LogInformation("starting projection...");
-
             Logger.LogInformation("running projection...");
 
-            _eventStore = EventStoreConnection.Create(new Uri(Configuration.EventStoreUri), Configuration.ConnectionName);
+            await Database.Connect();
 
-            await _eventStore.ConnectAsync();
+            await Store.ConnectAsync();
 
-            _eventStore.SubscribeToAllFrom(Position.Start,
-                                           new CatchUpSubscriptionSettings(Configuration.MaxLiveQueueSize,
-                                                                           Configuration.ReadBatchSize,
-                                                                           false,
-                                                                           true,
-                                                                           Configuration.SubscriptionName),
-                                           EventAppeared,
-                                           LiveProcessingStarted,
-                                           SubscriptionDropped);
+            Store.SubscribeToStreamFrom(Configuration.SubscriptionName,
+                                        StreamCheckpoint.StreamStart,
+                                        new CatchUpSubscriptionSettings(Configuration.MaxLiveQueueSize,
+                                                                        Configuration.ReadBatchSize,
+                                                                        false,
+                                                                        true,
+                                                                        Configuration.SubscriptionName),
+                                        EventAppeared,
+                                        LiveProcessingStarted,
+                                        SubscriptionDropped);
 
             while (!cancellationToken.IsCancellationRequested)
                 Thread.Sleep(TimeSpan.FromMilliseconds(100));
@@ -58,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Projection
             Logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened");
         }
 
-        private Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
+        private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
             Logger.LogInformation($"subscription: {subscription.SubscriptionName}; " +
                                   $"EventId: {resolvedEvent.OriginalEvent.EventId}; " +
@@ -66,9 +76,54 @@ namespace Bechtle.A365.ConfigService.Projection
                                   $"Created: {resolvedEvent.OriginalEvent.Created}; " +
                                   $"IsJson: {resolvedEvent.OriginalEvent.IsJson}; " +
                                   $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
-                                  $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes; ");
+                                  $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
 
-            return Task.CompletedTask;
+            var domainEvent = DeserializeResolvedEvent(resolvedEvent);
+
+            if (domainEvent == null)
+                return;
+
+            await Project(domainEvent);
+
+            (Database as InMemoryConfigurationDatabase)?.Dump(Logger);
+        }
+
+        private async Task Project(DomainEvent domainEvent)
+        {
+            switch (domainEvent)
+            {
+                case null:
+                    break;
+
+                case EnvironmentCreated environmentCreated:
+                    await Database.ModifyEnvironment(environmentCreated.EnvironmentName, environmentCreated.Data);
+                    break;
+
+                case EnvironmentUpdated environmentUpdated:
+                    await Database.ModifyEnvironment(environmentUpdated.EnvironmentName, environmentUpdated.Data);
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(domainEvent));
+            }
+        }
+
+        private DomainEvent DeserializeResolvedEvent(ResolvedEvent resolvedEvent)
+        {
+            var factoryAssociations = new Dictionary<string, Func<byte[], byte[], DomainEvent>>
+            {
+                {nameof(EnvironmentCreated), EnvironmentCreatedFactory.Deserialize},
+                {nameof(EnvironmentUpdated), EnvironmentUpdatedFactory.Deserialize},
+            };
+
+            foreach (var factory in factoryAssociations)
+            {
+                if (factory.Key == resolvedEvent.OriginalEvent.EventType)
+                    return factory.Value.Invoke(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
+            }
+
+            Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
+            return null;
         }
     }
 }
