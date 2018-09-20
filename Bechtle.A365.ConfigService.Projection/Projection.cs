@@ -13,13 +13,17 @@ namespace Bechtle.A365.ConfigService.Projection
     {
         private ILogger<Projection> Logger { get; }
         private ProjectionConfiguration Configuration { get; }
-        private IEventStoreConnection Store { get; set; }
-        private IConfigurationDatabase Database { get; set; }
+        private IEventStoreConnection Store { get; }
+        private IServiceProvider Provider { get; }
+        public IConfigurationCompiler Compiler { get; }
+        private IConfigurationDatabase Database { get; }
 
         public Projection(ILoggerFactory loggerFactory,
                           ProjectionConfiguration configuration,
                           IConfigurationDatabase database,
-                          IEventStoreConnection store)
+                          IEventStoreConnection store,
+                          IServiceProvider provider,
+                          IConfigurationCompiler compiler)
         {
             Logger = loggerFactory.CreateLogger<Projection>();
 
@@ -28,6 +32,8 @@ namespace Bechtle.A365.ConfigService.Projection
             Configuration = configuration ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
             Database = database ?? throw new ArgumentNullException(nameof(IConfigurationDatabase));
             Store = store ?? throw new ArgumentNullException(nameof(IEventStoreConnection));
+            Provider = provider;
+            Compiler = compiler;
         }
 
         /// <inheritdoc />
@@ -102,13 +108,23 @@ namespace Bechtle.A365.ConfigService.Projection
                 case EnvironmentUpdated environmentUpdated:
                     await Database.ModifyEnvironment(environmentUpdated.EnvironmentName, environmentUpdated.Data);
                     break;
-            
+
                 case SchemaCreated schemaCreated:
                     await Database.ModifySchema(schemaCreated.SchemaName, schemaCreated.Data);
                     break;
-                
+
                 case SchemaUpdated schemaUpdated:
                     await Database.ModifySchema(schemaUpdated.SchemaName, schemaUpdated.Data);
+                    break;
+
+                case VersionCompiled versionCompiled:
+                    var compiled = await Compiler.Compile(versionCompiled.EnvironmentName, 
+                                                          versionCompiled.SchemaName,
+                                                          Database);
+
+                    await Database.SaveCompiledVersion(versionCompiled.EnvironmentName, 
+                                                       versionCompiled.SchemaName,
+                                                       compiled);
                     break;
 
                 default:
@@ -118,18 +134,23 @@ namespace Bechtle.A365.ConfigService.Projection
 
         private DomainEvent DeserializeResolvedEvent(ResolvedEvent resolvedEvent)
         {
-            var factoryAssociations = new Dictionary<string, Func<byte[], byte[], DomainEvent>>
+            var factoryAssociations = new Dictionary<string, Type>
             {
-                {nameof(EnvironmentCreated), EnvironmentCreatedFactory.Deserialize},
-                {nameof(EnvironmentUpdated), EnvironmentUpdatedFactory.Deserialize},
-                {nameof(SchemaCreated), SchemaCreatedFactory.Deserialize},
-                {nameof(SchemaUpdated), SchemaUpdatedFactory.Deserialize}
+                {nameof(EnvironmentCreated), typeof(IDomainEventSerializer<EnvironmentCreated>)},
+                {nameof(EnvironmentUpdated), typeof(IDomainEventSerializer<EnvironmentUpdated>)},
+                {nameof(VersionCompiled), typeof(IDomainEventSerializer<VersionCompiled>)},
+                {nameof(SchemaCreated), typeof(IDomainEventSerializer<SchemaCreated>)},
+                {nameof(SchemaUpdated), typeof(IDomainEventSerializer<SchemaUpdated>)}
             };
 
             foreach (var factory in factoryAssociations)
             {
-                if (factory.Key == resolvedEvent.OriginalEvent.EventType)
-                    return factory.Value.Invoke(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
+                if (factory.Key != resolvedEvent.OriginalEvent.EventType)
+                    continue;
+
+                var serializer = (IDomainEventSerializer) Provider.GetService(factory.Value);
+
+                return serializer.Deserialize(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
             }
 
             Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");

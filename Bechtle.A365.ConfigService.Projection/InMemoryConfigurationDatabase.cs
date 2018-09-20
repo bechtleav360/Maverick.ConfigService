@@ -9,17 +9,16 @@ namespace Bechtle.A365.ConfigService.Projection
 {
     public class InMemoryConfigurationDatabase : IConfigurationDatabase
     {
-        private readonly Dictionary<string, string> _envStorage;
-        private readonly Dictionary<string, string> _schemaStorage;
+        private readonly IDictionary<string, string> _envStorage;
+        private readonly IDictionary<string, string> _schemaStorage;
+        private readonly IDictionary<string, IDictionary<string, string>> _compiledVersions;
 
-        public InMemoryConfigurationDatabase(ILoggerFactory loggerFactory)
+        public InMemoryConfigurationDatabase()
         {
-            Logger = loggerFactory.CreateLogger<InMemoryConfigurationDatabase>();
             _envStorage = new Dictionary<string, string>();
             _schemaStorage = new Dictionary<string, string>();
+            _compiledVersions = new Dictionary<string, IDictionary<string, string>>();
         }
-
-        private ILogger Logger { get; }
 
         /// <inheritdoc />
         public Task Connect() => Task.CompletedTask;
@@ -28,13 +27,33 @@ namespace Bechtle.A365.ConfigService.Projection
         public Task ModifyEnvironment(string environmentName, IEnumerable<ConfigKeyAction> actions)
             => ModifyInternal(environmentName, actions, EnvironmentKey, _envStorage);
 
+        /// <inheritdoc />
         public Task ModifySchema(string service, IEnumerable<ConfigKeyAction> actions)
             => ModifyInternal(service, actions, SchemaKey, _schemaStorage);
+
+        /// <inheritdoc />
+        public Task<IDictionary<string, string>> GetEnvironment(string environmentName)
+            => Task.FromResult((IDictionary<string, string>) _envStorage.Where(kvp => kvp.Key.StartsWith(environmentName))
+                                                                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
+
+        /// <inheritdoc />
+        public Task<IDictionary<string, string>> GetSchema(string schema)
+            => Task.FromResult((IDictionary<string, string>) _schemaStorage.Where(kvp => kvp.Key.StartsWith(schema))
+                                                                           .ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
+
+        public Task SaveCompiledVersion(string environmentName, string schema, IDictionary<string, string> compiledVersion)
+        {
+            var compositeKey = CompiledVersionKey(environmentName, schema);
+
+            _compiledVersions[compositeKey] = compiledVersion;
+
+            return Task.CompletedTask;
+        }
 
         private Task ModifyInternal(string prefix,
                                     IEnumerable<ConfigKeyAction> actions,
                                     Func<string, string, string> keyGenerator,
-                                    Dictionary<string, string> storage)
+                                    IDictionary<string, string> storage)
         {
             foreach (var action in actions)
                 switch (action.Type)
@@ -56,7 +75,9 @@ namespace Bechtle.A365.ConfigService.Projection
 
         private string EnvironmentKey(string environmentName, string key) => $"{environmentName}/{key}";
 
-        private string SchemaKey(string service, string key) => $"{service}/{key}";
+        private string SchemaKey(string schema, string key) => $"{schema}/{key}";
+
+        private string CompiledVersionKey(string environmentName, string schema) => $"[{environmentName}:{schema}]";
 
         public void Dump(ILogger logger)
         {

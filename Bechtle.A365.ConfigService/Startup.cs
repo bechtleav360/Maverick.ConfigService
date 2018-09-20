@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Dto.EventFactories;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -37,7 +39,12 @@ namespace Bechtle.A365.ConfigService
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetEntryAssembly().GetName().Name}.xml"));
             });
 
-            services.AddSingleton<IConfigStore, ConfigStore>();
+            services.AddSingleton<IConfigStore, ConfigStore>()
+                    .AddSingleton<IDomainEventSerializer<EnvironmentCreated>, EnvironmentCreatedSerializer>()
+                    .AddSingleton<IDomainEventSerializer<EnvironmentUpdated>, EnvironmentUpdatedSerializer>()
+                    .AddSingleton<IDomainEventSerializer<VersionCompiled>, VersionCompiledSerializer>()
+                    .AddSingleton<IDomainEventSerializer<SchemaCreated>, SchemaCreatedSerializer>()
+                    .AddSingleton<IDomainEventSerializer<SchemaUpdated>, SchemaUpdatedSerializer>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

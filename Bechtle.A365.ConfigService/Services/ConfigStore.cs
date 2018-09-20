@@ -21,15 +21,17 @@ namespace Bechtle.A365.ConfigService.Services
 
         private readonly string _stream;
 
+        private readonly IServiceProvider _provider;
+
         /// <summary>
         /// </summary>
+        /// <param name="logger"></param>
         /// <param name="provider"></param>
-        public ConfigStore(IServiceProvider provider)
+        public ConfigStore(ILogger<ConfigStore> logger, IServiceProvider provider)
         {
             _stream = "ConfigStream";
-
-            _logger = provider.GetService<ILoggerFactory>()
-                              .CreateLogger<ConfigStore>();
+            _logger = logger;
+            _provider = provider;
 
             var uri = new Uri("tcp://admin:changeit@localhost:1113");
             var connectionName = "ConfigService";
@@ -45,11 +47,11 @@ namespace Bechtle.A365.ConfigService.Services
         /// </summary>
         /// <param name="domainEvent"></param>
         /// <returns></returns>
-        public async Task WriteEvent(DomainEvent domainEvent)
+        public async Task WriteEvent<T>(T domainEvent) where T : DomainEvent
         {
             _logger.LogDebug($"{nameof(WriteEvent)}('{domainEvent.GetType().Name}')");
 
-            var (data, metadata) = DomainEventFactory.Serialize(domainEvent);
+            var (data, metadata) = SerializeDomainEvent(domainEvent);
 
             var eventData = new EventData(Guid.NewGuid(),
                                           domainEvent.EventType,
@@ -71,5 +73,9 @@ namespace Bechtle.A365.ConfigService.Services
                              $"CommitPosition: {result.LogPosition.CommitPosition}; " +
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
         }
+
+        private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
+            => _provider.GetService<IDomainEventSerializer<T>>()
+                        .Serialize(domainEvent);
     }
 }

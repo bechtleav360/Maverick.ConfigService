@@ -8,10 +8,9 @@ namespace Bechtle.A365.ConfigService.Services
     public interface IConfigStore
     {
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="domainEvent"></param>
         /// <returns></returns>
-        Task WriteEvent(DomainEvent domainEvent);
+        Task WriteEvent<T>(T domainEvent) where T : DomainEvent;
     }
 }

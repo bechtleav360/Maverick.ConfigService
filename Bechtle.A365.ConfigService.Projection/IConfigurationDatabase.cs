@@ -25,5 +25,25 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <param name="actions"></param>
         /// <returns></returns>
         Task ModifySchema(string service, IEnumerable<ConfigKeyAction> actions);
+
+        /// <summary>
+        /// </summary>
+        /// <param name="environmentName"></param>
+        /// <returns></returns>
+        Task<IDictionary<string, string>> GetEnvironment(string environmentName);
+
+        /// <summary>
+        /// </summary>
+        /// <param name="schema"></param>
+        /// <returns></returns>
+        Task<IDictionary<string, string>> GetSchema(string schema);
+
+        /// <summary>
+        /// </summary>
+        /// <param name="environmentName"></param>
+        /// <param name="schema"></param>
+        /// <param name="compiledVersion"></param>
+        /// <returns></returns>
+        Task SaveCompiledVersion(string environmentName, string schema, IDictionary<string, string> compiledVersion);
     }
 }
