@@ -102,6 +102,14 @@ namespace Bechtle.A365.ConfigService.Projection
                 case EnvironmentUpdated environmentUpdated:
                     await Database.ModifyEnvironment(environmentUpdated.EnvironmentName, environmentUpdated.Data);
                     break;
+            
+                case SchemaCreated schemaCreated:
+                    await Database.ModifySchema(schemaCreated.SchemaName, schemaCreated.Data);
+                    break;
+                
+                case SchemaUpdated schemaUpdated:
+                    await Database.ModifySchema(schemaUpdated.SchemaName, schemaUpdated.Data);
+                    break;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(domainEvent));
@@ -114,6 +122,8 @@ namespace Bechtle.A365.ConfigService.Projection
             {
                 {nameof(EnvironmentCreated), EnvironmentCreatedFactory.Deserialize},
                 {nameof(EnvironmentUpdated), EnvironmentUpdatedFactory.Deserialize},
+                {nameof(SchemaCreated), SchemaCreatedFactory.Deserialize},
+                {nameof(SchemaUpdated), SchemaUpdatedFactory.Deserialize}
             };
 
             foreach (var factory in factoryAssociations)

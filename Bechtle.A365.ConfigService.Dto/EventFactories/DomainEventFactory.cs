@@ -17,6 +17,12 @@ namespace Bechtle.A365.ConfigService.Dto.EventFactories
 
                 case EnvironmentUpdated environmentUpdated:
                     return EnvironmentUpdatedFactory.Serialize(environmentUpdated);
+                
+                case SchemaCreated schemaCreated:
+                    return SchemaCreatedFactory.Serialize(schemaCreated);
+                
+                case SchemaUpdated schemaUpdated:
+                    return SchemaUpdatedFactory.Serialize(schemaUpdated);
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(domainEvent));
