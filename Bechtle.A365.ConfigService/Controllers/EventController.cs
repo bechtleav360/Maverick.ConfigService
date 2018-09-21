@@ -33,39 +33,31 @@ namespace Bechtle.A365.ConfigService.Controllers
             await _store.WriteEvent(new EnvironmentCreated("dev",
                                                            new[]
                                                            {
-                                                               ConfigKeyAction.Set("Global/Endpoints/AdminService/Address", "localhost"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/AdminService/Name", "adminService"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/AdminService/Port", "41764"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/AdminService/Protocol", "http"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/AdminService/RootPath", ""),
+                                                               ConfigKeyAction.Set("Endpoints/AdminService/Address", "localhost"),
+                                                               ConfigKeyAction.Set("Endpoints/AdminService/Name", "adminService"),
+                                                               ConfigKeyAction.Set("Endpoints/AdminService/Port", "41764"),
+                                                               ConfigKeyAction.Set("Endpoints/AdminService/Protocol", "http"),
+                                                               ConfigKeyAction.Set("Endpoints/AdminService/RootPath", ""),
                                                            },
                                                            DateTime.UtcNow));
 
             await _store.WriteEvent(new EnvironmentUpdated("dev",
                                                            new[]
                                                            {
-                                                               ConfigKeyAction.Set("Global/Endpoints/ConfigService/Address", "localhost"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/ConfigService/Name", "configService"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/ConfigService/Port", "5000"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/ConfigService/Protocol", "http"),
-                                                               ConfigKeyAction.Set("Global/Endpoints/ConfigService/RootPath", ""),
+                                                               ConfigKeyAction.Set("Endpoints/ConfigService/Address", "localhost"),
+                                                               ConfigKeyAction.Set("Endpoints/ConfigService/Name", "configService"),
+                                                               ConfigKeyAction.Set("Endpoints/ConfigService/Port", "5000"),
+                                                               ConfigKeyAction.Set("Endpoints/ConfigService/Protocol", "http"),
+                                                               ConfigKeyAction.Set("Endpoints/ConfigService/RootPath", ""),
                                                            },
                                                            DateTime.UtcNow));
 
             await _store.WriteEvent(new SchemaCreated("TestClient",
                                                       new[]
                                                       {
-                                                          ConfigKeyAction.Set("Endpoints/AdminService", "[$ENV:Global/Endpoints/AdminService*]"),
+                                                          ConfigKeyAction.Set("Endpoints/AdminService", "[$ENV/Endpoints/AdminService/Name]"),
                                                           ConfigKeyAction.Set("PollRate", "00:01:00"),
                                                           ConfigKeyAction.Set("EnableCache", "true")
-                                                      },
-                                                      DateTime.UtcNow));
-
-            await _store.WriteEvent(new SchemaUpdated("TestClient",
-                                                      new[]
-                                                      {
-                                                          ConfigKeyAction.Set("Endpoints/ConfigService",
-                                                                              "[using:$ENV/Global/Endpoints/ConfigService][Protocol]://[Address]:[Port][RootPath]"),
                                                       },
                                                       DateTime.UtcNow));
 

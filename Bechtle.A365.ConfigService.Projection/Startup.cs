@@ -31,6 +31,7 @@ namespace Bechtle.A365.ConfigService.Projection
                         return EventStoreConnection.Create(new Uri(config.EventStoreUri), config.ConnectionName);
                     })
                     .AddSingleton<IProjection, Projection>()
+                    .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
                     .AddSingleton<IConfigurationDatabase, InMemoryConfigurationDatabase>()
                     .AddSingleton<IDomainEventSerializer<EnvironmentCreated>, EnvironmentCreatedSerializer>()
                     .AddSingleton<IDomainEventSerializer<EnvironmentUpdated>, EnvironmentUpdatedSerializer>()

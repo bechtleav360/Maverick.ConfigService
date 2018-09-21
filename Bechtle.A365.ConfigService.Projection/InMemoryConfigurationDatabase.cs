@@ -81,8 +81,10 @@ namespace Bechtle.A365.ConfigService.Projection
 
         public void Dump(ILogger logger)
         {
-            logger.LogDebug($"\r\n{string.Join(";\r\n", _envStorage.Select(kvp => $"{kvp.Key} => {kvp.Value}"))}");
-            logger.LogDebug($"\r\n{string.Join(";\r\n", _schemaStorage.Select(kvp => $"{kvp.Key} => {kvp.Value}"))}");
+            logger.LogDebug($"\r\nEnv:\r\n{string.Join(";\r\n", _envStorage.Select(kvp => $"{kvp.Key} => {kvp.Value}"))}");
+            logger.LogDebug($"\r\nSchema:\r\n{string.Join(";\r\n", _schemaStorage.Select(kvp => $"{kvp.Key} => {kvp.Value}"))}");
+            //abomination incoming...
+            logger.LogDebug($"\r\nCompiled:\r\n{string.Join(";\r\n", _compiledVersions.Select(kvp => $"{kvp.Key} => \r\n{(string.Join("\r\n", kvp.Value.Select(x=>$"\t{x.Key} => {x.Value}")))}"))}");
         }
     }
 }
