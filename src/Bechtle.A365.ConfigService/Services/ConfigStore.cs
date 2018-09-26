@@ -6,7 +6,7 @@ using Bechtle.A365.ConfigService.Utilities;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-// god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is basically a core component of the eco-system
+// god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is essentially a core component of the eco-system
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
