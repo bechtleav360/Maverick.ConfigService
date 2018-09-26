@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Dto;
 
-namespace Bechtle.A365.ConfigService.Projection
+namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     /// <summary>
     /// </summary>

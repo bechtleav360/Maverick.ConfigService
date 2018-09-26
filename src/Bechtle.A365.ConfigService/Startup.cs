@@ -40,11 +40,7 @@ namespace Bechtle.A365.ConfigService
             });
 
             services.AddSingleton<IConfigStore, ConfigStore>()
-                    .AddSingleton<IDomainEventSerializer<EnvironmentCreated>, EnvironmentCreatedSerializer>()
-                    .AddSingleton<IDomainEventSerializer<EnvironmentUpdated>, EnvironmentUpdatedSerializer>()
-                    .AddSingleton<IDomainEventSerializer<VersionCompiled>, VersionCompiledSerializer>()
-                    .AddSingleton<IDomainEventSerializer<SchemaCreated>, SchemaCreatedSerializer>()
-                    .AddSingleton<IDomainEventSerializer<SchemaUpdated>, SchemaUpdatedSerializer>();
+                    .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -4,24 +4,24 @@ using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Dto.EventFactories
 {
-    public class VersionCompiledSerializer : IDomainEventSerializer<VersionCompiled>
+    public class DomainEventSerializer<T> : IDomainEventSerializer<T> where T : DomainEvent
     {
         /// <inheritdoc />
         DomainEvent IDomainEventSerializer.Deserialize(byte[] data, byte[] metadata) => Deserialize(data, metadata);
 
         /// <inheritdoc />
-        public (byte[] Data, byte[] Metadata) Serialize(DomainEvent domainEvent) => Serialize(domainEvent as VersionCompiled);
+        public (byte[] Data, byte[] Metadata) Serialize(DomainEvent created) => Serialize(created as T);
 
         /// <inheritdoc />
-        public VersionCompiled Deserialize(byte[] data, byte[] metadata)
+        public T Deserialize(byte[] data, byte[] metadata)
         {
             var json = Encoding.UTF8.GetString(data);
 
-            return JsonConvert.DeserializeObject<VersionCompiled>(json);
+            return JsonConvert.DeserializeObject<T>(json);
         }
 
         /// <inheritdoc />
-        public (byte[] Data, byte[] Metadata) Serialize(VersionCompiled created)
+        public (byte[] Data, byte[] Metadata) Serialize(T created)
             => (
                    Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(created)),
                    new byte[0]

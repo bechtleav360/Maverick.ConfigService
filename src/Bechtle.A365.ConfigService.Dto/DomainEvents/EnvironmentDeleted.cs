@@ -2,9 +2,9 @@
 {
     /// <inheritdoc />
     /// <summary>
-    ///     an Environment has been created under the given identifier
+    ///     an Environment with the given identifier has been deleted
     /// </summary>
-    public class EnvironmentCreated : DomainEvent
+    public class EnvironmentDeleted : DomainEvent
     {
         /// <inheritdoc cref="EnvironmentIdentifier" />
         public EnvironmentIdentifier Identifier { get; set; }

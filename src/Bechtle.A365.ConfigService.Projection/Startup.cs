@@ -1,6 +1,8 @@
 ﻿using System;
 using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Bechtle.A365.ConfigService.Dto.EventFactories;
+using Bechtle.A365.ConfigService.Projection.DataStorage;
+using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,11 +35,18 @@ namespace Bechtle.A365.ConfigService.Projection
                     .AddSingleton<IProjection, Projection>()
                     .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
                     .AddSingleton<IConfigurationDatabase, InMemoryConfigurationDatabase>()
-                    .AddSingleton<IDomainEventSerializer<EnvironmentCreated>, EnvironmentCreatedSerializer>()
-                    .AddSingleton<IDomainEventSerializer<EnvironmentUpdated>, EnvironmentUpdatedSerializer>()
-                    .AddSingleton<IDomainEventSerializer<VersionCompiled>, VersionCompiledSerializer>()
-                    .AddSingleton<IDomainEventSerializer<SchemaCreated>, SchemaCreatedSerializer>()
-                    .AddSingleton<IDomainEventSerializer<SchemaUpdated>, SchemaUpdatedSerializer>();
+
+                    // add DomainEventSerializer as generic class for IDomainEventSerializer
+                    .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))
+
+                    // register all IDomainEventHandlers
+                    // IMPORTANT: this needs to be updated once new events are added
+                    .AddSingleton<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
+                    .AddSingleton<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
+                    .AddSingleton<IDomainEventHandler<EnvironmentKeyModified>, EnvironmentKeyModifiedHandler>()
+                    .AddSingleton<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
+                    .AddSingleton<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
+                    .AddSingleton<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();
         }
     }
 }

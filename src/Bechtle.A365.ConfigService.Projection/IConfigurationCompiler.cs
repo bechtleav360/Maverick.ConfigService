@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Projection.DataStorage;
 
 namespace Bechtle.A365.ConfigService.Projection
 {

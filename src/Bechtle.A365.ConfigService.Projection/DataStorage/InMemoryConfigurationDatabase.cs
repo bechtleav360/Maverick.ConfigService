@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Dto;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Projection
+namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     public class InMemoryConfigurationDatabase : IConfigurationDatabase
     {
