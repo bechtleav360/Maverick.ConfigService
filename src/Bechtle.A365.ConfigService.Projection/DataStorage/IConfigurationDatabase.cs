@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Dto;
+using Bechtle.A365.ConfigService.Dto.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
@@ -9,41 +10,45 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
     public interface IConfigurationDatabase
     {
         /// <summary>
+        ///     connect to the (possibly) remote database
         /// </summary>
-        Task Connect();
+        /// <returns></returns>
+        Task<Result> Connect();
 
         /// <summary>
+        ///     apply a set of changes to an Environment identified by <paramref name="identifier"/>
         /// </summary>
-        /// <param name="environmentName"></param>
+        /// <param name="identifier"></param>
         /// <param name="actions"></param>
         /// <returns></returns>
-        Task ModifyEnvironment(string environmentName, IEnumerable<ConfigKeyAction> actions);
+        Task<Result> ApplyChanges(EnvironmentIdentifier identifier, List<ConfigKeyAction> actions);
 
         /// <summary>
+        ///     create a new Environment with the given identifier
         /// </summary>
-        /// <param name="service"></param>
-        /// <param name="actions"></param>
+        /// <param name="identifier"></param>
         /// <returns></returns>
-        Task ModifySchema(string service, IEnumerable<ConfigKeyAction> actions);
+        Task<Result> CreateEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
+        ///     delete an existing Environment with the given identifier
         /// </summary>
-        /// <param name="environmentName"></param>
+        /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<IDictionary<string, string>> GetEnvironment(string environmentName);
+        Task<Result> DeleteEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
+        ///     create a new Structure with the given identifier
         /// </summary>
-        /// <param name="schema"></param>
+        /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<IDictionary<string, string>> GetSchema(string schema);
+        Task<Result> CreateStructure(StructureIdentifier identifier);
 
         /// <summary>
+        ///     delete an existing Structure with the given identifier
         /// </summary>
-        /// <param name="environmentName"></param>
-        /// <param name="schema"></param>
-        /// <param name="compiledVersion"></param>
+        /// <param name="identifier"></param>
         /// <returns></returns>
-        Task SaveCompiledVersion(string environmentName, string schema, IDictionary<string, string> compiledVersion);
+        Task<Result> DeleteStructure(StructureIdentifier identifier);
     }
 }

@@ -15,5 +15,8 @@
         ///     Unique name for an Environment within a <see cref="Category" />
         /// </summary>
         public string Name { get; set; }
+
+        /// <inheritdoc />
+        public override string ToString() => $"[{nameof(EnvironmentIdentifier)}; {nameof(Category)}: '{Category}'; {nameof(Name)}: '{Name}']";
     }
 }

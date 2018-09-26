@@ -14,5 +14,7 @@
         ///     unique version of this Structure
         /// </summary>
         public int Version { get; set; }
+
+        public override string ToString() => $"[{nameof(EnvironmentIdentifier)}; {nameof(Name)}: '{Name}'; {nameof(Version)}: '{Version}']";
     }
 }
