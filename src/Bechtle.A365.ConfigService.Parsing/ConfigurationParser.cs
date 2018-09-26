@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace Bechtle.A365.ConfigService.Parsing
 {
-    public class ConfigValueParser
+    /// <inheritdoc />
+    public class ConfigurationParser : IConfigurationParser
     {
         public List<ConfigValuePart> Parse(string text)
         {

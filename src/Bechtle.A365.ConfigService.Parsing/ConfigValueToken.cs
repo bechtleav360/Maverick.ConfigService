@@ -1,6 +1,6 @@
 ﻿namespace Bechtle.A365.ConfigService.Parsing
 {
-    public enum ConfigValueToken
+    internal enum ConfigValueToken
     {
         None,
         Value,

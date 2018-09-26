@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [InlineData("{{Using:Some/Path/To/Somewhere/Other/Than/Here; Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)})]
         public void GetReferencesFromString(string text, int expectedResults, Type[] expectedTypes)
         {
-            var parser = new ConfigValueParser();
+            var parser = new ConfigurationParser();
             var result = parser.Parse(text);
 
             Assert.NotNull(result);
@@ -40,7 +40,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void ExtractCorrectReference()
         {
-            var result = new ConfigValueParser().Parse("this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}");
+            var result = new ConfigurationParser().Parse("this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}");
 
             Assert.True(result.Count == 2);
             Assert.IsType<ValuePart>(result[0]);
