@@ -1,125 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 
 namespace Bechtle.A365.ConfigService.Parsing
 {
-    public class ConfigValueParser
-    {
-        public List<ConfigValuePart> Parse(string text)
-        {
-            var tokenizer = new ConfigValueTokenizer();
-            var result = tokenizer.TryTokenize(text);
-
-            // @TODO: handle error
-            if (!result.HasValue)
-                return new List<ConfigValuePart>();
-
-            var parts = new List<ConfigValuePart>();
-            var referenceStack = new Stack<ReferencePart>();
-            var currentKeyword = ReferenceCommand.None;
-
-            // @TODO: test / beautify this
-            foreach (var token in result.Value)
-            {
-                switch (token.Kind)
-                {
-                    case ConfigValueToken.None:
-                        throw new NotSupportedException($"Token-Type {nameof(ConfigValueToken.None)} not supported");
-
-                    case ConfigValueToken.Fluff:
-                        parts.Add(new FluffPart(token.ToStringValue()));
-                        break;
-
-                    case ConfigValueToken.Value:
-                        // default to 'path', to allow for concise notation in simple cases
-                        if (currentKeyword == ReferenceCommand.None)
-                            currentKeyword = ReferenceCommand.Path;
-
-                        var currentReference = referenceStack.Peek();
-
-                        // no duplicate assignments
-                        if (currentReference.Commands.ContainsKey(currentKeyword))
-                            throw new Exception($"could not set command '{currentKeyword}' to '{token.ToStringValue()}': command already set");
-
-                        currentReference.Commands[currentKeyword] = token.ToStringValue();
-
-                        // reset keyword
-                        currentKeyword = ReferenceCommand.None;
-                        break;
-
-                    case ConfigValueToken.Keyword:
-                        // ':' is included here to make tokenization easier, but we need to trim it because it's not actually helpful
-                        var keyword = token.ToStringValue()
-                                           .TrimEnd(':');
-
-                        if (keyword.Equals("using", StringComparison.InvariantCultureIgnoreCase))
-                            currentKeyword = ReferenceCommand.Using;
-                        else if (keyword.Equals("alias", StringComparison.InvariantCultureIgnoreCase))
-                            currentKeyword = ReferenceCommand.Alias;
-                        else if (keyword.Equals("path", StringComparison.InvariantCultureIgnoreCase))
-                            currentKeyword = ReferenceCommand.Path;
-                        else
-                            throw new Exception($"keyword '{keyword}' not supported");
-                        break;
-
-                    case ConfigValueToken.InstructionOpen:
-                        referenceStack.Push(new ReferencePart(new Dictionary<ReferenceCommand, string>()));
-                        break;
-
-                    case ConfigValueToken.InstructionClose:
-                        var finishedReference = referenceStack.Pop();
-                        parts.Add(finishedReference);
-                        break;
-
-                    case ConfigValueToken.InstructionSeparator:
-                        // reset keyword
-                        currentKeyword = ReferenceCommand.None;
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException($"Token-Type {nameof(ConfigValueToken.None)} not supported");
-                }
-            }
-
-            return parts;
-        }
-    }
-
-    public abstract class ConfigValuePart
-    {
-    }
-
-    public class FluffPart : ConfigValuePart
-    {
-        public string Text { get; }
-
-        public FluffPart(string text)
-        {
-            Text = text;
-        }
-    }
-
-    public class ReferencePart : ConfigValuePart
-    {
-        public Dictionary<ReferenceCommand, string> Commands { get; }
-
-        public ReferencePart(Dictionary<ReferenceCommand, string> commands)
-        {
-            Commands = commands;
-        }
-    }
-
-    public enum ReferenceCommand
-    {
-        None,
-        Using,
-        Alias,
-        Path
-    }
-
     /// <summary>
     ///     generate a number of tokens to represent the incoming texts
     /// </summary>
@@ -139,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Parsing
                                                                                                .Or(Character.In('-', '_', '/'))
                                                                                                .AtLeastOnce());
 
-        private static readonly TextParser<TextSpan> FluffMatcher = Span.WithoutAny(c => c == '{');
+        private static readonly TextParser<TextSpan> ValueMatcher = Span.WithoutAny(c => c == '{');
 
         /// <inheritdoc />
         protected override IEnumerable<Result<ConfigValueToken>> Tokenize(TextSpan span, TokenizationState<ConfigValueToken> state)
@@ -157,9 +42,9 @@ namespace Bechtle.A365.ConfigService.Parsing
                 var refOpen = RefOpenMatcher(next.Location);
                 if (refOpen.HasValue)
                 {
-                    var fluff = FluffMatcher(lastLocation);
+                    var fluff = ValueMatcher(lastLocation);
                     if (fluff.HasValue)
-                        yield return Result.Value(ConfigValueToken.Fluff, lastLocation, fluff.Remainder);
+                        yield return Result.Value(ConfigValueToken.Value, lastLocation, fluff.Remainder);
 
                     context.InReference = true;
                     lastLocation = refOpen.Location;
@@ -193,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Parsing
                     if (keyword.HasValue)
                     {
                         lastLocation = keyword.Remainder;
-                        yield return Result.Value(ConfigValueToken.Keyword, keyword.Location, keyword.Remainder);
+                        yield return Result.Value(ConfigValueToken.CommandKeyword, keyword.Location, keyword.Remainder);
                         next = keyword.Remainder.ConsumeChar();
                         continue;
                     }
@@ -202,7 +87,7 @@ namespace Bechtle.A365.ConfigService.Parsing
                     if (value.HasValue)
                     {
                         lastLocation = value.Remainder;
-                        yield return Result.Value(ConfigValueToken.Value, value.Location, value.Remainder);
+                        yield return Result.Value(ConfigValueToken.CommandValue, value.Location, value.Remainder);
                         next = value.Remainder.ConsumeChar();
                         continue;
                     }
@@ -211,9 +96,9 @@ namespace Bechtle.A365.ConfigService.Parsing
                 next = next.Remainder.ConsumeChar();
             } while (next.HasValue);
 
-            var remainder = FluffMatcher(lastLocation);
+            var remainder = ValueMatcher(lastLocation);
             if (remainder.HasValue)
-                yield return Result.Value(ConfigValueToken.Fluff, lastLocation, remainder.Remainder);
+                yield return Result.Value(ConfigValueToken.Value, lastLocation, remainder.Remainder);
         }
 
         private struct TokenizerContext

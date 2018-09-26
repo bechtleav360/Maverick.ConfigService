@@ -7,15 +7,15 @@ namespace Bechtle.A365.ConfigService.Tests
     public class ConfigValueParserTests
     {
         [Theory]
-        [InlineData("simple, value", 1, new[] {typeof(FluffPart)})]
-        [InlineData("simple, value - with some stuff", 1, new[] {typeof(FluffPart)})]
+        [InlineData("simple, value", 1, new[] {typeof(ValuePart)})]
+        [InlineData("simple, value - with some stuff", 1, new[] {typeof(ValuePart)})]
         [InlineData("{{Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)})]
-        [InlineData("{{Some/Path/To/Somewhere/Other/Than/Here}} some fluff after the reference", 2, new[] {typeof(ReferencePart), typeof(FluffPart)})]
+        [InlineData("{{Some/Path/To/Somewhere/Other/Than/Here}} some fluff after the reference", 2, new[] {typeof(ReferencePart), typeof(ValuePart)})]
         [InlineData("this is a value: hello {{Planetoids/General}}, and these are invalid }} parts of references that: shall; not; pass", 3, new[]
         {
-            typeof(FluffPart),
+            typeof(ValuePart),
             typeof(ReferencePart),
-            typeof(FluffPart)
+            typeof(ValuePart)
         })]
         [InlineData("{{Path:Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)})]
         [InlineData("{{Using:Some/Path/To/Somewhere/Other/Than/Here;Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)})]

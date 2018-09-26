@@ -3,9 +3,9 @@
     public enum ConfigValueToken
     {
         None,
-        Fluff,
         Value,
-        Keyword,
+        CommandValue,
+        CommandKeyword,
         InstructionOpen,
         InstructionClose,
         InstructionSeparator
