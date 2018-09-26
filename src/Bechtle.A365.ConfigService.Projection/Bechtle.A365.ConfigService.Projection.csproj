@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Dto\Bechtle.A365.ConfigService.Dto.csproj" />
+    <ProjectReference Include="..\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj" />
   </ItemGroup>
 
 </Project>

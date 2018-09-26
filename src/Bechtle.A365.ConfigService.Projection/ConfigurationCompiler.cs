@@ -37,7 +37,6 @@ namespace Bechtle.A365.ConfigService.Projection
             return schemaData;
         }
 
-        //@TODO replace $ENV with the actual current environment... (baseEnvironment)
         private async Task<string> ResolveReference(string baseEnvironment, Match match, EnvironmentCache envCache)
         {
             var envName = match.Groups["Env"].Value;
