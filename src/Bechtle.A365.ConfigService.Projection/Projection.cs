@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Dto.DomainEvents;
-using Bechtle.A365.ConfigService.Dto.EventFactories;
+using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
@@ -19,24 +18,28 @@ namespace Bechtle.A365.ConfigService.Projection
         private IEventStoreConnection Store { get; }
         private IServiceProvider Provider { get; }
         private IConfigurationCompiler Compiler { get; }
+        private IEventResolver EventResolver { get; }
         private IConfigurationDatabase Database { get; }
 
-        public Projection(ILoggerFactory loggerFactory,
+        // so many injected things, better not get addicted
+        public Projection(ILogger<Projection> logger,
                           ProjectionConfiguration configuration,
                           IConfigurationDatabase database,
                           IEventStoreConnection store,
                           IServiceProvider provider,
-                          IConfigurationCompiler compiler)
+                          IConfigurationCompiler compiler,
+                          IEventResolver eventResolver)
         {
-            Logger = loggerFactory.CreateLogger<Projection>();
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             Logger.LogInformation("starting projection...");
 
-            Configuration = configuration ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
-            Database = database ?? throw new ArgumentNullException(nameof(IConfigurationDatabase));
-            Store = store ?? throw new ArgumentNullException(nameof(IEventStoreConnection));
-            Provider = provider;
-            Compiler = compiler;
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            Database = database ?? throw new ArgumentNullException(nameof(database));
+            Store = store ?? throw new ArgumentNullException(nameof(store));
+            Provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            Compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
+            EventResolver = eventResolver ?? throw new ArgumentNullException(nameof(eventResolver));
         }
 
         /// <inheritdoc />
@@ -56,25 +59,17 @@ namespace Bechtle.A365.ConfigService.Projection
                                                                         true,
                                                                         Configuration.SubscriptionName),
                                         EventAppeared,
-                                        LiveProcessingStarted,
-                                        SubscriptionDropped);
+                                        subscription => { Logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
+                                        (subscription, reason, exception) =>
+                                        {
+                                            Logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
+                                                               $"dropped for reason: {reason}; exception {exception}");
+                                        });
 
             while (!cancellationToken.IsCancellationRequested)
                 Thread.Sleep(TimeSpan.FromMilliseconds(100));
 
             Logger.LogInformation("stopping projection...");
-        }
-
-        private void SubscriptionDropped(EventStoreCatchUpSubscription subscription,
-                                         SubscriptionDropReason reason,
-                                         Exception exception)
-        {
-            Logger.LogCritical($"subscription '{subscription.SubscriptionName}' dropped for reason: {reason}; exception {exception}");
-        }
-
-        private void LiveProcessingStarted(EventStoreCatchUpSubscription subscription)
-        {
-            Logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened");
         }
 
         private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
@@ -87,7 +82,7 @@ namespace Bechtle.A365.ConfigService.Projection
                                   $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
                                   $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
 
-            var domainEvent = DeserializeResolvedEvent(resolvedEvent);
+            var domainEvent = EventResolver.ToDomainEvent(resolvedEvent);
 
             if (domainEvent == null)
                 return;
@@ -133,32 +128,6 @@ namespace Bechtle.A365.ConfigService.Projection
                 default:
                     throw new ArgumentOutOfRangeException(nameof(domainEvent));
             }
-        }
-
-        private DomainEvent DeserializeResolvedEvent(ResolvedEvent resolvedEvent)
-        {
-            var factoryAssociations = new Dictionary<string, Type>
-            {
-                {DomainEvent.GetEventType<ConfigurationBuilt>(), typeof(IDomainEventSerializer<ConfigurationBuilt>)},
-                {DomainEvent.GetEventType<EnvironmentCreated>(), typeof(IDomainEventSerializer<EnvironmentCreated>)},
-                {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventSerializer<EnvironmentDeleted>)},
-                {DomainEvent.GetEventType<EnvironmentKeyModified>(), typeof(IDomainEventSerializer<EnvironmentKeyModified>)},
-                {DomainEvent.GetEventType<StructureCreated>(), typeof(IDomainEventSerializer<StructureCreated>)},
-                {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventSerializer<StructureDeleted>)}
-            };
-
-            foreach (var factory in factoryAssociations)
-            {
-                if (factory.Key != resolvedEvent.OriginalEvent.EventType)
-                    continue;
-
-                var serializer = (IDomainEventSerializer) Provider.GetService(factory.Value);
-
-                return serializer.Deserialize(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
-            }
-
-            Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
-            return null;
         }
     }
 }

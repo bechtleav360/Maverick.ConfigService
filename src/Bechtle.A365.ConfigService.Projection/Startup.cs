@@ -1,6 +1,8 @@
 ﻿using System;
 using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Bechtle.A365.ConfigService.Dto.EventFactories;
+using Bechtle.A365.ConfigService.Parsing;
+using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
@@ -33,6 +35,8 @@ namespace Bechtle.A365.ConfigService.Projection
                         return EventStoreConnection.Create(new Uri(config.EventStoreUri), config.ConnectionName);
                     })
                     .AddSingleton<IProjection, Projection>()
+                    .AddSingleton<IEventResolver, EventResolver>()
+                    .AddSingleton<IConfigurationParser, ConfigurationParser>()
                     .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
                     .AddSingleton<IConfigurationDatabase, InMemoryConfigurationDatabase>()
 
