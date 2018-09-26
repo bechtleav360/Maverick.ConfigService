@@ -50,7 +50,8 @@ namespace Bechtle.A365.ConfigService.Parsing
                     case ConfigValueToken.CommandKeyword:
                         // ':' is included here to make tokenization easier, but we need to trim it because it's not actually helpful
                         var keyword = token.ToStringValue()
-                                           .TrimEnd(':');
+                                           .TrimEnd(':')
+                                           .Trim();
 
                         if (keyword.Equals("using", StringComparison.InvariantCultureIgnoreCase))
                             currentKeyword = ReferenceCommand.Using;

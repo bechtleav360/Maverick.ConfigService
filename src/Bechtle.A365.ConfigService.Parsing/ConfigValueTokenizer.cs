@@ -16,13 +16,19 @@ namespace Bechtle.A365.ConfigService.Parsing
 
         private static readonly TextParser<char> RefSeparatorMatcher = Character.EqualTo(';');
 
-        private static readonly TextParser<TextSpan> RefKeywordMatcher = Span.MatchedBy(Character.Letter
-                                                                                                 .AtLeastOnce()
-                                                                                                 .Then(c => Character.EqualTo(':')));
+        private static readonly TextParser<TextSpan> RefKeywordMatcher = Span.WhiteSpace
+                                                                             .IgnoreMany()
+                                                                             .Then(c => Span.MatchedBy(Character.Letter
+                                                                                                                .AtLeastOnce()
+                                                                                                                .Then(cc => Span.WhiteSpace.IgnoreMany())
+                                                                                                                .Then(cc => Character.EqualTo(':'))));
 
-        private static readonly TextParser<TextSpan> RefValueMatcher = Span.MatchedBy(Character.LetterOrDigit
-                                                                                               .Or(Character.In('-', '_', '/'))
-                                                                                               .AtLeastOnce());
+        private static readonly TextParser<TextSpan> RefValueMatcher = Span.MatchedBy(Span.WhiteSpace
+                                                                                          .IgnoreMany()
+                                                                                          .Then(c => Character.LetterOrDigit
+                                                                                                              .Or(Character.In('-', '_', '/'))
+                                                                                                              .AtLeastOnce())
+                                                                                          .Then(c => Span.WhiteSpace.IgnoreMany()));
 
         private static readonly TextParser<TextSpan> ValueMatcher = Span.WithoutAny(c => c == '{');
 
