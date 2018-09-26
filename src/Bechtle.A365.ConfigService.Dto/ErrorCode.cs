@@ -1,0 +1,43 @@
+﻿namespace Bechtle.A365.ConfigService.Dto
+{
+    /// <summary>
+    ///     generic ErrorCode
+    /// </summary>
+    public enum ErrorCode
+    {
+        /// <summary>
+        ///     no Error occured
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        ///     undefined Error occured
+        /// </summary>
+        Undefined = 1,
+
+        /// <summary>
+        ///     environment already exists
+        /// </summary>
+        EnvironmentAlreadyExists = 2,
+
+        /// <summary>
+        ///     structure already exists
+        /// </summary>
+        StructureAlreadyExists = 3,
+
+        /// <summary>
+        ///     error while updating database
+        /// </summary>
+        DbUpdateError = 4,
+
+        /// <summary>
+        ///     a resource could not be found, see message for more details
+        /// </summary>
+        NotFound = 5,
+
+        /// <summary>
+        ///     given data is invalid or unsupported 
+        /// </summary>
+        InvalidData = 6
+    }
+}
