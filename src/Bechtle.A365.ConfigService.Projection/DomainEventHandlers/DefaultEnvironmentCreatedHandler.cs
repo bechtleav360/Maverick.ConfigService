@@ -4,17 +4,17 @@ using Bechtle.A365.ConfigService.Projection.DataStorage;
 
 namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 {
-    public class EnvironmentCreatedHandler : IDomainEventHandler<EnvironmentCreated>
+    public class DefaultEnvironmentCreatedHandler : IDomainEventHandler<DefaultEnvironmentCreated>
     {
         private readonly IConfigurationDatabase _database;
 
         /// <inheritdoc />
-        public EnvironmentCreatedHandler(IConfigurationDatabase database)
+        public DefaultEnvironmentCreatedHandler(IConfigurationDatabase database)
         {
             _database = database;
         }
 
         /// <inheritdoc />
-        public async Task HandleDomainEvent(EnvironmentCreated domainEvent) => await _database.CreateEnvironment(domainEvent.Identifier, false);
+        public async Task HandleDomainEvent(DefaultEnvironmentCreated domainEvent) => await _database.CreateEnvironment(domainEvent.Identifier, true);
     }
 }

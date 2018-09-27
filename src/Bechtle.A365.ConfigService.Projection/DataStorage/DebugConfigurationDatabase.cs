@@ -18,6 +18,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         {
             _logger = logger;
             _context = new Context();
+            _context.Database.EnsureCreated();
         }
 
         /// <inheritdoc />
@@ -92,12 +93,28 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         public Task<Result> Connect() => Task.FromResult(Result.Success());
 
         /// <inheritdoc />
-        public async Task<Result> CreateEnvironment(EnvironmentIdentifier identifier)
+        public async Task<Result> CreateEnvironment(EnvironmentIdentifier identifier, bool defaultEnvironment)
         {
             if (await _context.Environments.AnyAsync(env => env == identifier))
             {
                 _logger.LogError($"environment with id {identifier} already exists");
                 return Result.Error($"environment with id {identifier} already exists", ErrorCode.EnvironmentAlreadyExists);
+            }
+
+            // additional check to make sure there is only ever one default-environment per category
+            if (defaultEnvironment)
+            {
+                var defaultEnvironments = _context.Environments.Count(env => string.Equals(env.Category,
+                                                                                           identifier.Category,
+                                                                                           StringComparison.OrdinalIgnoreCase)
+                                                                             && env.DefaultEnvironment);
+
+                if (defaultEnvironments > 0)
+                {
+                    _logger.LogError($"can not create another default-environment in category '{identifier.Category}'");
+                    return Result.Error($"can not create another default-environment in category '{identifier.Category}'",
+                                        ErrorCode.DefaultEnvironmentAlreadyExists);
+                }
             }
 
             await _context.Environments.AddAsync(new Environment
@@ -106,6 +123,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 Name = identifier.Name,
                 Category = identifier.Category,
                 Version = 1,
+                DefaultEnvironment = defaultEnvironment,
                 Keys = new List<EnvironmentKey>()
             });
 
@@ -233,6 +251,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         private class Environment : IEquatable<Environment>
         {
             public string Category { get; set; }
+
+            public bool DefaultEnvironment { get; set; }
 
             public Guid Id { get; set; }
 

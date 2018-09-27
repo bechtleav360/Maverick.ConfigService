@@ -38,6 +38,11 @@
         /// <summary>
         ///     given data is invalid or unsupported 
         /// </summary>
-        InvalidData = 6
+        InvalidData = 6,
+
+        /// <summary>
+        ///     another default-environment already exists for that category
+        /// </summary>
+        DefaultEnvironmentAlreadyExists = 7,
     }
 }
