@@ -24,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Projection
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton(provider => new LoggerFactory().AddConsole(LogLevel.Trace))
+                    .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
                     .AddSingleton(Configuration)
                     .AddSingleton(provider => provider.GetService<IConfiguration>()
                                                       .Get<ProjectionConfiguration>())
