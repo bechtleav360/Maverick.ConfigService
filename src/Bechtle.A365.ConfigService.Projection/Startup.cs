@@ -33,7 +33,11 @@ namespace Bechtle.A365.ConfigService.Projection
                         var config = provider.GetService<ProjectionConfiguration>()
                                      ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
 
-                        return EventStoreConnection.Create(new Uri(config.EventStoreUri), config.ConnectionName);
+                        return EventStoreConnection.Create(ConnectionSettings.Create()
+                                                                             .KeepReconnecting()
+                                                                             .KeepRetrying(),
+                                                           new Uri(config.EventStoreUri),
+                                                           config.ConnectionName);
                     })
                     .AddSingleton<IProjection, Projection>()
                     .AddSingleton<IEventResolver, EventResolver>()
