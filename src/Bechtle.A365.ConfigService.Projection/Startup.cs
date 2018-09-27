@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Projection
                     .AddSingleton<IEventResolver, EventResolver>()
                     .AddSingleton<IConfigurationParser, ConfigurationParser>()
                     .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
-                    .AddSingleton<IConfigurationDatabase, InMemoryConfigurationDatabase>()
+                    .AddSingleton<IConfigurationDatabase, DebugConfigurationDatabase>()
 
                     // add DomainEventSerializer as generic class for IDomainEventSerializer
                     .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))

@@ -9,12 +9,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
-    public class InMemoryConfigurationDatabase : IConfigurationDatabase, IDisposable
+    public class DebugConfigurationDatabase : IConfigurationDatabase, IDisposable
     {
         private readonly Context _context;
-        private readonly ILogger<InMemoryConfigurationDatabase> _logger;
+        private readonly ILogger<DebugConfigurationDatabase> _logger;
 
-        public InMemoryConfigurationDatabase(ILogger<InMemoryConfigurationDatabase> logger)
+        public DebugConfigurationDatabase(ILogger<DebugConfigurationDatabase> logger)
         {
             _logger = logger;
             _context = new Context();
@@ -215,7 +215,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             {
                 base.OnConfiguring(optionsBuilder);
 
-                optionsBuilder.UseSqlite("DataSource=:memory");
+                optionsBuilder.UseSqlite("DataSource=./projected.db");
             }
 
             /// <inheritdoc />
