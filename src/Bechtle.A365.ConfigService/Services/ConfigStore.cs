@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Bechtle.A365.ConfigService.Dto.EventFactories;
 using Bechtle.A365.ConfigService.Utilities;
@@ -16,29 +17,29 @@ namespace Bechtle.A365.ConfigService.Services
     public class ConfigStore : IConfigStore
     {
         private readonly IEventStoreConnection _eventStore;
-
         private readonly ILogger _logger;
-
-        private readonly string _stream;
-
         private readonly IServiceProvider _provider;
+        private readonly ConfigServiceConfiguration _configuration;
 
         /// <summary>
         /// </summary>
         /// <param name="logger"></param>
         /// <param name="provider"></param>
-        public ConfigStore(ILogger<ConfigStore> logger, IServiceProvider provider)
+        /// <param name="configuration"></param>
+        public ConfigStore(ILogger<ConfigStore> logger, IServiceProvider provider, ConfigServiceConfiguration configuration)
         {
-            _stream = "ConfigStream";
             _logger = logger;
             _provider = provider;
+            _configuration = configuration;
 
-            var uri = new Uri("tcp://admin:changeit@localhost:1113");
-            var connectionName = "ConfigService";
+            _logger.LogInformation($"connecting to '{configuration.EventStoreConnection.Uri}' " +
+                                   $"using connectionName: '{configuration.EventStoreConnection.ConnectionName}'");
 
-            _logger.LogInformation($"connecting to '{uri}' using connectionName: '{connectionName}'");
-
-            _eventStore = EventStoreConnection.Create(uri, connectionName);
+            _eventStore = EventStoreConnection.Create(ConnectionSettings.Create()
+                                                                        .KeepReconnecting()
+                                                                        .KeepRetrying(),
+                                                      new Uri(configuration.EventStoreConnection.Uri),
+                                                      configuration.EventStoreConnection.ConnectionName);
 
             _eventStore.ConnectAsync().RunSync();
         }
@@ -66,7 +67,9 @@ namespace Bechtle.A365.ConfigService.Services
                                    $"Data: {eventData.Data.Length} bytes; " +
                                    $"Metadata: {eventData.Metadata.Length} bytes;");
 
-            var result = await _eventStore.AppendToStreamAsync(_stream, ExpectedVersion.Any, eventData);
+            var result = await _eventStore.AppendToStreamAsync(_configuration.EventStoreConnection.Stream,
+                                                               ExpectedVersion.Any,
+                                                               eventData);
 
             _logger.LogDebug($"sent event '{eventData.EventId}': " +
                              $"NextExpectedVersion: {result.NextExpectedVersion}; " +

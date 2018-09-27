@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Bechtle.A365.ConfigService.Dto.EventFactories;
 using Bechtle.A365.ConfigService.Services;
@@ -39,7 +40,9 @@ namespace Bechtle.A365.ConfigService
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetEntryAssembly().GetName().Name}.xml"));
             });
 
-            services.AddSingleton<IConfigStore, ConfigStore>()
+            services.AddSingleton(provider => provider.GetService<IConfiguration>()
+                                                      .Get<ConfigServiceConfiguration>())
+                    .AddSingleton<IConfigStore, ConfigStore>()
                     .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>));
         }
 
