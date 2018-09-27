@@ -35,8 +35,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         ///     create a new Structure with the given identifier
         /// </summary>
         /// <param name="identifier"></param>
+        /// <param name="actions"></param>
         /// <returns></returns>
-        Task<Result> CreateStructure(StructureIdentifier identifier);
+        Task<Result> CreateStructure(StructureIdentifier identifier, IList<ConfigKeyAction> actions);
 
         /// <summary>
         ///     delete an existing Environment with the given identifier

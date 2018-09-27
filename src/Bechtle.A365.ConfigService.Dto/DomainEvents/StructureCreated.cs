@@ -7,9 +7,10 @@
     public class StructureCreated : DomainEvent
     {
         /// <inheritdoc />
-        public StructureCreated(StructureIdentifier identifier)
+        public StructureCreated(StructureIdentifier identifier, ConfigKeyAction[] modifiedKeys)
         {
             Identifier = identifier;
+            ModifiedKeys = modifiedKeys;
         }
 
         /// <inheritdoc />
@@ -19,5 +20,10 @@
 
         /// <inheritdoc cref="StructureIdentifier" />
         public StructureIdentifier Identifier { get; set; }
+        
+        /// <summary>
+        ///     list of Actions that have been applied to the keys
+        /// </summary>
+        public ConfigKeyAction[] ModifiedKeys { get; set; }
     }
 }

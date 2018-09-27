@@ -135,7 +135,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result> CreateStructure(StructureIdentifier identifier)
+        public async Task<Result> CreateStructure(StructureIdentifier identifier, IList<ConfigKeyAction> actions)
         {
             if (await GetStructureInternal(identifier) != null)
             {
@@ -148,7 +148,14 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 Id = Guid.NewGuid(),
                 Name = identifier.Name,
                 Version = identifier.Version,
-                Keys = new List<StructureKey>()
+                Keys = actions.Where(action => action.Type == ConfigKeyActionType.Set)
+                              .Select(action => new StructureKey
+                              {
+                                  Id = Guid.NewGuid(),
+                                  Key = action.Key,
+                                  Value = action.Value
+                              })
+                              .ToList()
             });
 
             try
