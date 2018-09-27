@@ -32,17 +32,35 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
 
                 _logger.LogDebug($"compiling '{key}' => '{value}'");
 
-                var processedValue = await ResolveReferences(environment, value, parser);
+                var processedValues = await ResolveReferences(environment, key, value, parser);
 
-                _logger.LogTrace($"compiled '{key}' => '{processedValue}'");
-
-                compiledConfiguration[key] = processedValue;
+                if (processedValues.Count == 0)
+                {
+                    _logger.LogWarning($"could not compile '{key}' => '{value}', see previous messages for more information");
+                }
+                else if (processedValues.Count == 1)
+                {
+                    var processedValue = processedValues.First().Value;
+                    _logger.LogTrace($"compiled '{key}' => '{processedValue}'");
+                    compiledConfiguration[key] = processedValue;
+                }
+                else if (processedValues.Count > 1)
+                {
+                    foreach (var processedValue in processedValues)
+                    {
+                        _logger.LogTrace($"compiled '{key}' => {processedValue.Key} => '{processedValue.Value}'");
+                        compiledConfiguration[processedValue.Key] = processedValue.Value;
+                    }
+                }
             }
 
             return compiledConfiguration;
         }
 
-        private async Task<string> ResolveReferences(IDictionary<string, string> environment, string value, IConfigurationParser parser)
+        private async Task<IDictionary<string, string>> ResolveReferences(IDictionary<string, string> environment,
+                                                                          string key,
+                                                                          string value,
+                                                                          IConfigurationParser parser)
         {
             var context = new ReferenceContext();
             var parseResult = parser.Parse(value);
@@ -51,7 +69,7 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             if (!parseResult.OfType<ReferencePart>().Any())
             {
                 _logger.LogDebug($"no references found in '{value}', nothing to resolve");
-                return value;
+                return new Dictionary<string, string> {{key, value}};
             }
 
             // initialize StringBuilder with starting size of the input,
@@ -73,7 +91,10 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
                             valueBuilder.Append(resolvedReference.SimpleValue);
 
                         else if (resolvedReference.IsComplex)
-                            ; //@TODO: implement complex reference-result - how? ¯\_(ツ)_/¯
+                            return resolvedReference.ExpandedValue
+                                                    .ToDictionary(kvp => $"{key}/{kvp.Key}".Replace("//", ""),
+                                                                  kvp => kvp.Value);
+
                         else
                             _logger.LogError($"unknown result received from {nameof(ResolveReference)}");
 
@@ -85,11 +106,11 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
 
                     default:
                         _logger.LogCritical($"handling of '{part.GetType().Name}' is not implemented");
-                        return value;
+                        return new Dictionary<string, string> {{key, value}};
                 }
             }
 
-            return valueBuilder.ToString();
+            return new Dictionary<string, string> {{key, valueBuilder.ToString()}};
         }
 
         private async Task<ReferenceResolveResult> ResolveReference(IDictionary<string, string> environment,
@@ -132,7 +153,7 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             if (pathCommand is null)
                 return new ReferenceResolveResult();
 
-            // if the path starts with a "$", it's likely using an alias
+            // if the path starts with a "$", it's using an alias
             if (pathCommand.StartsWith("$"))
             {
                 var split = pathCommand.Split('/', 2);
@@ -150,6 +171,18 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
                 }
             }
 
+            // Path points indicates we match against a number of keys, so we return a 'complex' result
+            if (pathCommand.EndsWith('*'))
+            {
+                var matcher = pathCommand.TrimEnd('*');
+
+                var matchingData = environment.Where(kvp => kvp.Key.StartsWith(matcher, StringComparison.OrdinalIgnoreCase))
+                                              .ToDictionary(kvp => kvp.Key.Substring(matcher.Length),
+                                                            kvp => kvp.Value);
+
+                return new ReferenceResolveResult(matchingData);
+            }
+
             var result = environment.Where(kvp => kvp.Key.StartsWith(pathCommand, StringComparison.OrdinalIgnoreCase))
                                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
@@ -157,8 +190,9 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             if (result.Keys.Count == 1)
                 return new ReferenceResolveResult(result[result.Keys.First()]);
 
-            // if we have multiple hit, return a 'complex' resolved value
-            return new ReferenceResolveResult(result);
+            // should this be an error instead? ¯\_(ツ)_/¯
+            _logger.LogError($"reference does not contain a '*' to indicate a complex match, but matched '{result.Keys.Count}' keys");
+            return new ReferenceResolveResult();
         }
 
         private class ReferenceContext
