@@ -25,7 +25,9 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
         {
             IDictionary<string, string> compiledConfiguration = new Dictionary<string, string>();
 
-            foreach (var kvp in structure)
+            var stack = new Stack<KeyValuePair<string, string>>(structure);
+
+            while (stack.TryPop(out var kvp))
             {
                 var key = kvp.Key;
                 var value = kvp.Value;
@@ -42,14 +44,20 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
                 {
                     var processedValue = processedValues.First().Value;
                     _logger.LogTrace($"compiled '{key}' => '{processedValue}'");
-                    compiledConfiguration[key] = processedValue;
+
+                    if (processedValue.Equals(value, StringComparison.OrdinalIgnoreCase))
+                        compiledConfiguration[key] = value;
+                    // push back to stack for one more pass
+                    else
+                        stack.Push(new KeyValuePair<string, string>(key, processedValue));
                 }
                 else if (processedValues.Count > 1)
                 {
                     foreach (var processedValue in processedValues)
                     {
                         _logger.LogTrace($"compiled '{key}' => {processedValue.Key} => '{processedValue.Value}'");
-                        compiledConfiguration[processedValue.Key] = processedValue.Value;
+                        // push back to stack for one more pass
+                        stack.Push(processedValue);
                     }
                 }
             }
@@ -113,23 +121,22 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             return new Dictionary<string, string> {{key, valueBuilder.ToString()}};
         }
 
-        private async Task<ReferenceResolveResult> ResolveReference(IDictionary<string, string> environment,
-                                                                    ReferenceContext context,
-                                                                    ReferencePart reference)
+        /// <summary>
+        ///     resolve <see cref="ReferenceCommand.Alias"/> and <see cref="ReferenceCommand.Using"/> if possible.
+        ///     this will modify the given context if successful.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="reference"></param>
+        /// <returns></returns>
+        private async Task ResolveAliasCommand(ReferenceContext context, ReferencePart reference)
         {
-            var commands = reference.Commands;
-
-            var usingCommand = commands.ContainsKey(ReferenceCommand.Using)
-                                   ? commands[ReferenceCommand.Using]
+            var usingCommand = reference.Commands.ContainsKey(ReferenceCommand.Using)
+                                   ? reference.Commands[ReferenceCommand.Using]
                                    : null;
 
-            var aliasCommand = commands.ContainsKey(ReferenceCommand.Alias)
-                                   ? commands[ReferenceCommand.Alias]
+            var aliasCommand = reference.Commands.ContainsKey(ReferenceCommand.Alias)
+                                   ? reference.Commands[ReferenceCommand.Alias]
                                    : null;
-
-            var pathCommand = commands.ContainsKey(ReferenceCommand.Path)
-                                  ? commands[ReferenceCommand.Path]
-                                  : null;
 
             // if one or the other, but not both are set
             // log an invalid command, because they have to appear in tandem
@@ -149,6 +156,17 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
                 context.Aliases[aliasCommand] = usingCommand;
             }
             // else {} => both are null, but we don't care
+        }
+
+        private async Task<ReferenceResolveResult> ResolveReference(IDictionary<string, string> environment,
+                                                                    ReferenceContext context,
+                                                                    ReferencePart reference)
+        {
+            await ResolveAliasCommand(context, reference);
+
+            var pathCommand = reference.Commands.ContainsKey(ReferenceCommand.Path)
+                                  ? reference.Commands[ReferenceCommand.Path]
+                                  : null;
 
             if (pathCommand is null)
                 return new ReferenceResolveResult();

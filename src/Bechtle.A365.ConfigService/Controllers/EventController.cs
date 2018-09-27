@@ -34,11 +34,15 @@ namespace Bechtle.A365.ConfigService.Controllers
                 ConfigKeyAction.Set("Endpoints/ConfigService/Port", "80"),
                 ConfigKeyAction.Set("Endpoints/ConfigService/Protocol", "http"),
                 ConfigKeyAction.Set("Endpoints/ConfigService/RootPath", ""),
+                ConfigKeyAction.Set("Endpoints/ConfigService/Uri", 
+                                    "{{using:Endpoints/ConfigService; alias:this}}{{$this/protocol}}://{{$this/address}}:{{$this/port}}{{$this/rootPath}}"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Name", "identity"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Address", "a365identityservice.a365dev.de"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Port", "44333"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Protocol", "https"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/RootPath", ""),
+                ConfigKeyAction.Set("Endpoints/IdentityService/Uri", 
+                                    "{{using:Endpoints/IdentityService; alias:this}}{{$this/protocol}}://{{$this/address}}:{{$this/port}}{{$this/rootPath}}"),
                 ConfigKeyAction.Set("LogLevelOverride", "Debug")
             }));
 
@@ -46,7 +50,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 ConfigKeyAction.Set("ClientConfiguration/log_level_override", "{{LogLevelOverride}}"),
                 ConfigKeyAction.Set("ClientConfiguration/locale", "de"),
-                //ConfigKeyAction.Set("ClientConfiguration/authority", "https://a365identityservice.a365dev.de:44333"),
                 ConfigKeyAction.Set("ClientConfiguration/authority",
                                     "{{using:Endpoints/IdentityService; Alias:identity}}{{$identity/protocol}}://{{$identity/address}}:{{$identity/port}}{{$identity/rootPath}}"),
                 ConfigKeyAction.Set("ClientConfiguration/Endpoints/ConfigService", "{{Endpoints/ConfigService/*}}"),
