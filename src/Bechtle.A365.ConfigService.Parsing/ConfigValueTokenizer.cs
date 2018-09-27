@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Parsing
         private static readonly TextParser<TextSpan> RefValueMatcher = Span.MatchedBy(Span.WhiteSpace
                                                                                           .IgnoreMany()
                                                                                           .Then(c => Character.LetterOrDigit
-                                                                                                              .Or(Character.In('-', '_', '/'))
+                                                                                                              .Or(Character.In('-', '_', '/', '$'))
                                                                                                               .AtLeastOnce())
                                                                                           .Then(c => Span.WhiteSpace.IgnoreMany()));
 
