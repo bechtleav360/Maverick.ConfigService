@@ -3,7 +3,7 @@
     /// <summary>
     ///     Configuration-Structure, filled out with data from <see cref="EnvironmentIdentifier" /> to create a Configuration
     /// </summary>
-    public class StructureIdentifier
+    public class StructureIdentifier : Identifier
     {
         /// <inheritdoc />
         public StructureIdentifier(string name, int version)

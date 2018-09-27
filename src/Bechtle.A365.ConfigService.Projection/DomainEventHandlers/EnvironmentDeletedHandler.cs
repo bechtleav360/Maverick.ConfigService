@@ -15,8 +15,6 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         }
 
         /// <inheritdoc />
-        public async Task HandleDomainEvent(EnvironmentDeleted domainEvent)
-        {
-        }
+        public async Task HandleDomainEvent(EnvironmentDeleted domainEvent) => await _database.DeleteEnvironment(domainEvent.Identifier);
     }
 }

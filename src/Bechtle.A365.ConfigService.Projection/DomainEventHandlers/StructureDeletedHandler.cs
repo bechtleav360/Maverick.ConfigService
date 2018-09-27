@@ -15,8 +15,6 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         }
 
         /// <inheritdoc />
-        public async Task HandleDomainEvent(StructureDeleted domainEvent)
-        {
-        }
+        public async Task HandleDomainEvent(StructureDeleted domainEvent) => await _database.DeleteStructure(domainEvent.Identifier);
     }
 }

@@ -22,9 +22,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result> ApplyChanges(EnvironmentIdentifier identifier, List<ConfigKeyAction> actions)
+        public async Task<Result> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions)
         {
-            var environment = await _context.Environments.FirstOrDefaultAsync(env => env == identifier);
+            var environment = await GetEnvironmentInternal(identifier);
 
             if (environment is null)
             {
@@ -33,7 +33,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
 
             foreach (var action in actions)
-            {
                 switch (action.Type)
                 {
                     case ConfigKeyActionType.Set:
@@ -41,19 +40,15 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                         var existingKey = environment.Keys.FirstOrDefault(k => k.Key == action.Key);
 
                         if (existingKey is null)
-                        {
                             environment.Keys.Add(new EnvironmentKey
                             {
                                 Id = Guid.NewGuid(),
                                 EnvironmentId = environment.Id,
                                 Key = action.Key,
-                                Value = action.Value,
+                                Value = action.Value
                             });
-                        }
                         else
-                        {
                             existingKey.Value = action.Value;
-                        }
 
                         break;
                     }
@@ -75,7 +70,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                         _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
                         return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
                 }
-            }
 
             try
             {
@@ -95,7 +89,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> CreateEnvironment(EnvironmentIdentifier identifier, bool defaultEnvironment)
         {
-            if (await _context.Environments.AnyAsync(env => env == identifier))
+            if (await GetEnvironmentInternal(identifier) != null)
             {
                 _logger.LogError($"environment with id {identifier} already exists");
                 return Result.Error($"environment with id {identifier} already exists", ErrorCode.EnvironmentAlreadyExists);
@@ -143,7 +137,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> CreateStructure(StructureIdentifier identifier)
         {
-            if (await _context.Structures.AnyAsync(str => str == identifier))
+            if (await GetStructureInternal(identifier) != null)
             {
                 _logger.LogError($"structure with id {identifier} already exists");
                 return Result.Error($"structure with id {identifier} already exists", ErrorCode.StructureAlreadyExists);
@@ -173,7 +167,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> DeleteEnvironment(EnvironmentIdentifier identifier)
         {
-            var foundEnvironment = await _context.Environments.FirstOrDefaultAsync(env => env == identifier);
+            var foundEnvironment = await GetEnvironmentInternal(identifier);
 
             if (foundEnvironment is null)
                 return Result.Success();
@@ -196,7 +190,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> DeleteStructure(StructureIdentifier identifier)
         {
-            var foundStructure = await _context.Structures.FirstOrDefaultAsync(str => str == identifier);
+            var foundStructure = await GetStructureInternal(identifier);
 
             if (foundStructure is null)
                 return Result.Success();
@@ -217,13 +211,125 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
+        public async Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironment(EnvironmentIdentifier identifier)
+        {
+            var environment = await GetEnvironmentInternal(identifier);
+
+            if (environment == null)
+            {
+                _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
+                return Result<Snapshot<EnvironmentIdentifier>>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
+            }
+
+            var environmentData = environment.Keys
+                                             .ToDictionary(data => data.Key,
+                                                           data => data.Value);
+
+            var defaultEnvironment = await _context.Environments.FirstOrDefaultAsync(env => string.Equals(env.Category,
+                                                                                                          identifier.Category,
+                                                                                                          StringComparison.OrdinalIgnoreCase)
+                                                                                            && env.DefaultEnvironment);
+
+            // early exit for when there is no default-environment
+            if (defaultEnvironment == null)
+            {
+                _logger.LogInformation($"no default-environment found for {identifier}, proceeding without default-environment");
+                return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
+                                                                          environment.Version,
+                                                                          environmentData));
+            }
+
+            // gather default-environment data to a dictionary, and override its
+            // keys with those that are present in the actual environment
+            var completeData = defaultEnvironment.Keys
+                                                 .ToDictionary(data => data.Key,
+                                                               data => data.Value);
+
+            foreach (var kvp in environmentData)
+                completeData[kvp.Key] = kvp.Value;
+
+            return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
+                                                                      environment.Version,
+                                                                      completeData));
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<Snapshot<StructureIdentifier>>> GetStructure(StructureIdentifier identifier)
+        {
+            var structure = await GetStructureInternal(identifier);
+
+            if (structure == null)
+            {
+                _logger.LogError($"no {nameof(Structure)} with id {identifier} found");
+                return Result<Snapshot<StructureIdentifier>>.Error($"no {nameof(Structure)} with id {identifier} found", ErrorCode.NotFound);
+            }
+
+            return Result.Success(new Snapshot<StructureIdentifier>(identifier,
+                                                                    structure.Version,
+                                                                    structure.Keys
+                                                                             .ToDictionary(data => data.Key,
+                                                                                           data => data.Value)));
+        }
+
+        /// <inheritdoc />
+        public async Task<Result> SaveConfiguration(Snapshot<EnvironmentIdentifier> environment,
+                                                    Snapshot<StructureIdentifier> structure,
+                                                    IDictionary<string, string> configuration)
+        {
+            var foundEnvironment = await GetEnvironmentInternal(environment.Identifier);
+
+            // version is already included in structure.Identifier, as opposed to environment.Identifier
+            var foundStructure = await GetStructureInternal(structure.Identifier);
+
+            var compiledConfiguration = new Configuration
+            {
+                Id = Guid.NewGuid(),
+                EnvironmentId = foundEnvironment.Id,
+                EnvironmentVersion = foundEnvironment.Version,
+                StructureId = foundStructure.Id,
+                StructureVersion = foundStructure.Version,
+                Keys = configuration.Select(kvp => new ConfigurationKey
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        Key = kvp.Key,
+                                        Value = kvp.Value
+                                    })
+                                    .ToList()
+            };
+
+            await _context.Configurations.AddAsync(compiledConfiguration);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not save compiled configuration: {e}");
+                return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
+            }
+        }
+
+        /// <inheritdoc />
         public void Dispose()
         {
             _context?.Dispose();
         }
 
+        private async Task<Environment> GetEnvironmentInternal(EnvironmentIdentifier identifier)
+            => await _context.Environments.FirstOrDefaultAsync(env => env.Category == identifier.Category &&
+                                                                      env.Name == identifier.Name);
+
+        private async Task<Structure> GetStructureInternal(StructureIdentifier identifier)
+            => await _context.Structures.FirstOrDefaultAsync(str => str.Name == identifier.Name &&
+                                                                    str.Version == identifier.Version);
+
         private class Context : DbContext
         {
+            public DbSet<Configuration> Configurations { get; set; }
+
             public DbSet<Environment> Environments { get; set; }
 
             public DbSet<Structure> Structures { get; set; }
@@ -245,10 +351,38 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 modelBuilder.Entity<EnvironmentKey>();
                 modelBuilder.Entity<Structure>();
                 modelBuilder.Entity<StructureKey>();
+                modelBuilder.Entity<Configuration>();
+                modelBuilder.Entity<ConfigurationKey>();
             }
         }
 
-        private class Environment : IEquatable<Environment>
+        private class Configuration
+        {
+            public Guid EnvironmentId { get; set; }
+
+            public int EnvironmentVersion { get; set; }
+
+            public Guid Id { get; set; }
+
+            public List<ConfigurationKey> Keys { get; set; }
+
+            public Guid StructureId { get; set; }
+
+            public int StructureVersion { get; set; }
+        }
+
+        private class ConfigurationKey
+        {
+            public Guid ConfigurationId { get; set; }
+
+            public Guid Id { get; set; }
+
+            public string Key { get; set; }
+
+            public string Value { get; set; }
+        }
+
+        private class Environment
         {
             public string Category { get; set; }
 
@@ -261,51 +395,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             public string Name { get; set; }
 
             public int Version { get; set; }
-
-            /// <inheritdoc />
-            public bool Equals(Environment other)
-            {
-                if (ReferenceEquals(null, other)) return false;
-                if (ReferenceEquals(this, other)) return true;
-                return Id.Equals(other.Id) &&
-                       Version == other.Version &&
-                       string.Equals(Category, other.Category) &&
-                       string.Equals(Name, other.Name) &&
-                       Equals(Keys, other.Keys);
-            }
-
-            // if either object is null => false
-            // compare Category and Name for equality - Ordinal Ignoring case-sensitivity
-            public static bool operator ==(Environment environment, EnvironmentIdentifier identifier)
-                => !(environment is null) &&
-                   !(identifier is null) &&
-                   environment.Category.Equals(identifier.Category, StringComparison.OrdinalIgnoreCase) &&
-                   environment.Name.Equals(identifier.Name, StringComparison.OrdinalIgnoreCase);
-
-            public static bool operator !=(Environment environment, EnvironmentIdentifier identifier) => !(environment == identifier);
-
-            /// <inheritdoc />
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != GetType()) return false;
-                return Equals((Environment) obj);
-            }
-
-            /// <inheritdoc />
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    var hashCode = Id.GetHashCode();
-                    hashCode = (hashCode * 397) ^ Version;
-                    hashCode = (hashCode * 397) ^ (Category != null ? Category.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (Name != null ? Name.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (Keys != null ? Keys.GetHashCode() : 0);
-                    return hashCode;
-                }
-            }
         }
 
         private class EnvironmentKey
@@ -319,7 +408,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             public string Value { get; set; }
         }
 
-        private class Structure : IEquatable<Structure>
+        private class Structure
         {
             public Guid Id { get; set; }
 
@@ -328,47 +417,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             public string Name { get; set; }
 
             public int Version { get; set; }
-
-            /// <inheritdoc />
-            public bool Equals(Structure other)
-            {
-                if (ReferenceEquals(null, other)) return false;
-                if (ReferenceEquals(this, other)) return true;
-                return Id.Equals(other.Id) &&
-                       Equals(Keys, other.Keys) &&
-                       string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) &&
-                       Version == other.Version;
-            }
-
-            public static bool operator ==(Structure structure, StructureIdentifier identifier)
-                => !(structure is null) &&
-                   !(identifier is null) &&
-                   structure.Version == identifier.Version &&
-                   structure.Name.Equals(identifier.Name, StringComparison.OrdinalIgnoreCase);
-
-            public static bool operator !=(Structure structure, StructureIdentifier identifier) => !(structure == identifier);
-
-            /// <inheritdoc />
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != GetType()) return false;
-                return Equals((Structure) obj);
-            }
-
-            /// <inheritdoc />
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    var hashCode = Id.GetHashCode();
-                    hashCode = (hashCode * 397) ^ (Keys != null ? Keys.GetHashCode() : 0);
-                    hashCode = (hashCode * 397) ^ (Name != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(Name) : 0);
-                    hashCode = (hashCode * 397) ^ Version;
-                    return hashCode;
-                }
-            }
         }
 
         private class StructureKey

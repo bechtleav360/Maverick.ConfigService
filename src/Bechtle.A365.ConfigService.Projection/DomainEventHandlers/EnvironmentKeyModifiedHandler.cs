@@ -15,8 +15,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         }
 
         /// <inheritdoc />
-        public async Task HandleDomainEvent(EnvironmentKeysModified domainEvent)
-        {
-        }
+        public async Task HandleDomainEvent(EnvironmentKeysModified domainEvent) => await _database.ApplyChanges(domainEvent.Identifier,
+                                                                                                                 domainEvent.ModifiedKeys);
     }
 }
