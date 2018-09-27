@@ -4,7 +4,7 @@ using Bechtle.A365.ConfigService.Projection.DataStorage;
 
 namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 {
-    public class EnvironmentKeyModifiedHandler : IDomainEventHandler<EnvironmentKeyModified>
+    public class EnvironmentKeyModifiedHandler : IDomainEventHandler<EnvironmentKeysModified>
     {
         private readonly IConfigurationDatabase _database;
 
@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         }
 
         /// <inheritdoc />
-        public async Task HandleDomainEvent(EnvironmentKeyModified domainEvent)
+        public async Task HandleDomainEvent(EnvironmentKeysModified domainEvent)
         {
         }
     }

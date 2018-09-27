@@ -6,6 +6,18 @@
     /// </summary>
     public class ConfigurationBuilt : DomainEvent
     {
+        /// <inheritdoc />
+        public ConfigurationBuilt(EnvironmentIdentifier environment, StructureIdentifier structure)
+        {
+            Environment = environment;
+            Structure = structure;
+        }
+
+        /// <inheritdoc />
+        public ConfigurationBuilt()
+        {
+        }
+
         /// <inheritdoc cref="EnvironmentIdentifier" />
         public EnvironmentIdentifier Environment { get; set; }
 

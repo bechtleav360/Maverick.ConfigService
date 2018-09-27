@@ -6,6 +6,17 @@
     /// </summary>
     public class StructureCreated : DomainEvent
     {
+        /// <inheritdoc />
+        public StructureCreated(StructureIdentifier identifier)
+        {
+            Identifier = identifier;
+        }
+
+        /// <inheritdoc />
+        public StructureCreated()
+        {
+        }
+
         /// <inheritdoc cref="StructureIdentifier" />
         public StructureIdentifier Identifier { get; set; }
     }

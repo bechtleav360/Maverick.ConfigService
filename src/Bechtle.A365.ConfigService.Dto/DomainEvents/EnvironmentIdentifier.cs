@@ -5,6 +5,18 @@
     /// </summary>
     public class EnvironmentIdentifier
     {
+        /// <inheritdoc />
+        public EnvironmentIdentifier(string category, string name)
+        {
+            Category = category;
+            Name = name;
+        }
+
+        /// <inheritdoc />
+        public EnvironmentIdentifier()
+        {
+        }
+
         // @TODO: maybe use a better name for this? Tenant / Folder / etc?
         /// <summary>
         ///     Category for a group of Environments, think Folder / Tenant and the like

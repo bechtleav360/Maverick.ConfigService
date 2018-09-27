@@ -6,6 +6,17 @@
     /// </summary>
     public class EnvironmentDeleted : DomainEvent
     {
+        /// <inheritdoc />
+        public EnvironmentDeleted(EnvironmentIdentifier identifier)
+        {
+            Identifier = identifier;
+        }
+
+        /// <inheritdoc />
+        public EnvironmentDeleted()
+        {
+        }
+
         /// <inheritdoc cref="EnvironmentIdentifier" />
         public EnvironmentIdentifier Identifier { get; set; }
     }

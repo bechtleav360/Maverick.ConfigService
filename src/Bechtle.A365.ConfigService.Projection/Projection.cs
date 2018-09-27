@@ -113,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Projection
                     await HandleDomainEvent(environmentDeleted);
                     break;
 
-                case EnvironmentKeyModified environmentKeyModified:
+                case EnvironmentKeysModified environmentKeyModified:
                     await HandleDomainEvent(environmentKeyModified);
                     break;
 

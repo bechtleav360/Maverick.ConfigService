@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Projection
                     // IMPORTANT: this needs to be updated once new events are added
                     .AddSingleton<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
                     .AddSingleton<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
-                    .AddSingleton<IDomainEventHandler<EnvironmentKeyModified>, EnvironmentKeyModifiedHandler>()
+                    .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeyModifiedHandler>()
                     .AddSingleton<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
                     .AddSingleton<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
                     .AddSingleton<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();

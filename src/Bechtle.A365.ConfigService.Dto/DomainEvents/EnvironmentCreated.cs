@@ -6,6 +6,17 @@
     /// </summary>
     public class EnvironmentCreated : DomainEvent
     {
+        /// <inheritdoc />
+        public EnvironmentCreated(EnvironmentIdentifier identifier)
+        {
+            Identifier = identifier;
+        }
+
+        /// <inheritdoc />
+        public EnvironmentCreated()
+        {
+        }
+
         /// <inheritdoc cref="EnvironmentIdentifier" />
         public EnvironmentIdentifier Identifier { get; set; }
     }

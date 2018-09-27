@@ -5,6 +5,18 @@
     /// </summary>
     public class StructureIdentifier
     {
+        /// <inheritdoc />
+        public StructureIdentifier(string name, int version)
+        {
+            Name = name;
+            Version = version;
+        }
+
+        /// <inheritdoc />
+        public StructureIdentifier()
+        {
+        }
+
         /// <summary>
         ///     name of this structure, indicates uses the Configuration built from this and <see cref="EnvironmentIdentifier" />
         /// </summary>

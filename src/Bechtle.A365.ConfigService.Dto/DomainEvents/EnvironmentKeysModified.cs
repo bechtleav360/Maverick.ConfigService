@@ -4,8 +4,20 @@
     /// <summary>
     ///     a number of keys within an Environment have been changed
     /// </summary>
-    public class EnvironmentKeyModified : DomainEvent
+    public class EnvironmentKeysModified : DomainEvent
     {
+        /// <inheritdoc />
+        public EnvironmentKeysModified(EnvironmentIdentifier identifier, ConfigKeyAction[] modifiedKeys)
+        {
+            Identifier = identifier;
+            ModifiedKeys = modifiedKeys;
+        }
+
+        /// <inheritdoc />
+        public EnvironmentKeysModified()
+        {
+        }
+
         /// <inheritdoc cref="EnvironmentIdentifier" />
         public EnvironmentIdentifier Identifier { get; set; }
 
