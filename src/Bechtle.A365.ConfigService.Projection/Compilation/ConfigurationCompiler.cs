@@ -1,15 +1,209 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Parsing;
+using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.Compilation
 {
     public class ConfigurationCompiler : IConfigurationCompiler
     {
+        private readonly ILogger<ConfigurationCompiler> _logger;
+
+        public ConfigurationCompiler(ILogger<ConfigurationCompiler> logger)
+        {
+            _logger = logger;
+        }
+
         /// <inheritdoc />
-        public Task<IDictionary<string, string>> Compile(IDictionary<string, string> environment,
-                                                         IDictionary<string, string> structure,
-                                                         IConfigurationParser parser)
-            => Task.FromResult((IDictionary<string, string>) new Dictionary<string, string>());
+        public async Task<IDictionary<string, string>> Compile(IDictionary<string, string> environment,
+                                                               IDictionary<string, string> structure,
+                                                               IConfigurationParser parser)
+        {
+            IDictionary<string, string> compiledConfiguration = new Dictionary<string, string>();
+
+            foreach (var kvp in structure)
+            {
+                var key = kvp.Key;
+                var value = kvp.Value;
+
+                _logger.LogDebug($"compiling '{key}' => '{value}'");
+
+                var processedValue = await ResolveReferences(environment, value, parser);
+
+                _logger.LogTrace($"compiled '{key}' => '{processedValue}'");
+
+                compiledConfiguration[key] = processedValue;
+            }
+
+            return compiledConfiguration;
+        }
+
+        private async Task<string> ResolveReferences(IDictionary<string, string> environment, string value, IConfigurationParser parser)
+        {
+            var context = new ReferenceContext();
+            var parseResult = parser.Parse(value);
+
+            // if there are no references to be found, just return the given value without further ado
+            if (!parseResult.OfType<ReferencePart>().Any())
+            {
+                _logger.LogDebug($"no references found in '{value}', nothing to resolve");
+                return value;
+            }
+
+            // initialize StringBuilder with starting size of the input,
+            // this may reduce additional increases in size while assembling the parts again
+            var valueBuilder = new StringBuilder(value.Length);
+
+            foreach (var part in parseResult)
+            {
+                switch (part)
+                {
+                    case ReferencePart referencePart:
+                        var resolvedReference = await ResolveReference(environment, context, referencePart);
+
+                        // if the reference only modifies the context, we don't have to append anything to the result
+                        if (!resolvedReference.HasValue)
+                            continue;
+
+                        if (resolvedReference.IsSimple)
+                            valueBuilder.Append(resolvedReference.SimpleValue);
+
+                        else if (resolvedReference.IsComplex)
+                            ; //@TODO: implement complex reference-result - how? ¯\_(ツ)_/¯
+                        else
+                            _logger.LogError($"unknown result received from {nameof(ResolveReference)}");
+
+                        break;
+
+                    case ValuePart valuePart:
+                        valueBuilder.Append(valuePart.Text);
+                        break;
+
+                    default:
+                        _logger.LogCritical($"handling of '{part.GetType().Name}' is not implemented");
+                        return value;
+                }
+            }
+
+            return valueBuilder.ToString();
+        }
+
+        private async Task<ReferenceResolveResult> ResolveReference(IDictionary<string, string> environment,
+                                                                    ReferenceContext context,
+                                                                    ReferencePart reference)
+        {
+            var commands = reference.Commands;
+
+            var usingCommand = commands.ContainsKey(ReferenceCommand.Using)
+                                   ? commands[ReferenceCommand.Using]
+                                   : null;
+
+            var aliasCommand = commands.ContainsKey(ReferenceCommand.Alias)
+                                   ? commands[ReferenceCommand.Alias]
+                                   : null;
+
+            var pathCommand = commands.ContainsKey(ReferenceCommand.Path)
+                                  ? commands[ReferenceCommand.Path]
+                                  : null;
+
+            // if one or the other, but not both are set
+            // log an invalid command, because they have to appear in tandem
+            if (usingCommand is null && !(aliasCommand is null) ||
+                !(usingCommand is null) && aliasCommand is null)
+            {
+                _logger.LogError($"commands {ReferenceCommand.Using:G} and {ReferenceCommand.Alias:G} " +
+                                 "have to appear in tandem, they can't appear alone");
+            }
+            // if neither are null
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            // go home ReSharper, you're drunk. I tested this manually and it works as intended
+            else if (!(usingCommand is null) && !(aliasCommand is null))
+            {
+                // add the alias to the context
+                _logger.LogTrace($"adding alias '{aliasCommand}' => '{usingCommand}' to the context");
+                context.Aliases[aliasCommand] = usingCommand;
+            }
+            // else {} => both are null, but we don't care
+
+            if (pathCommand is null)
+                return new ReferenceResolveResult();
+
+            // if the path starts with a "$", it's likely using an alias
+            if (pathCommand.StartsWith("$"))
+            {
+                var split = pathCommand.Split('/', 2);
+                var alias = split[0].TrimStart('$');
+                var rest = split[1];
+
+                if (context.Aliases.ContainsKey(alias))
+                {
+                    _logger.LogDebug($"de-referencing alias '{alias}'");
+                    pathCommand = $"{context.Aliases[alias]}/{rest}".Replace("//", "/");
+                }
+                else
+                {
+                    _logger.LogWarning($"could not de-reference alias '{alias}'");
+                }
+            }
+
+            var result = environment.Where(kvp => kvp.Key.StartsWith(pathCommand, StringComparison.OrdinalIgnoreCase))
+                                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            // if we have only one hit, return a 'simple' resolved value
+            if (result.Keys.Count == 1)
+                return new ReferenceResolveResult(result[result.Keys.First()]);
+
+            // if we have multiple hit, return a 'complex' resolved value
+            return new ReferenceResolveResult(result);
+        }
+
+        private class ReferenceContext
+        {
+            public Dictionary<string, string> Aliases { get; } = new Dictionary<string, string>();
+        }
+
+        // ReSharper disable once CommentTypo - let me make my joke, ReSharper
+        // ARRR
+        private class ReferenceResolveResult
+        {
+            public string SimpleValue { get; }
+
+            public IReadOnlyDictionary<string, string> ExpandedValue { get; }
+
+            public bool HasValue => IsSimple || IsComplex;
+
+            public bool IsSimple => SimpleValue != null;
+
+            public bool IsComplex => ExpandedValue != null;
+
+            /// <summary>
+            ///     create a result that does not carry any values, and only modifies the context
+            /// </summary>
+            public ReferenceResolveResult()
+            {
+            }
+
+            /// <summary>
+            ///     create a result that carries a simple value with it
+            /// </summary>
+            /// <param name="value"></param>
+            public ReferenceResolveResult(string value)
+            {
+                SimpleValue = value ?? throw new ArgumentNullException(nameof(value));
+            }
+
+            /// <summary>
+            ///     create a result that carries a complex object-structure with it
+            /// </summary>
+            /// <param name="expandedValue"></param>
+            public ReferenceResolveResult(IDictionary<string, string> expandedValue)
+            {
+                ExpandedValue = new ReadOnlyDictionary<string, string>(expandedValue ?? throw new ArgumentNullException(nameof(expandedValue)));
+            }
+        }
     }
 }
