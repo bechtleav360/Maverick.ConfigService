@@ -3,7 +3,7 @@ using EventStore.ClientAPI;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
-    public interface IEventResolver
+    public interface IEventDeserializer
     {
         DomainEvent ToDomainEvent(ResolvedEvent resolvedEvent);
     }

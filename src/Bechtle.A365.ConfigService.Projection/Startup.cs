@@ -40,7 +40,7 @@ namespace Bechtle.A365.ConfigService.Projection
                                                            config.ConnectionName);
                     })
                     .AddSingleton<IProjection, Projection>()
-                    .AddSingleton<IEventResolver, EventResolver>()
+                    .AddSingleton<IEventDeserializer, EventDeserializer>()
                     .AddSingleton<IConfigurationParser, ConfigurationParser>()
                     .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
                     .AddSingleton<IConfigurationDatabase, DebugConfigurationDatabase>()

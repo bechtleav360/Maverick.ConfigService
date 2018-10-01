@@ -8,13 +8,13 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
-    public class EventResolver : IEventResolver
+    public class EventDeserializer : IEventDeserializer
     {
         private ILogger Logger { get; }
         private IServiceProvider Provider { get; }
 
         /// <inheritdoc />
-        public EventResolver(IServiceProvider provider, ILogger<EventResolver> logger)
+        public EventDeserializer(IServiceProvider provider, ILogger<EventDeserializer> logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(Logger));
             Provider = provider;

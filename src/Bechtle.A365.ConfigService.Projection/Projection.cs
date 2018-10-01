@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Projection
         private IEventStoreConnection Store { get; }
         private IServiceProvider Provider { get; }
         private IConfigurationCompiler Compiler { get; }
-        private IEventResolver EventResolver { get; }
+        private IEventDeserializer EventDeserializer { get; }
         private IConfigurationDatabase Database { get; }
 
         // so many injected things, better not get addicted
@@ -28,7 +28,7 @@ namespace Bechtle.A365.ConfigService.Projection
                           IEventStoreConnection store,
                           IServiceProvider provider,
                           IConfigurationCompiler compiler,
-                          IEventResolver eventResolver)
+                          IEventDeserializer eventDeserializer)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -39,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Projection
             Store = store ?? throw new ArgumentNullException(nameof(store));
             Provider = provider ?? throw new ArgumentNullException(nameof(provider));
             Compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
-            EventResolver = eventResolver ?? throw new ArgumentNullException(nameof(eventResolver));
+            EventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
         }
 
         /// <inheritdoc />
@@ -82,7 +82,7 @@ namespace Bechtle.A365.ConfigService.Projection
                                   $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
                                   $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
 
-            var domainEvent = EventResolver.ToDomainEvent(resolvedEvent);
+            var domainEvent = EventDeserializer.ToDomainEvent(resolvedEvent);
 
             if (domainEvent == null)
                 return;
