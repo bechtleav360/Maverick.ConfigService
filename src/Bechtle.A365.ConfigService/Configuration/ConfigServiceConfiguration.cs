@@ -3,6 +3,8 @@
     public class ConfigServiceConfiguration
     {
         public EventStoreConnectionConfiguration EventStoreConnection { get; set; }
+
+        public string LoggingConfiguration { get; set; }
     }
 
     /// <summary>

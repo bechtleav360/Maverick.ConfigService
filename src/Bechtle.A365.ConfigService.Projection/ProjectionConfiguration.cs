@@ -11,5 +11,7 @@
         public int ReadBatchSize { get; set; }
 
         public string SubscriptionName { get; set; }
+
+        public string LoggingConfiguration { get; set; }
     }
 }

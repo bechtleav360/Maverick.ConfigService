@@ -5,6 +5,7 @@ using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
+using Bechtle.A365.Logging.NLog.Extension;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Projection
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; }
+        private IConfiguration Configuration { get; }
 
         public Startup(IConfiguration configuration)
         {
@@ -23,7 +24,14 @@ namespace Bechtle.A365.ConfigService.Projection
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton(provider => new LoggerFactory().AddConsole(LogLevel.Trace))
+            services.AddSingleton(provider =>
+                    {
+                        ILoggerFactory factory = new LoggerFactory();
+                        factory.AddA365NlogProviderWithConfiguration(provider.GetService<ProjectionConfiguration>()
+                                                                             .LoggingConfiguration);
+
+                        return factory;
+                    })
                     .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
                     .AddSingleton(Configuration)
                     .AddSingleton(provider => provider.GetService<IConfiguration>()
