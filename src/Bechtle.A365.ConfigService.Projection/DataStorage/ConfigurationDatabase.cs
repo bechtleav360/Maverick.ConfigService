@@ -4,21 +4,22 @@ using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Dto;
 using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Projection.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
-    public class DebugConfigurationDatabase : IConfigurationDatabase, IDisposable
+    public class ConfigurationDatabase : IConfigurationDatabase
     {
-        private readonly Context _context;
-        private readonly ILogger<DebugConfigurationDatabase> _logger;
+        private readonly ProjectionStorageConfiguration _config;
+        private readonly ILogger<ConfigurationDatabase> _logger;
 
-        public DebugConfigurationDatabase(ILogger<DebugConfigurationDatabase> logger)
+        public ConfigurationDatabase(ILogger<ConfigurationDatabase> logger,
+                                          ProjectionStorageConfiguration config)
         {
             _logger = logger;
-            _context = new Context();
-            _context.Database.EnsureCreated();
+            _config = config;
         }
 
         /// <inheritdoc />
@@ -73,8 +74,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             try
             {
-                await _context.SaveChangesAsync();
-                return Result.Success();
+                using (var context = OpenProjectionStore())
+                {
+                    await context.SaveChangesAsync();
+                    return Result.Success();
+                }
             }
             catch (DbUpdateException e)
             {
@@ -95,42 +99,45 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 return Result.Error($"environment with id {identifier} already exists", ErrorCode.EnvironmentAlreadyExists);
             }
 
-            // additional check to make sure there is only ever one default-environment per category
-            if (defaultEnvironment)
+            using (var context = OpenProjectionStore())
             {
-                var defaultEnvironments = _context.Environments.Count(env => string.Equals(env.Category,
-                                                                                           identifier.Category,
-                                                                                           StringComparison.OrdinalIgnoreCase)
-                                                                             && env.DefaultEnvironment);
-
-                if (defaultEnvironments > 0)
+                // additional check to make sure there is only ever one default-environment per category
+                if (defaultEnvironment)
                 {
-                    _logger.LogError($"can not create another default-environment in category '{identifier.Category}'");
-                    return Result.Error($"can not create another default-environment in category '{identifier.Category}'",
-                                        ErrorCode.DefaultEnvironmentAlreadyExists);
+                    var defaultEnvironments = context.Environments.Count(env => string.Equals(env.Category,
+                                                                                              identifier.Category,
+                                                                                              StringComparison.OrdinalIgnoreCase)
+                                                                                && env.DefaultEnvironment);
+
+                    if (defaultEnvironments > 0)
+                    {
+                        _logger.LogError($"can not create another default-environment in category '{identifier.Category}'");
+                        return Result.Error($"can not create another default-environment in category '{identifier.Category}'",
+                                            ErrorCode.DefaultEnvironmentAlreadyExists);
+                    }
                 }
-            }
 
-            await _context.Environments.AddAsync(new Environment
-            {
-                Id = Guid.NewGuid(),
-                Name = identifier.Name,
-                Category = identifier.Category,
-                Version = 1,
-                DefaultEnvironment = defaultEnvironment,
-                Keys = new List<EnvironmentKey>()
-            });
+                await context.Environments.AddAsync(new Environment
+                {
+                    Id = Guid.NewGuid(),
+                    Name = identifier.Name,
+                    Category = identifier.Category,
+                    Version = 1,
+                    DefaultEnvironment = defaultEnvironment,
+                    Keys = new List<EnvironmentKey>()
+                });
 
-            try
-            {
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await context.SaveChangesAsync();
 
-                return Result.Success();
-            }
-            catch (DbUpdateException e)
-            {
-                _logger.LogError($"could not save new Environment {identifier} to database: {e}");
-                return Result.Error($"could not save new Environment {identifier} to database: {e}", ErrorCode.DbUpdateError);
+                    return Result.Success();
+                }
+                catch (DbUpdateException e)
+                {
+                    _logger.LogError($"could not save new Environment {identifier} to database: {e}");
+                    return Result.Error($"could not save new Environment {identifier} to database: {e}", ErrorCode.DbUpdateError);
+                }
             }
         }
 
@@ -143,31 +150,34 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 return Result.Error($"structure with id {identifier} already exists", ErrorCode.StructureAlreadyExists);
             }
 
-            await _context.Structures.AddAsync(new Structure
+            using (var context = OpenProjectionStore())
             {
-                Id = Guid.NewGuid(),
-                Name = identifier.Name,
-                Version = identifier.Version,
-                Keys = actions.Where(action => action.Type == ConfigKeyActionType.Set)
-                              .Select(action => new StructureKey
-                              {
-                                  Id = Guid.NewGuid(),
-                                  Key = action.Key,
-                                  Value = action.Value
-                              })
-                              .ToList()
-            });
+                await context.Structures.AddAsync(new Structure
+                {
+                    Id = Guid.NewGuid(),
+                    Name = identifier.Name,
+                    Version = identifier.Version,
+                    Keys = actions.Where(action => action.Type == ConfigKeyActionType.Set)
+                                  .Select(action => new StructureKey
+                                  {
+                                      Id = Guid.NewGuid(),
+                                      Key = action.Key,
+                                      Value = action.Value
+                                  })
+                                  .ToList()
+                });
 
-            try
-            {
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await context.SaveChangesAsync();
 
-                return Result.Success();
-            }
-            catch (DbUpdateException e)
-            {
-                _logger.LogError($"could not save new Structure {identifier} to database: {e}");
-                return Result.Error($"could not save new Structure {identifier} to database: {e}", ErrorCode.DbUpdateError);
+                    return Result.Success();
+                }
+                catch (DbUpdateException e)
+                {
+                    _logger.LogError($"could not save new Structure {identifier} to database: {e}");
+                    return Result.Error($"could not save new Structure {identifier} to database: {e}", ErrorCode.DbUpdateError);
+                }
             }
         }
 
@@ -179,18 +189,21 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             if (foundEnvironment is null)
                 return Result.Success();
 
-            _context.Environments.Remove(foundEnvironment);
-
-            try
+            using (var context = OpenProjectionStore())
             {
-                await _context.SaveChangesAsync();
+                context.Environments.Remove(foundEnvironment);
 
-                return Result.Success();
-            }
-            catch (DbUpdateException e)
-            {
-                _logger.LogError($"could not delete environment {identifier} from database: {e}");
-                return Result.Error($"could not delete environment {identifier} from database: {e}", ErrorCode.DbUpdateError);
+                try
+                {
+                    await context.SaveChangesAsync();
+
+                    return Result.Success();
+                }
+                catch (DbUpdateException e)
+                {
+                    _logger.LogError($"could not delete environment {identifier} from database: {e}");
+                    return Result.Error($"could not delete environment {identifier} from database: {e}", ErrorCode.DbUpdateError);
+                }
             }
         }
 
@@ -202,18 +215,21 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             if (foundStructure is null)
                 return Result.Success();
 
-            _context.Structures.Remove(foundStructure);
-
-            try
+            using (var context = OpenProjectionStore())
             {
-                await _context.SaveChangesAsync();
+                context.Structures.Remove(foundStructure);
 
-                return Result.Success();
-            }
-            catch (DbUpdateException e)
-            {
-                _logger.LogError($"could not delete Structure {identifier} from database: {e}");
-                return Result.Error($"could not delete Structure {identifier} from database: {e}", ErrorCode.DbUpdateError);
+                try
+                {
+                    await context.SaveChangesAsync();
+
+                    return Result.Success();
+                }
+                catch (DbUpdateException e)
+                {
+                    _logger.LogError($"could not delete Structure {identifier} from database: {e}");
+                    return Result.Error($"could not delete Structure {identifier} from database: {e}", ErrorCode.DbUpdateError);
+                }
             }
         }
 
@@ -232,32 +248,35 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                              .ToDictionary(data => data.Key,
                                                            data => data.Value);
 
-            var defaultEnvironment = await _context.Environments.FirstOrDefaultAsync(env => string.Equals(env.Category,
-                                                                                                          identifier.Category,
-                                                                                                          StringComparison.OrdinalIgnoreCase)
-                                                                                            && env.DefaultEnvironment);
-
-            // early exit for when there is no default-environment
-            if (defaultEnvironment == null)
+            using (var context = OpenProjectionStore())
             {
-                _logger.LogInformation($"no default-environment found for {identifier}, proceeding without default-environment");
+                var defaultEnvironment = await context.Environments.FirstOrDefaultAsync(env => string.Equals(env.Category,
+                                                                                                             identifier.Category,
+                                                                                                             StringComparison.OrdinalIgnoreCase)
+                                                                                               && env.DefaultEnvironment);
+
+                // early exit for when there is no default-environment
+                if (defaultEnvironment == null)
+                {
+                    _logger.LogInformation($"no default-environment found for {identifier}, proceeding without default-environment");
+                    return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
+                                                                              environment.Version,
+                                                                              environmentData));
+                }
+
+                // gather default-environment data to a dictionary, and override its
+                // keys with those that are present in the actual environment
+                var completeData = defaultEnvironment.Keys
+                                                     .ToDictionary(data => data.Key,
+                                                                   data => data.Value);
+
+                foreach (var kvp in environmentData)
+                    completeData[kvp.Key] = kvp.Value;
+
                 return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
                                                                           environment.Version,
-                                                                          environmentData));
+                                                                          completeData));
             }
-
-            // gather default-environment data to a dictionary, and override its
-            // keys with those that are present in the actual environment
-            var completeData = defaultEnvironment.Keys
-                                                 .ToDictionary(data => data.Key,
-                                                               data => data.Value);
-
-            foreach (var kvp in environmentData)
-                completeData[kvp.Key] = kvp.Value;
-
-            return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
-                                                                      environment.Version,
-                                                                      completeData));
         }
 
         /// <inheritdoc />
@@ -304,37 +323,60 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                     .ToList()
             };
 
-            await _context.Configurations.AddAsync(compiledConfiguration);
-
-            try
+            using (var context = OpenProjectionStore())
             {
-                await _context.SaveChangesAsync();
+                await context.Configurations.AddAsync(compiledConfiguration);
 
-                return Result.Success();
-            }
-            catch (DbUpdateException e)
-            {
-                _logger.LogError($"could not save compiled configuration: {e}");
-                return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
-            }
-        }
+                try
+                {
+                    await context.SaveChangesAsync();
 
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            _context?.Dispose();
+                    return Result.Success();
+                }
+                catch (DbUpdateException e)
+                {
+                    _logger.LogError($"could not save compiled configuration: {e}");
+                    return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
+                }
+            }
         }
 
         private async Task<Environment> GetEnvironmentInternal(EnvironmentIdentifier identifier)
-            => await _context.Environments.FirstOrDefaultAsync(env => env.Category == identifier.Category &&
-                                                                      env.Name == identifier.Name);
+        {
+            using (var context = OpenProjectionStore())
+            {
+                return await context.Environments.FirstOrDefaultAsync(env => env.Category == identifier.Category &&
+                                                                             env.Name == identifier.Name);
+            }
+        }
 
         private async Task<Structure> GetStructureInternal(StructureIdentifier identifier)
-            => await _context.Structures.FirstOrDefaultAsync(str => str.Name == identifier.Name &&
-                                                                    str.Version == identifier.Version);
-
-        private class Context : DbContext
         {
+            using (var context = OpenProjectionStore())
+            {
+                return await context.Structures.FirstOrDefaultAsync(str => str.Name == identifier.Name &&
+                                                                           str.Version == identifier.Version);
+            }
+        }
+
+        private ProjectionStore OpenProjectionStore()
+        {
+            var context = new ProjectionStore(_config);
+
+            context.Database.EnsureCreated();
+
+            return context;
+        }
+
+        private class ProjectionStore : DbContext
+        {
+            private readonly ProjectionStorageConfiguration _config;
+
+            public ProjectionStore(ProjectionStorageConfiguration config)
+            {
+                _config = config;
+            }
+
             public DbSet<Configuration> Configurations { get; set; }
 
             public DbSet<Environment> Environments { get; set; }
@@ -346,7 +388,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             {
                 base.OnConfiguring(optionsBuilder);
 
-                optionsBuilder.UseSqlite("DataSource=./projected.db");
+                optionsBuilder.UseSqlServer(_config.ConnectionString);
             }
 
             /// <inheritdoc />

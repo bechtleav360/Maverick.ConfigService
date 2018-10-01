@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.Compilation;
+using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
@@ -51,13 +52,13 @@ namespace Bechtle.A365.ConfigService.Projection
 
             await Store.ConnectAsync();
 
-            Store.SubscribeToStreamFrom(Configuration.SubscriptionName,
+            Store.SubscribeToStreamFrom(Configuration.EventStore.SubscriptionName,
                                         StreamCheckpoint.StreamStart,
-                                        new CatchUpSubscriptionSettings(Configuration.MaxLiveQueueSize,
-                                                                        Configuration.ReadBatchSize,
+                                        new CatchUpSubscriptionSettings(Configuration.EventStore.MaxLiveQueueSize,
+                                                                        Configuration.EventStore.ReadBatchSize,
                                                                         false,
                                                                         true,
-                                                                        Configuration.SubscriptionName),
+                                                                        Configuration.EventStore.SubscriptionName),
                                         EventAppeared,
                                         subscription => { Logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
                                         (subscription, reason, exception) =>

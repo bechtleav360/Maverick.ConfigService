@@ -3,6 +3,7 @@ using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Bechtle.A365.ConfigService.Dto.EventFactories;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.Compilation;
+using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using Bechtle.A365.Logging.NLog.Extension;
@@ -47,14 +48,14 @@ namespace Bechtle.A365.ConfigService.Projection
                                                                              .KeepReconnecting()
                                                                              .KeepRetrying()
                                                                              .UseCustomLogger(provider.GetService<ESLogger>()),
-                                                           new Uri(config.EventStoreUri),
-                                                           config.ConnectionName);
+                                                           new Uri(config.EventStore.Uri),
+                                                           config.EventStore.ConnectionName);
                     })
                     .AddSingleton<IProjection, Projection>()
                     .AddSingleton<IEventDeserializer, EventDeserializer>()
                     .AddSingleton<IConfigurationParser, ConfigurationParser>()
                     .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
-                    .AddSingleton<IConfigurationDatabase, DebugConfigurationDatabase>()
+                    .AddSingleton<IConfigurationDatabase, ConfigurationDatabase>()
 
                     // add DomainEventSerializer as generic class for IDomainEventSerializer
                     .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))
