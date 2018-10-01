@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Bechtle.A365.ConfigService.Parsing;
 using Xunit;
@@ -7,23 +8,53 @@ namespace Bechtle.A365.ConfigService.Tests
 {
     public class ConfigValueParserTests
     {
-        [Theory]
-        [InlineData("simple, value", 1, new[] {typeof(ValuePart)})]
-        [InlineData("simple, value - with some stuff", 1, new[] {typeof(ValuePart)})]
-        [InlineData("{{Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)})]
-        [InlineData("{{Some/Path/To/Somewhere/Other/Than/Here}} some fluff after the reference", 2, new[] {typeof(ReferencePart), typeof(ValuePart)})]
-        [InlineData("this is a value: hello {{Planetoids/General}}, and these are invalid }} parts of references that: shall; not; pass", 3, new[]
+        /// <summary>
+        ///     used for <see cref="GetReferencesFromString"/>
+        /// </summary>
+        public static IEnumerable<object[]> ReferenceData => new[]
         {
-            typeof(ValuePart),
-            typeof(ReferencePart),
-            typeof(ValuePart)
-        })]
-        [InlineData("{{Path:Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)})]
-        [InlineData("{{ Path:Some/Path/To/Somewhere/Other/Than/Here }}", 1, new[] {typeof(ReferencePart)})]
-        [InlineData("{{Path : Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)})]
-        [InlineData("{{ Path : Some/Path/To/Somewhere/Other/Than/Here }}", 1, new[] {typeof(ReferencePart)})]
-        [InlineData("{{Using:Some/Path/To/Somewhere/Other/Than/Here;Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)})]
-        [InlineData("{{Using:Some/Path/To/Somewhere/Other/Than/Here; Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)})]
+            new object[] {"simple, value", 1, new[] {typeof(ValuePart)}},
+            new object[] {"simple, value - with some stuff", 1, new[] {typeof(ValuePart)}},
+            new object[] {"{{Word}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ Word }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{  Word  }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{Word }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{Word  }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ Word}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{  Word}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{A}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ A }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{lowercasepath}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ lowercasepath }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{camelCasePath}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ camelCasePath }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{path-with-dashes}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ path-with-dashes }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{path_with_underscores}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ path_with_underscores }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ Some/Path/To/Somewhere/Other/Than/Here }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{Some/Path/To/Somewhere/Other/Than/Here}} some fluff after the reference", 2, new[] {typeof(ReferencePart), typeof(ValuePart)}},
+            new object[] {"{{ Some/Path/To/Somewhere/Other/Than/Here }} some fluff after the reference", 2, new[] {typeof(ReferencePart), typeof(ValuePart)}},
+            new object[]
+            {
+                "this is a value: hello {{Planetoids/General}}, and these are invalid }} parts of references that: shall; not; pass", 3, new[]
+                {
+                    typeof(ValuePart),
+                    typeof(ReferencePart),
+                    typeof(ValuePart)
+                }
+            },
+            new object[] {"{{Path:Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ Path:Some/Path/To/Somewhere/Other/Than/Here }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{Path : Some/Path/To/Somewhere/Other/Than/Here}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{ Path : Some/Path/To/Somewhere/Other/Than/Here }}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{Using:Some/Path/To/Somewhere/Other/Than/Here;Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)}},
+            new object[] {"{{Using:Some/Path/To/Somewhere/Other/Than/Here; Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)}}
+        };
+
+        [Theory]
+        [MemberData(nameof(ReferenceData))]
         public void GetReferencesFromString(string text, int expectedResults, Type[] expectedTypes)
         {
             var parser = new ConfigurationParser();

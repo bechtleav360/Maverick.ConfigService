@@ -12,6 +12,7 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
     public class ConfigurationCompiler : IConfigurationCompiler
     {
         private readonly ILogger<ConfigurationCompiler> _logger;
+        private const int ReferenceRecursionLimit = 10;
 
         public ConfigurationCompiler(ILogger<ConfigurationCompiler> logger)
         {
@@ -26,11 +27,25 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             IDictionary<string, string> compiledConfiguration = new Dictionary<string, string>();
 
             var stack = new Stack<KeyValuePair<string, string>>(structure);
+            var keyResolveCounter = new Dictionary<string, int>();
 
             while (stack.TryPop(out var kvp))
             {
                 var key = kvp.Key;
                 var value = kvp.Value;
+
+                // increment the path => #resolved counter, to fail in case of excessive recursion
+                if (keyResolveCounter.ContainsKey(key))
+                    keyResolveCounter[key] += 1;
+                else
+                    keyResolveCounter[key] = 1;
+
+                // i'm fed up with recursion, take this 'nothing' and be happy with it!
+                if (keyResolveCounter[key] > ReferenceRecursionLimit)
+                {
+                    compiledConfiguration[key] = string.Empty;
+                    continue;
+                }
 
                 _logger.LogDebug($"compiling '{key}' => '{value}'");
 
@@ -155,6 +170,7 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
                 _logger.LogTrace($"adding alias '{aliasCommand}' => '{usingCommand}' to the context");
                 context.Aliases[aliasCommand] = usingCommand;
             }
+
             // else {} => both are null, but we don't care
         }
 

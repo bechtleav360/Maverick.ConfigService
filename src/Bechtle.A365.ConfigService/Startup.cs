@@ -2,7 +2,6 @@
 using System.IO;
 using System.Reflection;
 using Bechtle.A365.ConfigService.Configuration;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Bechtle.A365.ConfigService.Dto.EventFactories;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Builder;
