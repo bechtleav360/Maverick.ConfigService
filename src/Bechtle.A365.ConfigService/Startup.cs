@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
+using ESLogger = EventStore.ClientAPI.ILogger;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -42,6 +43,7 @@ namespace Bechtle.A365.ConfigService
             services.AddSingleton(provider => provider.GetService<IConfiguration>()
                                                       .Get<ConfigServiceConfiguration>())
                     .AddSingleton<IConfigStore, ConfigStore>()
+                    .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>));
         }
 

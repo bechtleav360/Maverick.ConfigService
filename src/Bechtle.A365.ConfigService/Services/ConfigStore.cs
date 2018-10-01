@@ -8,6 +8,7 @@ using EventStore.ClientAPI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 // god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is essentially a core component of the eco-system
+using ESLogger = EventStore.ClientAPI.ILogger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
@@ -16,17 +17,21 @@ namespace Bechtle.A365.ConfigService.Services
     /// </summary>
     public class ConfigStore : IConfigStore
     {
+        private readonly ConfigServiceConfiguration _configuration;
         private readonly IEventStoreConnection _eventStore;
         private readonly ILogger _logger;
         private readonly IServiceProvider _provider;
-        private readonly ConfigServiceConfiguration _configuration;
 
         /// <summary>
         /// </summary>
         /// <param name="logger"></param>
+        /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>
         /// <param name="configuration"></param>
-        public ConfigStore(ILogger<ConfigStore> logger, IServiceProvider provider, ConfigServiceConfiguration configuration)
+        public ConfigStore(ILogger<ConfigStore> logger,
+                           ESLogger eventStoreLogger,
+                           IServiceProvider provider,
+                           ConfigServiceConfiguration configuration)
         {
             _logger = logger;
             _provider = provider;
@@ -37,7 +42,8 @@ namespace Bechtle.A365.ConfigService.Services
 
             _eventStore = EventStoreConnection.Create(ConnectionSettings.Create()
                                                                         .KeepReconnecting()
-                                                                        .KeepRetrying(),
+                                                                        .KeepRetrying()
+                                                                        .UseCustomLogger(eventStoreLogger),
                                                       new Uri(configuration.EventStoreConnection.Uri),
                                                       configuration.EventStoreConnection.ConnectionName);
 

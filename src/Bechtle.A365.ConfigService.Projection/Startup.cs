@@ -10,6 +10,7 @@ using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ESLogger = EventStore.ClientAPI.ILogger;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
@@ -33,6 +34,7 @@ namespace Bechtle.A365.ConfigService.Projection
                         return factory;
                     })
                     .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
+                    .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton(Configuration)
                     .AddSingleton(provider => provider.GetService<IConfiguration>()
                                                       .Get<ProjectionConfiguration>())
@@ -43,7 +45,8 @@ namespace Bechtle.A365.ConfigService.Projection
 
                         return EventStoreConnection.Create(ConnectionSettings.Create()
                                                                              .KeepReconnecting()
-                                                                             .KeepRetrying(),
+                                                                             .KeepRetrying()
+                                                                             .UseCustomLogger(provider.GetService<ESLogger>()),
                                                            new Uri(config.EventStoreUri),
                                                            config.ConnectionName);
                     })
