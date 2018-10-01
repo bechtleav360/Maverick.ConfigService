@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Projection
             Console.CancelKeyPress += (sender, eventArgs) => cancellationTokenSource.Cancel();
 
             // i want to execute IProjection.Start, but allow graceful termination of this program
-            // not sure if Task.Run(..., CancellationToken) handles this, or IProjection.Start(CancellationToken) is requried
+            // not sure if Task.Run(..., CancellationToken) handles this, or IProjection.Start(CancellationToken) is required
             // @TODO: investigato!
             await Task.Run(() => projection.Start(cancellationTokenSource.Token), cancellationTokenSource.Token);
 
