@@ -26,48 +26,58 @@ namespace Bechtle.A365.ConfigService.Projection
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton(provider =>
-                    {
-                        ILoggerFactory factory = new LoggerFactory();
-                        factory.AddA365NlogProviderWithConfiguration(provider.GetService<ProjectionConfiguration>()
-                                                                             .LoggingConfiguration);
+            services
+                // required for lazy-loading proxies
+                .AddEntityFrameworkProxies()
 
-                        return factory;
-                    })
-                    .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
-                    .AddSingleton<ESLogger, EventStoreLogger>()
-                    .AddSingleton(Configuration)
-                    .AddSingleton(provider => provider.GetService<IConfiguration>()
-                                                      .Get<ProjectionConfiguration>())
-                    .AddSingleton(provider =>
-                    {
-                        var config = provider.GetService<ProjectionConfiguration>()
-                                     ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
+                // logging for ourselves, and EventStore
+                .AddSingleton(provider =>
+                {
+                    ILoggerFactory factory = new LoggerFactory();
+                    factory.AddA365NlogProviderWithConfiguration(provider.GetService<ProjectionConfiguration>()
+                                                                         .LoggingConfiguration);
 
-                        return EventStoreConnection.Create(ConnectionSettings.Create()
-                                                                             .KeepReconnecting()
-                                                                             .KeepRetrying()
-                                                                             .UseCustomLogger(provider.GetService<ESLogger>()),
-                                                           new Uri(config.EventStore.Uri),
-                                                           config.EventStore.ConnectionName);
-                    })
-                    .AddSingleton<IProjection, Projection>()
-                    .AddSingleton<IEventDeserializer, EventDeserializer>()
-                    .AddSingleton<IConfigurationParser, ConfigurationParser>()
-                    .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
-                    .AddSingleton<IConfigurationDatabase, ConfigurationDatabase>()
+                    return factory;
+                })
+                .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
+                .AddSingleton<ESLogger, EventStoreLogger>()
 
-                    // add DomainEventSerializer as generic class for IDomainEventSerializer
-                    .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))
+                // configuration as a whole, and parts of it
+                .AddSingleton(Configuration)
+                .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ProjectionConfiguration>())
+                .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventStore)
+                .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().Storage)
 
-                    // register all IDomainEventHandlers
-                    // IMPORTANT: this needs to be updated once new events are added
-                    .AddSingleton<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
-                    .AddSingleton<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
-                    .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeyModifiedHandler>()
-                    .AddSingleton<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
-                    .AddSingleton<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
-                    .AddSingleton<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();
+                // services for specific tasks
+                .AddSingleton(provider =>
+                {
+                    var config = provider.GetService<ProjectionConfiguration>()
+                                 ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
+
+                    return EventStoreConnection.Create(ConnectionSettings.Create()
+                                                                         .KeepReconnecting()
+                                                                         .KeepRetrying()
+                                                                         .UseCustomLogger(provider.GetService<ESLogger>()),
+                                                       new Uri(config.EventStore.Uri),
+                                                       config.EventStore.ConnectionName);
+                })
+                .AddSingleton<IProjection, Projection>()
+                .AddSingleton<IEventDeserializer, EventDeserializer>()
+                .AddSingleton<IConfigurationParser, ConfigurationParser>()
+                .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
+                .AddSingleton<IConfigurationDatabase, ConfigurationDatabase>()
+
+                // add DomainEventSerializer as generic class for IDomainEventSerializer
+                .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))
+
+                // register all IDomainEventHandlers
+                // IMPORTANT: this needs to be updated once new events are added
+                .AddSingleton<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
+                .AddSingleton<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
+                .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeyModifiedHandler>()
+                .AddSingleton<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
+                .AddSingleton<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
+                .AddSingleton<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();
         }
     }
 }

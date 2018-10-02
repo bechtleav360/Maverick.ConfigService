@@ -40,9 +40,12 @@ namespace Bechtle.A365.ConfigService
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetEntryAssembly().GetName().Name}.xml"));
             });
 
-            services.AddSingleton(provider => provider.GetService<IConfiguration>()
-                                                      .Get<ConfigServiceConfiguration>())
-                    .AddSingleton<IConfigStore, ConfigStore>()
+            services.AddEntityFrameworkProxies()
+                    .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
+                    .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
+                    .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
+                    .AddScoped<IProjectionStore, ProjectionStore>()
+                    .AddSingleton<IEventStore, Services.EventStore>()
                     .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>));
         }

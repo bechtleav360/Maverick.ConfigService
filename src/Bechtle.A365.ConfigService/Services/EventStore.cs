@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Services
 {
     /// <summary>
     /// </summary>
-    public class ConfigStore : IConfigStore
+    public class EventStore : IEventStore
     {
         private readonly ConfigServiceConfiguration _configuration;
         private readonly IEventStoreConnection _eventStore;
@@ -28,10 +28,10 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>
         /// <param name="configuration"></param>
-        public ConfigStore(ILogger<ConfigStore> logger,
-                           ESLogger eventStoreLogger,
-                           IServiceProvider provider,
-                           ConfigServiceConfiguration configuration)
+        public EventStore(ILogger<EventStore> logger,
+                          ESLogger eventStoreLogger,
+                          IServiceProvider provider,
+                          ConfigServiceConfiguration configuration)
         {
             _logger = logger;
             _provider = provider;

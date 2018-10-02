@@ -1,10 +1,17 @@
-﻿namespace Bechtle.A365.ConfigService.Dto.DomainEvents
+﻿using Bechtle.A365.ConfigService.Dto.DbObjects;
+
+namespace Bechtle.A365.ConfigService.Dto.DomainEvents
 {
     /// <summary>
     ///     Configuration-Structure, filled out with data from <see cref="EnvironmentIdentifier" /> to create a Configuration
     /// </summary>
     public class StructureIdentifier : Identifier
     {
+        /// <inheritdoc />
+        public StructureIdentifier()
+        {
+        }
+
         /// <inheritdoc />
         public StructureIdentifier(string name, int version)
         {
@@ -13,7 +20,7 @@
         }
 
         /// <inheritdoc />
-        public StructureIdentifier()
+        public StructureIdentifier(Structure structure) : this(structure.Name, structure.Version)
         {
         }
 

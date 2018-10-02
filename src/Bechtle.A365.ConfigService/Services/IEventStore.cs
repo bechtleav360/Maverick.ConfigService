@@ -5,7 +5,7 @@ namespace Bechtle.A365.ConfigService.Services
 {
     /// <summary>
     /// </summary>
-    public interface IConfigStore
+    public interface IEventStore
     {
         /// <summary>
         /// </summary>

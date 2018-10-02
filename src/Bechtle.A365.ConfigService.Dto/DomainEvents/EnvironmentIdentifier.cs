@@ -1,10 +1,17 @@
-﻿namespace Bechtle.A365.ConfigService.Dto.DomainEvents
+﻿using Bechtle.A365.ConfigService.Dto.DbObjects;
+
+namespace Bechtle.A365.ConfigService.Dto.DomainEvents
 {
     /// <summary>
     ///     Information to identify an Environment
     /// </summary>
     public class EnvironmentIdentifier : Identifier
     {
+        /// <inheritdoc />
+        public EnvironmentIdentifier()
+        {
+        }
+
         /// <inheritdoc />
         public EnvironmentIdentifier(string category, string name)
         {
@@ -13,7 +20,7 @@
         }
 
         /// <inheritdoc />
-        public EnvironmentIdentifier()
+        public EnvironmentIdentifier(ConfigEnvironment environment) : this(environment.Category, environment.Name)
         {
         }
 
