@@ -41,6 +41,12 @@ namespace Bechtle.A365.ConfigService.Controllers
                 ConfigKeyAction.Set("Endpoints/IdentityService/RootPath", ""),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Uri", 
                                     "{{using:Endpoints/IdentityService; alias:this}}{{$this/protocol}}://{{$this/address}}:{{$this/port}}{{$this/rootPath}}"),
+                ConfigKeyAction.Set("IdentityConfiguration/Clients/0000/Name", "Foo"),
+                ConfigKeyAction.Set("IdentityConfiguration/Clients/0000/Rights", "No"),
+                ConfigKeyAction.Set("IdentityConfiguration/Clients/0001/Name", "Bar"),
+                ConfigKeyAction.Set("IdentityConfiguration/Clients/0001/Rights", "Yes"),
+                ConfigKeyAction.Set("IdentityConfiguration/Clients/0002/Name", "Baz"),
+                ConfigKeyAction.Set("IdentityConfiguration/Clients/0002/Rights", "No"),
                 ConfigKeyAction.Set("LogLevelOverride", "Debug")
             }));
 
@@ -56,6 +62,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 ConfigKeyAction.Set("ClientConfiguration/response_type", "id_token token"),
                 ConfigKeyAction.Set("ClientConfiguration/scope", "openid profile A365.WebApi.Query"),
                 ConfigKeyAction.Set("ClientConfiguration/post_logout", "http://localhost:41764"),
+                ConfigKeyAction.Set("ClientConfiguration/Clients", "{{IdentityConfiguration/Clients/*}}")
             }));
 
             _store.WriteEvent(new ConfigurationBuilt(new EnvironmentIdentifier("Dev", "Av360"),

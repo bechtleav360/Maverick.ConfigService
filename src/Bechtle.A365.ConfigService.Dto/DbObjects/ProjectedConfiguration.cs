@@ -22,5 +22,7 @@ namespace Bechtle.A365.ConfigService.Dto.DbObjects
         public virtual Structure Structure { get; set; }
 
         public int StructureVersion { get; set; }
+
+        public string ConfigurationJson { get; set; }
     }
 }

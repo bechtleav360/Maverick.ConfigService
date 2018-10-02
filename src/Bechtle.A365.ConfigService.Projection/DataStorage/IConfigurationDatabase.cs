@@ -73,9 +73,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="environment"></param>
         /// <param name="structure"></param>
         /// <param name="configuration"></param>
+        /// <param name="configurationJson"></param>
         /// <returns></returns>
         Task<Result> SaveConfiguration(Snapshot<EnvironmentIdentifier> environment,
                                        Snapshot<StructureIdentifier> structure,
-                                       IDictionary<string, string> configuration);
+                                       IDictionary<string, string> configuration,
+                                       string configurationJson);
     }
 }
