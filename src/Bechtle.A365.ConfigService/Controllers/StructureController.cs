@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
+    [Route("structures")]
     public class StructureController : Controller
     {
         private readonly IProjectionStore _store;
