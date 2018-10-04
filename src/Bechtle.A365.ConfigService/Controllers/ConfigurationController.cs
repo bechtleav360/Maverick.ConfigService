@@ -1,20 +1,26 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     /// </summary>
-    [Route("configurations")]
-    public class ConfigurationController : Controller
+    [Route(ApiBaseRoute + "configurations")]
+    public class ConfigurationController : ControllerBase
     {
         private readonly IProjectionStore _store;
 
         /// <inheritdoc />
-        public ConfigurationController(IProjectionStore store)
+        public ConfigurationController(IServiceProvider provider,
+                                       ILogger<ConfigurationController> logger,
+                                       IProjectionStore store)
+            : base(provider, logger)
         {
             _store = store;
         }
@@ -24,11 +30,13 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("available")]
-        public async Task<ActionResult<IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>>> GetAvailableConfigurations()
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetAvailableConfigurations()
         {
             var result = await _store.Configurations.GetAvailable();
 
-            return Ok(result);
+            return Result(result);
         }
 
         /// <summary>
@@ -40,17 +48,19 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureVersion"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
-        public async Task<ActionResult<IDictionary<string, string>>> GetConfiguration(string environmentCategory,
-                                                                                      string environmentName,
-                                                                                      string structureName,
-                                                                                      int structureVersion)
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetConfiguration(string environmentCategory,
+                                                          string environmentName,
+                                                          string structureName,
+                                                          int structureVersion)
         {
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
             var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier));
 
-            return Ok(result);
+            return Result(result);
         }
     }
 }

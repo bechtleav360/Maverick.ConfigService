@@ -1,19 +1,24 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     /// </summary>
-    [Route("environments")]
-    public class EnvironmentController : Controller
+    [Route(ApiBaseRoute + "environments")]
+    public class EnvironmentController : ControllerBase
     {
         private readonly IProjectionStore _store;
 
         /// <inheritdoc />
-        public EnvironmentController(IProjectionStore store)
+        public EnvironmentController(IServiceProvider provider,
+                                     ILogger<EnvironmentController> logger,
+                                     IProjectionStore store)
+            : base(provider, logger)
         {
             _store = store;
         }
@@ -23,13 +28,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             var result = await _store.Environments.GetAvailable();
 
-            if (result.IsError)
-            {
-                // handle error
-                // return ProviderError(result)?
-            }
-
-            return Ok(result);
+            return Result(result);
         }
 
         [HttpGet("{environmentCategory}/{environmentName}/keys")]
@@ -39,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var result = await _store.Environments.GetKeys(identifier);
 
-            return Ok(result);
+            return Result(result);
         }
     }
 }

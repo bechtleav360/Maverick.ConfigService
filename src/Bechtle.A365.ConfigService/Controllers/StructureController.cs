@@ -14,19 +14,18 @@ namespace Bechtle.A365.ConfigService.Controllers
     /// <summary>
     ///     read existing or create new Config-Structures
     /// </summary>
-    [Route("structures")]
-    public class StructureController : Controller
+    [Route(ApiBaseRoute + "structures")]
+    public class StructureController : ControllerBase
     {
-        private readonly ILogger<StructureController> _logger;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public StructureController(ILogger<StructureController> logger,
+        public StructureController(IServiceProvider provider,
+                                   ILogger<StructureController> logger,
                                    IProjectionStore store,
-                                   IJsonTranslator translator)
+                                   IJsonTranslator translator) : base(provider, logger)
         {
-            _logger = logger;
             _store = store;
             _translator = translator;
         }
@@ -42,11 +41,11 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var result = await _store.Structures.GetAvailable();
 
-                return Ok(result);
+                return Result(result);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve available structures");
+                Logger.LogError(e, "failed to retrieve available structures");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve available structures");
             }
         }
@@ -66,11 +65,11 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var result = await _store.Structures.GetKeys(identifier);
 
-                return Ok(result);
+                return Result(result);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                Logger.LogError(e, $"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version})");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
@@ -102,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to translate structure ({nameof(name)}: {name}, {nameof(version)}: {version}) to JSON");
+                Logger.LogError(e, $"failed to translate structure ({nameof(name)}: {name}, {nameof(version)}: {version}) to JSON");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to translate structure to JSON");
             }
         }
@@ -140,7 +139,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
+                Logger.LogError(e, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
                 return StatusCode((int) HttpStatusCode.InternalServerError, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
             }
         }

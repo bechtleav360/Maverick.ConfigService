@@ -1,21 +1,28 @@
-﻿using Bechtle.A365.ConfigService.Common;
+﻿using System;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     /// </summary>
-    [Route("events")]
-    public class EventController : Controller
+    [Route(ApiBaseRoute + "events")]
+    public class EventController : ControllerBase
     {
         private readonly IEventStore _store;
 
         /// <summary>
         /// </summary>
+        /// <param name="logger"></param>
         /// <param name="store"></param>
-        public EventController(IEventStore store)
+        /// <param name="provider"></param>
+        public EventController(IServiceProvider provider,
+                               ILogger<EventController> logger,
+                               IEventStore store)
+            : base(provider, logger)
         {
             _store = store;
         }
@@ -32,14 +39,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                 ConfigKeyAction.Set("Endpoints/ConfigService/Port", "80"),
                 ConfigKeyAction.Set("Endpoints/ConfigService/Protocol", "http"),
                 ConfigKeyAction.Set("Endpoints/ConfigService/RootPath", ""),
-                ConfigKeyAction.Set("Endpoints/ConfigService/Uri", 
+                ConfigKeyAction.Set("Endpoints/ConfigService/Uri",
                                     "{{using:Endpoints/ConfigService; alias:this}}{{$this/protocol}}://{{$this/address}}:{{$this/port}}{{$this/rootPath}}"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Name", "identity"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Address", "a365identityservice.a365dev.de"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Port", "44333"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/Protocol", "https"),
                 ConfigKeyAction.Set("Endpoints/IdentityService/RootPath", ""),
-                ConfigKeyAction.Set("Endpoints/IdentityService/Uri", 
+                ConfigKeyAction.Set("Endpoints/IdentityService/Uri",
                                     "{{using:Endpoints/IdentityService; alias:this}}{{$this/protocol}}://{{$this/address}}:{{$this/port}}{{$this/rootPath}}"),
                 ConfigKeyAction.Set("IdentityConfiguration/Clients/0000/Name", "Foo"),
                 ConfigKeyAction.Set("IdentityConfiguration/Clients/0000/Rights", "No"),
