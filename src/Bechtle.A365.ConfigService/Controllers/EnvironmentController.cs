@@ -21,7 +21,13 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("available")]
         public async Task<IActionResult> GetAvailableEnvironments()
         {
-            var result = await _store.GetAvailableEnvironments();
+            var result = await _store.Environments.GetAvailable();
+
+            if (result.IsError)
+            {
+                // handle error
+                // return ProviderError(result)?
+            }
 
             return Ok(result);
         }
@@ -31,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             var identifier = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var result = await _store.GetEnvironmentKeys(identifier);
+            var result = await _store.Environments.GetKeys(identifier);
 
             return Ok(result);
         }

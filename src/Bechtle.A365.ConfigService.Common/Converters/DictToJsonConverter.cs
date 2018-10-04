@@ -1,32 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.Projection
+namespace Bechtle.A365.ConfigService.Common.Converters
 {
-    public interface IDictionaryToJsonConverter
+    public class DictToJsonConverter
     {
-        /// <summary>
-        ///     convert a dictionary of Paths=>Values to a JToken.
-        ///     paths should look like this:
-        /// <remarks>
-        /// {
-        ///     "Some/Path/To/Somewhere" => "SomeValue",
-        ///     "Endpoints/0000/Name" => "configuration"
-        /// }
-        /// </remarks>
-        /// </summary>
-        /// <param name="dict"></param>
-        /// <returns></returns>
-        JToken ConvertToJson(IDictionary<string, string> dict);
-    }
-
-    public class DictionaryToJsonConverter : IDictionaryToJsonConverter
-    {
-        /// <inheritdoc />
-        public JToken ConvertToJson(IDictionary<string, string> dict)
+        public JToken ToJson(IDictionary<string, string> dict)
         {
             var root = new Node();
 

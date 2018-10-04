@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("available")]
         public async Task<ActionResult<IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>>> GetAvailableConfigurations()
         {
-            var result = await _store.GetAvailableConfigurations();
+            var result = await _store.Configurations.GetAvailable();
 
             return Ok(result);
         }
@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var result = await _store.GetProjectedConfigurationKeys(envIdentifier, structureIdentifier);
+            var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier));
 
             return Ok(result);
         }

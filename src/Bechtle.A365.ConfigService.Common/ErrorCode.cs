@@ -44,5 +44,10 @@
         ///     another default-environment already exists for that category
         /// </summary>
         DefaultEnvironmentAlreadyExists = 7,
+
+        /// <summary>
+        ///     error while querying database
+        /// </summary>
+        DbQueryError = 8,
     }
 }

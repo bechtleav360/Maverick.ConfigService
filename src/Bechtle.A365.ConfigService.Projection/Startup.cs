@@ -1,4 +1,5 @@
 ﻿using System;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Parsing;
@@ -66,7 +67,7 @@ namespace Bechtle.A365.ConfigService.Projection
                 .AddSingleton<IConfigurationParser, ConfigurationParser>()
                 .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
                 .AddSingleton<IConfigurationDatabase, ConfigurationDatabase>()
-                .AddSingleton<IDictionaryToJsonConverter, DictionaryToJsonConverter>()
+                .AddSingleton<IJsonTranslator, JsonTranslator>()
 
                 // add DomainEventSerializer as generic class for IDomainEventSerializer
                 .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))

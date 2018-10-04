@@ -1,0 +1,75 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json.Linq;
+
+namespace Bechtle.A365.ConfigService.Common.Converters
+{
+    public class JsonToDictConverter
+    {
+        public IDictionary<string, string> ToDict(JToken json)
+        {
+            var dict = new Dictionary<string, string>();
+
+            Visit(json, string.Empty, dict);
+
+            return dict;
+        }
+
+        private void Visit(JToken token, string currentPath, IDictionary<string, string> dict)
+        {
+            switch (token)
+            {
+                case null:
+                    throw new ArgumentNullException($"token is null, Current Path: {currentPath}");
+
+                case JArray jArray:
+                    Visit(jArray, currentPath, dict);
+                    break;
+
+                case JObject jObject:
+                    Visit(jObject, currentPath, dict);
+                    break;
+
+                case JProperty jProperty:
+                    Visit(jProperty, currentPath, dict);
+                    break;
+
+                // apparently this also handles JRaw
+                case JValue jValue:
+                    Visit(jValue, currentPath, dict);
+                    break;
+
+                default:
+                    throw new NotImplementedException($"handling of '{token.Type}' is not implemented");
+            }
+        }
+
+        private void Visit(JArray jArray, string currentPath, IDictionary<string, string> dict)
+        {
+            var index = 0;
+            foreach (var item in jArray.Children())
+            {
+                Visit(item, $"{currentPath}/{index:D4}", dict);
+
+                ++index;
+            }
+        }
+
+        private void Visit(JObject jObject, string currentPath, IDictionary<string, string> dict)
+        {
+            foreach (var property in jObject.Properties()
+                                            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                                            .ThenBy(p => p.Type))
+            {
+                Visit(property, currentPath, dict);
+            }
+        }
+
+        private void Visit(JProperty jProperty, string currentPath, IDictionary<string, string> dict)
+            => Visit(jProperty.Value, $"{currentPath}/{jProperty.Name}", dict);
+
+        private void Visit(JValue jValue, string currentPath, IDictionary<string, string> dict)
+            => dict[currentPath] = jValue.Value.ToString();
+    }
+}

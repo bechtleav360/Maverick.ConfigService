@@ -2,15 +2,14 @@
 {
     /// <inheritdoc />
     /// <summary>
-    ///     a Configuration has been built with information from <see cref="Environment" /> and <see cref="Structure" />
+    ///     a Configuration has been built with information from <see cref="EnvironmentIdentifier" /> and <see cref="StructureIdentifier" />
     /// </summary>
     public class ConfigurationBuilt : DomainEvent
     {
         /// <inheritdoc />
         public ConfigurationBuilt(EnvironmentIdentifier environment, StructureIdentifier structure)
         {
-            Environment = environment;
-            Structure = structure;
+            Identifier = new ConfigurationIdentifier(environment, structure);
         }
 
         /// <inheritdoc />
@@ -18,10 +17,7 @@
         {
         }
 
-        /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Environment { get; set; }
-
-        /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Structure { get; set; }
+        /// <inheritdoc cref="ConfigurationIdentifier" />
+        public ConfigurationIdentifier Identifier { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Services;
@@ -44,9 +45,14 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
+                    .AddScoped<ProjectionStoreContext>()
                     .AddScoped<IProjectionStore, ProjectionStore>()
+                    .AddScoped<IStructureProjectionStore, StructureProjectionStore>()
+                    .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>()
+                    .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>()
                     .AddSingleton<IEventStore, Services.EventStore>()
                     .AddSingleton<ESLogger, EventStoreLogger>()
+                    .AddSingleton<IJsonTranslator, JsonTranslator>()
                     .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>));
         }
 
