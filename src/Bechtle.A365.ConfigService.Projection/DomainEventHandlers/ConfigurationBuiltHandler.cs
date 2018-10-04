@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.Compilation;
+using Bechtle.A365.ConfigService.Projection.Converters;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Newtonsoft.Json;
 
@@ -13,13 +14,13 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         private readonly IConfigurationDatabase _database;
         private readonly IConfigurationCompiler _compiler;
         private readonly IConfigurationParser _parser;
-        private readonly IDictionaryToJsonConverter _converter;
+        private readonly IJsonConverter _converter;
 
         /// <inheritdoc />
         public ConfigurationBuiltHandler(IConfigurationDatabase database,
                                          IConfigurationCompiler compiler,
                                          IConfigurationParser parser,
-                                         IDictionaryToJsonConverter converter)
+                                         IJsonConverter converter)
         {
             _database = database;
             _compiler = compiler;
@@ -45,7 +46,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                                    structureSnapshot.Data,
                                                    _parser);
 
-            var json = _converter.ConvertToJson(compiled)
+            var json = _converter.ToJson(compiled)
                                  .ToString(Formatting.None);
 
             await _database.SaveConfiguration(environmentSnapshot,

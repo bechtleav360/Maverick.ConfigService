@@ -1,6 +1,6 @@
-﻿using Bechtle.A365.ConfigService.Dto.DomainEvents;
+﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
 
-namespace Bechtle.A365.ConfigService.Dto.EventFactories
+namespace Bechtle.A365.ConfigService.Common.EventFactories
 {
     public interface IDomainEventSerializer
     {

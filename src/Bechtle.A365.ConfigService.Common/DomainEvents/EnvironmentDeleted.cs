@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Dto.DomainEvents
+﻿namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <inheritdoc />
     /// <summary>

@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 {

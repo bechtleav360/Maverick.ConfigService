@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common.DbObjects;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
-using Bechtle.A365.ConfigService.Dto.DbObjects;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bechtle.A365.ConfigService.Services

@@ -1,4 +1,4 @@
-﻿using Bechtle.A365.ConfigService.Dto.DomainEvents;
+﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
 using EventStore.ClientAPI;
 
 namespace Bechtle.A365.ConfigService.Projection

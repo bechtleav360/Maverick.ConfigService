@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Configuration;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
-using Bechtle.A365.ConfigService.Dto.EventFactories;
 using Bechtle.A365.ConfigService.Utilities;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.DependencyInjection;

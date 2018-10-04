@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Projection", "src\Bechtle.A365.ConfigService.Projection\Bechtle.A365.ConfigService.Projection.csproj", "{1D742901-A8E2-4248-A2BC-FAD3DB5D3F03}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Dto", "src\Bechtle.A365.ConfigService.Dto\Bechtle.A365.ConfigService.Dto.csproj", "{011655F9-E550-4516-81E0-6CE0C531BD83}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Common", "src\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj", "{011655F9-E550-4516-81E0-6CE0C531BD83}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Parsing", "src\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj", "{2FFC115B-80A3-42C8-B77B-E65894B1A60E}"
 EndProject

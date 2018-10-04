@@ -1,6 +1,6 @@
-﻿using Bechtle.A365.ConfigService.Dto.DbObjects;
+﻿using Bechtle.A365.ConfigService.Common.DbObjects;
 
-namespace Bechtle.A365.ConfigService.Dto.DomainEvents
+namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <summary>
     ///     Configuration-Structure, filled out with data from <see cref="EnvironmentIdentifier" /> to create a Configuration

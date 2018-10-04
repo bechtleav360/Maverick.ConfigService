@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Dto
+﻿namespace Bechtle.A365.ConfigService.Common
 {
     /// <summary>
     ///     result of an operation without attached data
@@ -60,7 +60,7 @@
     /// <inheritdoc />
     /// <summary>
     ///     result of an operation with attached data
-    ///     <see cref="T:Bechtle.A365.ConfigService.Dto.Result" />
+    ///     <see cref="T:Bechtle.A365.ConfigService.Common.Result" />
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class Result<T> : Result

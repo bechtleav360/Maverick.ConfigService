@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
-using Bechtle.A365.ConfigService.Dto.EventFactories;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.EventFactories;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;

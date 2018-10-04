@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.Dto.EventFactories
+namespace Bechtle.A365.ConfigService.Common.EventFactories
 {
     public class DomainEventSerializer<T> : IDomainEventSerializer<T> where T : DomainEvent
     {

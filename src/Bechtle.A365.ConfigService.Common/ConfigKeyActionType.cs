@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Dto
+﻿namespace Bechtle.A365.ConfigService.Common
 {
     /// <summary>
     ///     type of action to apply to a key

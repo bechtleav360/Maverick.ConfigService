@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Bechtle.A365.ConfigService.Dto.DbObjects
+namespace Bechtle.A365.ConfigService.Common.DbObjects
 {
     // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     // necessary for lazy-loading

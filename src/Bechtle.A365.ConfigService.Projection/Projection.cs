@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Dto.DomainEvents;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
