@@ -35,14 +35,9 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenByDescending(s => s.Structure.Version)
                                              .ToListAsync();
 
-                if (dbResult is null)
-                    return Result<IList<ConfigurationIdentifier>>.Error("no items found", ErrorCode.NotFound);
-
-                var result = dbResult.Select(s => new ConfigurationIdentifier(s))
-                                     .ToList();
-
-                if (!result.Any())
-                    return Result<IList<ConfigurationIdentifier>>.Error("no items found", ErrorCode.NotFound);
+                var result = dbResult?.Select(s => new ConfigurationIdentifier(s))
+                                     .ToList()
+                             ?? new List<ConfigurationIdentifier>();
 
                 return Result<IList<ConfigurationIdentifier>>.Success(result);
             }
@@ -65,14 +60,9 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenByDescending(s => s.Structure.Version)
                                              .ToListAsync();
 
-                if (dbResult is null)
-                    return Result<IList<ConfigurationIdentifier>>.Error("no items found", ErrorCode.NotFound);
-
-                var result = dbResult.Select(s => new ConfigurationIdentifier(s))
-                                     .ToList();
-
-                if (!result.Any())
-                    return Result<IList<ConfigurationIdentifier>>.Error("no items found", ErrorCode.NotFound);
+                var result = dbResult?.Select(s => new ConfigurationIdentifier(s))
+                                     .ToList()
+                             ?? new List<ConfigurationIdentifier>();
 
                 return Result<IList<ConfigurationIdentifier>>.Success(result);
             }
@@ -95,14 +85,9 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenBy(s => s.ConfigEnvironment.Name)
                                              .ToListAsync();
 
-                if (dbResult is null)
-                    return Result<IList<ConfigurationIdentifier>>.Error("no items found", ErrorCode.NotFound);
-
-                var result = dbResult.Select(s => new ConfigurationIdentifier(s))
-                                     .ToList();
-
-                if (!result.Any())
-                    return Result<IList<ConfigurationIdentifier>>.Error("no items found", ErrorCode.NotFound);
+                var result = dbResult?.Select(s => new ConfigurationIdentifier(s))
+                                     .ToList()
+                             ?? new List<ConfigurationIdentifier>();
 
                 return Result<IList<ConfigurationIdentifier>>.Success(result);
             }

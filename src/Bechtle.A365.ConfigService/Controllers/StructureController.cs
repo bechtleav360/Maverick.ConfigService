@@ -2,12 +2,15 @@
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -18,15 +21,18 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class StructureController : ControllerBase
     {
         private readonly IProjectionStore _store;
+        private readonly IEventStore _eventStore;
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
         public StructureController(IServiceProvider provider,
                                    ILogger<StructureController> logger,
                                    IProjectionStore store,
+                                   IEventStore eventStore,
                                    IJsonTranslator translator) : base(provider, logger)
         {
             _store = store;
+            _eventStore = eventStore;
             _translator = translator;
         }
 
@@ -95,6 +101,9 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var result = await _store.Structures.GetKeys(identifier);
 
+                if (result.Data?.Any() != true)
+                    return Ok(new JObject());
+
                 var json = _translator.ToJson(result.Data);
 
                 return Ok(json);
@@ -131,9 +140,22 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
+                var existingStructures = await _store.Structures.GetAvailableVersions(structure.Name);
+
+                if (existingStructures.IsError)
+                    return ProviderError(existingStructures);
+
+                if (existingStructures.Data.Any(v => v == structure.Version))
+                    return ProviderError(Common.Result.Error($"structure '{structure.Name}' with version '{structure.Version}' already exists",
+                                                             ErrorCode.StructureAlreadyExists));
+
                 var keys = _translator.ToDictionary(structure.Structure);
 
-                return AcceptedAtAction("GetStructureKeys",
+                new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
+                                     .Create(keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value)))
+                                     .Save(_eventStore);
+
+                return AcceptedAtAction(nameof(GetStructureKeys),
                                         new {name = structure.Name, version = structure.Version},
                                         keys);
             }

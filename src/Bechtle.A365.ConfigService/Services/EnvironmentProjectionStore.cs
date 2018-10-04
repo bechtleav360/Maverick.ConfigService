@@ -33,14 +33,9 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenBy(s => s.Name)
                                              .ToListAsync();
 
-                if (dbResult is null)
-                    return Result<IList<EnvironmentIdentifier>>.Error("no items found", ErrorCode.NotFound);
-
-                var result = dbResult.Select(s => new EnvironmentIdentifier(s))
-                                     .ToList();
-
-                if (!result.Any())
-                    return Result<IList<EnvironmentIdentifier>>.Error("no items found", ErrorCode.NotFound);
+                var result = dbResult?.Select(s => new EnvironmentIdentifier(s))
+                                     .ToList()
+                             ?? new List<EnvironmentIdentifier>();
 
                 return Result<IList<EnvironmentIdentifier>>.Success(result);
             }
@@ -61,15 +56,10 @@ namespace Bechtle.A365.ConfigService.Services
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)
                                              .ToListAsync();
-
-                if (dbResult is null)
-                    return Result<IList<EnvironmentIdentifier>>.Error($"no items found in '{category}'", ErrorCode.NotFound);
-
-                var result = dbResult.Select(s => new EnvironmentIdentifier(s))
-                                     .ToList();
-
-                if (!result.Any())
-                    return Result<IList<EnvironmentIdentifier>>.Error($"no items found in '{category}'", ErrorCode.NotFound);
+                
+                var result = dbResult?.Select(s => new EnvironmentIdentifier(s))
+                                     .ToList()
+                             ?? new List<EnvironmentIdentifier>();
 
                 return Result<IList<EnvironmentIdentifier>>.Success(result);
             }
@@ -90,15 +80,15 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        s.Name == identifier.Name);
 
                 if (dbResult is null)
-                    return Result<IDictionary<string, string>>.Error("no items found", ErrorCode.NotFound);
+                    return Result<IDictionary<string, string>>.Error($"no environment found with (" +
+                                                                     $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                                                     $"{nameof(identifier.Name)}: {identifier.Name})", 
+                                                                     ErrorCode.NotFound);
 
                 var result = dbResult.Keys
                                      .ToImmutableSortedDictionary(k => k.Key,
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
-
-                if (!result.Any())
-                    return Result<IDictionary<string, string>>.Error("no items found", ErrorCode.NotFound);
 
                 return Result<IDictionary<string, string>>.Success(result);
             }

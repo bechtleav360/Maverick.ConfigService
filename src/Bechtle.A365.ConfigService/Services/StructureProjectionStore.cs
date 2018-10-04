@@ -33,14 +33,9 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenByDescending(s => s.Version)
                                              .ToListAsync();
 
-                if (dbResult is null)
-                    return Result<IList<StructureIdentifier>>.Error("no items found", ErrorCode.NotFound);
-
-                var result = dbResult.Select(s => new StructureIdentifier(s))
-                                     .ToList();
-
-                if (!result.Any())
-                    return Result<IList<StructureIdentifier>>.Error("no items found", ErrorCode.NotFound);
+                var result = dbResult?.Select(s => new StructureIdentifier(s))
+                                     .ToList()
+                             ?? new List<StructureIdentifier>();
 
                 return Result<IList<StructureIdentifier>>.Success(result);
             }
@@ -62,14 +57,9 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenByDescending(s => s.Version)
                                              .ToListAsync();
 
-                if (dbResult is null)
-                    return Result<IList<int>>.Error("no items found", ErrorCode.NotFound);
-
-                var result = dbResult.Select(s => s.Version)
-                                     .ToList();
-
-                if (!result.Any())
-                    return Result<IList<int>>.Error("no items found", ErrorCode.NotFound);
+                var result = dbResult?.Select(s => s.Version)
+                                     .ToList()
+                             ?? new List<int>();
 
                 return Result<IList<int>>.Success(result);
             }
@@ -90,15 +80,16 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        s.Version == identifier.Version);
 
                 if (dbResult is null)
-                    return Result<IDictionary<string, string>>.Error("no items found", ErrorCode.NotFound);
+                    return Result<IDictionary<string, string>>.Error("no structure found with (" +
+                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
+                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
+                                                                     ")",
+                                                                     ErrorCode.NotFound);
 
                 var result = dbResult.Keys
                                      .ToImmutableSortedDictionary(k => k.Key,
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
-
-                if (!result.Any())
-                    return Result<IDictionary<string, string>>.Error("no items found", ErrorCode.NotFound);
 
                 return Result<IDictionary<string, string>>.Success(result);
             }
