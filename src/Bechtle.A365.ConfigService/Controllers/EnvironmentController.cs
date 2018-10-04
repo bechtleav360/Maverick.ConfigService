@@ -130,5 +130,37 @@ namespace Bechtle.A365.ConfigService.Controllers
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
             }
         }
+
+        [HttpDelete("{category}/{name}/keys")]
+        public async Task<IActionResult> DeleteKeys([FromRoute] string category,
+                                                    [FromRoute] string name,
+                                                    [FromBody] string[] keys)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+                return BadRequest($"{nameof(category)} is empty");
+
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest($"{nameof(name)} is empty");
+
+            if (keys == null || !keys.Any())
+                return BadRequest("no keys received");
+
+            try
+            {
+                var actions = keys.Select(ConfigKeyAction.Delete)
+                                  .ToArray();
+
+                new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                       .ModifyKeys(actions)
+                                       .Save(_eventStore);
+
+                return AcceptedAtAction(nameof(GetEnvironmentKeys), new {category, name});
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to delete keys from Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed delete update keys");
+            }
+        }
     }
 }
