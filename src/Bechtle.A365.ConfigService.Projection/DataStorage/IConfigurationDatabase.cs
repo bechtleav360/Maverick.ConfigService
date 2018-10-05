@@ -61,6 +61,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
+        ///     get all data for the Default-Environment for the given category
+        /// </summary>
+        /// <param name="category"></param>
+        /// <returns></returns>
+        Task<Result<Snapshot<EnvironmentIdentifier>>> GetDefaultEnvironment(string category);
+
+        /// <summary>
         ///     get the id of the last projected event.
         /// </summary>
         /// <returns></returns>

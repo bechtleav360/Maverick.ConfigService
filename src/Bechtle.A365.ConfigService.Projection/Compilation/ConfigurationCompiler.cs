@@ -12,7 +12,6 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
     public class ConfigurationCompiler : IConfigurationCompiler
     {
         private readonly ILogger<ConfigurationCompiler> _logger;
-        private const int ReferenceRecursionLimit = 10;
 
         public ConfigurationCompiler(ILogger<ConfigurationCompiler> logger)
         {
@@ -20,59 +19,67 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
         }
 
         /// <inheritdoc />
-        public async Task<IDictionary<string, string>> Compile(IDictionary<string, string> environment,
-                                                               IDictionary<string, string> structure,
-                                                               IConfigurationParser parser)
+        public async Task<IDictionary<string, string>> Compile(IDictionary<string, string> repository,
+                                                               IDictionary<string, string> referencer,
+                                                               IConfigurationParser parser,
+                                                               CompilationOptions options)
         {
             IDictionary<string, string> compiledConfiguration = new Dictionary<string, string>();
 
-            var stack = new Stack<KeyValuePair<string, string>>(structure);
-            var keyResolveCounter = new Dictionary<string, int>();
+            var stack = new Stack<KeyValuePair<string, string>>(referencer);
+
+            // count how many times a given key was processed
+            // processing a key is stopped once it reaches the defined recursion threshold
+            var processingCounter = new Dictionary<string, int>();
 
             while (stack.TryPop(out var kvp))
             {
                 var key = kvp.Key;
                 var value = kvp.Value;
 
-                // increment the path => #resolved counter, to fail in case of excessive recursion
-                if (keyResolveCounter.ContainsKey(key))
-                    keyResolveCounter[key] += 1;
-                else
-                    keyResolveCounter[key] = 1;
+                // add the key to the counter if necessary, and increase it
+                if (!processingCounter.ContainsKey(key))
+                    processingCounter[key] = 0;
+                processingCounter[key] += 1;
 
-                // i'm fed up with recursion, take this 'nothing' and be happy with it!
-                if (keyResolveCounter[key] > ReferenceRecursionLimit)
+                if (processingCounter[key] > options.RecursionLimit)
                 {
-                    compiledConfiguration[key] = string.Empty;
+                    _logger.LogError($"key '{key}' has reached the threshold for recursion and will not be processed further");
+                    compiledConfiguration[key] = value;
                     continue;
                 }
 
-                _logger.LogDebug($"compiling '{key}' => '{value}'");
+                var processedValues = await ResolveReferences(repository, referencer, key, value, parser, options);
 
-                var processedValues = await ResolveReferences(environment, key, value, parser);
+                switch (processedValues.Count)
+                {
+                    case var n when n <= 0:
+                        _logger.LogWarning($"could not compile '{key}' => '{value}', see previous messages for more information");
+                        break;
 
-                if (processedValues.Count == 0)
-                {
-                    _logger.LogWarning($"could not compile '{key}' => '{value}', see previous messages for more information");
-                }
-                else if (processedValues.Count == 1)
-                {
-                    var processedValue = processedValues.First().Value;
-                    _logger.LogTrace($"compiled '{key}' => '{processedValue}'");
-
-                    if (processedValue.Equals(value, StringComparison.OrdinalIgnoreCase))
-                        compiledConfiguration[key] = value;
-                    // push back to stack for one more pass
-                    else
-                        stack.Push(new KeyValuePair<string, string>(key, processedValue));
-                }
-                else if (processedValues.Count > 1)
-                {
-                    foreach (var processedValue in processedValues)
+                    case 1:
                     {
-                        _logger.LogTrace($"compiled '{key}' => {processedValue.Key} => '{processedValue.Value}'");
+                        var processedValue = processedValues.First().Value;
+                        _logger.LogTrace($"compiled '{key}' => '{processedValue}'");
+
+                        if (processedValue.Equals(value, StringComparison.OrdinalIgnoreCase))
+                            compiledConfiguration[key] = value;
                         // push back to stack for one more pass
-                        stack.Push(processedValue);
+                        else
+                            stack.Push(new KeyValuePair<string, string>(key, processedValue));
+                        break;
+                    }
+
+                    case var n when n > 1:
+                    {
+                        foreach (var processedValue in processedValues)
+                        {
+                            _logger.LogTrace($"compiled '{key}' => {processedValue.Key} => '{processedValue.Value}'");
+                            // push back to stack for one more pass
+                            stack.Push(processedValue);
+                        }
+
+                        break;
                     }
                 }
             }
@@ -80,10 +87,12 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             return compiledConfiguration;
         }
 
-        private async Task<IDictionary<string, string>> ResolveReferences(IDictionary<string, string> environment,
+        private async Task<IDictionary<string, string>> ResolveReferences(IDictionary<string, string> repository,
+                                                                          IDictionary<string, string> referencer,
                                                                           string key,
                                                                           string value,
-                                                                          IConfigurationParser parser)
+                                                                          IConfigurationParser parser,
+                                                                          CompilationOptions options)
         {
             var context = new ReferenceContext();
             var parseResult = parser.Parse(value);
@@ -92,6 +101,15 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             if (!parseResult.OfType<ReferencePart>().Any())
             {
                 _logger.LogDebug($"no references found in '{value}', nothing to resolve");
+                return new Dictionary<string, string> {{key, value}};
+            }
+
+            // if we're not allowed to resolve references anyway, return without processing
+            if (!options.References.HasFlag(ReferenceOption.AllowRepositoryReference) && !options.References.HasFlag(ReferenceOption.AllowSelfReference))
+            {
+                _logger.LogWarning($"'{parseResult.OfType<ReferencePart>().Count()}' references found, but options forbid resolving " +
+                                   $"(requires {ReferenceOption.AllowRepositoryReference:G} | {ReferenceOption.AllowSelfReference:G})");
+
                 return new Dictionary<string, string> {{key, value}};
             }
 
@@ -104,32 +122,37 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
                 switch (part)
                 {
                     case ReferencePart referencePart:
-                        var resolvedReference = await ResolveReference(environment, context, referencePart);
+                        var resolvedReference = await ResolveReference(repository, referencer, context, referencePart, options);
 
-                        // if the reference only modifies the context, we don't have to append anything to the result
+                        // if the reference only modifies the context we don't have to append anything to the result
                         if (!resolvedReference.HasValue)
                             continue;
 
+                        // if the reference resolves to a simple string we append it to valueBuilder
                         if (resolvedReference.IsSimple)
                             valueBuilder.Append(resolvedReference.SimpleValue);
 
+                        // if the reference resolves to multiple keys (is complex) we return it
+                        // and ignore ValueParts before / after, and don't further process this values
                         else if (resolvedReference.IsComplex)
                             return resolvedReference.ExpandedValue
                                                     .ToDictionary(kvp => $"{key}/{kvp.Key}".Replace("//", ""),
                                                                   kvp => kvp.Value);
 
+                        // otherwise it's probably a new kind of result that someone forgot to handle here
                         else
                             _logger.LogError($"unknown result received from {nameof(ResolveReference)}");
 
                         break;
 
                     case ValuePart valuePart:
+                        // ValueParts don't have any special meaning and are added back without further processing
                         valueBuilder.Append(valuePart.Text);
                         break;
 
                     default:
                         _logger.LogCritical($"handling of '{part.GetType().Name}' is not implemented");
-                        return new Dictionary<string, string> {{key, value}};
+                        continue;
                 }
             }
 
@@ -142,6 +165,7 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
         /// </summary>
         /// <param name="context"></param>
         /// <param name="reference"></param>
+        /// <param name="options"></param>
         /// <returns></returns>
         private async Task ResolveAliasCommand(ReferenceContext context, ReferencePart reference)
         {
@@ -174,9 +198,11 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             // else {} => both are null, but we don't care
         }
 
-        private async Task<ReferenceResolveResult> ResolveReference(IDictionary<string, string> environment,
+        private async Task<ReferenceResolveResult> ResolveReference(IDictionary<string, string> repository,
+                                                                    IDictionary<string, string> referencer,
                                                                     ReferenceContext context,
-                                                                    ReferencePart reference)
+                                                                    ReferencePart reference,
+                                                                    CompilationOptions options)
         {
             await ResolveAliasCommand(context, reference);
 
@@ -210,23 +236,59 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             {
                 var matcher = pathCommand.TrimEnd('*');
 
-                var matchingData = environment.Where(kvp => kvp.Key.StartsWith(matcher, StringComparison.OrdinalIgnoreCase))
-                                              .ToDictionary(kvp => kvp.Key.Substring(matcher.Length),
-                                                            kvp => kvp.Value);
+                // if the required flag is set, search the given bucket and return stuff if possible
+                // return with first results
+                foreach (var (dataBucket, requiredFlag) in new[]
+                {
+                    (referencer, ReferenceOption.AllowSelfReference),
+                    (repository, ReferenceOption.AllowRepositoryReference)
+                })
+                {
+                    if (!options.References.HasFlag(requiredFlag))
+                        continue;
 
-                return new ReferenceResolveResult(matchingData);
+                    var result = dataBucket.Where(kvp => kvp.Key.StartsWith(matcher, StringComparison.OrdinalIgnoreCase))
+                                           .ToDictionary(kvp => kvp.Key.Substring(matcher.Length),
+                                                         kvp => kvp.Value);
+
+                    if (result.Any())
+                        return new ReferenceResolveResult(result);
+                }
+
+                _logger.LogError("either no references allowed or no data could be found");
+
+                // return empty string, reference could not be resolved properly
+                return new ReferenceResolveResult(string.Empty);
             }
 
-            var result = environment.Where(kvp => kvp.Key.StartsWith(pathCommand, StringComparison.OrdinalIgnoreCase))
-                                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            // if the required flag is set, search the given bucket and return stuff if possible
+            // return with first results
+            foreach (var (dataBucket, requiredFlag) in new[]
+            {
+                (referencer, ReferenceOption.AllowSelfReference),
+                (repository, ReferenceOption.AllowRepositoryReference)
+            })
+            {
+                if (!options.References.HasFlag(requiredFlag))
+                    continue;
 
-            // if we have only one hit, return a 'simple' resolved value
-            if (result.Keys.Count == 1)
-                return new ReferenceResolveResult(result[result.Keys.First()]);
+                var result = dataBucket.Where(kvp => kvp.Key.StartsWith(pathCommand, StringComparison.OrdinalIgnoreCase))
+                                       .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-            // should this be an error instead? ¯\_(ツ)_/¯
-            _logger.LogError($"reference does not contain a '*' to indicate a complex match, but matched '{result.Keys.Count}' keys");
-            return new ReferenceResolveResult();
+                if (result.Count == 0)
+                    return new ReferenceResolveResult(string.Empty);
+                if (result.Count == 1)
+                    return new ReferenceResolveResult(result.First().Value);
+                if (result.Count > 1)
+                {
+                    // should this be an error instead? ¯\_(ツ)_/¯
+                    _logger.LogError($"reference does not contain a '*' to indicate a complex match, but matched '{result.Keys.Count}' keys");
+                    return new ReferenceResolveResult();
+                }
+            }
+
+            _logger.LogError("no keys matched the path or reference-resolving is not allowed");
+            return new ReferenceResolveResult(string.Empty);
         }
 
         private class ReferenceContext

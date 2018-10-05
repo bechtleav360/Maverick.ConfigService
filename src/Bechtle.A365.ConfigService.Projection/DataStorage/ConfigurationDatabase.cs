@@ -243,6 +243,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
+        public async Task<Result<Snapshot<EnvironmentIdentifier>>> GetDefaultEnvironment(string category)
+            => await GetEnvironment(new EnvironmentIdentifier(category, "Default"));
+
+        /// <inheritdoc />
         public async Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironment(EnvironmentIdentifier identifier)
         {
             using (var context = OpenProjectionStore())
@@ -259,32 +263,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                  .ToDictionary(data => data.Key,
                                                                data => data.Value);
 
-                var defaultEnvironment = await context.ConfigEnvironments.FirstOrDefaultAsync(env => string.Equals(env.Category,
-                                                                                                                   identifier.Category,
-                                                                                                                   StringComparison.OrdinalIgnoreCase)
-                                                                                                     && env.DefaultEnvironment);
-
-                // early exit for when there is no default-environment
-                if (defaultEnvironment == null)
-                {
-                    _logger.LogInformation($"no default-environment found for {identifier}, proceeding without default-environment");
-                    return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
-                                                                              environment.Version,
-                                                                              environmentData));
-                }
-
-                // gather default-environment data to a dictionary, and override its
-                // keys with those that are present in the actual environment
-                var completeData = defaultEnvironment.Keys
-                                                     .ToDictionary(data => data.Key,
-                                                                   data => data.Value);
-
-                foreach (var kvp in environmentData)
-                    completeData[kvp.Key] = kvp.Value;
-
                 return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
                                                                           environment.Version,
-                                                                          completeData));
+                                                                          environmentData));
             }
         }
 
@@ -452,7 +433,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             /// <summary>
             ///     null to indicate that no events have been projected
             /// </summary>
-            public long? LatestEvent { get; set; } = null;
+            public long? LatestEvent { get; set; }
         }
     }
 }

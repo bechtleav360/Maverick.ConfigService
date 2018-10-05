@@ -12,9 +12,11 @@ namespace Bechtle.A365.ConfigService.Tests
     public class ConfigurationCompilerTests
     {
         private static IConfigurationCompiler Compiler => new ConfigurationCompiler(new LoggerFactory().AddConsole(LogLevel.Warning)
-                                                                                                .CreateLogger<ConfigurationCompiler>());
+                                                                                                       .CreateLogger<ConfigurationCompiler>());
 
         private static IConfigurationParser Parser => new ConfigurationParser();
+
+        private static CompilationOptions AllowAllCompilationOptions => new CompilationOptions(ReferenceOption.AllowAll);
 
         /// <summary>
         ///     don't fail when there is nothing to do
@@ -25,7 +27,7 @@ namespace Bechtle.A365.ConfigService.Tests
             IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
             IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -50,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"C", "{{C}}"},
             });
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -77,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"A", "{{Key/With/Path}}"}
             });
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -109,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"E", "{{E}}"}
             });
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -138,7 +140,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"A", "{{A}}"}
             });
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -165,7 +167,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"A", "{{A/*}}"}
             });
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -197,7 +199,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"A", "{{A*}}"}
             });
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -230,7 +232,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"A", "{{A}}"}
             });
 
-            var compiled = Compiler.Compile(env, structure, Parser)
+            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
                                    .RunSync();
 
             Assert.NotNull(compiled);

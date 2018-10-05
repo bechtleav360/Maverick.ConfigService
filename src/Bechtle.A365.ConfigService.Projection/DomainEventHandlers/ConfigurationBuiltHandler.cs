@@ -38,15 +38,26 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
             if (environmentResult.IsError)
                 throw new Exception(environmentResult.Message);
 
+            var defaultEnvironmentResult = await _database.GetDefaultEnvironment(domainEvent.Identifier.Environment.Category);
+            if (defaultEnvironmentResult.IsError)
+                throw new Exception(defaultEnvironmentResult.Message);
+
             var structureSnapshot = structureResult.Data;
             var environmentSnapshot = environmentResult.Data;
+            var defaultEnvironmentSnapshot = defaultEnvironmentResult.Data;
 
-            var compiled = await _compiler.Compile(environmentSnapshot.Data,
+            var compiledRepository = await _compiler.Compile(defaultEnvironmentSnapshot.Data,
+                                                             environmentSnapshot.Data,
+                                                             _parser,
+                                                             CompilationOptions.EnvFromEnv);
+
+            var compiled = await _compiler.Compile(compiledRepository,
                                                    structureSnapshot.Data,
-                                                   _parser);
+                                                   _parser,
+                                                   CompilationOptions.StructFromEnv);
 
             var json = _translator.ToJson(compiled)
-                                 .ToString();
+                                  .ToString();
 
             await _database.SaveConfiguration(environmentSnapshot,
                                               structureSnapshot,
