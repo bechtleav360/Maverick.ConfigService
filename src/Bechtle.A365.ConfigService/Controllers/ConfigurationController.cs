@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -14,14 +15,17 @@ namespace Bechtle.A365.ConfigService.Controllers
     [Route(ApiBaseRoute + "configurations")]
     public class ConfigurationController : ControllerBase
     {
+        private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
 
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
+                                       IEventStore eventStore,
                                        IProjectionStore store)
             : base(provider, logger)
         {
+            _eventStore = eventStore;
             _store = store;
         }
 
@@ -61,6 +65,30 @@ namespace Bechtle.A365.ConfigService.Controllers
             var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier));
 
             return Result(result);
+        }
+
+        /// <summary>
+        ///     create a new configuration built from a given Environment and Structure
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <returns></returns>
+        [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
+        public async Task<IActionResult> BuildConfiguration(string environmentCategory,
+                                                            string environmentName,
+                                                            string structureName,
+                                                            int structureVersion)
+        {
+            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structureId = new StructureIdentifier(structureName, structureVersion);
+
+            new ConfigSnapshot().IdentifiedBy(structureId, envId)
+                                .Create()
+                                .Save(_eventStore);
+
+            return AcceptedAtAction(nameof(GetConfiguration), new {environmentCategory, environmentName, structureName, structureVersion});
         }
     }
 }
