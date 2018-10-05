@@ -61,6 +61,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
+        ///     get the id of the last projected event.
+        /// </summary>
+        /// <returns></returns>
+        Task<long> GetLatestProjectedEventId();
+
+        /// <summary>
         ///     get the structure with default-values for the specified Structure
         /// </summary>
         /// <param name="identifier"></param>
@@ -79,5 +85,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                        Snapshot<StructureIdentifier> structure,
                                        IDictionary<string, string> configuration,
                                        string configurationJson);
+
+        /// <summary>
+        ///     save the id of the last projected event.
+        /// </summary>
+        /// <returns></returns>
+        Task SetLatestProjectedEventId(long latestEventId);
     }
 }

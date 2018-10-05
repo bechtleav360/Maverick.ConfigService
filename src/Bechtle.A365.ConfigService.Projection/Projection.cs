@@ -52,8 +52,10 @@ namespace Bechtle.A365.ConfigService.Projection
 
             await Store.ConnectAsync();
 
+            var latestEvent = await Database.GetLatestProjectedEventId();
+
             Store.SubscribeToStreamFrom(Configuration.EventStore.SubscriptionName,
-                                        StreamCheckpoint.StreamStart,
+                                        latestEvent,
                                         new CatchUpSubscriptionSettings(Configuration.EventStore.MaxLiveQueueSize,
                                                                         Configuration.EventStore.ReadBatchSize,
                                                                         false,
@@ -89,6 +91,8 @@ namespace Bechtle.A365.ConfigService.Projection
                 return;
 
             await Project(domainEvent);
+
+            await Database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
         }
 
         private async Task Project(DomainEvent domainEvent)

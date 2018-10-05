@@ -289,6 +289,24 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
+        public async Task<long> GetLatestProjectedEventId()
+        {
+            using (var context = OpenProjectionStore())
+            {
+                var metadata = await context.Metadata.FirstOrDefaultAsync();
+
+                if (metadata is null)
+                {
+                    metadata = new ProjectionMetadata();
+                    await context.Metadata.AddAsync(metadata);
+                    await context.SaveChangesAsync();
+                }
+
+                return metadata.LatestEvent;
+            }
+        }
+
+        /// <inheritdoc />
         public async Task<Result<Snapshot<StructureIdentifier>>> GetStructure(StructureIdentifier identifier)
         {
             using (var context = OpenProjectionStore())
@@ -355,6 +373,25 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
         }
 
+        /// <inheritdoc />
+        public async Task SetLatestProjectedEventId(long latestEventId)
+        {
+            using (var context = OpenProjectionStore())
+            {
+                var metadata = await context.Metadata.FirstOrDefaultAsync();
+
+                if (metadata is null)
+                {
+                    metadata = new ProjectionMetadata();
+                    await context.Metadata.AddAsync(metadata);
+                    await context.SaveChangesAsync();
+                }
+
+                metadata.LatestEvent = latestEventId;
+                await context.SaveChangesAsync();
+            }
+        }
+
         private async Task<ConfigEnvironment> GetEnvironmentInternal(EnvironmentIdentifier identifier, ProjectionStore context)
         {
             return await context.ConfigEnvironments.FirstOrDefaultAsync(env => env.Category == identifier.Category &&
@@ -379,9 +416,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 _config = config;
             }
 
-            public DbSet<ProjectedConfiguration> ProjectedConfigurations { get; set; }
-
             public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
+
+            public DbSet<ProjectionMetadata> Metadata { get; set; }
+
+            public DbSet<ProjectedConfiguration> ProjectedConfigurations { get; set; }
 
             public DbSet<Structure> Structures { get; set; }
 
@@ -395,6 +434,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             {
                 base.OnModelCreating(modelBuilder);
 
+                modelBuilder.Entity<ProjectionMetadata>();
+
                 modelBuilder.Entity<Structure>();
                 modelBuilder.Entity<StructureKey>();
                 modelBuilder.Entity<ConfigEnvironment>();
@@ -402,6 +443,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 modelBuilder.Entity<ProjectedConfiguration>();
                 modelBuilder.Entity<ProjectedConfigurationKey>();
             }
+        }
+
+        public class ProjectionMetadata
+        {
+            public Guid Id { get; set; }
+
+            public long LatestEvent { get; set; }
         }
     }
 }
