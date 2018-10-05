@@ -64,7 +64,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         ///     get the id of the last projected event.
         /// </summary>
         /// <returns></returns>
-        Task<long> GetLatestProjectedEventId();
+        Task<long?> GetLatestProjectedEventId();
 
         /// <summary>
         ///     get the structure with default-values for the specified Structure

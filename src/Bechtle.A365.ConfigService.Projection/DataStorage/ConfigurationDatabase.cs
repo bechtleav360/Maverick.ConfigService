@@ -289,7 +289,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
-        public async Task<long> GetLatestProjectedEventId()
+        public async Task<long?> GetLatestProjectedEventId()
         {
             using (var context = OpenProjectionStore())
             {
@@ -449,7 +449,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         {
             public Guid Id { get; set; }
 
-            public long LatestEvent { get; set; }
+            /// <summary>
+            ///     null to indicate that no events have been projected
+            /// </summary>
+            public long? LatestEvent { get; set; } = null;
         }
     }
 }
