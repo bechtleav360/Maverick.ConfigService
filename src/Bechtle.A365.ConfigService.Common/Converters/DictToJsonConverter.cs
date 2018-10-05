@@ -9,6 +9,9 @@ namespace Bechtle.A365.ConfigService.Common.Converters
     {
         public JToken ToJson(IDictionary<string, string> dict)
         {
+            if (!dict.Any())
+                return new JObject();
+
             var root = new Node();
 
             // generate tree of Nodes

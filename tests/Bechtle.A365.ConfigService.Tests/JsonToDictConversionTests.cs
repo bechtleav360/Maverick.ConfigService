@@ -7,7 +7,7 @@ namespace Bechtle.A365.ConfigService.Tests
 {
     public class JsonToDictConversionTests
     {
-        private IJsonTranslator Translator => new JsonTranslator();
+        private static IJsonTranslator Translator => new JsonTranslator();
 
         [Fact]
         public void SimpleObject()

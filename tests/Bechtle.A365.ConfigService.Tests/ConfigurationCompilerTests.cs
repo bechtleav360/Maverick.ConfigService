@@ -11,10 +11,10 @@ namespace Bechtle.A365.ConfigService.Tests
     // using ReadOnlyDictionaries to ensure the compiler can't write to the given collections
     public class ConfigurationCompilerTests
     {
-        private IConfigurationCompiler Compiler => new ConfigurationCompiler(new LoggerFactory().AddConsole(LogLevel.Warning)
+        private static IConfigurationCompiler Compiler => new ConfigurationCompiler(new LoggerFactory().AddConsole(LogLevel.Warning)
                                                                                                 .CreateLogger<ConfigurationCompiler>());
 
-        private IConfigurationParser Parser => new ConfigurationParser();
+        private static IConfigurationParser Parser => new ConfigurationParser();
 
         /// <summary>
         ///     don't fail when there is nothing to do
