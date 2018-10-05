@@ -74,6 +74,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
                 // register all IDomainEventHandlers
                 // IMPORTANT: this needs to be updated once new events are added
+                .AddSingleton<IDomainEventHandler<DefaultEnvironmentCreated>, DefaultEnvironmentCreatedHandler>()
                 .AddSingleton<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
                 .AddSingleton<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
                 .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeyModifiedHandler>()

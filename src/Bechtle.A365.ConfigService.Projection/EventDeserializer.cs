@@ -26,6 +26,7 @@ namespace Bechtle.A365.ConfigService.Projection
             var factoryAssociations = new Dictionary<string, Type>
             {
                 {DomainEvent.GetEventType<ConfigurationBuilt>(), typeof(IDomainEventSerializer<ConfigurationBuilt>)},
+                {DomainEvent.GetEventType<DefaultEnvironmentCreated>(), typeof(IDomainEventSerializer<DefaultEnvironmentCreated>)},
                 {DomainEvent.GetEventType<EnvironmentCreated>(), typeof(IDomainEventSerializer<EnvironmentCreated>)},
                 {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventSerializer<EnvironmentDeleted>)},
                 {DomainEvent.GetEventType<EnvironmentKeysModified>(), typeof(IDomainEventSerializer<EnvironmentKeysModified>)},

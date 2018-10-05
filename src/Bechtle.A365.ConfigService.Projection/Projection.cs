@@ -110,6 +110,10 @@ namespace Bechtle.A365.ConfigService.Projection
                     await HandleDomainEvent(configurationBuilt);
                     break;
 
+                case DefaultEnvironmentCreated defaultEnvironmentCreated:
+                    await HandleDomainEvent(defaultEnvironmentCreated);
+                    break;
+
                 case EnvironmentCreated environmentCreated:
                     await HandleDomainEvent(environmentCreated);
                     break;
