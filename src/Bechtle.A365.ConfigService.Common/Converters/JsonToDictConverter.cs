@@ -11,6 +11,9 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         {
             var dict = new Dictionary<string, string>();
 
+            if (json == null)
+                return dict;
+
             Visit(json, string.Empty, dict);
 
             return dict;
@@ -50,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             var index = 0;
             foreach (var item in jArray.Children())
             {
-                Visit(item, $"{currentPath}/{index:D4}", dict);
+                Visit(item, MakeNextPath(currentPath, index.ToString("D4")), dict);
 
                 ++index;
             }
@@ -67,9 +70,13 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         }
 
         private void Visit(JProperty jProperty, string currentPath, IDictionary<string, string> dict)
-            => Visit(jProperty.Value, $"{currentPath}/{jProperty.Name}", dict);
+            => Visit(jProperty.Value, MakeNextPath(currentPath, jProperty.Name), dict);
 
         private void Visit(JValue jValue, string currentPath, IDictionary<string, string> dict)
             => dict[currentPath] = jValue.Value.ToString();
+
+        private string MakeNextPath(string currentPath, string nextPath) => string.IsNullOrWhiteSpace(currentPath)
+                                                                                ? nextPath
+                                                                                : $"{currentPath}/{nextPath}";
     }
 }
