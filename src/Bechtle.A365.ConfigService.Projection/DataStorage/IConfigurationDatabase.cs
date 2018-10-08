@@ -61,6 +61,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
+        ///     get all data for the specified Environment, and inherit keys from the Default Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier);
+
+        /// <summary>
         ///     get all data for the Default-Environment for the given category
         /// </summary>
         /// <param name="category"></param>

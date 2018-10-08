@@ -270,6 +270,39 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
         }
 
+        public async Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier)
+        {
+            using (var context = OpenProjectionStore())
+            {
+                var environment = await GetEnvironmentInternal(identifier, context);
+
+                if (environment is null)
+                {
+                    _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
+                    return Result<Snapshot<EnvironmentIdentifier>>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
+                }
+
+                var environmentData = environment.Keys
+                                                 .ToDictionary(data => data.Key,
+                                                               data => data.Value);
+
+                var defaultEnv = await GetEnvironmentInternal(new EnvironmentIdentifier(identifier.Category, "Default"), context);
+
+                // add all keys from defaultEnv to environmentData that are not already set in environmentData
+                // inherit by adding instead of overriding keys
+                if (defaultEnv is null)
+                    _logger.LogWarning($"no default-environment found for category '{identifier.Category}'");
+                else
+                    foreach (var kvp in defaultEnv.Keys)
+                        if (!environmentData.ContainsKey(kvp.Key))
+                            environmentData[kvp.Key] = kvp.Value;
+
+                return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
+                                                                          environment.Version,
+                                                                          environmentData));
+            }
+        }
+
         /// <inheritdoc />
         public async Task<long?> GetLatestProjectedEventId()
         {

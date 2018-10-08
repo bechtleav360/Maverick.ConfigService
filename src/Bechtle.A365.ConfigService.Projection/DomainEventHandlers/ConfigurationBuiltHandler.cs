@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
             if (structureResult.IsError)
                 throw new Exception(structureResult.Message);
 
-            var environmentResult = await _database.GetEnvironment(domainEvent.Identifier.Environment);
+            var environmentResult = await _database.GetEnvironmentWithInheritance(domainEvent.Identifier.Environment);
             if (environmentResult.IsError)
                 throw new Exception(environmentResult.Message);
 
