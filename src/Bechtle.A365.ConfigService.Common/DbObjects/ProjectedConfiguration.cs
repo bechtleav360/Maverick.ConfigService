@@ -11,8 +11,6 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         public virtual ConfigEnvironment ConfigEnvironment { get; set; }
 
-        public int EnvironmentVersion { get; set; }
-
         public Guid Id { get; set; }
 
         public virtual List<ProjectedConfigurationKey> Keys { get; set; }

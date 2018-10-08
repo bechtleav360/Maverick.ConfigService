@@ -16,7 +16,5 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         public virtual List<ConfigEnvironmentKey> Keys { get; set; }
 
         public string Name { get; set; }
-
-        public int Version { get; set; }
     }
 }

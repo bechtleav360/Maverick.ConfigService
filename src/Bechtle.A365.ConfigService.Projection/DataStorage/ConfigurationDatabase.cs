@@ -132,7 +132,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     Id = Guid.NewGuid(),
                     Name = identifier.Name,
                     Category = identifier.Category,
-                    Version = 1,
                     DefaultEnvironment = defaultEnvironment,
                     Keys = new List<ConfigEnvironmentKey>()
                 });
@@ -265,7 +264,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                                data => data.Value);
 
                 return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
-                                                                          environment.Version,
+                                                                          1,
                                                                           environmentData));
             }
         }
@@ -298,7 +297,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                             environmentData[kvp.Key] = kvp.Value;
 
                 return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
-                                                                          environment.Version,
+                                                                          1,
                                                                           environmentData));
             }
         }
@@ -359,7 +358,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 {
                     Id = Guid.NewGuid(),
                     ConfigEnvironmentId = foundEnvironment.Id,
-                    EnvironmentVersion = foundEnvironment.Version,
                     StructureId = foundStructure.Id,
                     StructureVersion = foundStructure.Version,
                     ConfigurationJson = configurationJson,
