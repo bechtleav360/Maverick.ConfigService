@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
@@ -18,7 +17,6 @@ namespace Bechtle.A365.ConfigService.Projection
         private ProjectionConfiguration Configuration { get; }
         private IEventStoreConnection Store { get; }
         private IServiceProvider Provider { get; }
-        private IConfigurationCompiler Compiler { get; }
         private IEventDeserializer EventDeserializer { get; }
         private IConfigurationDatabase Database { get; }
 
@@ -28,7 +26,6 @@ namespace Bechtle.A365.ConfigService.Projection
                           IConfigurationDatabase database,
                           IEventStoreConnection store,
                           IServiceProvider provider,
-                          IConfigurationCompiler compiler,
                           IEventDeserializer eventDeserializer)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -39,7 +36,6 @@ namespace Bechtle.A365.ConfigService.Projection
             Database = database ?? throw new ArgumentNullException(nameof(database));
             Store = store ?? throw new ArgumentNullException(nameof(store));
             Provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            Compiler = compiler ?? throw new ArgumentNullException(nameof(compiler));
             EventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
         }
 

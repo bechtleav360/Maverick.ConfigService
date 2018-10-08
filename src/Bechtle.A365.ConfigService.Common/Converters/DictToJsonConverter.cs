@@ -35,7 +35,6 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                         var nextNode = new Node
                         {
                             Name = pathPart,
-                            Parent = currentNode
                         };
                         currentNode.Children.Add(nextNode);
                         currentNode = nextNode;
@@ -76,15 +75,11 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
         private class Node
         {
-            public string FullPath => $"{(Parent is null ? "" : Parent.FullPath + "/")}{Name}";
-
             public string Name { get; set; } = string.Empty;
 
             public string Value { get; set; } = string.Empty;
 
-            public Node Parent { get; set; }
-
-            public List<Node> Children { get; set; } = new List<Node>();
+            public List<Node> Children { get; } = new List<Node>();
         }
     }
 }

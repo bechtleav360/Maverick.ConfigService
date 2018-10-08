@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     log the failed result and return an appropriate <see cref="HttpStatusCode" /> based on <see cref="Result.Code" />
+        ///     log the failed result and return an appropriate <see cref="HttpStatusCode" /> based on <see cref="Common.Result.Code" />
         /// </summary>
         /// <param name="result"></param>
         /// <returns></returns>

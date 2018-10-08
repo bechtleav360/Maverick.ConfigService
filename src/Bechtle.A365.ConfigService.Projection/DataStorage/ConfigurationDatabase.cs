@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -388,6 +389,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         private ProjectionStore OpenProjectionStore(ProjectionStore existingConnection = null)
             => existingConnection ?? new ProjectionStore(_config);
 
+        // property accessors are actually required for EFCore
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
         private class ProjectionStore : DbContext
         {
             private readonly ProjectionStorageConfiguration _config;

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services;
 
@@ -22,9 +23,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     Save all events that bring the this DomainObject to the desired State
         /// </summary>
         /// <param name="store"></param>
-        public virtual void Save(IEventStore store)
+        public virtual async Task Save(IEventStore store)
         {
-            foreach (var @event in RecordedEvents) store.WriteEvent(@event);
+            foreach (var @event in RecordedEvents) 
+                await store.WriteEvent(@event);
         }
     }
 }

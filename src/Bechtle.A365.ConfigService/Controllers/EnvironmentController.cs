@@ -69,14 +69,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (!existingEnvs.Data.Any())
                 {
                     // create DefaultEnvironment
-                    new ConfigEnvironment().DefaultIdentifiedBy(category)
-                                           .Create()
-                                           .Save(_eventStore);
+                    await new ConfigEnvironment().DefaultIdentifiedBy(category)
+                                                 .Create()
+                                                 .Save(_eventStore);
 
                     // create requested environment
-                    new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                           .Create()
-                                           .Save(_eventStore);
+                    await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                                 .Create()
+                                                 .Save(_eventStore);
                 }
                 else
                 {
@@ -85,9 +85,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                         return ProviderError(Common.Result.Error($"environment (Category: {category}; Name: {name}) already exists",
                                                                  ErrorCode.EnvironmentAlreadyExists));
 
-                    new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                           .Create()
-                                           .Save(_eventStore);
+                    await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                                 .Create()
+                                                 .Save(_eventStore);
                 }
 
                 return AcceptedAtAction(nameof(GetEnvironmentKeys), new {category, name});
@@ -118,9 +118,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var actions = keys.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
                                   .ToArray();
 
-                new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                       .ModifyKeys(actions)
-                                       .Save(_eventStore);
+                await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                             .ModifyKeys(actions)
+                                             .Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetEnvironmentKeys), new {category, name});
             }
@@ -150,9 +150,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var actions = keys.Select(ConfigKeyAction.Delete)
                                   .ToArray();
 
-                new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                       .ModifyKeys(actions)
-                                       .Save(_eventStore);
+                await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                             .ModifyKeys(actions)
+                                             .Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetEnvironmentKeys), new {category, name});
             }

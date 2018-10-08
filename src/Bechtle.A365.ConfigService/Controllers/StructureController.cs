@@ -151,9 +151,9 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 var keys = _translator.ToDictionary(structure.Structure);
 
-                new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
-                                     .Create(keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value)))
-                                     .Save(_eventStore);
+                await new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
+                                           .Create(keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value)))
+                                           .Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetStructureKeys),
                                         new {name = structure.Name, version = structure.Version},

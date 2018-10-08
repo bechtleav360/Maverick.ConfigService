@@ -165,10 +165,11 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
         /// </summary>
         /// <param name="context"></param>
         /// <param name="reference"></param>
-        /// <param name="options"></param>
         /// <returns></returns>
         private async Task ResolveAliasCommand(ReferenceContext context, ReferencePart reference)
         {
+            await Task.Yield();
+
             var usingCommand = reference.Commands.ContainsKey(ReferenceCommand.Using)
                                    ? reference.Commands[ReferenceCommand.Using]
                                    : null;

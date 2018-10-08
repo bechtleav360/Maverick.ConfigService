@@ -67,9 +67,9 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                               structureSnapshot,
                                               compiled,
                                               json);
-#if !DEBUG
-            await _eventBus.Publish(new EventBusMessages.OnVersionBuilt());
-#endif
+
+            if (false)
+                await _eventBus.Publish(new EventBusMessages.OnVersionBuilt());
         }
     }
 }

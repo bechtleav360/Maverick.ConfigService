@@ -84,9 +84,9 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureId = new StructureIdentifier(structureName, structureVersion);
 
-            new ConfigSnapshot().IdentifiedBy(structureId, envId)
-                                .Create()
-                                .Save(_eventStore);
+            await new ConfigSnapshot().IdentifiedBy(structureId, envId)
+                                      .Create()
+                                      .Save(_eventStore);
 
             return AcceptedAtAction(nameof(GetConfiguration), new {environmentCategory, environmentName, structureName, structureVersion});
         }
