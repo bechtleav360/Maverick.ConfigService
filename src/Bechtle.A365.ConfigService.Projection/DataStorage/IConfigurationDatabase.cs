@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -94,11 +95,15 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="structure"></param>
         /// <param name="configuration"></param>
         /// <param name="configurationJson"></param>
+        /// <param name="validFrom"></param>
+        /// <param name="validTo"></param>
         /// <returns></returns>
         Task<Result> SaveConfiguration(Snapshot<EnvironmentIdentifier> environment,
                                        Snapshot<StructureIdentifier> structure,
                                        IDictionary<string, string> configuration,
-                                       string configurationJson);
+                                       string configurationJson,
+                                       DateTime? validFrom,
+                                       DateTime? validTo);
 
         /// <summary>
         ///     save the id of the last projected event.

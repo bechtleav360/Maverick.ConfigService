@@ -24,11 +24,14 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailable()
+        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when)
         {
             try
             {
+                var utcWhen = when.ToUniversalTime();
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= utcWhen &&
+                                                         (c.ValidTo ?? DateTime.MaxValue) >= utcWhen)
                                              .OrderBy(s => s.ConfigEnvironment.Category)
                                              .ThenBy(s => s.ConfigEnvironment.Name)
                                              .ThenBy(s => s.Structure.Name)
@@ -49,11 +52,12 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment)
+        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when)
         {
             try
             {
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                              .Where(c => c.ConfigEnvironment.Category == environment.Category &&
                                                          c.ConfigEnvironment.Name == environment.Name)
                                              .OrderBy(s => s.Structure.Name)
@@ -74,11 +78,12 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure)
+        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when)
         {
             try
             {
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                              .Where(c => c.Structure.Name == structure.Name &&
                                                          c.Structure.Version == structure.Version)
                                              .OrderBy(s => s.ConfigEnvironment.Category)
@@ -99,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier)
+        public async Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when)
         {
             var formattedParams = "(" +
                                   $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
@@ -111,6 +116,7 @@ namespace Bechtle.A365.ConfigService.Services
             try
             {
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                              .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
                                                                        c.ConfigEnvironment.Category == identifier.Environment.Category &&
                                                                        c.Structure.Name == identifier.Structure.Name &&

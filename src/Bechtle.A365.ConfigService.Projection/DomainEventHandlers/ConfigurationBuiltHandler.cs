@@ -5,6 +5,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
+
 // using Bechtle.A365.Core.EventBus.Abstraction;
 
 namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
@@ -14,6 +15,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         private readonly IConfigurationDatabase _database;
         private readonly IConfigurationCompiler _compiler;
         private readonly IConfigurationParser _parser;
+
         private readonly IJsonTranslator _translator;
         // private readonly IEventBus _eventBus;
 
@@ -22,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                          IConfigurationCompiler compiler,
                                          IConfigurationParser parser,
                                          IJsonTranslator translator)
-                                         // IEventBus eventBus)
+            // IEventBus eventBus)
         {
             _database = database;
             _compiler = compiler;
@@ -66,7 +68,9 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
             await _database.SaveConfiguration(environmentSnapshot,
                                               structureSnapshot,
                                               compiled,
-                                              json);
+                                              json,
+                                              domainEvent.ValidFrom,
+                                              domainEvent.ValidTo);
 
             // await _eventBus.Publish(new EventBusMessages.OnVersionBuilt());
         }

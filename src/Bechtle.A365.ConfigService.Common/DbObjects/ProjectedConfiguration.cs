@@ -22,5 +22,9 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         public int StructureVersion { get; set; }
 
         public string ConfigurationJson { get; set; }
+
+        public DateTime? ValidFrom { get; set; }
+
+        public DateTime? ValidTo { get; set; }
     }
 }

@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Dto;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -30,15 +31,52 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
+        ///     create a new configuration built from a given Environment and Structure
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <param name="buildOptions">times are assumed to be UTC</param>
+        /// <returns></returns>
+        [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
+        public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
+                                                            [FromRoute] string environmentName,
+                                                            [FromRoute] string structureName,
+                                                            [FromRoute] int structureVersion,
+                                                            [FromBody] ConfigurationBuildOptions buildOptions)
+        {
+            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structureId = new StructureIdentifier(structureName, structureVersion);
+
+            await new ConfigSnapshot().IdentifiedBy(structureId, envId)
+                                      .ValidFrom(buildOptions?.ValidFrom)
+                                      .ValidTo(buildOptions?.ValidTo)
+                                      .Create()
+                                      .Save(_eventStore);
+
+            return AcceptedAtAction(nameof(GetConfiguration), new {environmentCategory, environmentName, structureName, structureVersion});
+        }
+
+        /// <summary>
         ///     get all available configurations
         /// </summary>
         /// <returns></returns>
         [HttpGet("available")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetAvailableConfigurations()
+        public async Task<IActionResult> GetAvailableConfigurations() => await GetAvailableConfigurations(DateTime.UtcNow);
+
+        /// <summary>
+        ///     get all available configurations
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("available/{when}")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetAvailableConfigurations([FromRoute] DateTime when)
         {
-            var result = await _store.Configurations.GetAvailable();
+            var result = await _store.Configurations.GetAvailable(when);
 
             return Result(result);
         }
@@ -54,41 +92,39 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetConfiguration(string environmentCategory,
-                                                          string environmentName,
-                                                          string structureName,
-                                                          int structureVersion)
-        {
-            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
-
-            var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier));
-
-            return Result(result);
-        }
+        public async Task<IActionResult> GetConfiguration([FromRoute] string environmentCategory,
+                                                          [FromRoute] string environmentName,
+                                                          [FromRoute] string structureName,
+                                                          [FromRoute] int structureVersion) => await GetConfiguration(environmentCategory,
+                                                                                                                      environmentName,
+                                                                                                                      structureName,
+                                                                                                                      structureVersion,
+                                                                                                                      DateTime.UtcNow);
 
         /// <summary>
-        ///     create a new configuration built from a given Environment and Structure
+        ///     get the keys of a specific configuration
         /// </summary>
         /// <param name="environmentCategory"></param>
         /// <param name="environmentName"></param>
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
         /// <returns></returns>
-        [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
-        public async Task<IActionResult> BuildConfiguration(string environmentCategory,
-                                                            string environmentName,
-                                                            string structureName,
-                                                            int structureVersion)
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/{when}")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetConfiguration([FromRoute] string environmentCategory,
+                                                          [FromRoute] string environmentName,
+                                                          [FromRoute] string structureName,
+                                                          [FromRoute] int structureVersion,
+                                                          [FromRoute] DateTime when)
         {
-            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureId = new StructureIdentifier(structureName, structureVersion);
+            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            await new ConfigSnapshot().IdentifiedBy(structureId, envId)
-                                      .Create()
-                                      .Save(_eventStore);
+            var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when);
 
-            return AcceptedAtAction(nameof(GetConfiguration), new {environmentCategory, environmentName, structureName, structureVersion});
+            return Result(result);
         }
     }
 }

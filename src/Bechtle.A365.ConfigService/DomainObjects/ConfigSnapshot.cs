@@ -1,4 +1,5 @@
-﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
+﻿using System;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -7,11 +8,24 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class ConfigSnapshot : DomainObject
     {
-        private StructureIdentifier _structure;
         private EnvironmentIdentifier _environment;
+        private StructureIdentifier _structure;
+        private DateTime? _validFrom;
+        private DateTime? _validTo;
 
         /// <summary>
-        ///     set the identifier for this <see cref="ConfigSnapshot"/> to the given Identifiers
+        ///     create events that Create this DomainObject when saved
+        /// </summary>
+        /// <returns></returns>
+        public ConfigSnapshot Create()
+        {
+            RecordedEvents.Add(new ConfigurationBuilt(_environment, _structure, _validFrom, _validTo));
+
+            return this;
+        }
+
+        /// <summary>
+        ///     set the identifier for this <see cref="ConfigSnapshot" /> to the given Identifiers
         /// </summary>
         /// <param name="structure"></param>
         /// <param name="environment"></param>
@@ -25,13 +39,24 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
-        ///     create events that Create this DomainObject when saved
+        ///     set this Configuration to be valid from the given point in time, or always if null
         /// </summary>
+        /// <param name="from"></param>
         /// <returns></returns>
-        public ConfigSnapshot Create()
+        public ConfigSnapshot ValidFrom(DateTime? from)
         {
-            RecordedEvents.Add(new ConfigurationBuilt(_environment, _structure));
+            _validFrom = from;
+            return this;
+        }
 
+        /// <summary>
+        ///     set this Configuration to be valid up to the given point in time, or indefinitely if null
+        /// </summary>
+        /// <param name="to"></param>
+        /// <returns></returns>
+        public ConfigSnapshot ValidTo(DateTime? to)
+        {
+            _validTo = to;
             return this;
         }
     }

@@ -345,7 +345,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         public async Task<Result> SaveConfiguration(Snapshot<EnvironmentIdentifier> environment,
                                                     Snapshot<StructureIdentifier> structure,
                                                     IDictionary<string, string> configuration,
-                                                    string configurationJson)
+                                                    string configurationJson,
+                                                    DateTime? validFrom,
+                                                    DateTime? validTo)
         {
             using (var context = OpenProjectionStore())
             {
@@ -361,6 +363,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     StructureId = foundStructure.Id,
                     StructureVersion = foundStructure.Version,
                     ConfigurationJson = configurationJson,
+                    ValidFrom = validFrom,
+                    ValidTo = validTo,
                     Keys = configuration.Select(kvp => new ProjectedConfigurationKey
                                         {
                                             Id = Guid.NewGuid(),
