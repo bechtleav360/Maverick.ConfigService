@@ -339,10 +339,22 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                         .ToList()
                 };
 
-                await context.ProjectedConfigurations.AddAsync(compiledConfiguration);
+                var existingConfiguration = await context.ProjectedConfigurations
+                                                         .FirstOrDefaultAsync(c => c.ConfigEnvironment.Category == environment.Identifier.Category &&
+                                                                                   c.ConfigEnvironment.Name == environment.Identifier.Name &&
+                                                                                   c.Structure.Name == structure.Identifier.Name &&
+                                                                                   c.Structure.Version == structure.Identifier.Version);
 
                 try
                 {
+                    if (existingConfiguration != null)
+                    {
+                        context.ProjectedConfigurations.Remove(existingConfiguration);
+                        await context.SaveChangesAsync();
+                    }
+
+                    await context.ProjectedConfigurations.AddAsync(compiledConfiguration);
+
                     await context.SaveChangesAsync();
 
                     return Result.Success();
