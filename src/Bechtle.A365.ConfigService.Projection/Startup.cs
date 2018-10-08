@@ -7,6 +7,8 @@ using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
+using Bechtle.A365.Core.EventBus;
+using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Logging.NLog.Extension;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
@@ -18,12 +20,12 @@ namespace Bechtle.A365.ConfigService.Projection
 {
     public class Startup
     {
-        private IConfiguration Configuration { get; }
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
+
+        private IConfiguration Configuration { get; }
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -46,6 +48,7 @@ namespace Bechtle.A365.ConfigService.Projection
                 // configuration as a whole, and parts of it
                 .AddSingleton(Configuration)
                 .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ProjectionConfiguration>())
+                .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventBus)
                 .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventStore)
                 .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().Storage)
 
@@ -68,6 +71,18 @@ namespace Bechtle.A365.ConfigService.Projection
                 .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
                 .AddSingleton<IConfigurationDatabase, ConfigurationDatabase>()
                 .AddSingleton<IJsonTranslator, JsonTranslator>()
+                .AddSingleton<IEventBus, WebSocketEventBusClient>(provider =>
+                {
+                    var config = provider.GetService<ProjectionEventBusConfiguration>();
+                    var loggerFactory = provider.GetService<ILoggerFactory>();
+
+                    var client = new WebSocketEventBusClient(config.Server, loggerFactory);
+
+                    client.Connect()
+                          .RunSync();
+
+                    return client;
+                })
 
                 // add DomainEventSerializer as generic class for IDomainEventSerializer
                 .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))
