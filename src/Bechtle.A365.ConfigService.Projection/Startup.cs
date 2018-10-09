@@ -1,9 +1,9 @@
 ﻿using System;
+using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Parsing;
-using Bechtle.A365.ConfigService.Projection.Compilation;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Parsing;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Projection.Compilation
+namespace Bechtle.A365.ConfigService.Common.Compilation
 {
     public class ConfigurationCompiler : IConfigurationCompiler
     {
@@ -100,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
             // if there are no references to be found, just return the given value without further ado
             if (!parseResult.OfType<ReferencePart>().Any())
             {
-                _logger.LogDebug($"no references found in '{value}', nothing to resolve");
+                _logger.LogTrace($"no references found in '{value}', nothing to resolve");
                 return new Dictionary<string, string> {{key, value}};
             }
 
@@ -223,7 +223,7 @@ namespace Bechtle.A365.ConfigService.Projection.Compilation
 
                 if (context.Aliases.ContainsKey(alias))
                 {
-                    _logger.LogDebug($"de-referencing alias '{alias}'");
+                    _logger.LogTrace($"de-referencing alias '{alias}'");
                     pathCommand = $"{context.Aliases[alias]}/{rest}".Replace("//", "/");
                 }
                 else
