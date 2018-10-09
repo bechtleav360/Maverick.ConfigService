@@ -171,11 +171,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             await Task.Yield();
 
             var usingCommand = reference.Commands.ContainsKey(ReferenceCommand.Using)
-                                   ? reference.Commands[ReferenceCommand.Using]
+                                   ? reference.Commands[ReferenceCommand.Using].Trim()
                                    : null;
 
             var aliasCommand = reference.Commands.ContainsKey(ReferenceCommand.Alias)
-                                   ? reference.Commands[ReferenceCommand.Alias]
+                                   ? reference.Commands[ReferenceCommand.Alias].Trim()
                                    : null;
 
             // if one or the other, but not both are set
