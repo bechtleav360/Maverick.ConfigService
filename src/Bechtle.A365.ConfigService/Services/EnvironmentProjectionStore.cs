@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -56,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Services
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)
                                              .ToListAsync();
-                
+
                 var result = dbResult?.Select(s => new EnvironmentIdentifier(s))
                                      .ToList()
                              ?? new List<EnvironmentIdentifier>();
@@ -82,13 +83,61 @@ namespace Bechtle.A365.ConfigService.Services
                 if (dbResult is null)
                     return Result<IDictionary<string, string>>.Error($"no environment found with (" +
                                                                      $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                                                     $"{nameof(identifier.Name)}: {identifier.Name})", 
+                                                                     $"{nameof(identifier.Name)}: {identifier.Name})",
                                                                      ErrorCode.NotFound);
 
                 var result = dbResult.Keys
                                      .ToImmutableSortedDictionary(k => k.Key,
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
+
+                return Result<IDictionary<string, string>>.Success(result);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "failed to retrieve keys for environment " +
+                                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})");
+
+                return Result<IDictionary<string, string>>.Error(
+                    "failed to retrieve keys for environment " +
+                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
+                    ErrorCode.DbQueryError);
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier)
+        {
+            try
+            {
+                var environment = await _context.ConfigEnvironments
+                                                .FirstOrDefaultAsync(s => s.Category == identifier.Category &&
+                                                                          s.Name == identifier.Name);
+
+                if (environment is null)
+                    return Result<IDictionary<string, string>>.Error($"no environment found with (" +
+                                                                     $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                                                     $"{nameof(identifier.Name)}: {identifier.Name})",
+                                                                     ErrorCode.NotFound);
+
+                var defaultEnvironment = await _context.ConfigEnvironments
+                                                       .FirstOrDefaultAsync(s => s.Category == identifier.Category &&
+                                                                                 s.Name == "Default");
+
+                var defaultEnvironmentKeys = defaultEnvironment?.Keys ?? new List<ConfigEnvironmentKey>();
+                var environmentKeys = environment.Keys ?? new List<ConfigEnvironmentKey>();
+
+                IDictionary<string, string> result = new Dictionary<string, string>(Math.Max(environmentKeys.Count, defaultEnvironmentKeys.Count));
+
+                foreach (var item in defaultEnvironmentKeys)
+                    result[item.Key] = item.Value;
+
+                foreach (var item in environmentKeys)
+                    result[item.Key] = item.Value;
+
+                result = result.ToImmutableSortedDictionary(k => k.Key,
+                                                            k => k.Value,
+                                                            StringComparer.OrdinalIgnoreCase);
 
                 return Result<IDictionary<string, string>>.Success(result);
             }

@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Bechtle.A365.Common;
+using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Extensions;
 using Bechtle.A365.ConfigService.OperationFilters;
+using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
@@ -43,7 +47,11 @@ namespace Bechtle.A365.ConfigService
             var authorityUri = authorityEndpoint.ToUri();
 
             // setup MVC
-            services.AddMvc()
+            services.AddMvc(options =>
+                    {
+                        // require authorization by default
+                        options.Filters.Add(new AuthorizeFilter(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build()));
+                    })
                     .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             // setup Swagger and Swagger-OAuth
@@ -89,6 +97,9 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IStructureProjectionStore, StructureProjectionStore>()
                     .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>()
                     .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>()
+                    .AddScoped<IConfigurationCompiler, ConfigurationCompiler>()
+                    .AddScoped<IJsonTranslator, JsonTranslator>()
+                    .AddScoped<IConfigurationParser, ConfigurationParser>()
                     .AddSingleton<IEventStore, Services.EventStore>()
                     .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton<IJsonTranslator, JsonTranslator>()

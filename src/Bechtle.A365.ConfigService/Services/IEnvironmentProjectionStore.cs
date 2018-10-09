@@ -29,5 +29,12 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <returns></returns>
         Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     get the keys of an Environment, and inheriting keys from Default Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier);
     }
 }
