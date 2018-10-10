@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
+using Bechtle.A365.Common.Utilities.Extensions;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -37,15 +38,25 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     return Result.Error($"could not find environment {identifier} to apply modifications", ErrorCode.NotFound);
                 }
 
+                // 'look-up table' string=>ConfigEnvironmentKey to prevent searching the entire list for eacha and every key
+                var keyDict = environment.Keys.ToDictionary(k => k.Key, k => k);
+
+                // changes we want to make later on
+                // many small changes to EF-List environment.Keys will result in abysmal performance
+                var addedKeys = new List<ConfigEnvironmentKey>();
+                var removedKeys = new List<ConfigEnvironmentKey>();
+
                 foreach (var action in actions)
                     switch (action.Type)
                     {
                         case ConfigKeyActionType.Set:
                         {
-                            var existingKey = environment.Keys.FirstOrDefault(k => k.Key == action.Key);
+                            var existingKey = keyDict.ContainsKey(action.Key)
+                                                  ? keyDict[action.Key]
+                                                  : null;
 
                             if (existingKey is null)
-                                environment.Keys.Add(new ConfigEnvironmentKey
+                                addedKeys.Add(new ConfigEnvironmentKey
                                 {
                                     Id = Guid.NewGuid(),
                                     ConfigEnvironmentId = environment.Id,
@@ -60,14 +71,17 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
                         case ConfigKeyActionType.Delete:
                         {
-                            var existingKey = environment.Keys.FirstOrDefault(k => k.Key == action.Key);
+                            var existingKey = keyDict.ContainsKey(action.Key)
+                                                  ? keyDict[action.Key]
+                                                  : null;
+
                             if (existingKey is null)
                             {
                                 _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
                                 return Result.Error($"could not remove key '{action.Key}' from environment {identifier}", ErrorCode.NotFound);
                             }
 
-                            environment.Keys.Remove(existingKey);
+                            removedKeys.Add(existingKey);
                             break;
                         }
 
@@ -78,6 +92,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
                 try
                 {
+                    if (removedKeys.Any())
+                        environment.Keys.RemoveRange(removedKeys);
+
+                    if (addedKeys.Any())
+                        environment.Keys.AddRange(addedKeys);
+
                     await context.SaveChangesAsync();
                     return Result.Success();
                 }
