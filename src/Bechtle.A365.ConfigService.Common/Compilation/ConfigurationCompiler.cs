@@ -94,8 +94,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                                                           IConfigurationParser parser,
                                                                           CompilationOptions options)
         {
-            var context = new ReferenceContext();
             var parseResult = parser.Parse(value);
+            var context = new ReferenceContext
+            {
+                CurrentKey = key,
+                OriginalValue = value
+            };
 
             // if there are no references to be found, just return the given value without further ado
             if (!parseResult.OfType<ReferencePart>().Any())
@@ -228,7 +232,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 }
                 else
                 {
-                    _logger.LogWarning($"could not de-reference alias '{alias}'");
+                    // hard-coded handling of '$this' alias
+                    if (alias.Equals("this", StringComparison.OrdinalIgnoreCase))
+                        pathCommand = $"{context.CurrentKey.Substring(0, context.CurrentKey.LastIndexOf('/'))}/{rest}";
+                    else
+                        _logger.LogWarning($"could not de-reference alias '{alias}'");
                 }
             }
 
@@ -295,6 +303,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         private class ReferenceContext
         {
             public Dictionary<string, string> Aliases { get; } = new Dictionary<string, string>();
+
+            public string CurrentKey { get; set; } = string.Empty;
+
+            public string OriginalValue { get; set; } = string.Empty;
         }
 
         // ReSharper disable once CommentTypo - let me make my joke, ReSharper
