@@ -11,8 +11,6 @@ namespace Bechtle.A365.ConfigService.Configuration
     {
         private Dictionary<string, EndpointConfiguration> _indexedEndpoints;
 
-        public AuthenticationConfiguration Authentication { get; set; }
-
         /// <summary>
         ///     Gets or sets Endpoints that can be referenced throughout the rest of the configuration.
         /// </summary>

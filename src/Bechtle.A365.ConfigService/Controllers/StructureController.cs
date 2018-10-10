@@ -47,7 +47,15 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var result = await _store.Structures.GetAvailable();
 
-                return Result(result);
+                if (result.IsError)
+                    return ProviderError(result);
+
+                var sortedData = result.Data
+                                       .GroupBy(s => s.Name)
+                                       .ToDictionary(g => g.Key, g => g.Select(s => s.Version)
+                                                                       .ToArray());
+
+                return Ok(sortedData);
             }
             catch (Exception e)
             {

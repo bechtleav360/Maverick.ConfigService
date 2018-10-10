@@ -4,11 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -19,16 +21,19 @@ namespace Bechtle.A365.ConfigService.Controllers
     {
         private readonly IProjectionStore _store;
         private readonly IEventStore _eventStore;
+        private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
         public EnvironmentController(IServiceProvider provider,
                                      ILogger<EnvironmentController> logger,
                                      IProjectionStore store,
-                                     IEventStore eventStore)
+                                     IEventStore eventStore,
+                                     IJsonTranslator translator)
             : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
+            _translator = translator;
         }
 
         [HttpGet("available")]
@@ -129,6 +134,21 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Logger.LogError(e, $"failed to update keys of Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
             }
+        }
+
+        [HttpPut("{category}/{name}/json")]
+        public async Task<IActionResult> UpdateKeysFromJson([FromRoute] string category,
+                                                            [FromRoute] string name,
+                                                            [FromBody] JToken json)
+        {
+            if (json == null)
+                return BadRequest("no keys received");
+
+            // convert given IDictionary to a Dictionary without casting
+            var keys = _translator.ToDictionary(json)
+                                  .ToDictionary(k => k.Key, k => k.Value);
+
+            return await UpdateKeys(category, name, keys);
         }
 
         [HttpDelete("{category}/{name}/keys")]
