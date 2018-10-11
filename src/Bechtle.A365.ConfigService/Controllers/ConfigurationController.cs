@@ -31,6 +31,37 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
+        ///     create a new configuration for each combination of given Environment and available structure
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="buildOptions"></param>
+        /// <returns></returns>
+        [HttpPost("{environmentCategory}/{environmentName}")]
+        public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
+                                                            [FromRoute] string environmentName,
+                                                            [FromBody] ConfigurationBuildOptions buildOptions)
+        {
+            var availableStructures = await _store.Structures.GetAvailable();
+
+            if (availableStructures.IsError)
+                return ProviderError(availableStructures);
+
+            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
+
+            foreach (var structure in availableStructures.Data)
+            {
+                await new ConfigSnapshot().IdentifiedBy(structure, envId)
+                                          .ValidFrom(buildOptions?.ValidFrom)
+                                          .ValidTo(buildOptions?.ValidTo)
+                                          .Create()
+                                          .Save(_eventStore);
+            }
+
+            return Accepted();
+        }
+
+        /// <summary>
         ///     create a new configuration built from a given Environment and Structure
         /// </summary>
         /// <param name="environmentCategory"></param>
