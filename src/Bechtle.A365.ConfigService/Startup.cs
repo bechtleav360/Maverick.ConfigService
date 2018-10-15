@@ -48,6 +48,7 @@ namespace Bechtle.A365.ConfigService
             // setup services for DI
             services.AddEntityFrameworkProxies()
                     .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
+                    .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
                     .AddScoped<ProjectionStoreContext>()
@@ -77,11 +78,10 @@ namespace Bechtle.A365.ConfigService
                 app.UseHttpsRedirection();
             }
 
-            app.UseAuthentication()
+            app.UseMvc()
                .UseCors(policy => policy.AllowAnyHeader()
                                         .AllowAnyMethod()
                                         .AllowAnyOrigin())
-               .UseMvc()
                .UseSwagger()
                .UseSwaggerUI(options =>
                {
