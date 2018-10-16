@@ -15,7 +15,8 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         }
 
         /// <inheritdoc />
-        public async Task HandleDomainEvent(StructureCreated domainEvent) => await _database.CreateStructure(domainEvent.Identifier, 
-                                                                                                             domainEvent.ModifiedKeys);
+        public async Task HandleDomainEvent(StructureCreated domainEvent) => await _database.CreateStructure(domainEvent.Identifier,
+                                                                                                             domainEvent.Keys,
+                                                                                                             domainEvent.Variables);
     }
 }

@@ -16,29 +16,34 @@ namespace Bechtle.A365.ConfigService.Tests
 
         private static IConfigurationParser Parser => new ConfigurationParser();
 
-        private static CompilationOptions AllowAllCompilationOptions => new CompilationOptions(ReferenceOption.AllowAll);
-
         /// <summary>
         ///     resolve a reference to a complex result (object)
         /// </summary>
         [Fact]
         public void CompileExpandObject()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var env = new EnvironmentCompilationInfo
             {
-                {"A/A", "A"},
-                {"A/B", "B"},
-                {"A/C", "C"},
-                {"A/D", "D"},
-                {"A/E", "E"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A/A", "A"},
+                    {"A/B", "B"},
+                    {"A/C", "C"},
+                    {"A/D", "D"},
+                    {"A/E", "E"}
+                })
+            };
 
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var structure = new StructureCompilationInfo
             {
-                {"A", "{{A/*}}"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{A/*}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -56,31 +61,38 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void CompileExpandObjectFilterKeys()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var env = new EnvironmentCompilationInfo
             {
-                {"A/A", "A"},
-                {"A/B", "B"},
-                {"A/C", "C"},
-                {"A/D", "D"},
-                {"A/E", "E"}
-            });
-
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A/A", "A"},
+                    {"A/B", "B"},
+                    {"A/C", "C"},
+                    {"A/D", "D"},
+                    {"A/E", "E"}
+                })
+            };
+            
+            var structure = new StructureCompilationInfo
             {
-                {"A", "{{A*}}"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{A*}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);
             // actually not sure if this is what we want...
             // might be handy if one wants to include all keys that match 'Name*' or something like that
-            Assert.Equal("A", compiled["AA"]);
-            Assert.Equal("B", compiled["AB"]);
-            Assert.Equal("C", compiled["AC"]);
-            Assert.Equal("D", compiled["AD"]);
-            Assert.Equal("E", compiled["AE"]);
+            Assert.Equal("A", compiled["A/A"]);
+            Assert.Equal("B", compiled["A/B"]);
+            Assert.Equal("C", compiled["A/C"]);
+            Assert.Equal("D", compiled["A/D"]);
+            Assert.Equal("E", compiled["A/E"]);
         }
 
         /// <summary>
@@ -89,21 +101,28 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void CompileExpandObjectWrongSyntax()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var env = new EnvironmentCompilationInfo
             {
-                {"A/A", "A"},
-                {"A/B", "B"},
-                {"A/C", "C"},
-                {"A/D", "D"},
-                {"A/E", "E"}
-            });
-
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A/A", "A"},
+                    {"A/B", "B"},
+                    {"A/C", "C"},
+                    {"A/D", "D"},
+                    {"A/E", "E"}
+                })
+            };
+            
+            var structure = new StructureCompilationInfo
             {
-                {"A", "{{A}}"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{A}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -116,21 +135,29 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void CompileInfiniteRecursion()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var env = new EnvironmentCompilationInfo
             {
-                {"A", "{{B}}"},
-                {"B", "{{A}}"}
-            });
-
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{B}}"},
+                    {"B", "{{A}}"}
+                })
+            };
+            
+            var structure = new StructureCompilationInfo
             {
-                {"A", "{{A}}"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{A}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);
+            Assert.NotEmpty(compiled);
             Assert.Equal("", compiled["A"]);
         }
 
@@ -140,25 +167,32 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void CompileRecursiveReference()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var env = new EnvironmentCompilationInfo
             {
-                {"A", "{{B}}"},
-                {"B", "{{C}}"},
-                {"C", "{{D}}"},
-                {"D", "{{E}}"},
-                {"E", "ResolvedValue"}
-            });
-
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{B}}"},
+                    {"B", "{{C}}"},
+                    {"C", "{{D}}"},
+                    {"D", "{{E}}"},
+                    {"E", "ResolvedValue"}
+                })
+            };
+            
+            var structure = new StructureCompilationInfo
             {
-                {"A", "{{A}}"},
-                {"B", "{{B}}"},
-                {"C", "{{C}}"},
-                {"D", "{{D}}"},
-                {"E", "{{E}}"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{A}}"},
+                    {"B", "{{B}}"},
+                    {"C", "{{C}}"},
+                    {"D", "{{D}}"},
+                    {"E", "{{E}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -176,17 +210,24 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void CompileReferenceWithPath()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var env = new EnvironmentCompilationInfo
             {
-                {"Key/With/Path", "ResolvedValue"}
-            });
-
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"Key/With/Path", "ResolvedValue"}
+                })
+            };
+            
+            var structure = new StructureCompilationInfo
             {
-                {"A", "{{Key/With/Path}}"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{Key/With/Path}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -200,19 +241,26 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void CompileSimpleReference()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+            var env = new EnvironmentCompilationInfo
             {
-                {"C", "CV"}
-            });
-
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"C", "CV"}
+                })
+            };
+            
+            var structure = new StructureCompilationInfo
             {
-                {"A", "AV"},
-                {"B", "BV"},
-                {"C", "{{C}}"}
-            });
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "AV"},
+                    {"B", "BV"},
+                    {"C", "{{C}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);
@@ -229,10 +277,18 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void NoCompilationNeeded()
         {
-            IDictionary<string, string> env = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
-            IDictionary<string, string> structure = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+            var env = new EnvironmentCompilationInfo
+            {
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
+            
+            var structure = new StructureCompilationInfo
+            {
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>()),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
 
-            var compiled = Compiler.Compile(env, structure, Parser, AllowAllCompilationOptions)
+            var compiled = Compiler.Compile(env, structure, Parser)
                                    .RunSync();
 
             Assert.NotNull(compiled);

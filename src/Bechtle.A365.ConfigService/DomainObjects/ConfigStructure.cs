@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -28,11 +26,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     create events that Create this DomainObject when saved
         /// </summary>
-        /// <param name="actions"></param>
+        /// <param name="keys"></param>
+        /// <param name="variables"></param>
         /// <returns></returns>
-        public ConfigStructure Create(IEnumerable<ConfigKeyAction> actions)
+        public ConfigStructure Create(IDictionary<string, string> keys, IDictionary<string, string> variables)
         {
-            RecordedEvents.Add(new StructureCreated(_identifier, actions.ToArray()));
+            RecordedEvents.Add(new StructureCreated(_identifier, keys, variables));
 
             return this;
         }
@@ -44,7 +43,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public ConfigStructure Delete()
         {
             RecordedEvents.Add(new StructureDeleted(_identifier));
-            
+
             return this;
         }
     }

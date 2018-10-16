@@ -40,34 +40,34 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                               [FromRoute] int structureVersion)
         {
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var defaultEnvId = new EnvironmentIdentifier(environmentCategory, "Default");
             var structId = new StructureIdentifier(structureName, structureVersion);
 
-            var structureResult = await _store.Structures.GetKeys(structId);
-            if (structureResult.IsError)
-                throw new Exception(structureResult.Message);
+            var structureKeyResult = await _store.Structures.GetKeys(structId);
+            if (structureKeyResult.IsError)
+                throw new Exception(structureKeyResult.Message);
+
+            var structureVariableResult = await _store.Structures.GetVariables(structId);
+            if (structureVariableResult.IsError)
+                throw new Exception(structureVariableResult.Message);
 
             var environmentResult = await _store.Environments.GetKeys(envId);
             if (environmentResult.IsError)
                 throw new Exception(environmentResult.Message);
 
-            var defaultEnvironmentResult = await _store.Environments.GetKeys(defaultEnvId);
-            if (defaultEnvironmentResult.IsError)
-                throw new Exception(defaultEnvironmentResult.Message);
-
-            var structureSnapshot = structureResult.Data;
+            var structureSnapshot = structureKeyResult.Data;
+            var variableSnapshot = structureVariableResult.Data;
             var environmentSnapshot = environmentResult.Data;
-            var defaultEnvironmentSnapshot = defaultEnvironmentResult.Data;
 
-            var compiledRepository = await _compiler.Compile(defaultEnvironmentSnapshot,
-                                                             environmentSnapshot,
-                                                             _parser,
-                                                             CompilationOptions.EnvFromEnv);
+            var environmentInfo = new EnvironmentCompilationInfo {Keys = environmentSnapshot};
+            var structureInfo = new StructureCompilationInfo
+            {
+                Keys = structureSnapshot,
+                Variables = variableSnapshot
+            };
 
-            var compiled = await _compiler.Compile(compiledRepository,
-                                                   structureSnapshot,
-                                                   _parser,
-                                                   CompilationOptions.StructFromEnv);
+            var compiled = await _compiler.Compile(environmentInfo,
+                                                   structureInfo,
+                                                   _parser);
 
             var json = _translator.ToJson(compiled);
 

@@ -4,16 +4,14 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     /// <summary>
-    ///     snapshot of configuration-data
+    ///     snapshot of Environment-data
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class Snapshot<T> where T : Identifier
+    public class EnvironmentSnapshot
     {
         /// <inheritdoc />
-        public Snapshot(T identifier, int version, IDictionary<string, string> data)
+        public EnvironmentSnapshot(EnvironmentIdentifier identifier, IDictionary<string, string> data)
         {
             Identifier = identifier;
-            Version = version;
             Data = data;
         }
 
@@ -25,11 +23,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <summary>
         ///     <see cref="Identifier" /> of the associated data
         /// </summary>
-        public T Identifier { get; }
-
-        /// <summary>
-        ///     version of the associated data
-        /// </summary>
-        public int Version { get; }
+        public EnvironmentIdentifier Identifier { get; }
     }
 }

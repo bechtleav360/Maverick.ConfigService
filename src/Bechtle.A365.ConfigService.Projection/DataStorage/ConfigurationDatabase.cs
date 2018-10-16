@@ -171,7 +171,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result> CreateStructure(StructureIdentifier identifier, IList<ConfigKeyAction> actions)
+        public async Task<Result> CreateStructure(StructureIdentifier identifier,
+                                                  IDictionary<string, string> keys,
+                                                  IDictionary<string, string> variables)
         {
             using (var context = OpenProjectionStore())
             {
@@ -186,14 +188,20 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     Id = Guid.NewGuid(),
                     Name = identifier.Name,
                     Version = identifier.Version,
-                    Keys = actions.Where(action => action.Type == ConfigKeyActionType.Set)
-                                  .Select(action => new StructureKey
-                                  {
-                                      Id = Guid.NewGuid(),
-                                      Key = action.Key,
-                                      Value = action.Value
-                                  })
-                                  .ToList()
+                    Keys = keys.Select(kvp => new StructureKey
+                               {
+                                   Id = Guid.NewGuid(),
+                                   Key = kvp.Key,
+                                   Value = kvp.Value
+                               })
+                               .ToList(),
+                    Variables = variables.Select(kvp => new StructureVariable
+                                         {
+                                             Id = Guid.NewGuid(),
+                                             Key = kvp.Key,
+                                             Value = kvp.Value
+                                         })
+                                         .ToList()
                 });
 
                 try
@@ -263,11 +271,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result<Snapshot<EnvironmentIdentifier>>> GetDefaultEnvironment(string category)
+        public async Task<Result<EnvironmentSnapshot>> GetDefaultEnvironment(string category)
             => await GetEnvironment(new EnvironmentIdentifier(category, "Default"));
 
         /// <inheritdoc />
-        public async Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironment(EnvironmentIdentifier identifier)
+        public async Task<Result<EnvironmentSnapshot>> GetEnvironment(EnvironmentIdentifier identifier)
         {
             using (var context = OpenProjectionStore())
             {
@@ -276,20 +284,18 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 if (environment == null)
                 {
                     _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
-                    return Result<Snapshot<EnvironmentIdentifier>>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
+                    return Result<EnvironmentSnapshot>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
                 }
 
                 var environmentData = environment.Keys
                                                  .ToDictionary(data => data.Key,
                                                                data => data.Value);
 
-                return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
-                                                                          1,
-                                                                          environmentData));
+                return Result.Success(new EnvironmentSnapshot(identifier, environmentData));
             }
         }
 
-        public async Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier)
+        public async Task<Result<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier)
         {
             using (var context = OpenProjectionStore())
             {
@@ -298,7 +304,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 if (environment is null)
                 {
                     _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
-                    return Result<Snapshot<EnvironmentIdentifier>>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
+                    return Result<EnvironmentSnapshot>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
                 }
 
                 var environmentData = environment.Keys
@@ -316,9 +322,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                         if (!environmentData.ContainsKey(kvp.Key))
                             environmentData[kvp.Key] = kvp.Value;
 
-                return Result.Success(new Snapshot<EnvironmentIdentifier>(identifier,
-                                                                          1,
-                                                                          environmentData));
+                return Result.Success(new EnvironmentSnapshot(identifier, environmentData));
             }
         }
 
@@ -341,7 +345,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
-        public async Task<Result<Snapshot<StructureIdentifier>>> GetStructure(StructureIdentifier identifier)
+        public async Task<Result<StructureSnapshot>> GetStructure(StructureIdentifier identifier)
         {
             using (var context = OpenProjectionStore())
             {
@@ -350,20 +354,23 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 if (structure == null)
                 {
                     _logger.LogError($"no {nameof(Structure)} with id {identifier} found");
-                    return Result<Snapshot<StructureIdentifier>>.Error($"no {nameof(Structure)} with id {identifier} found", ErrorCode.NotFound);
+                    return Result<StructureSnapshot>.Error($"no {nameof(Structure)} with id {identifier} found", ErrorCode.NotFound);
                 }
 
-                return Result.Success(new Snapshot<StructureIdentifier>(identifier,
-                                                                        structure.Version,
-                                                                        structure.Keys
-                                                                                 .ToDictionary(data => data.Key,
-                                                                                               data => data.Value)));
+                return Result.Success(new StructureSnapshot(identifier,
+                                                            structure.Version,
+                                                            structure.Keys
+                                                                     .ToDictionary(data => data.Key,
+                                                                                   data => data.Value),
+                                                            structure.Variables
+                                                                     .ToDictionary(data => data.Key,
+                                                                                   data => data.Value)));
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result> SaveConfiguration(Snapshot<EnvironmentIdentifier> environment,
-                                                    Snapshot<StructureIdentifier> structure,
+        public async Task<Result> SaveConfiguration(EnvironmentSnapshot environment,
+                                                    StructureSnapshot structure,
                                                     IDictionary<string, string> configuration,
                                                     string configurationJson,
                                                     DateTime? validFrom,
@@ -489,6 +496,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
                 modelBuilder.Entity<Structure>();
                 modelBuilder.Entity<StructureKey>();
+                modelBuilder.Entity<StructureVariable>();
                 modelBuilder.Entity<ConfigEnvironment>();
                 modelBuilder.Entity<ConfigEnvironmentKey>();
                 modelBuilder.Entity<ProjectedConfiguration>();

@@ -19,8 +19,8 @@ namespace Bechtle.A365.ConfigService.Controllers
     [Route(ApiBaseRoute + "environments")]
     public class EnvironmentController : ControllerBase
     {
-        private readonly IProjectionStore _store;
         private readonly IEventStore _eventStore;
+        private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
@@ -34,24 +34,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
-        }
-
-        [HttpGet("available")]
-        public async Task<IActionResult> GetAvailableEnvironments()
-        {
-            var result = await _store.Environments.GetAvailable();
-
-            return Result(result);
-        }
-
-        [HttpGet("{category}/{name}/keys")]
-        public async Task<IActionResult> GetEnvironmentKeys(string category, string name)
-        {
-            var identifier = new EnvironmentIdentifier(category, name);
-
-            var result = await _store.Environments.GetKeys(identifier);
-
-            return Result(result);
         }
 
         [HttpPost("{category}/{name}")]
@@ -95,60 +77,13 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                  .Save(_eventStore);
                 }
 
-                return AcceptedAtAction(nameof(GetEnvironmentKeys), new {category, name});
+                return AcceptedAtAction(nameof(GetKeys), new {category, name});
             }
             catch (Exception e)
             {
                 Logger.LogError(e, $"failed to add new environment at ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to add new environment");
             }
-        }
-
-        [HttpPut("{category}/{name}/keys")]
-        public async Task<IActionResult> UpdateKeys([FromRoute] string category,
-                                                    [FromRoute] string name,
-                                                    [FromBody] Dictionary<string, string> keys)
-        {
-            if (string.IsNullOrWhiteSpace(category))
-                return BadRequest($"{nameof(category)} is empty");
-
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest($"{nameof(name)} is empty");
-
-            if (keys == null || !keys.Any())
-                return BadRequest("no keys received");
-
-            try
-            {
-                var actions = keys.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
-                                  .ToArray();
-
-                await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                             .ModifyKeys(actions)
-                                             .Save(_eventStore);
-
-                return AcceptedAtAction(nameof(GetEnvironmentKeys), new {category, name});
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e, $"failed to update keys of Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
-            }
-        }
-
-        [HttpPut("{category}/{name}/json")]
-        public async Task<IActionResult> UpdateKeysFromJson([FromRoute] string category,
-                                                            [FromRoute] string name,
-                                                            [FromBody] JToken json)
-        {
-            if (json == null)
-                return BadRequest("no keys received");
-
-            // convert given IDictionary to a Dictionary without casting
-            var keys = _translator.ToDictionary(json)
-                                  .ToDictionary(k => k.Key, k => k.Value);
-
-            return await UpdateKeys(category, name, keys);
         }
 
         [HttpDelete("{category}/{name}/keys")]
@@ -174,13 +109,93 @@ namespace Bechtle.A365.ConfigService.Controllers
                                              .ModifyKeys(actions)
                                              .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetEnvironmentKeys), new {category, name});
+                return AcceptedAtAction(nameof(GetKeys), new {category, name});
             }
             catch (Exception e)
             {
                 Logger.LogError(e, $"failed to delete keys from Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed delete update keys");
             }
+        }
+
+        [HttpGet("available")]
+        public async Task<IActionResult> GetAvailableEnvironments()
+        {
+            var result = await _store.Environments.GetAvailable();
+
+            return Result(result);
+        }
+
+        [HttpGet("{category}/{name}/keys")]
+        public async Task<IActionResult> GetKeys(string category, string name)
+        {
+            var identifier = new EnvironmentIdentifier(category, name);
+
+            var result = await _store.Environments.GetKeys(identifier);
+
+            return Result(result);
+        }
+
+        [HttpGet("{category}/{name}/json")]
+        public async Task<IActionResult> GetKeysAsJson(string category, string name)
+        {
+            var identifier = new EnvironmentIdentifier(category, name);
+
+            var result = await _store.Environments.GetKeys(identifier);
+
+            if (result.IsError)
+                return ProviderError(result);
+
+            var json = _translator.ToJson(result.Data);
+
+            return Ok(json);
+        }
+
+        [HttpPut("{category}/{name}/keys")]
+        public async Task<IActionResult> UpdateKeys([FromRoute] string category,
+                                                    [FromRoute] string name,
+                                                    [FromBody] Dictionary<string, string> keys)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+                return BadRequest($"{nameof(category)} is empty");
+
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest($"{nameof(name)} is empty");
+
+            if (keys == null || !keys.Any())
+                return BadRequest("no keys received");
+
+            try
+            {
+                var actions = keys.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
+                                  .ToArray();
+
+                await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                             .ModifyKeys(actions)
+                                             .Save(_eventStore);
+
+                return AcceptedAtAction(nameof(GetKeys), new {category, name});
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to update keys of Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
+            }
+        }
+
+        [HttpPut("{category}/{name}/json")]
+        public async Task<IActionResult> UpdateKeysFromJson([FromRoute] string category,
+                                                            [FromRoute] string name,
+                                                            [FromBody] JToken json)
+        {
+            if (json == null)
+                return BadRequest("no keys received");
+
+            // convert given IDictionary to a Dictionary without casting
+            var keys = _translator.ToDictionary(json)
+                                  .ToDictionary(k => k.Key, k => k.Value);
+
+            return await UpdateKeys(category, name, keys);
         }
     }
 }

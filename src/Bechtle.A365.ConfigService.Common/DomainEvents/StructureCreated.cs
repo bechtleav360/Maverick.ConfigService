@@ -1,4 +1,6 @@
-﻿namespace Bechtle.A365.ConfigService.Common.DomainEvents
+﻿using System.Collections.Generic;
+
+namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <inheritdoc />
     /// <summary>
@@ -7,10 +9,13 @@
     public class StructureCreated : DomainEvent
     {
         /// <inheritdoc />
-        public StructureCreated(StructureIdentifier identifier, ConfigKeyAction[] modifiedKeys)
+        public StructureCreated(StructureIdentifier identifier,
+                                IDictionary<string, string> keys,
+                                IDictionary<string, string> variables)
         {
             Identifier = identifier;
-            ModifiedKeys = modifiedKeys;
+            Keys = new Dictionary<string, string>(keys);
+            Variables = new Dictionary<string, string>(variables);
         }
 
         /// <inheritdoc />
@@ -20,10 +25,15 @@
 
         /// <inheritdoc cref="StructureIdentifier" />
         public StructureIdentifier Identifier { get; set; }
-        
+
         /// <summary>
-        ///     list of Actions that have been applied to the keys
+        ///     keys that make up this Structure
         /// </summary>
-        public ConfigKeyAction[] ModifiedKeys { get; set; }
+        public Dictionary<string, string> Keys { get; set; }
+
+        /// <summary>
+        ///     variables that may be referenced from Environment or Keys
+        /// </summary>
+        public Dictionary<string, string> Variables { get; set; }
     }
 }

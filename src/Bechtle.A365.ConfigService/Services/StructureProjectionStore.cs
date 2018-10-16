@@ -104,5 +104,40 @@ namespace Bechtle.A365.ConfigService.Services
                     ErrorCode.DbQueryError);
             }
         }
+
+        /// <inheritdoc />
+        public async Task<Result<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier)
+        {
+            try
+            {
+                var dbResult = await _context.Structures
+                                             .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
+                                                                       s.Version == identifier.Version);
+
+                if (dbResult is null)
+                    return Result<IDictionary<string, string>>.Error("no structure found with (" +
+                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
+                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
+                                                                     ")",
+                                                                     ErrorCode.NotFound);
+
+                var result = dbResult.Variables
+                                     .ToImmutableSortedDictionary(k => k.Key,
+                                                                  k => k.Value,
+                                                                  StringComparer.OrdinalIgnoreCase);
+
+                return Result<IDictionary<string, string>>.Success(result);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "failed to retrieve variables for structure " +
+                                    $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})");
+
+                return Result<IDictionary<string, string>>.Error(
+                    "failed to retrieve variables for structure " +
+                    $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})",
+                    ErrorCode.DbQueryError);
+            }
+        }
     }
 }

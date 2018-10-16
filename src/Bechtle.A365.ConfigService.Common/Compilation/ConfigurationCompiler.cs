@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +10,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 {
     public class ConfigurationCompiler : IConfigurationCompiler
     {
+        private const int KeyRecursionLimit = 100;
+
         private readonly ILogger<ConfigurationCompiler> _logger;
 
         public ConfigurationCompiler(ILogger<ConfigurationCompiler> logger)
@@ -19,334 +20,341 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         }
 
         /// <inheritdoc />
-        public async Task<IDictionary<string, string>> Compile(IDictionary<string, string> repository,
-                                                               IDictionary<string, string> referencer,
-                                                               IConfigurationParser parser,
-                                                               CompilationOptions options)
+        public async Task<IDictionary<string, string>> Compile(EnvironmentCompilationInfo environment,
+                                                               StructureCompilationInfo structure,
+                                                               IConfigurationParser parser)
         {
-            IDictionary<string, string> compiledConfiguration = new Dictionary<string, string>();
-
-            var stack = new Stack<KeyValuePair<string, string>>(referencer);
-
-            // count how many times a given key was processed
-            // processing a key is stopped once it reaches the defined recursion threshold
-            var processingCounter = new Dictionary<string, int>();
-
-            while (stack.TryPop(out var kvp))
+            var context = new CompilationContext
             {
-                var key = kvp.Key;
-                var value = kvp.Value;
-
-                // add the key to the counter if necessary, and increase it
-                if (!processingCounter.ContainsKey(key))
-                    processingCounter[key] = 0;
-                processingCounter[key] += 1;
-
-                if (processingCounter[key] > options.RecursionLimit)
-                {
-                    _logger.LogError($"key '{key}' has reached the threshold for recursion and will not be processed further");
-                    compiledConfiguration[key] = value;
-                    continue;
-                }
-
-                var processedValues = await ResolveReferences(repository, referencer, key, value, parser, options);
-
-                switch (processedValues.Count)
-                {
-                    case var n when n <= 0:
-                        _logger.LogWarning($"could not compile '{key}' => '{value}', see previous messages for more information");
-                        break;
-
-                    case 1:
-                    {
-                        var processedValue = processedValues.First().Value;
-                        _logger.LogTrace($"compiled '{key}' => '{processedValue}'");
-
-                        if (processedValue.Equals(value, StringComparison.OrdinalIgnoreCase))
-                            compiledConfiguration[key] = value;
-                        // push back to stack for one more pass
-                        else
-                            stack.Push(new KeyValuePair<string, string>(key, processedValue));
-                        break;
-                    }
-
-                    case var n when n > 1:
-                    {
-                        foreach (var processedValue in processedValues)
-                        {
-                            _logger.LogTrace($"compiled '{key}' => {processedValue.Key} => '{processedValue.Value}'");
-                            // push back to stack for one more pass
-                            stack.Push(processedValue);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            return compiledConfiguration;
-        }
-
-        private async Task<IDictionary<string, string>> ResolveReferences(IDictionary<string, string> repository,
-                                                                          IDictionary<string, string> referencer,
-                                                                          string key,
-                                                                          string value,
-                                                                          IConfigurationParser parser,
-                                                                          CompilationOptions options)
-        {
-            var parseResult = parser.Parse(value);
-            var context = new ReferenceContext
-            {
-                CurrentKey = key,
-                OriginalValue = value
+                CurrentKey = string.Empty,
+                StructureInfo = structure,
+                EnvironmentInfo = environment,
+                Parser = parser
             };
 
-            // if there are no references to be found, just return the given value without further ado
-            if (!parseResult.OfType<ReferencePart>().Any())
+            foreach (var kvp in structure.Keys)
             {
-                _logger.LogTrace($"no references found in '{value}', nothing to resolve");
-                return new Dictionary<string, string> {{key, value}};
+                context.CurrentKey = kvp.Key;
+
+                var result = await CompileInternal(context, kvp.Value);
+                if (!result.Any()) context.AddError(context.CurrentKey, "can't compile, no results found");
+
+                foreach (var (key, value) in result)
+                    context.Result[key] = value;
             }
 
-            // if we're not allowed to resolve references anyway, return without processing
-            if (!options.References.HasFlag(ReferenceOption.AllowRepositoryReference) && !options.References.HasFlag(ReferenceOption.AllowSelfReference))
-            {
-                _logger.LogWarning($"'{parseResult.OfType<ReferencePart>().Count()}' references found, but options forbid resolving " +
-                                   $"(requires {ReferenceOption.AllowRepositoryReference:G} | {ReferenceOption.AllowSelfReference:G})");
-
-                return new Dictionary<string, string> {{key, value}};
-            }
-
-            // initialize StringBuilder with starting size of the input,
-            // this may reduce additional increases in size while assembling the parts again
-            var valueBuilder = new StringBuilder(value.Length);
-
-            foreach (var part in parseResult)
-            {
-                switch (part)
-                {
-                    case ReferencePart referencePart:
-                        var resolvedReference = await ResolveReference(repository, referencer, context, referencePart, options);
-
-                        // if the reference only modifies the context we don't have to append anything to the result
-                        if (!resolvedReference.HasValue)
-                            continue;
-
-                        // if the reference resolves to a simple string we append it to valueBuilder
-                        if (resolvedReference.IsSimple)
-                            valueBuilder.Append(resolvedReference.SimpleValue);
-
-                        // if the reference resolves to multiple keys (is complex) we return it
-                        // and ignore ValueParts before / after, and don't further process this values
-                        else if (resolvedReference.IsComplex)
-                            return resolvedReference.ExpandedValue
-                                                    .ToDictionary(kvp => $"{key}/{kvp.Key}".Replace("//", ""),
-                                                                  kvp => kvp.Value);
-
-                        // otherwise it's probably a new kind of result that someone forgot to handle here
-                        else
-                            _logger.LogError($"unknown result received from {nameof(ResolveReference)}");
-
-                        break;
-
-                    case ValuePart valuePart:
-                        // ValueParts don't have any special meaning and are added back without further processing
-                        valueBuilder.Append(valuePart.Text);
-                        break;
-
-                    default:
-                        _logger.LogCritical($"handling of '{part.GetType().Name}' is not implemented");
-                        continue;
-                }
-            }
-
-            return new Dictionary<string, string> {{key, valueBuilder.ToString()}};
+            return context.Result;
         }
 
         /// <summary>
-        ///     resolve <see cref="ReferenceCommand.Alias"/> and <see cref="ReferenceCommand.Using"/> if possible.
-        ///     this will modify the given context if successful.
+        ///     analyze the given parts and determine if they can be compiled and what would be the result
+        /// </summary>
+        /// <param name="parts"></param>
+        /// <returns></returns>
+        private async Task<CompilationPlan> AnalyzeCompilation(IList<ConfigValuePart> parts)
+        {
+            await Task.Yield();
+
+            // no compilation possible because there is nothing to compile - Compiler should insert string.Empty
+            if (!parts.Any())
+                return new CompilationPlan
+                {
+                    CompilationPossible = false,
+                    Reason = "nothing to compile"
+                };
+
+            // simplest possible plan - no references and only values
+            if (parts.All(p => p is ValuePart))
+                return new CompilationPlan
+                {
+                    CompilationPossible = true,
+                    Reason = string.Empty
+                };
+
+            var valueParts = parts.OfType<ValuePart>()
+                                  .ToArray();
+
+            var pathReferences = parts.OfType<ReferencePart>()
+                                      .Where(p => p.Commands.ContainsKey(ReferenceCommand.Path))
+                                      .ToArray();
+
+            var regionReferences = pathReferences.Where(p => p.Commands[ReferenceCommand.Path].EndsWith('*'))
+                                                 .ToArray();
+
+            // can't compile something that references multiple regions at the same time
+            if (regionReferences.Length > 1)
+                return new CompilationPlan
+                {
+                    CompilationPossible = false,
+                    Reason = "multiple region-spanning references found"
+                };
+
+            // can't reference a region when other stuff would be discarded
+            if (regionReferences.Any() && valueParts.Any())
+                return new CompilationPlan
+                {
+                    CompilationPossible = false,
+                    Reason = "region-spanning reference found within non-reference text"
+                };
+
+            // can't compile something that references a region and keys at the same time
+            // at least some stuff would be discarded, and that does not qualify as a valid compilation
+            if (pathReferences.Length > 1 &&
+                pathReferences.Any(p => p.Commands[ReferenceCommand.Path].EndsWith('*')))
+                return new CompilationPlan
+                {
+                    CompilationPossible = false,
+                    Reason = "region-spanning and value-only references found"
+                };
+
+            return new CompilationPlan
+            {
+                CompilationPossible = true,
+                Reason = string.Empty
+            };
+        }
+
+        private async Task<(string Key, string Value)[]> CompileInternal(CompilationContext context, string value)
+        {
+            if (context.RecursionLevel > KeyRecursionLimit)
+                return new (string Key, string Value)[0];
+
+            var parts = context.Parser.Parse(value);
+
+            var plan = await AnalyzeCompilation(parts);
+
+            if (!plan.CompilationPossible)
+            {
+                _logger.LogError($"can't compile key '{context.CurrentKey}': {plan.Reason}");
+                context.AddError(context.CurrentKey, $"can't compile: {plan.Reason}");
+                return new (string Key, string Value)[0];
+            }
+
+            var valueBuilder = new StringBuilder();
+
+            foreach (var part in parts)
+            {
+                if (part is ValuePart valuePart)
+                {
+                    valueBuilder.Append(valuePart.Text);
+                    continue;
+                }
+
+                if (!(part is ReferencePart reference))
+                {
+                    _logger.LogError($"unknown part parsed during Config-Compilation '{part.GetType().Name}'");
+                    continue;
+                }
+
+                // inspect reference and add alias to context if possible
+                await HandleAliasCommands(context, reference);
+
+                // if we don't have a path to substitute and only modify the context we can continue
+                if (!reference.Commands.ContainsKey(ReferenceCommand.Path))
+                    continue;
+
+                // inspect reference and get current Path and Repository
+                // Repository can be changed by accessing different aliases
+                var (path, repository) = await HandlePathCommands(context, reference);
+
+                if (path.EndsWith("*"))
+                    return await HandleRegionSelection(context, repository, path);
+
+                // now comes the part where we handle a single compiled result...
+                // actually match
+                var match = repository.Keys.FirstOrDefault(key => key.Equals(path, StringComparison.OrdinalIgnoreCase));
+
+                if (match is null)
+                {
+                    _logger.LogError($"could not resolve path '{path}'");
+                    context.AddError(context.CurrentKey, $"could not resolve path '{path}'");
+                    continue;
+                }
+
+                // compile the matched result until it's done
+                var innerContext = new CompilationContext(context) {CurrentKey = path};
+                innerContext.IncrementRecursionLevel();
+
+                var result = await CompileInternal(innerContext, repository[match]);
+
+                context.CarryOverErrors(innerContext);
+
+                // if the result doesn't contain anything we just go on with our lives...
+                // if it turns out the compiled reference does actually point to a region we need to handle it as such and return immediately
+                if (result.Length > 1)
+                    return result.Select(item => (Key: item.Key, Value: item.Value))
+                                 .ToArray();
+
+                // otherwise we can carry on and add the value to our result
+                if (result.Length == 1)
+                    valueBuilder.Append(result.First().Value);
+            }
+
+            return new[] {(Key: context.CurrentKey, Value: valueBuilder.ToString())};
+        }
+
+        /// <summary>
+        ///     inspect the given ReferencePart and add an Alias if possible
         /// </summary>
         /// <param name="context"></param>
         /// <param name="reference"></param>
         /// <returns></returns>
-        private async Task ResolveAliasCommand(ReferenceContext context, ReferencePart reference)
+        private async Task HandleAliasCommands(CompilationContext context, ReferencePart reference)
         {
             await Task.Yield();
 
-            var usingCommand = reference.Commands.ContainsKey(ReferenceCommand.Using)
-                                   ? reference.Commands[ReferenceCommand.Using].Trim()
-                                   : null;
-
-            var aliasCommand = reference.Commands.ContainsKey(ReferenceCommand.Alias)
-                                   ? reference.Commands[ReferenceCommand.Alias].Trim()
-                                   : null;
-
-            // if one or the other, but not both are set
-            // log an invalid command, because they have to appear in tandem
-            if (usingCommand is null && !(aliasCommand is null) ||
-                !(usingCommand is null) && aliasCommand is null)
-            {
-                _logger.LogError($"commands {ReferenceCommand.Using:G} and {ReferenceCommand.Alias:G} " +
-                                 "have to appear in tandem, they can't appear alone");
-            }
-            // if neither are null
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            // go home ReSharper, you're drunk. I tested this manually and it works as intended
-            else if (!(usingCommand is null) && !(aliasCommand is null))
+            var commands = reference.Commands;
+            if (commands.ContainsKey(ReferenceCommand.Alias) && commands.ContainsKey(ReferenceCommand.Using))
             {
                 // add the alias to the context
-                _logger.LogTrace($"adding alias '{aliasCommand}' => '{usingCommand}' to the context");
-                context.Aliases[aliasCommand] = usingCommand;
-            }
+                var alias = commands[ReferenceCommand.Alias];
+                var @using = commands[ReferenceCommand.Using];
 
-            // else {} => both are null, but we don't care
+                _logger.LogTrace($"adding alias '{alias}' => '{@using}' to the context");
+                context.ReferenceAliases[alias] = @using;
+            }
+            else if (!commands.ContainsKey(ReferenceCommand.Alias) && !commands.ContainsKey(ReferenceCommand.Using))
+            {
+                // don't actually care, but this makes it clear when the next section of code runs
+            }
+            else
+            {
+                _logger.LogError($"either {nameof(ReferenceCommand.Alias)} or {nameof(ReferenceCommand.Using)} is set, " +
+                                 "but not both - they are only usable together");
+                context.AddError(context.CurrentKey, $"either {nameof(ReferenceCommand.Alias)} or {nameof(ReferenceCommand.Using)} is set, " +
+                                                     "but not both - they are only usable together");
+            }
         }
 
-        private async Task<ReferenceResolveResult> ResolveReference(IDictionary<string, string> repository,
-                                                                    IDictionary<string, string> referencer,
-                                                                    ReferenceContext context,
-                                                                    ReferencePart reference,
-                                                                    CompilationOptions options)
+        private async Task<(string Path, IDictionary<string, string> Repository)> HandlePathCommands(CompilationContext context, ReferencePart reference)
         {
-            await ResolveAliasCommand(context, reference);
+            await Task.Yield();
 
-            var pathCommand = reference.Commands.ContainsKey(ReferenceCommand.Path)
-                                  ? reference.Commands[ReferenceCommand.Path]
-                                  : null;
+            // default path = path given without de-referencing aliases and the like
+            var path = reference.Commands[ReferenceCommand.Path];
 
-            if (pathCommand is null)
-                return new ReferenceResolveResult();
+            // default repository is Environment
+            var repository = context.EnvironmentInfo.Keys;
 
-            // if the path starts with a "$", it's using an alias
-            if (pathCommand.StartsWith("$"))
+            if (path.StartsWith('$'))
             {
-                var split = pathCommand.Split('/', 2);
+                var split = path.Split('/', 2);
                 var alias = split[0].TrimStart('$');
                 var rest = split[1];
 
-                if (context.Aliases.ContainsKey(alias))
+                if (context.ReferenceAliases.ContainsKey(alias))
                 {
-                    _logger.LogTrace($"de-referencing alias '{alias}'");
-                    pathCommand = $"{context.Aliases[alias]}/{rest}".Replace("//", "/");
+                    path = context.ReferenceAliases[alias] + "/" + rest;
+                }
+                else if (alias.Equals("this", StringComparison.OrdinalIgnoreCase))
+                {
+                    path = $"{context.CurrentKey.Substring(0, context.CurrentKey.LastIndexOf('/'))}/{rest}";
+                }
+                else if (alias.Equals("struct", StringComparison.OrdinalIgnoreCase))
+                {
+                    path = rest;
+                    repository = context.StructureInfo.Variables;
                 }
                 else
                 {
-                    // hard-coded handling of '$this' alias
-                    if (alias.Equals("this", StringComparison.OrdinalIgnoreCase))
-                        pathCommand = $"{context.CurrentKey.Substring(0, context.CurrentKey.LastIndexOf('/'))}/{rest}";
-                    else
-                        _logger.LogWarning($"could not de-reference alias '{alias}'");
+                    _logger.LogError($"could not resolve alias '{alias}' in '{context.CurrentKey}'");
+                    context.AddError(context.CurrentKey, $"could not resolve alias '{alias}'");
                 }
             }
 
-            // Path points indicates we match against a number of keys, so we return a 'complex' result
-            if (pathCommand.EndsWith('*'))
-            {
-                var matcher = pathCommand.TrimEnd('*');
-
-                // if the required flag is set, search the given bucket and return stuff if possible
-                // return with first results
-                foreach (var (dataBucket, requiredFlag) in new[]
-                {
-                    (referencer, ReferenceOption.AllowSelfReference),
-                    (repository, ReferenceOption.AllowRepositoryReference)
-                })
-                {
-                    if (!options.References.HasFlag(requiredFlag))
-                        continue;
-
-                    var result = dataBucket.Where(kvp => kvp.Key.StartsWith(matcher, StringComparison.OrdinalIgnoreCase))
-                                           .ToDictionary(kvp => kvp.Key.Substring(matcher.Length),
-                                                         kvp => kvp.Value);
-
-                    if (result.Any())
-                        return new ReferenceResolveResult(result);
-                }
-
-                _logger.LogError("either no references allowed or no data could be found");
-
-                // return empty string, reference could not be resolved properly
-                return new ReferenceResolveResult(string.Empty);
-            }
-
-            // if the required flag is set, search the given bucket and return stuff if possible
-            // return with first results
-            foreach (var (dataBucket, requiredFlag) in new[]
-            {
-                (referencer, ReferenceOption.AllowSelfReference),
-                (repository, ReferenceOption.AllowRepositoryReference)
-            })
-            {
-                if (!options.References.HasFlag(requiredFlag))
-                    continue;
-
-                var result = dataBucket.Where(kvp => kvp.Key.StartsWith(pathCommand, StringComparison.OrdinalIgnoreCase))
-                                       .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
-                if (result.Count == 0)
-                    return new ReferenceResolveResult(string.Empty);
-                if (result.Count == 1)
-                    return new ReferenceResolveResult(result.First().Value);
-                if (result.Count > 1)
-                {
-                    // should this be an error instead? ¯\_(ツ)_/¯
-                    _logger.LogError($"reference does not contain a '*' to indicate a complex match, but matched '{result.Keys.Count}' keys");
-                    return new ReferenceResolveResult();
-                }
-            }
-
-            _logger.LogError("no keys matched the path or reference-resolving is not allowed");
-            return new ReferenceResolveResult(string.Empty);
+            return (Path: path, Repository: repository);
         }
 
-        private class ReferenceContext
+        private async Task<(string Key, string Value)[]> HandleRegionSelection(CompilationContext context,
+                                                                               IDictionary<string, string> repository,
+                                                                               string path)
         {
-            public Dictionary<string, string> Aliases { get; } = new Dictionary<string, string>();
+            var pathMatcher = path.TrimEnd('*');
+            var matchedItems = repository.Keys
+                                         .Where(key => key.StartsWith(pathMatcher, StringComparison.OrdinalIgnoreCase))
+                                         .Select(key => (Key: key, Value: repository[key]))
+                                         .ToArray();
+
+            // recursion to resolve keys within the selected region
+            var resultItems = new Dictionary<string, string>(matchedItems.Length);
+            foreach (var (itemKey, itemValue) in matchedItems)
+            {
+                var regionContext = new CompilationContext(context) {CurrentKey = itemKey};
+                regionContext.IncrementRecursionLevel();
+
+                var regionResult = await CompileInternal(regionContext, itemValue);
+
+                // carry errors encountered in region-compilation with us
+                foreach (var errorGroup in regionContext.Errors)
+                foreach (var error in errorGroup.Value)
+                    context.AddError(errorGroup.Key, error);
+
+                foreach (var (k, v) in regionResult)
+                    resultItems[k] = v;
+            }
+
+            // resultItems should be fully resolved
+            return resultItems.Select(item => (Key: item.Key, Value: item.Value))
+                              .ToArray();
+        }
+
+        private struct CompilationPlan
+        {
+            public bool CompilationPossible { get; set; }
+
+            public string Reason { get; set; }
+        }
+
+        private class CompilationContext
+        {
+            /// <inheritdoc />
+            public CompilationContext()
+            {
+            }
+
+            /// <inheritdoc />
+            public CompilationContext(CompilationContext context)
+            {
+                EnvironmentInfo = context.EnvironmentInfo;
+                StructureInfo = context.StructureInfo;
+                RecursionLevel = context.RecursionLevel;
+                Result = context.Result;
+                CurrentKey = context.CurrentKey;
+                Parser = context.Parser;
+            }
 
             public string CurrentKey { get; set; } = string.Empty;
 
-            public string OriginalValue { get; set; } = string.Empty;
-        }
+            public EnvironmentCompilationInfo EnvironmentInfo { get; set; }
 
-        // ReSharper disable once CommentTypo - let me make my joke, ReSharper
-        // ARRR
-        private class ReferenceResolveResult
-        {
-            public string SimpleValue { get; }
+            public Dictionary<string, List<string>> Errors { get; } = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-            public IReadOnlyDictionary<string, string> ExpandedValue { get; }
+            public IConfigurationParser Parser { get; set; }
 
-            public bool HasValue => IsSimple || IsComplex;
+            public int RecursionLevel { get; private set; }
 
-            public bool IsSimple => SimpleValue != null;
+            public Dictionary<string, string> ReferenceAliases { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            public bool IsComplex => ExpandedValue != null;
+            public Dictionary<string, string> Result { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            /// <summary>
-            ///     create a result that does not carry any values, and only modifies the context
-            /// </summary>
-            public ReferenceResolveResult()
+            public StructureCompilationInfo StructureInfo { get; set; }
+
+            public void AddError(string key, string errorMessage)
             {
+                if (!Errors.ContainsKey(key))
+                    Errors[key] = new List<string>();
+                Errors[key].Add(errorMessage);
             }
 
-            /// <summary>
-            ///     create a result that carries a simple value with it
-            /// </summary>
-            /// <param name="value"></param>
-            public ReferenceResolveResult(string value)
+            public void CarryOverErrors(CompilationContext context)
             {
-                SimpleValue = value ?? throw new ArgumentNullException(nameof(value));
+                // carry errors encountered in region-compilation with us
+                foreach (var errorGroup in context.Errors)
+                foreach (var error in errorGroup.Value)
+                    AddError(errorGroup.Key, error);
             }
 
-            /// <summary>
-            ///     create a result that carries a complex object-structure with it
-            /// </summary>
-            /// <param name="expandedValue"></param>
-            public ReferenceResolveResult(IDictionary<string, string> expandedValue)
-            {
-                ExpandedValue = new ReadOnlyDictionary<string, string>(expandedValue ?? throw new ArgumentNullException(nameof(expandedValue)));
-            }
+            public void IncrementRecursionLevel() => RecursionLevel += 1;
         }
     }
 }

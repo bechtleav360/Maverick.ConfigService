@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -146,6 +147,9 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (!structure.Structure.Children().Any())
                 return BadRequest($"Structure.{nameof(DtoStructure.Structure)} is invalid; does not contain child-nodes");
 
+            if (structure.Variables is null || !structure.Variables.Any())
+                Logger.LogDebug($"Structure.{nameof(DtoStructure.Variables)} is null or empty, seems fishy but may be correct");
+
             try
             {
                 var existingStructures = await _store.Structures.GetAvailableVersions(structure.Name);
@@ -158,9 +162,10 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                              ErrorCode.StructureAlreadyExists));
 
                 var keys = _translator.ToDictionary(structure.Structure);
+                var variables = structure.Variables ?? new Dictionary<string, string>();
 
                 await new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
-                                           .Create(keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value)))
+                                           .Create(keys, variables)
                                            .Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetStructureKeys),

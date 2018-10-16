@@ -13,6 +13,8 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         public string Name { get; set; }
 
+        public virtual List<StructureVariable> Variables { get; set; }
+
         public int Version { get; set; }
     }
 }

@@ -29,5 +29,12 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <returns></returns>
         Task<Result<IDictionary<string, string>>> GetKeys(StructureIdentifier identifier);
+
+        /// <summary>
+        ///     get the variables of a Structure
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<Result<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier);
     }
 }

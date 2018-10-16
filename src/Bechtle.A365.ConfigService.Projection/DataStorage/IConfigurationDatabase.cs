@@ -36,9 +36,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         ///     create a new Structure with the given identifier
         /// </summary>
         /// <param name="identifier"></param>
-        /// <param name="actions"></param>
+        /// <param name="keys"></param>
+        /// <param name="variables"></param>
         /// <returns></returns>
-        Task<Result> CreateStructure(StructureIdentifier identifier, IList<ConfigKeyAction> actions);
+        Task<Result> CreateStructure(StructureIdentifier identifier, IDictionary<string, string> keys, IDictionary<string, string> variables);
 
         /// <summary>
         ///     delete an existing Environment with the given identifier
@@ -59,21 +60,21 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironment(EnvironmentIdentifier identifier);
+        Task<Result<EnvironmentSnapshot>> GetEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
         ///     get all data for the specified Environment, and inherit keys from the Default Environment
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result<Snapshot<EnvironmentIdentifier>>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier);
+        Task<Result<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier);
 
         /// <summary>
         ///     get all data for the Default-Environment for the given category
         /// </summary>
         /// <param name="category"></param>
         /// <returns></returns>
-        Task<Result<Snapshot<EnvironmentIdentifier>>> GetDefaultEnvironment(string category);
+        Task<Result<EnvironmentSnapshot>> GetDefaultEnvironment(string category);
 
         /// <summary>
         ///     get the id of the last projected event.
@@ -86,7 +87,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result<Snapshot<StructureIdentifier>>> GetStructure(StructureIdentifier identifier);
+        Task<Result<StructureSnapshot>> GetStructure(StructureIdentifier identifier);
 
         /// <summary>
         ///     save a configuration compiled from <paramref name="environment" /> and <paramref name="structure" />
@@ -98,8 +99,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="validFrom"></param>
         /// <param name="validTo"></param>
         /// <returns></returns>
-        Task<Result> SaveConfiguration(Snapshot<EnvironmentIdentifier> environment,
-                                       Snapshot<StructureIdentifier> structure,
+        Task<Result> SaveConfiguration(EnvironmentSnapshot environment,
+                                       StructureSnapshot structure,
                                        IDictionary<string, string> configuration,
                                        string configurationJson,
                                        DateTime? validFrom,
