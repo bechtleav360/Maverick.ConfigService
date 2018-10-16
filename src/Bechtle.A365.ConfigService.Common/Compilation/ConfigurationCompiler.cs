@@ -37,7 +37,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 context.CurrentKey = kvp.Key;
 
                 var result = await CompileInternal(context, kvp.Value);
-                if (!result.Any()) context.AddError(context.CurrentKey, "can't compile, no results found");
 
                 foreach (var (key, value) in result)
                     context.Result[key] = value;
@@ -49,22 +48,19 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <summary>
         ///     analyze the given parts and determine if they can be compiled and what would be the result
         /// </summary>
+        /// <param name="context"></param>
         /// <param name="parts"></param>
         /// <returns></returns>
-        private async Task<CompilationPlan> AnalyzeCompilation(IList<ConfigValuePart> parts)
+        private async Task<CompilationPlan> AnalyzeCompilation(CompilationContext context,
+                                                               IList<ConfigValuePart> parts)
         {
             await Task.Yield();
 
-            // no compilation possible because there is nothing to compile - Compiler should insert string.Empty
-            if (!parts.Any())
-                return new CompilationPlan
-                {
-                    CompilationPossible = false,
-                    Reason = "nothing to compile"
-                };
+            _logger.LogTrace(WithContext(context, "analyzing compilation"));
 
+            // no compilation possible / needed, but still a valid value
             // simplest possible plan - no references and only values
-            if (parts.All(p => p is ValuePart))
+            if (!parts.Any() || parts.All(p => p is ValuePart))
                 return new CompilationPlan
                 {
                     CompilationPossible = true,
@@ -116,18 +112,23 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
         private async Task<(string Key, string Value)[]> CompileInternal(CompilationContext context, string value)
         {
-            if (context.RecursionLevel > KeyRecursionLimit)
-                return new (string Key, string Value)[0];
+            _logger.LogTrace(WithContext(context, $"compiling key, recursion: '{context.RecursionLevel}'"));
 
+            if (context.RecursionLevel > KeyRecursionLimit)
+            {
+                _logger.LogWarning(WithContext(context, "recursion too deep, aborting compilation"));
+                return new (string Key, string Value)[0];
+            }
+
+            _logger.LogTrace(WithContext(context, "parsing value for references"));
             var parts = context.Parser.Parse(value);
 
-            var plan = await AnalyzeCompilation(parts);
+            var plan = await AnalyzeCompilation(context, parts);
 
             if (!plan.CompilationPossible)
             {
-                _logger.LogError($"can't compile key '{context.CurrentKey}': {plan.Reason}");
-                context.AddError(context.CurrentKey, $"can't compile: {plan.Reason}");
-                return new (string Key, string Value)[0];
+                _logger.LogWarning(WithContext(context, $"can't compile key: {plan.Reason}"));
+                return new[] {(Key: context.CurrentKey, Value: value)};
             }
 
             var valueBuilder = new StringBuilder();
@@ -142,7 +143,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 if (!(part is ReferencePart reference))
                 {
-                    _logger.LogError($"unknown part parsed during Config-Compilation '{part.GetType().Name}'");
+                    _logger.LogError($"unknown part parsed: '{part.GetType().Name}'");
                     continue;
                 }
 
@@ -167,7 +168,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 if (match is null)
                 {
                     _logger.LogError($"could not resolve path '{path}'");
-                    context.AddError(context.CurrentKey, $"could not resolve path '{path}'");
                     continue;
                 }
 
@@ -177,13 +177,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 var result = await CompileInternal(innerContext, repository[match]);
 
-                context.CarryOverErrors(innerContext);
-
                 // if the result doesn't contain anything we just go on with our lives...
                 // if it turns out the compiled reference does actually point to a region we need to handle it as such and return immediately
                 if (result.Length > 1)
+                {
+                    _logger.LogWarning(WithContext(context, $"reference '{path}' pointed towards single value, but was resolved to a region"));
                     return result.Select(item => (Key: item.Key, Value: item.Value))
                                  .ToArray();
+                }
 
                 // otherwise we can carry on and add the value to our result
                 if (result.Length == 1)
@@ -210,7 +211,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var alias = commands[ReferenceCommand.Alias];
                 var @using = commands[ReferenceCommand.Using];
 
-                _logger.LogTrace($"adding alias '{alias}' => '{@using}' to the context");
+                _logger.LogTrace(WithContext(context, $"adding alias '{alias}' => '{@using}' to the context"));
                 context.ReferenceAliases[alias] = @using;
             }
             else if (!commands.ContainsKey(ReferenceCommand.Alias) && !commands.ContainsKey(ReferenceCommand.Using))
@@ -219,10 +220,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
             else
             {
-                _logger.LogError($"either {nameof(ReferenceCommand.Alias)} or {nameof(ReferenceCommand.Using)} is set, " +
-                                 "but not both - they are only usable together");
-                context.AddError(context.CurrentKey, $"either {nameof(ReferenceCommand.Alias)} or {nameof(ReferenceCommand.Using)} is set, " +
-                                                     "but not both - they are only usable together");
+                _logger.LogError(WithContext(context,
+                                             $"either '{nameof(ReferenceCommand.Alias)}' or '{nameof(ReferenceCommand.Using)}' command is set, " +
+                                             "but not both - they are only usable together"));
             }
         }
 
@@ -244,21 +244,31 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 if (context.ReferenceAliases.ContainsKey(alias))
                 {
-                    path = context.ReferenceAliases[alias] + "/" + rest;
+                    var @using = context.ReferenceAliases[alias];
+
+                    _logger.LogTrace(WithContext(context, $"using alias '{alias}' => '{@using}'"));
+
+                    path = $"{@using}/{rest}";
                 }
                 else if (alias.Equals("this", StringComparison.OrdinalIgnoreCase))
                 {
-                    path = $"{context.CurrentKey.Substring(0, context.CurrentKey.LastIndexOf('/'))}/{rest}";
+                    var @using = context.CurrentKey.Substring(0, context.CurrentKey.LastIndexOf('/'));
+
+                    _logger.LogTrace(WithContext(context, $"using special alias '$this' => '{@using}'"));
+
+                    path = $"{@using}/{rest}";
                 }
                 else if (alias.Equals("struct", StringComparison.OrdinalIgnoreCase))
                 {
+                    _logger.LogTrace(WithContext(context, $"using special alias '$struct' => '{rest}', " +
+                                                          "switching repository to Structure-Variables"));
+
                     path = rest;
                     repository = context.StructureInfo.Variables;
                 }
                 else
                 {
-                    _logger.LogError($"could not resolve alias '{alias}' in '{context.CurrentKey}'");
-                    context.AddError(context.CurrentKey, $"could not resolve alias '{alias}'");
+                    _logger.LogError($"could not resolve alias '{alias}'");
                 }
             }
 
@@ -270,10 +280,16 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                                                                string path)
         {
             var pathMatcher = path.TrimEnd('*');
+
+            _logger.LogTrace(WithContext(context, $"matching '{pathMatcher}' against '{repository.Count}' keys"));
+
             var matchedItems = repository.Keys
                                          .Where(key => key.StartsWith(pathMatcher, StringComparison.OrdinalIgnoreCase))
                                          .Select(key => (Key: key, Value: repository[key]))
                                          .ToArray();
+
+            _logger.LogTrace(WithContext(context, $"matching '{pathMatcher}' against '{repository.Count}' keys " +
+                                                  $"resulted in '{matchedItems.Length}' results"));
 
             // recursion to resolve keys within the selected region
             var resultItems = new Dictionary<string, string>(matchedItems.Length);
@@ -284,11 +300,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 var regionResult = await CompileInternal(regionContext, itemValue);
 
-                // carry errors encountered in region-compilation with us
-                foreach (var errorGroup in regionContext.Errors)
-                foreach (var error in errorGroup.Value)
-                    context.AddError(errorGroup.Key, error);
-
                 foreach (var (k, v) in regionResult)
                     resultItems[k] = v;
             }
@@ -297,6 +308,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             return resultItems.Select(item => (Key: item.Key, Value: item.Value))
                               .ToArray();
         }
+
+        private static string WithContext(CompilationContext context, string message)
+            => $"'{context.EnvironmentInfo.Name}' / '{context.StructureInfo.Name}' / '{context.CurrentKey}' {message}";
 
         private struct CompilationPlan
         {
@@ -327,8 +341,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             public EnvironmentCompilationInfo EnvironmentInfo { get; set; }
 
-            public Dictionary<string, List<string>> Errors { get; } = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-
             public IConfigurationParser Parser { get; set; }
 
             public int RecursionLevel { get; private set; }
@@ -338,21 +350,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             public Dictionary<string, string> Result { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             public StructureCompilationInfo StructureInfo { get; set; }
-
-            public void AddError(string key, string errorMessage)
-            {
-                if (!Errors.ContainsKey(key))
-                    Errors[key] = new List<string>();
-                Errors[key].Add(errorMessage);
-            }
-
-            public void CarryOverErrors(CompilationContext context)
-            {
-                // carry errors encountered in region-compilation with us
-                foreach (var errorGroup in context.Errors)
-                foreach (var error in errorGroup.Value)
-                    AddError(errorGroup.Key, error);
-            }
 
             public void IncrementRecursionLevel() => RecursionLevel += 1;
         }

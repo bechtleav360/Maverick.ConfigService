@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public PreviewController(IServiceProvider provider, 
+        public PreviewController(IServiceProvider provider,
                                  ILogger<PreviewController> logger,
                                  IConfigurationCompiler compiler,
                                  IProjectionStore store,
@@ -58,9 +58,14 @@ namespace Bechtle.A365.ConfigService.Controllers
             var variableSnapshot = structureVariableResult.Data;
             var environmentSnapshot = environmentResult.Data;
 
-            var environmentInfo = new EnvironmentCompilationInfo {Keys = environmentSnapshot};
+            var environmentInfo = new EnvironmentCompilationInfo
+            {
+                Name = $"{envId.Category}/{envId.Name}",
+                Keys = environmentSnapshot
+            };
             var structureInfo = new StructureCompilationInfo
             {
+                Name = $"{structId.Name}/{structId.Version}",
                 Keys = structureSnapshot,
                 Variables = variableSnapshot
             };

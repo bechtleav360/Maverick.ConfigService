@@ -36,11 +36,14 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         /// <inheritdoc />
         public async Task HandleDomainEvent(ConfigurationBuilt domainEvent)
         {
-            var structureResult = await _database.GetStructure(domainEvent.Identifier.Structure);
+            var envId = domainEvent.Identifier.Environment;
+            var structId = domainEvent.Identifier.Structure;
+
+            var structureResult = await _database.GetStructure(structId);
             if (structureResult.IsError)
                 throw new Exception(structureResult.Message);
 
-            var environmentResult = await _database.GetEnvironmentWithInheritance(domainEvent.Identifier.Environment);
+            var environmentResult = await _database.GetEnvironmentWithInheritance(envId);
             if (environmentResult.IsError)
                 throw new Exception(environmentResult.Message);
 
@@ -49,11 +52,13 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 
             var environmentInfo = new EnvironmentCompilationInfo
             {
+                Name = $"{envId.Category}/{envId.Name}",
                 Keys = environmentSnapshot.Data
             };
 
             var structureInfo = new StructureCompilationInfo
             {
+                Name = $"{structId.Name}/{structId.Version}",
                 Keys = structureSnapshot.Data,
                 Variables = structureSnapshot.Variables
             };
