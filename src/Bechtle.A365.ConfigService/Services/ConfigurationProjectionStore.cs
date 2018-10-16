@@ -36,10 +36,14 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenBy(s => s.ConfigEnvironment.Name)
                                              .ThenBy(s => s.Structure.Name)
                                              .ThenByDescending(s => s.Structure.Version)
+                                             .Select(s => new ConfigurationIdentifier(
+                                                         new EnvironmentIdentifier(s.ConfigEnvironment.Category,
+                                                                                   s.ConfigEnvironment.Name),
+                                                         new StructureIdentifier(s.Structure.Name,
+                                                                                 s.Structure.Version)))
                                              .ToListAsync();
 
-                var result = dbResult?.Select(s => new ConfigurationIdentifier(s))
-                                     .ToList()
+                var result = dbResult?.ToList()
                              ?? new List<ConfigurationIdentifier>();
 
                 return Result<IList<ConfigurationIdentifier>>.Success(result);

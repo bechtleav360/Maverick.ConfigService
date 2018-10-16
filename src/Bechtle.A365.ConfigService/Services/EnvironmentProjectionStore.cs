@@ -32,10 +32,10 @@ namespace Bechtle.A365.ConfigService.Services
                 var dbResult = await _context.ConfigEnvironments
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)
+                                             .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
                                              .ToListAsync();
 
-                var result = dbResult?.Select(s => new EnvironmentIdentifier(s))
-                                     .ToList()
+                var result = dbResult?.ToList()
                              ?? new List<EnvironmentIdentifier>();
 
                 return Result<IList<EnvironmentIdentifier>>.Success(result);
@@ -56,10 +56,10 @@ namespace Bechtle.A365.ConfigService.Services
                                              .Where(s => s.Category == category)
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)
+                                             .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
                                              .ToListAsync();
 
-                var result = dbResult?.Select(s => new EnvironmentIdentifier(s))
-                                     .ToList()
+                var result = dbResult?.ToList()
                              ?? new List<EnvironmentIdentifier>();
 
                 return Result<IList<EnvironmentIdentifier>>.Success(result);

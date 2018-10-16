@@ -31,10 +31,10 @@ namespace Bechtle.A365.ConfigService.Services
                 var dbResult = await _context.Structures
                                              .OrderBy(s => s.Name)
                                              .ThenByDescending(s => s.Version)
+                                             .Select(s => new StructureIdentifier(s.Name, s.Version))
                                              .ToListAsync();
 
-                var result = dbResult?.Select(s => new StructureIdentifier(s))
-                                     .ToList()
+                var result = dbResult?.ToList()
                              ?? new List<StructureIdentifier>();
 
                 return Result<IList<StructureIdentifier>>.Success(result);
