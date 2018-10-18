@@ -7,18 +7,19 @@ using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
-    public class Projection : IProjection
+    public class Projection : IHostedService
     {
-        private ILogger<Projection> Logger { get; }
-        private ProjectionConfiguration Configuration { get; }
-        private IEventStoreConnection Store { get; }
-        private IServiceProvider Provider { get; }
-        private IEventDeserializer EventDeserializer { get; }
-        private IConfigurationDatabase Database { get; }
+        private readonly ILogger<Projection> _logger;
+        private readonly ProjectionConfiguration _configuration;
+        private readonly IEventStoreConnection _store;
+        private readonly IServiceProvider _provider;
+        private readonly IEventDeserializer _eventDeserializer;
+        private readonly IConfigurationDatabase _database;
 
         // so many injected things, better not get addicted
         public Projection(ILogger<Projection> logger,
@@ -28,74 +29,42 @@ namespace Bechtle.A365.ConfigService.Projection
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer)
         {
-            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            Logger.LogInformation("starting projection...");
+            _logger.LogInformation("starting projection...");
 
-            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            Database = database ?? throw new ArgumentNullException(nameof(database));
-            Store = store ?? throw new ArgumentNullException(nameof(store));
-            Provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            EventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
-        }
-
-        /// <inheritdoc />
-        public async Task Start(CancellationToken cancellationToken)
-        {
-            Logger.LogInformation("running projection...");
-
-            await Database.Connect();
-
-            await Store.ConnectAsync();
-
-            var latestEvent = await Database.GetLatestProjectedEventId();
-
-            Store.SubscribeToStreamFrom(Configuration.EventStore.SubscriptionName,
-                                        latestEvent,
-                                        new CatchUpSubscriptionSettings(Configuration.EventStore.MaxLiveQueueSize,
-                                                                        Configuration.EventStore.ReadBatchSize,
-                                                                        false,
-                                                                        true,
-                                                                        Configuration.EventStore.SubscriptionName),
-                                        EventAppeared,
-                                        subscription => { Logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
-                                        (subscription, reason, exception) =>
-                                        {
-                                            Logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
-                                                               $"dropped for reason: {reason}; exception {exception}");
-                                        });
-
-            while (!cancellationToken.IsCancellationRequested)
-                Thread.Sleep(TimeSpan.FromMilliseconds(100));
-
-            Logger.LogInformation("stopping projection...");
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _database = database ?? throw new ArgumentNullException(nameof(database));
+            _store = store ?? throw new ArgumentNullException(nameof(store));
+            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            _eventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
         }
 
         private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
-            Logger.LogInformation($"subscription: {subscription.SubscriptionName}; " +
-                                  $"EventId: {resolvedEvent.OriginalEvent.EventId}; " +
-                                  $"EventType: {resolvedEvent.OriginalEvent.EventType}; " +
-                                  $"Created: {resolvedEvent.OriginalEvent.Created}; " +
-                                  $"IsJson: {resolvedEvent.OriginalEvent.IsJson}; " +
-                                  $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
-                                  $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
+            _logger.LogInformation($"subscription: {subscription.SubscriptionName}; " +
+                                   $"EventId: {resolvedEvent.OriginalEvent.EventId}; " +
+                                   $"EventType: {resolvedEvent.OriginalEvent.EventType}; " +
+                                   $"Created: {resolvedEvent.OriginalEvent.Created}; " +
+                                   $"IsJson: {resolvedEvent.OriginalEvent.IsJson}; " +
+                                   $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
+                                   $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
 
-            var domainEvent = EventDeserializer.ToDomainEvent(resolvedEvent);
+            var domainEvent = _eventDeserializer.ToDomainEvent(resolvedEvent);
 
             if (domainEvent == null)
                 return;
 
             await Project(domainEvent);
 
-            await Database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
+            await _database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
         }
 
         private async Task Project(DomainEvent domainEvent)
         {
             // inner function to not clutter this class any more
-            Task HandleDomainEvent<T>(T @event) where T : DomainEvent => Provider.GetService<IDomainEventHandler<T>>()
-                                                                                 .HandleDomainEvent(@event);
+            Task HandleDomainEvent<T>(T @event) where T : DomainEvent => _provider.GetService<IDomainEventHandler<T>>()
+                                                                                  .HandleDomainEvent(@event);
 
             switch (domainEvent)
             {
@@ -133,6 +102,53 @@ namespace Bechtle.A365.ConfigService.Projection
                 default:
                     throw new ArgumentOutOfRangeException(nameof(domainEvent));
             }
+        }
+
+        /// <inheritdoc />
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("running projection...");
+
+            await _database.Connect();
+
+            await _store.ConnectAsync();
+
+            var latestEvent = await _database.GetLatestProjectedEventId();
+
+            _store.SubscribeToStreamFrom(_configuration.EventStore.SubscriptionName,
+                                         latestEvent,
+                                         new CatchUpSubscriptionSettings(_configuration.EventStore.MaxLiveQueueSize,
+                                                                         _configuration.EventStore.ReadBatchSize,
+                                                                         false,
+                                                                         true,
+                                                                         _configuration.EventStore.SubscriptionName),
+                                         EventAppeared,
+                                         subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
+                                         (subscription, reason, exception) =>
+                                         {
+                                             _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
+                                                                 $"dropped for reason: {reason}; exception {exception}");
+                                         });
+
+            while (!cancellationToken.IsCancellationRequested)
+                Thread.Sleep(TimeSpan.FromMilliseconds(100));
+
+            _logger.LogInformation("stopping projection...");
+        }
+
+        /// <inheritdoc />
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogTrace(@"¯\_(ツ)_/¯");
+            }
+            catch (Exception)
+            {
+                // do nothing
+            }
+
+            return Task.CompletedTask;
         }
     }
 }

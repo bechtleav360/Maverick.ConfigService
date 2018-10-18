@@ -1,9 +1,9 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Projection.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
+
 
 namespace Bechtle.A365.ConfigService.Projection
 {
@@ -11,44 +11,35 @@ namespace Bechtle.A365.ConfigService.Projection
     {
         public static void Main(string[] args) => MainAsync(args).RunSync();
 
-        public async static Task MainAsync(string[] args)
+        private static async Task MainAsync(string[] args)
         {
-            IConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            var hostBuilder = new HostBuilder();
 
-            ConfigureAppConfiguration(configurationBuilder, args);
+            hostBuilder.ConfigureAppConfiguration(builder =>
+                       {
+                           builder.AddJsonFile("appsettings.json", true, true)
+                                  .AddCommandLine(args)
+                                  .AddEnvironmentVariables();
+                       })
+                       .ConfigureServices((context, services) =>
+                       {
+                           services
+                               // required for lazy-loading proxies
+                               .AddEntityFrameworkProxies()
+                               .AddCustomLogging()
+                               .AddProjectionConfiguration(context)
+                               .AddProjectionServices()
+                               .AddDomainEventServices()
 
-            IServiceCollection services = new ServiceCollection();
+                               // add the service that should be run
+                               .AddHostedService<Projection>();
+                       })
+                       .UseConsoleLifetime();
 
-            var startup = new Startup(configurationBuilder.Build());
+            var host = hostBuilder.Build();
 
-            startup.ConfigureServices(services);
-
-            IServiceProvider serviceProvider = services.BuildServiceProvider();
-
-            var logger = serviceProvider.GetService<ILoggerFactory>()
-                                        .CreateLogger<Program>();
-
-            logger.LogDebug("program initialized");
-
-            var projection = serviceProvider.GetService<IProjection>();
-
-            var cancellationTokenSource = new CancellationTokenSource();
-
-            Console.CancelKeyPress += (sender, eventArgs) => cancellationTokenSource.Cancel();
-
-            // i want to execute IProjection.Start, but allow graceful termination of this program
-            // not sure if Task.Run(..., CancellationToken) handles this, or IProjection.Start(CancellationToken) is required
-            // @TODO: investigato!
-            await Task.Run(() => projection.Start(cancellationTokenSource.Token), cancellationTokenSource.Token);
-
-            logger.LogDebug("program shutdown gracefully");
-        }
-
-        private static void ConfigureAppConfiguration(IConfigurationBuilder builder, string[] args)
-        {
-            builder.AddJsonFile("appsettings.json", true, true)
-                   .AddCommandLine(args)
-                   .AddEnvironmentVariables();
+            if (!(host is null))
+                await host.RunAsync();
         }
     }
 }
