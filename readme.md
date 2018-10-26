@@ -4,6 +4,7 @@
 - Nutzung
 - Anbindung von Services
 - Technische Details
+- Known Issues
 
 ## Overview
 
@@ -230,3 +231,57 @@ Beim Parsen einer Referenz stellt der ConfigService2.0 bestimmte Aliases zur ver
 `$struct` ist insofern speziell, als dass es zugriff auf das `variables` objekt innerhalb einer Struktur erlaubt.
 
 `{{$struct/MyVariable}}` greift auf `MyVariable` innerhalb der aktuellen Struktur zu.
+
+## Known Issues
+
+### Bestimmte zeichen in JSON-Properties führen zu falschen Konfigurationen
+
+JSON-Properties die `'/'` enthalten können zu problemen führen wenn sie nicht korrekt an den ConfigService übergeben werden.
+
+``` json
+{
+  "TargetConfigurations": {
+    "Ein-/Ausgang (Papier)": "Original",
+    "Elektronisches Dokument": "Original",
+    "TempDokument": "Original"
+  }
+}
+```
+
+Dieses JSON, als `Dictionary<string, string>` dargestellt, kann unterschiedliche ergebnisse haben.
+
+Fehlerhafte Darstellung:
+> ``` json
+> {
+>   "TargetConfigurations/Ein-/Ausgang (Papier)": "Original",
+>   "TargetConfigurations/Elektronisches Dokument": "Original",
+>   "TargetConfigurations/TempDokument": "Original"
+> }
+> ```
+
+Korrekte Darstellung:
+> ```json
+> {
+>   "TargetConfigurations/Ein-%2FAusgang%20%28Papier%29": "Original",
+>   "TargetConfigurations/Elektronisches%20Dokument": "Original",
+>   "TargetConfigurations/TempDokument": "Original"
+> }
+> ```
+
+Alle Pfade sind technisch korrekt, die "Fehlerhafte Darstellung" führt allerdings zu einem anderen JSON als gewollt.
+
+``` json
+{
+  "TargetConfigurations": {
+    "Ein-": {
+        "Ausgang (Papier)": "Original"
+    },
+    "Elektronisches Dokument": "Original",
+    "TempDokument": "Original"
+  }
+}
+```
+
+Der ConfigService2.0 verwandelt JSON automatisch in das Korrekte format wenn der Endpunkt `/environments/{category}/{name}/json` genutzt wird.  
+Alternativ steht noch der Endpunkt `/environments/{category}/{name}/keys` zur verfügung, dort wird allerdings davon ausgegangen dass die übertragenen Werte korrekt sind.  
+Über die Endpunkte `/convert/json/map` und `/convert/map/json` können JSON und `Dictionary<string, string>` beliebig umgewandelt werden, falls der client diese aufgabe nicht übernehmen will.

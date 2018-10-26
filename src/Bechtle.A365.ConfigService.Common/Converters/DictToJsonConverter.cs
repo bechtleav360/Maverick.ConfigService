@@ -34,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                     {
                         var nextNode = new Node
                         {
-                            Name = pathPart,
+                            Name = pathPart
                         };
                         currentNode.Children.Add(nextNode);
                         currentNode = nextNode;
@@ -54,6 +54,14 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             return jToken;
         }
 
+        private JArray CreateArray(Node node) => new JArray(node.Children
+                                                                .OrderBy(c => int.Parse(c.Name))
+                                                                .Select(CreateToken));
+
+        private JObject CreateObject(Node node) => new JObject(node.Children
+                                                                   .Select(c => new JProperty(UnEscapePath(c.Name),
+                                                                                              CreateToken(c))));
+
         private JToken CreateToken(Node node)
         {
             if (!node.Children.Any())
@@ -67,19 +75,15 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
         private JValue CreateValue(Node node) => new JValue(node.Value);
 
-        private JObject CreateObject(Node node) => new JObject(node.Children.Select(c => new JProperty(c.Name, CreateToken(c))));
-
-        private JArray CreateArray(Node node) => new JArray(node.Children
-                                                                .OrderBy(c => int.Parse(c.Name))
-                                                                .Select(CreateToken));
+        private string UnEscapePath(string p) => Uri.UnescapeDataString(p);
 
         private class Node
         {
+            public List<Node> Children { get; } = new List<Node>();
+
             public string Name { get; set; } = string.Empty;
 
             public string Value { get; set; } = string.Empty;
-
-            public List<Node> Children { get; } = new List<Node>();
         }
     }
 }

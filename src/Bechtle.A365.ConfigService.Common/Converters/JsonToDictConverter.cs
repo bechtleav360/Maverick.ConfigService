@@ -19,6 +19,12 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             return dict;
         }
 
+        private string EscapePath(string p) => Uri.EscapeDataString(p);
+
+        private string MakeNextPath(string currentPath, string nextPath) => string.IsNullOrWhiteSpace(currentPath)
+                                                                                ? EscapePath(nextPath)
+                                                                                : $"{currentPath}/{EscapePath(nextPath)}";
+
         private void Visit(JToken token, string currentPath, IDictionary<string, string> dict)
         {
             switch (token)
@@ -64,9 +70,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             foreach (var property in jObject.Properties()
                                             .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
                                             .ThenBy(p => p.Type))
-            {
                 Visit(property, currentPath, dict);
-            }
         }
 
         private void Visit(JProperty jProperty, string currentPath, IDictionary<string, string> dict)
@@ -74,9 +78,5 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
         private void Visit(JValue jValue, string currentPath, IDictionary<string, string> dict)
             => dict[currentPath] = jValue.Value.ToString();
-
-        private string MakeNextPath(string currentPath, string nextPath) => string.IsNullOrWhiteSpace(currentPath)
-                                                                                ? nextPath
-                                                                                : $"{currentPath}/{nextPath}";
     }
 }
