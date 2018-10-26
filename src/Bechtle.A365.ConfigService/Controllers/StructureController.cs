@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
@@ -157,9 +156,10 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (existingStructures.IsError)
                     return ProviderError(existingStructures);
 
+                // structure has already been submitted and can be viewed at the returned location
                 if (existingStructures.Data.Any(v => v == structure.Version))
-                    return ProviderError(Common.Result.Error($"structure '{structure.Name}' with version '{structure.Version}' already exists",
-                                                             ErrorCode.StructureAlreadyExists));
+                    return RedirectToAction(nameof(GetStructureKeys), 
+                                            new {name = structure.Name, version = structure.Version});
 
                 var keys = _translator.ToDictionary(structure.Structure);
                 var variables = structure.Variables ?? new Dictionary<string, string>();
