@@ -69,6 +69,19 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
+        public void IgnoreSingleBraces()
+        {
+            var parser = new ConfigurationParser();
+            var input = "${longdate} ${logger} ${level} ${message}";
+            var result = parser.Parse(input);
+
+            Assert.NotNull(result);
+            Assert.True(result.Count == 1);
+            Assert.IsType<ValuePart>(result.First());
+            Assert.True(result.OfType<ValuePart>().First().Text == input);
+        }
+
+        [Fact]
         public void ExtractCorrectReference()
         {
             var result = new ConfigurationParser().Parse("this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}");
