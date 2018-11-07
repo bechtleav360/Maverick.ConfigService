@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Bechtle.A365.ConfigService.Services
 {
     /// <inheritdoc />
-    public class ProjectionStoreContext : DbContext
+    public sealed class ProjectionStoreContext : DbContext
     {
         private readonly ProjectionStorageConfiguration _config;
 
@@ -13,6 +13,7 @@ namespace Bechtle.A365.ConfigService.Services
         public ProjectionStoreContext(ProjectionStorageConfiguration config)
         {
             _config = config;
+            Database.EnsureCreated();
         }
 
         /// <summary>

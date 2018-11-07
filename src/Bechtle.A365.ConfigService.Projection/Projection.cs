@@ -54,10 +54,16 @@ namespace Bechtle.A365.ConfigService.Projection
 
             if (domainEvent == null)
                 return;
+            try
+            {
+                await Project(domainEvent);
 
-            await Project(domainEvent);
-
-            await _database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
+                await _database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
+            }
+            catch (Exception e)
+            {
+                _logger.LogCritical(e, $"could not project domain-event of type '{domainEvent.EventType}'");
+            }
         }
 
         private async Task Project(DomainEvent domainEvent)
