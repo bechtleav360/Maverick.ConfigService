@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
@@ -30,7 +31,17 @@ namespace Bechtle.A365.ConfigService.Parsing
                                                                                                               .AtLeastOnce())
                                                                                           .Then(c => Span.WhiteSpace.IgnoreMany()));
 
-        private static readonly TextParser<TextSpan> ValueMatcher = Span.WithoutAny(c => c == '{');
+        private static readonly TextParser<TextSpan> ValueMatcher = Span.MatchedBy(Parse.Not(RefOpenMatcher)
+                                                                                        .Then(_ => Character.AnyChar))
+                                                                        .AtLeastOnce()
+                                                                        // creates a new TextSpan from all the one-char-wide TextSpans that are
+                                                                        // create in the previous step
+                                                                        // @TODO: optimize the performance of this clusterfuck
+                                                                        .Select(spans => !spans.Any()
+                                                                                             ? new TextSpan()
+                                                                                             : new TextSpan(spans[0].Source,
+                                                                                                            spans[0].Position,
+                                                                                                            spans.Sum(s => s.Length)));
 
         /// <inheritdoc />
         protected override IEnumerable<Result<ConfigValueToken>> Tokenize(TextSpan span, TokenizationState<ConfigValueToken> state)
