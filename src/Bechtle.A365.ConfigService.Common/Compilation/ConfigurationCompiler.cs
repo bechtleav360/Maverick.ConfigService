@@ -301,7 +301,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var regionResult = await CompileInternal(regionContext, itemValue);
 
                 foreach (var (k, v) in regionResult)
-                    resultItems[k] = v;
+                    resultItems[$"{context.CurrentKey}/{k.Substring(pathMatcher.Length)}"] = v;
             }
 
             // resultItems should be fully resolved
