@@ -61,8 +61,8 @@ namespace Bechtle.A365.ConfigService.Tests
             var result = parser.Parse(text);
 
             Assert.NotNull(result);
-            Assert.True(result.Count == expectedResults);
-            Assert.True(result.Count == expectedTypes.Length);
+            Assert.Equal(expectedResults, result.Count);
+            Assert.Equal(expectedTypes.Length, result.Count);
 
             for (var i = 0; i < result.Count; ++i)
                 Assert.IsType(expectedTypes[i], result[i]);
