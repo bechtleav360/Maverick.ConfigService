@@ -9,37 +9,27 @@ namespace Bechtle.A365.ConfigService.Projection
 {
     public class Program
     {
-        public static void Main(string[] args) => MainAsync(args).RunSync();
+        public static async Task Main(string[] args)
+            => await new HostBuilder()
+                     .ConfigureAppConfiguration(builder =>
+                     {
+                         builder.AddJsonFile("appsettings.json", true, true)
+                                .AddCommandLine(args)
+                                .AddEnvironmentVariables();
+                     })
+                     .ConfigureServices((context, services) =>
+                     {
+                         services
+                             // required for lazy-loading proxies
+                             .AddEntityFrameworkProxies()
+                             .AddCustomLogging()
+                             .AddProjectionConfiguration(context)
+                             .AddProjectionServices()
+                             .AddDomainEventServices()
 
-        private static async Task MainAsync(string[] args)
-        {
-            var hostBuilder = new HostBuilder();
-
-            hostBuilder.ConfigureAppConfiguration(builder =>
-                       {
-                           builder.AddJsonFile("appsettings.json", true, true)
-                                  .AddCommandLine(args)
-                                  .AddEnvironmentVariables();
-                       })
-                       .ConfigureServices((context, services) =>
-                       {
-                           services
-                               // required for lazy-loading proxies
-                               .AddEntityFrameworkProxies()
-                               .AddCustomLogging()
-                               .AddProjectionConfiguration(context)
-                               .AddProjectionServices()
-                               .AddDomainEventServices()
-
-                               // add the service that should be run
-                               .AddHostedService<Projection>();
-                       })
-                       .UseConsoleLifetime();
-
-            var host = hostBuilder.Build();
-
-            if (!(host is null))
-                await host.RunAsync();
-        }
+                             // add the service that should be run
+                             .AddHostedService<Projection>();
+                     })
+                     .RunConsoleAsync();
     }
 }

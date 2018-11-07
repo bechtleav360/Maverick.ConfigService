@@ -7,12 +7,11 @@ using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
-    public class Projection : IHostedService
+    public class Projection : HostedService
     {
         private readonly ILogger<Projection> _logger;
         private readonly ProjectionConfiguration _configuration;
@@ -111,7 +110,7 @@ namespace Bechtle.A365.ConfigService.Projection
         }
 
         /// <inheritdoc />
-        public async Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("running projection...");
 
@@ -137,24 +136,9 @@ namespace Bechtle.A365.ConfigService.Projection
                                          });
 
             while (!cancellationToken.IsCancellationRequested)
-                Thread.Sleep(TimeSpan.FromMilliseconds(100));
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
 
             _logger.LogInformation("stopping projection...");
-        }
-
-        /// <inheritdoc />
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                _logger.LogTrace(@"¯\_(ツ)_/¯");
-            }
-            catch (Exception)
-            {
-                // do nothing
-            }
-
-            return Task.CompletedTask;
         }
     }
 }
