@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
@@ -7,6 +8,7 @@ using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -78,5 +80,75 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             return Ok(json);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
+        {
+            if (previewOptions is null)
+                return BadRequest("no preview-data received");
+
+            if (previewOptions.Structure is null)
+                return BadRequest("no structure-data received");
+
+            if (previewOptions.Variables is null)
+                return BadRequest("no variable-data received");
+
+            if (previewOptions.Environment is null)
+                return BadRequest("no environment-data received");
+
+            var environmentInfo = new EnvironmentCompilationInfo
+            {
+                Name = "Intermediate-Preview-Environment",
+                Keys = previewOptions.Environment
+            };
+            var structureInfo = new StructureCompilationInfo
+            {
+                Name = "Intermediate-Preview-Structure",
+                Keys = previewOptions.Structure,
+                Variables = previewOptions.Variables
+            };
+
+            var compiled = await _compiler.Compile(environmentInfo,
+                                                   structureInfo,
+                                                   _parser);
+
+            var json = _translator.ToJson(compiled);
+
+            return Ok(new PreviewResult
+            {
+                Map = compiled,
+                Json = json
+            });
+        }
+    }
+
+    /// <summary>
+    /// </summary>
+    public class PreviewContainer
+    {
+        /// <summary>
+        /// </summary>
+        public Dictionary<string, string> Environment { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public Dictionary<string, string> Structure { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public Dictionary<string, string> Variables { get; set; }
+    }
+
+    /// <summary>
+    /// </summary>
+    public class PreviewResult
+    {
+        /// <summary>
+        /// </summary>
+        public IDictionary<string, string> Map { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public JToken Json { get; set; }
     }
 }
