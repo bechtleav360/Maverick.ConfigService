@@ -5,8 +5,9 @@ using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
-
-// using Bechtle.A365.Core.EventBus.Abstraction;
+using Bechtle.A365.Core.EventBus.Abstraction;
+using Bechtle.A365.Core.EventBus.Events.Events;
+using Bechtle.A365.Core.EventBus.Events.Messages;
 
 namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 {
@@ -15,22 +16,21 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         private readonly IConfigurationDatabase _database;
         private readonly IConfigurationCompiler _compiler;
         private readonly IConfigurationParser _parser;
-
         private readonly IJsonTranslator _translator;
-        // private readonly IEventBus _eventBus;
+        private readonly IEventBus _eventBus;
 
         /// <inheritdoc />
         public ConfigurationBuiltHandler(IConfigurationDatabase database,
                                          IConfigurationCompiler compiler,
                                          IConfigurationParser parser,
-                                         IJsonTranslator translator)
-            // IEventBus eventBus)
+                                         IJsonTranslator translator,
+                                         IEventBus eventBus)
         {
             _database = database;
             _compiler = compiler;
             _parser = parser;
             _translator = translator;
-            //_eventBus = eventBus;
+            _eventBus = eventBus;
         }
 
         /// <inheritdoc />
@@ -77,7 +77,55 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                               domainEvent.ValidFrom,
                                               domainEvent.ValidTo);
 
-            // await _eventBus.Publish(new EventBusMessages.OnVersionBuilt());
+            // await PublishConfigurationChangedEvent(domainEvent);
+        }
+
+        private async Task PublishConfigurationChangedEvent(ConfigurationBuilt domainEvent)
+        {
+            /*
+             * is the new config active right now?
+             * if so, then publish a ConfigurationPublished event
+             *
+             * open ended indefinite
+             * null => null = publish
+             *
+             * from before, indefinite
+             * earlier => null = publish
+             *
+             * in the past
+             * earlier => earlier = no publish
+             *
+             * from before to the future
+             * earlier => later = publish
+             *
+             * in the future, indefinite
+             * later => null = no publish
+             *
+             * in the future, to the past => impossible
+             * later => earlier = no publish
+             *
+             * in the future, to later in the future
+             * later => later = no publish
+             */
+            var from = domainEvent.ValidFrom;
+            var to = domainEvent.ValidTo;
+            var now = DateTime.UtcNow;
+
+            if (from is null && to is null ||
+                !(from is null) && from < now && to is null ||
+                !(from is null) && from < now && !(to is null) && to > now)
+            {
+                await _eventBus.Publish(new EventMessage
+                {
+                    Event = new OnConfigurationPublished
+                    {
+                        EnvironmentCategory = domainEvent.Identifier.Environment.Category,
+                        EnvironmentName = domainEvent.Identifier.Environment.Name,
+                        StructureName = domainEvent.Identifier.Structure.Name,
+                        StructureVersion = domainEvent.Identifier.Structure.Version
+                    }
+                });
+            }
         }
     }
 }

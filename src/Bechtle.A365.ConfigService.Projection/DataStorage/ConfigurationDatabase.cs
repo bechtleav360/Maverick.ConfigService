@@ -405,7 +405,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                          .FirstOrDefaultAsync(c => c.ConfigEnvironment.Category == environment.Identifier.Category &&
                                                                                    c.ConfigEnvironment.Name == environment.Identifier.Name &&
                                                                                    c.Structure.Name == structure.Identifier.Name &&
-                                                                                   c.Structure.Version == structure.Identifier.Version);
+                                                                                   c.Structure.Version == structure.Identifier.Version &&
+                                                                                   c.ValidFrom == validFrom &&
+                                                                                   c.ValidTo == validTo);
 
                 try
                 {
@@ -426,6 +428,63 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     _logger.LogError($"could not save compiled configuration: {e}");
                     return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
                 }
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<ConfigurationIdentifier> GetLatestActiveConfiguration()
+        {
+            using (var context = OpenProjectionStore())
+            {
+                var metadata = await context.Metadata.FirstOrDefaultAsync();
+
+                if (metadata is null)
+                {
+                    metadata = new ProjectionMetadata();
+                    await context.Metadata.AddAsync(metadata);
+                    await context.SaveChangesAsync();
+                }
+
+                var configId = metadata.LastActiveConfigurationId;
+                if (configId == Guid.Empty)
+                    return null;
+
+                var configuration = await context.ProjectedConfigurations
+                                                 .Where(c => c.Id == configId)
+                                                 .Select(c => new ConfigurationIdentifier(
+                                                             new EnvironmentIdentifier(c.ConfigEnvironment.Category, c.ConfigEnvironment.Name),
+                                                             new StructureIdentifier(c.Structure.Name, c.Structure.Version)))
+                                                 .FirstOrDefaultAsync();
+
+                return configuration;
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task SetLatestActiveConfiguration(ConfigurationIdentifier identifier)
+        {
+            using (var context = OpenProjectionStore())
+            {
+                var metadata = await context.Metadata.FirstOrDefaultAsync();
+
+                if (metadata is null)
+                {
+                    metadata = new ProjectionMetadata();
+                    await context.Metadata.AddAsync(metadata);
+                    await context.SaveChangesAsync();
+                }
+
+                var configuration = await context.ProjectedConfigurations
+                                                 .Where(c => c.ConfigEnvironment.Category == identifier.Environment.Category &&
+                                                             c.ConfigEnvironment.Name == identifier.Environment.Name &&
+                                                             c.Structure.Name == identifier.Structure.Name &&
+                                                             c.Structure.Version == identifier.Structure.Version)
+                                                 .Select(c => c.Id)
+                                                 .FirstOrDefaultAsync();
+
+                metadata.LastActiveConfigurationId = configuration;
+
+                await context.SaveChangesAsync();
             }
         }
 
@@ -512,6 +571,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             ///     null to indicate that no events have been projected
             /// </summary>
             public long? LatestEvent { get; set; }
+
+            /// <summary>
+            ///     Id of the last known active Configuration
+            ///     if this changes an OnConfigurationPublished event should be published containing the new configuration-information
+            /// </summary>
+            public Guid LastActiveConfigurationId { get; set; }
         }
     }
 }

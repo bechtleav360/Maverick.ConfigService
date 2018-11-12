@@ -56,6 +56,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<Result> DeleteStructure(StructureIdentifier identifier);
 
         /// <summary>
+        ///     get all data for the Default-Environment for the given category
+        /// </summary>
+        /// <param name="category"></param>
+        /// <returns></returns>
+        Task<Result<EnvironmentSnapshot>> GetDefaultEnvironment(string category);
+
+        /// <summary>
         ///     get all data for the specified Environment
         /// </summary>
         /// <param name="identifier"></param>
@@ -70,11 +77,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<Result<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier);
 
         /// <summary>
-        ///     get all data for the Default-Environment for the given category
+        ///     get the Identifier of the latest active Configuration
         /// </summary>
-        /// <param name="category"></param>
         /// <returns></returns>
-        Task<Result<EnvironmentSnapshot>> GetDefaultEnvironment(string category);
+        Task<ConfigurationIdentifier> GetLatestActiveConfiguration();
 
         /// <summary>
         ///     get the id of the last projected event.
@@ -105,6 +111,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                        string configurationJson,
                                        DateTime? validFrom,
                                        DateTime? validTo);
+
+        /// <summary>
+        ///     set the Identifier of the latest active Configuration
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task SetLatestActiveConfiguration(ConfigurationIdentifier identifier);
 
         /// <summary>
         ///     save the id of the last projected event.
