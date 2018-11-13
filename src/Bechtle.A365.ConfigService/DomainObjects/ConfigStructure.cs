@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -44,6 +46,17 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             RecordedEvents.Add(new StructureDeleted(_identifier));
 
+            return this;
+        }
+
+        /// <summary>
+        ///     create events that modify the variables associated to this ConfigStructure
+        /// </summary>
+        /// <param name="actions"></param>
+        /// <returns></returns>
+        public ConfigStructure ModifyVariables(IList<ConfigKeyAction> actions)
+        {
+            RecordedEvents.Add(new StructureVariablesModified(_identifier, actions.ToArray()));
             return this;
         }
     }

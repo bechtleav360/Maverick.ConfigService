@@ -31,7 +31,8 @@ namespace Bechtle.A365.ConfigService.Projection
                 {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventSerializer<EnvironmentDeleted>)},
                 {DomainEvent.GetEventType<EnvironmentKeysModified>(), typeof(IDomainEventSerializer<EnvironmentKeysModified>)},
                 {DomainEvent.GetEventType<StructureCreated>(), typeof(IDomainEventSerializer<StructureCreated>)},
-                {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventSerializer<StructureDeleted>)}
+                {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventSerializer<StructureDeleted>)},
+                {DomainEvent.GetEventType<StructureVariablesModified>(), typeof(IDomainEventSerializer<StructureVariablesModified>)}
             };
 
             foreach (var factory in factoryAssociations)

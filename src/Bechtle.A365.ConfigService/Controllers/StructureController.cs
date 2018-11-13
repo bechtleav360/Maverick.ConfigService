@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
@@ -262,8 +263,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 // structure has already been submitted and can be viewed at the returned location
                 if (existingStructures.Data.Any(v => v == structure.Version))
-                    return RedirectToAction(nameof(GetStructureKeys), 
-                                            new {name = structure.Name, version = structure.Version});
+                    return RedirectToAction(nameof(GetStructureKeys), new {name = structure.Name, version = structure.Version});
 
                 var keys = _translator.ToDictionary(structure.Structure);
                 var variables = structure.Variables ?? new Dictionary<string, string>();
@@ -280,6 +280,90 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 Logger.LogError(e, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
                 return StatusCode((int) HttpStatusCode.InternalServerError, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
+            }
+        }
+
+        /// <summary>
+        ///     add or update variables for the specified config-structure
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="version"></param>
+        /// <param name="changes"></param>
+        /// <returns></returns>
+        [HttpPut("{name}/{version}/variables/keys")]
+        public async Task<IActionResult> UpdateVariables([FromRoute] string name,
+                                                         [FromRoute] int version,
+                                                         [FromBody] Dictionary<string, string> changes)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("no name received");
+
+            if (version <= 0)
+                return BadRequest("invalid version version received");
+
+            if (changes is null || !changes.Any())
+                return BadRequest("no changes received");
+
+            try
+            {
+                var identifier = new StructureIdentifier(name, version);
+
+                var actions = changes.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
+                                     .ToArray();
+
+                await new ConfigStructure().IdentifiedBy(identifier)
+                                           .ModifyVariables(actions)
+                                           .Save(_eventStore);
+
+                return AcceptedAtAction(nameof(GetVariables), new {name, version});
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                return StatusCode(HttpStatusCode.InternalServerError,
+                                  $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
+            }
+        }
+
+        /// <summary>
+        ///     remove variables from the specified config-structure
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="version"></param>
+        /// <param name="variables"></param>
+        /// <returns></returns>
+        [HttpDelete("{name}/{version}/variables/keys")]
+        public async Task<IActionResult> RemoveVariables([FromRoute] string name,
+                                                         [FromRoute] int version,
+                                                         [FromBody] string[] variables)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("no name received");
+
+            if (version <= 0)
+                return BadRequest("invalid version version received");
+
+            if (variables is null || !variables.Any())
+                return BadRequest("no changes received");
+
+            try
+            {
+                var identifier = new StructureIdentifier(name, version);
+
+                var actions = variables.Select(ConfigKeyAction.Delete)
+                                       .ToArray();
+
+                await new ConfigStructure().IdentifiedBy(identifier)
+                                           .ModifyVariables(actions)
+                                           .Save(_eventStore);
+
+                return AcceptedAtAction(nameof(GetVariables), new {name, version});
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                return StatusCode(HttpStatusCode.InternalServerError,
+                                  $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
             }
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Services
 {
@@ -41,5 +42,13 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="when"></param>
         /// <returns></returns>
         Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when);
+
+        /// <summary>
+        ///     get the json of a Configuration
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="when"></param>
+        /// <returns></returns>
+        Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when);
     }
 }

@@ -55,6 +55,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeysModifiedHandler>()
                .AddSingleton<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
                .AddSingleton<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
+               .AddSingleton<IDomainEventHandler<StructureVariablesModified>, StructureVariablesModifiedHandler>()
                .AddSingleton<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();
 
         /// <summary>

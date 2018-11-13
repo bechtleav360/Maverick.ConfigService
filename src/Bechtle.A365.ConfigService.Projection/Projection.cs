@@ -104,6 +104,10 @@ namespace Bechtle.A365.ConfigService.Projection
                     await HandleDomainEvent(structureDeleted);
                     break;
 
+                case StructureVariablesModified structureVariablesModified:
+                    await HandleDomainEvent(structureVariablesModified);
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(domainEvent));
             }

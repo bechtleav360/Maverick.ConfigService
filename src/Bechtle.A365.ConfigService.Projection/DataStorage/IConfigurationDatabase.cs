@@ -19,6 +19,14 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<Result> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions);
 
         /// <summary>
+        ///     apply a set of changes to a Structures Variables
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="actions"></param>
+        /// <returns></returns>
+        Task<Result> ApplyChanges(StructureIdentifier identifier, IList<ConfigKeyAction> actions);
+
+        /// <summary>
         ///     connect to the (possibly) remote database
         /// </summary>
         /// <returns></returns>

@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     return Result.Error($"could not find environment {identifier} to apply modifications", ErrorCode.NotFound);
                 }
 
-                // 'look-up table' string=>ConfigEnvironmentKey to prevent searching the entire list for eacha and every key
+                // 'look-up table' string=>ConfigEnvironmentKey to prevent searching the entire list for each and every key
                 var keyDict = environment.Keys.ToDictionary(k => k.Key, k => k);
 
                 // changes we want to make later on
@@ -105,6 +105,90 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 {
                     _logger.LogError($"could not apply actions to environment {identifier}: {e}");
                     return Result.Error($"could not apply actions to environment {identifier}: {e}", ErrorCode.DbUpdateError);
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result> ApplyChanges(StructureIdentifier identifier, IList<ConfigKeyAction> actions)
+        {
+            using (var context = OpenProjectionStore())
+            {
+                var structure = await GetStructureInternal(identifier, context);
+
+                if (structure is null)
+                {
+                    _logger.LogError($"could not find structure {identifier} to apply modifications");
+                    return Result.Error($"could not find structure {identifier} to apply modifications", ErrorCode.NotFound);
+                }
+
+                // 'look-up table' string=>StructureVariable to prevent searching the entire list for each and every key
+                var keyDict = structure.Variables.ToDictionary(k => k.Key, k => k);
+
+                // changes we want to make later on
+                // many small changes to EF-List environment.Keys will result in abysmal performance
+                var addedKeys = new List<StructureVariable>();
+                var removedKeys = new List<StructureVariable>();
+
+                foreach (var action in actions)
+                    switch (action.Type)
+                    {
+                        case ConfigKeyActionType.Set:
+                        {
+                            var existingKey = keyDict.ContainsKey(action.Key)
+                                                  ? keyDict[action.Key]
+                                                  : null;
+
+                            if (existingKey is null)
+                                addedKeys.Add(new StructureVariable
+                                {
+                                    Id = Guid.NewGuid(),
+                                    StructureId = structure.Id,
+                                    Key = action.Key,
+                                    Value = action.Value
+                                });
+                            else
+                                existingKey.Value = action.Value;
+
+                            break;
+                        }
+
+                        case ConfigKeyActionType.Delete:
+                        {
+                            var existingKey = keyDict.ContainsKey(action.Key)
+                                                  ? keyDict[action.Key]
+                                                  : null;
+
+                            if (existingKey is null)
+                            {
+                                _logger.LogError($"could not remove variable '{action.Key}' from structure {identifier}: not found");
+                                return Result.Error($"could not remove variable '{action.Key}' from structure {identifier}", ErrorCode.NotFound);
+                            }
+
+                            removedKeys.Add(existingKey);
+                            break;
+                        }
+
+                        default:
+                            _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
+                            return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
+                    }
+
+                try
+                {
+                    if (removedKeys.Any())
+                        structure.Variables.RemoveRange(removedKeys);
+
+                    if (addedKeys.Any())
+                        structure.Variables.AddRange(addedKeys);
+
+                    await context.SaveChangesAsync();
+                    return Result.Success();
+                }
+                catch (DbUpdateException e)
+                {
+                    _logger.LogError($"could not apply actions to structure {identifier}: {e}");
+                    return Result.Error($"could not apply actions to structure {identifier}: {e}", ErrorCode.DbUpdateError);
                 }
             }
         }
