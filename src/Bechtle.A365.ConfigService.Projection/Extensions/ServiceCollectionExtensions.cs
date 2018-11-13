@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                .AddSingleton<IDomainEventHandler<DefaultEnvironmentCreated>, DefaultEnvironmentCreatedHandler>()
                .AddSingleton<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
                .AddSingleton<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
-               .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeyModifiedHandler>()
+               .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeysModifiedHandler>()
                .AddSingleton<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
                .AddSingleton<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
                .AddSingleton<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();
