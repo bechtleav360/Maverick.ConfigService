@@ -32,6 +32,7 @@ namespace Bechtle.A365.ConfigService.Parsing
                         break;
 
                     case ConfigValueToken.CommandValue:
+                    {
                         // default to 'path', to allow for concise notation in simple cases
                         if (currentKeyword == ReferenceCommand.None)
                             currentKeyword = ReferenceCommand.Path;
@@ -42,13 +43,16 @@ namespace Bechtle.A365.ConfigService.Parsing
                         if (currentReference.Commands.ContainsKey(currentKeyword))
                             throw new Exception($"could not set command '{currentKeyword}' to '{token.ToStringValue()}': command already set");
 
-                        currentReference.Commands[currentKeyword] = token.ToStringValue();
+                        currentReference.Commands[currentKeyword] = token.ToStringValue()
+                                                                         .Trim();
 
                         // reset keyword
                         currentKeyword = ReferenceCommand.None;
                         break;
+                    }
 
                     case ConfigValueToken.CommandKeyword:
+                    {
                         // ':' is included here to make tokenization easier, but we need to trim it because it's not actually helpful
                         var keyword = token.ToStringValue()
                                            .TrimEnd(':')
@@ -60,23 +64,52 @@ namespace Bechtle.A365.ConfigService.Parsing
                             currentKeyword = ReferenceCommand.Alias;
                         else if (keyword.Equals("path", StringComparison.InvariantCultureIgnoreCase))
                             currentKeyword = ReferenceCommand.Path;
+                        else if (keyword.Equals("default", StringComparison.InvariantCultureIgnoreCase))
+                            currentKeyword = ReferenceCommand.Fallback;
+                        else if (keyword.Equals("fallback", StringComparison.InvariantCultureIgnoreCase))
+                            currentKeyword = ReferenceCommand.Fallback;
                         else
                             throw new Exception($"keyword '{keyword}' not supported");
                         break;
+                    }
 
                     case ConfigValueToken.InstructionOpen:
+                    {
                         referenceStack.Push(new ReferencePart(new Dictionary<ReferenceCommand, string>()));
                         break;
+                    }
 
                     case ConfigValueToken.InstructionClose:
+                    {
                         var finishedReference = referenceStack.Pop();
+
+                        if (currentKeyword != ReferenceCommand.None)
+                        {
+                            if (finishedReference.Commands.ContainsKey(currentKeyword))
+                                throw new Exception($"could not set command '{currentKeyword}' to '': command already set");
+                            finishedReference.Commands[currentKeyword] = string.Empty;
+                            currentKeyword = ReferenceCommand.None;
+                        }
+
                         parts.Add(finishedReference);
                         break;
+                    }
 
                     case ConfigValueToken.InstructionSeparator:
+                    {
+                        var currentReference = referenceStack.Peek();
+
+                        if (currentKeyword != ReferenceCommand.None)
+                        {
+                            if (currentReference.Commands.ContainsKey(currentKeyword))
+                                throw new Exception($"could not set command '{currentKeyword}' to '': command already set");
+                            currentReference.Commands[currentKeyword] = string.Empty;
+                        }
+
                         // reset keyword
                         currentKeyword = ReferenceCommand.None;
                         break;
+                    }
 
                     default:
                         throw new ArgumentOutOfRangeException($"Token-Type {nameof(ConfigValueToken.None)} not supported");

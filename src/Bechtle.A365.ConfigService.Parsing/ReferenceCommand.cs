@@ -5,6 +5,7 @@
         None,
         Using,
         Alias,
-        Path
+        Path,
+        Fallback
     }
 }

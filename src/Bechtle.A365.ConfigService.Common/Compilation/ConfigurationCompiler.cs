@@ -167,8 +167,20 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 if (match is null)
                 {
-                    _logger.LogError($"could not resolve path '{path}'");
-                    continue;
+                    // if 'Fallback' or 'Default' are set in the reference,
+                    // we can use the it instead of the value we're searching for
+                    if (reference.Commands.ContainsKey(ReferenceCommand.Fallback))
+                    {
+                        var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
+                        _logger.LogWarning($"could not resolve path '{path}'");
+                        _logger.LogInformation($"using fallback '{fallbackValue}' after failing to resolve '{path}'");
+                        match = fallbackValue;
+                    }
+                    else
+                    {
+                        _logger.LogError($"could not resolve path '{path}'");
+                        continue;
+                    }
                 }
 
                 // compile the matched result until it's done
@@ -301,7 +313,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var regionResult = await CompileInternal(regionContext, itemValue);
 
                 foreach (var (k, v) in regionResult)
-                    resultItems[$"{context.CurrentKey}/{k.Substring(pathMatcher.Length)}"] = v;
+                {
+                    var relativePath = k.Substring(pathMatcher.Length);
+
+                    if(context.CurrentKey.EndsWith('/') || relativePath.StartsWith('/'))
+                        resultItems[context.CurrentKey + relativePath]= v;
+                    else
+                        resultItems[$"{context.CurrentKey}/{relativePath}"] = v;
+                }
             }
 
             // resultItems should be fully resolved

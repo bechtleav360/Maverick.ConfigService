@@ -77,6 +77,6 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             => Visit(jProperty.Value, MakeNextPath(currentPath, jProperty.Name), dict);
 
         private void Visit(JValue jValue, string currentPath, IDictionary<string, string> dict)
-            => dict[currentPath] = jValue.Value.ToString();
+            => dict[currentPath] = jValue?.Value?.ToString();
     }
 }

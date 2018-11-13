@@ -91,7 +91,7 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.IsType<ReferencePart>(result[1]);
 
             var reference = result.OfType<ReferencePart>()
-                                  .First();
+                                  .FirstOrDefault();
 
             Assert.NotNull(reference);
             Assert.NotEmpty(reference.Commands);
@@ -99,6 +99,65 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.True(reference.Commands[ReferenceCommand.Alias] == "Secret");
             Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
             Assert.True(reference.Commands[ReferenceCommand.Using] == "Handle");
+        }
+
+        [Fact]
+        public void TrimPathValues()
+        {
+            var result = new ConfigurationParser().Parse("this is fluff {{   /Some/Path/To/The/Unknown   ;   Using: nothing;}}");
+
+            Assert.Equal(2, result.Count);
+            Assert.IsType<ValuePart>(result[0]);
+            Assert.IsType<ReferencePart>(result[1]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("nothing", reference.Commands[ReferenceCommand.Using]);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Theory]
+        [InlineData("{{ Fallback: ; /Some/Path/To/The/Unknown; }}")]
+        [InlineData("{{ /Some/Path/To/The/Unknown; Fallback: }}")]
+        public void ExtractValueAndEmptyFallback(string text)
+        {
+            var result = new ConfigurationParser().Parse(text);
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+            Assert.Equal("", reference.Commands[ReferenceCommand.Fallback]);
+        }
+
+        [Theory]
+        [InlineData("{{Path:}}")]
+        [InlineData("{{Path:;}}")]
+        [InlineData("{{Fallback:}}")]
+        [InlineData("{{Fallback:;}}")]
+        [InlineData("{{Fallback: ;}}")]
+        [InlineData("{{Fallback: ; }}")]
+        public void ExtractEmptyCommands(string text)
+        {
+            var result = new ConfigurationParser().Parse(text);
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Empty(reference.Commands.First().Value);
         }
     }
 }
