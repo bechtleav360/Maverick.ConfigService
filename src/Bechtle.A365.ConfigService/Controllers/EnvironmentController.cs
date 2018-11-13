@@ -36,6 +36,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             _translator = translator;
         }
 
+        /// <summary>
+        ///     create a new Environment with the given Category + Name
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         [HttpPost("{category}/{name}")]
         public async Task<IActionResult> AddEnvironment(string category, string name)
         {
@@ -86,6 +92,13 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
         }
 
+        /// <summary>
+        ///     delete keys from the environment
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
         [HttpDelete("{category}/{name}/keys")]
         public async Task<IActionResult> DeleteKeys([FromRoute] string category,
                                                     [FromRoute] string name,
@@ -118,6 +131,32 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
         }
 
+        /// <summary>
+        ///     delete keys from the environment, paths are implied from the given JSON
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        [HttpDelete("{category}/{name}/json")]
+        public async Task<IActionResult> DeleteKeysFromJson([FromRoute] string category,
+                                                            [FromRoute] string name,
+                                                            [FromBody] JToken json)
+        {
+            if (json is null)
+                return BadRequest("no json received");
+
+            var keys = _translator.ToDictionary(json)
+                                  .Select(kvp => kvp.Key)
+                                  .ToArray();
+
+            return await DeleteKeys(category, name, keys);
+        }
+
+        /// <summary>
+        ///     get a list of available environments
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("available")]
         public async Task<IActionResult> GetAvailableEnvironments()
         {
@@ -126,6 +165,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             return Result(result);
         }
 
+        /// <summary>
+        ///     get the keys contained in an environment
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         [HttpGet("{category}/{name}/keys")]
         public async Task<IActionResult> GetKeys(string category, string name)
         {
@@ -136,6 +181,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             return Result(result);
         }
 
+        /// <summary>
+        ///     get the keys contained in an environment, converted to JSON
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         [HttpGet("{category}/{name}/json")]
         public async Task<IActionResult> GetKeysAsJson(string category, string name)
         {
@@ -151,6 +202,13 @@ namespace Bechtle.A365.ConfigService.Controllers
             return Ok(json);
         }
 
+        /// <summary>
+        ///     add or update keys in the environment
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
         [HttpPut("{category}/{name}/keys")]
         public async Task<IActionResult> UpdateKeys([FromRoute] string category,
                                                     [FromRoute] string name,
@@ -183,6 +241,13 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
         }
 
+        /// <summary>
+        ///     add or update keys in the environment, paths are implied from the given json
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="json"></param>
+        /// <returns></returns>
         [HttpPut("{category}/{name}/json")]
         public async Task<IActionResult> UpdateKeysFromJson([FromRoute] string category,
                                                             [FromRoute] string name,

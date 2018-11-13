@@ -89,11 +89,50 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
+        ///     get the specified config-structure as json
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        [HttpGet("{name}/{version}/json")]
+        public async Task<IActionResult> GetStructureJson(string name, int version)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("no name provided");
+
+            if (version <= 0)
+                return BadRequest($"invalid version provided '{version}'");
+
+            var identifier = new StructureIdentifier(name, version);
+
+            try
+            {
+                var result = await _store.Structures.GetKeys(identifier);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                var json = _translator.ToJson(result.Data);
+
+                if (json is null)
+                    return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
+
+                return Ok(json);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
+            }
+        }
+
+        /// <summary>
         ///     get the specified config-structure as JSON
         /// </summary>
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <returns></returns>
+        [Obsolete]
         [HttpGet("{name}/{version}")]
         public async Task<IActionResult> GetStructure(string name, int version)
         {
@@ -120,6 +159,71 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 Logger.LogError(e, $"failed to translate structure ({nameof(name)}: {name}, {nameof(version)}: {version}) to JSON");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to translate structure to JSON");
+            }
+        }
+
+        /// <summary>
+        ///     get all variables for the specified config-structure as key / value pairs
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        [HttpGet("{name}/{version}/variables/keys")]
+        public async Task<IActionResult> GetVariables(string name, int version)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("no name provided");
+
+            if (version <= 0)
+                return BadRequest($"invalid version provided '{version}'");
+
+            var identifier = new StructureIdentifier(name, version);
+
+            try
+            {
+                var result = await _store.Structures.GetVariables(identifier);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to retrieve structure-variables of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
+            }
+        }
+
+        /// <summary>
+        ///     get all variables for the specified config-structure as key / value pairs
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        [HttpGet("{name}/{version}/variables/json")]
+        public async Task<IActionResult> GetVariablesJson(string name, int version)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("no name provided");
+
+            if (version <= 0)
+                return BadRequest($"invalid version provided '{version}'");
+
+            var identifier = new StructureIdentifier(name, version);
+
+            try
+            {
+                var result = await _store.Structures.GetVariables(identifier);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                var json = _translator.ToJson(result.Data);
+
+                return Ok(json);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to retrieve structure-variables of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
 
