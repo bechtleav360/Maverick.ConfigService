@@ -6,11 +6,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     // property accessors are actually required for EFCore
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-    public class ProjectionStore : DbContext
+    public sealed class ProjectionStore : DbContext
     {
         public ProjectionStore(DbContextOptions<ProjectionStore> options)
             : base(options)
         {
+            Database.Migrate();
         }
 
         public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
