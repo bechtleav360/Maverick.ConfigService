@@ -7,10 +7,17 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
 {
+    /// <summary>
+    ///     EventStore.ILogger implementation to forward log-calls to an actual ILogger implementation
+    /// </summary>
     public class EventStoreLogger : ESLogger
     {
         private readonly ILogger _logger;
 
+        /// <summary>
+        ///     create new instance with the given ILogger
+        /// </summary>
+        /// <param name="logger"></param>
         public EventStoreLogger(ILogger<IEventStoreConnection> logger)
         {
             _logger = logger;

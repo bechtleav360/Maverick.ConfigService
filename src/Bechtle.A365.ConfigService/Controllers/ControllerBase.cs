@@ -6,6 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
+    /// <summary>
+    ///     Base-Functionality for all Controllers
+    /// </summary>
     public class ControllerBase : Controller
     {
         /// <summary>

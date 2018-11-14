@@ -12,6 +12,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
+    /// <summary>
+    ///     preview the Results of Building different Configurations
+    /// </summary>
     [Route(ApiBaseRoute + "preview")]
     public class PreviewController : ControllerBase
     {
@@ -35,6 +38,14 @@ namespace Bechtle.A365.ConfigService.Controllers
             _translator = translator;
         }
 
+        /// <summary>
+        ///     preview the Result of building an existing Environment and a Structure
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
         public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
@@ -81,6 +92,11 @@ namespace Bechtle.A365.ConfigService.Controllers
             return Ok(json);
         }
 
+        /// <summary>
+        ///     preview the Result of building the given Environment and Structure
+        /// </summary>
+        /// <param name="previewOptions"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {

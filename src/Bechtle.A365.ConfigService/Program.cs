@@ -9,10 +9,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService
 {
+    /// <summary>
+    /// </summary>
     public class Program
     {
+        /// <summary>
+        ///     Build the WebHost that runs this application
+        /// </summary>
+        /// <param name="args"></param>
         public static void Main(string[] args) => CreateWebHostBuilder(args).Build().Run();
 
+        /// <summary>
+        ///     Create and Configure a WebHostBuilder
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)
                       .UseStartup<Startup>()

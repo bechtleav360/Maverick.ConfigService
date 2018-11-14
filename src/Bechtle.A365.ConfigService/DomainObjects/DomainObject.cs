@@ -5,6 +5,9 @@ using Bechtle.A365.ConfigService.Services;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
+    /// <summary>
+    ///     represents an Object of our Business-Domain
+    /// </summary>
     public abstract class DomainObject
     {
         /// <summary>

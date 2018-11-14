@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
+    /// <summary>
+    ///     read information on how to connect to this Service
+    /// </summary>
     [Route(ApiBaseRoute + "connections")]
     public class ConnectionController : ControllerBase
     {
@@ -21,6 +24,10 @@ namespace Bechtle.A365.ConfigService.Controllers
             _config = config;
         }
 
+        /// <summary>
+        ///     get information on how to Connect to the used EventBus-Server and -Hub
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("events")]
         public IActionResult GetEventConnection()
         {

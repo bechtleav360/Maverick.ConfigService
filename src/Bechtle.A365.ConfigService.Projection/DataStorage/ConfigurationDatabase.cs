@@ -379,6 +379,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
         }
 
+        /// <inheritdoc />
         public async Task<Result<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier)
         {
             using (var context = OpenProjectionStore())
