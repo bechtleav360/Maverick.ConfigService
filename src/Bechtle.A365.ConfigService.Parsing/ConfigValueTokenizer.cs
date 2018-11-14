@@ -17,31 +17,36 @@ namespace Bechtle.A365.ConfigService.Parsing
 
         private static readonly TextParser<char> RefSeparatorMatcher = Character.EqualTo(';');
 
-        private static readonly TextParser<TextSpan> RefKeywordMatcher = Span.WhiteSpace
-                                                                             .IgnoreMany()
-                                                                             .Then(c => Span.MatchedBy(Character.Letter
-                                                                                                                .AtLeastOnce()
-                                                                                                                .Then(cc => Span.WhiteSpace.IgnoreMany())
-                                                                                                                .Then(cc => Character.EqualTo(':'))));
+        private static readonly TextParser<TextSpan> RefKeywordMatcher
+            = Span.WhiteSpace
+                  .IgnoreMany()
+                  .Then(c => Span.MatchedBy(Character.Letter
+                                                     .AtLeastOnce()
+                                                     .Then(cc => Span.WhiteSpace.IgnoreMany())
+                                                     .Then(cc => Character.EqualTo(':'))));
 
-        private static readonly TextParser<TextSpan> RefValueMatcher = Span.MatchedBy(Span.WhiteSpace
-                                                                                          .IgnoreMany()
-                                                                                          .Then(c => Character.LetterOrDigit
-                                                                                                              .Or(Character.In('-', '_', '/', '$', '*'))
-                                                                                                              .AtLeastOnce())
-                                                                                          .Then(c => Span.WhiteSpace.IgnoreMany()));
+        private static readonly TextParser<TextSpan> RefValueMatcher
+            = Span.MatchedBy(Span.WhiteSpace
+                                 .IgnoreMany()
+                                 // @TODO: add proper value-parsing, handle generic values and "quoted-strings"
+                                 .Then(c => Character.LetterOrDigit
+                                                     .Or(Character.WhiteSpace)
+                                                     .Or(Character.In('-', '_', '/', '$', '*', ',', '.', '<', '>', '|', '!'))
+                                                     .AtLeastOnce())
+                                 .Then(c => Span.WhiteSpace.IgnoreMany()));
 
-        private static readonly TextParser<TextSpan> ValueMatcher = Span.MatchedBy(Parse.Not(RefOpenMatcher)
-                                                                                        .Then(_ => Character.AnyChar))
-                                                                        .AtLeastOnce()
-                                                                        // creates a new TextSpan from all the one-char-wide TextSpans that are
-                                                                        // create in the previous step
-                                                                        // @TODO: optimize the performance of this clusterfuck
-                                                                        .Select(spans => !spans.Any()
-                                                                                             ? new TextSpan()
-                                                                                             : new TextSpan(spans[0].Source,
-                                                                                                            spans[0].Position,
-                                                                                                            spans.Sum(s => s.Length)));
+        private static readonly TextParser<TextSpan> ValueMatcher
+            = Span.MatchedBy(Parse.Not(RefOpenMatcher)
+                                  .Then(_ => Character.AnyChar))
+                  .AtLeastOnce()
+                  // creates a new TextSpan from all the one-char-wide TextSpans that are
+                  // create in the previous step
+                  // @TODO: optimize the performance of this clusterfuck
+                  .Select(spans => !spans.Any()
+                                       ? new TextSpan()
+                                       : new TextSpan(spans[0].Source,
+                                                      spans[0].Position,
+                                                      spans.Sum(s => s.Length)));
 
         /// <inheritdoc />
         protected override IEnumerable<Result<ConfigValueToken>> Tokenize(TextSpan span, TokenizationState<ConfigValueToken> state)
