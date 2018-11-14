@@ -164,6 +164,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 // now comes the part where we handle a single compiled result...
                 // actually match
                 var match = repository.Keys.FirstOrDefault(key => key.Equals(path, StringComparison.OrdinalIgnoreCase));
+                string matchedValue;
 
                 if (match is null)
                 {
@@ -174,7 +175,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
                         _logger.LogWarning($"could not resolve path '{path}'");
                         _logger.LogInformation($"using fallback '{fallbackValue}' after failing to resolve '{path}'");
-                        match = fallbackValue;
+                        matchedValue = fallbackValue;
                     }
                     else
                     {
@@ -182,12 +183,16 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         continue;
                     }
                 }
+                else
+                {
+                    matchedValue = repository[match];
+                }
 
                 // compile the matched result until it's done
                 var innerContext = new CompilationContext(context) {CurrentKey = path};
                 innerContext.IncrementRecursionLevel();
 
-                var result = await CompileInternal(innerContext, repository[match]);
+                var result = await CompileInternal(innerContext, matchedValue);
 
                 // if the result doesn't contain anything we just go on with our lives...
                 // if it turns out the compiled reference does actually point to a region we need to handle it as such and return immediately
