@@ -10,6 +10,7 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
@@ -33,7 +34,38 @@ namespace Bechtle.A365.ConfigService
         /// </summary>
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        /// <summary>
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="env"></param>
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseHsts();
+                app.UseHttpsRedirection();
+            }
+
+            app.UseMvc()
+               .UseCors(policy => policy.AllowAnyHeader()
+                                        .AllowAnyMethod()
+                                        .AllowAnyOrigin())
+               .UseSwagger()
+               .UseSwaggerUI(options =>
+               {
+                   options.SwaggerEndpoint("/swagger/v2/swagger.json", string.Empty);
+                   options.DocExpansion(DocExpansion.None);
+                   options.DisplayRequestDuration();
+               });
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
             // setup MVC
@@ -58,7 +90,10 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
-                    .AddScoped<ProjectionStoreContext>()
+                    .AddDbContext<ProjectionStoreContext>(
+                        (provider, builder) => builder.UseLazyLoadingProxies()
+                                                      .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
+                                                                            .ConnectionString))
                     .AddScoped<IProjectionStore, ProjectionStore>()
                     .AddScoped<IStructureProjectionStore, StructureProjectionStore>()
                     .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>()
@@ -70,32 +105,6 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton<IJsonTranslator, JsonTranslator>()
                     .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>));
-        }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
-        {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseHsts();
-                app.UseHttpsRedirection();
-            }
-
-            app.UseMvc()
-               .UseCors(policy => policy.AllowAnyHeader()
-                                        .AllowAnyMethod()
-                                        .AllowAnyOrigin())
-               .UseSwagger()
-               .UseSwaggerUI(options =>
-               {
-                   options.SwaggerEndpoint("/swagger/v2/swagger.json", string.Empty);
-                   options.DocExpansion(DocExpansion.None);
-                   options.DisplayRequestDuration();
-               });
         }
     }
 }

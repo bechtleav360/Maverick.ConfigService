@@ -1,27 +1,24 @@
-﻿using Bechtle.A365.ConfigService.Common.DbObjects;
+﻿using System.Diagnostics.CodeAnalysis;
+using Bechtle.A365.ConfigService.Common.DbObjects;
 using Microsoft.EntityFrameworkCore;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
-    /// <inheritdoc />
-    public class ProjectionStoreContext : DbContext
+    // property accessors are actually required for EFCore
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
+    public class ProjectionStore : DbContext
     {
-        /// <inheritdoc />
-        public ProjectionStoreContext(DbContextOptions<ProjectionStoreContext> options)
+        public ProjectionStore(DbContextOptions<ProjectionStore> options)
             : base(options)
         {
         }
 
-        /// <summary>
-        /// </summary>
         public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
 
-        /// <summary>
-        /// </summary>
+        public DbSet<ProjectionMetadata> Metadata { get; set; }
+
         public DbSet<ProjectedConfiguration> ProjectedConfigurations { get; set; }
 
-        /// <summary>
-        /// </summary>
         public DbSet<Structure> Structures { get; set; }
 
         /// <inheritdoc />
@@ -29,8 +26,11 @@ namespace Bechtle.A365.ConfigService.Services
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<ProjectionMetadata>();
+
             modelBuilder.Entity<Structure>();
             modelBuilder.Entity<StructureKey>();
+            modelBuilder.Entity<StructureVariable>();
             modelBuilder.Entity<ConfigEnvironment>();
             modelBuilder.Entity<ConfigEnvironmentKey>();
             modelBuilder.Entity<ProjectedConfiguration>();

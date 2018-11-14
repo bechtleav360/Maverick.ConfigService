@@ -22,7 +22,8 @@
     <PackageReference Include="Bechtle.A365.Core.EventBus" Version="2.1.0-featureconfigeve0001" />
     <PackageReference Include="Bechtle.A365.Logging.NLog" Version="1.4.0-zzdevelop0010" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.1.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="2.1.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.1.1" />

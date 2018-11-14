@@ -1,34 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.Common.Utilities.Extensions;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Projection.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     public class ConfigurationDatabase : IConfigurationDatabase
     {
-        private readonly ProjectionStorageConfiguration _config;
         private readonly ILogger<ConfigurationDatabase> _logger;
+        private readonly IServiceProvider _provider;
 
         public ConfigurationDatabase(ILogger<ConfigurationDatabase> logger,
-                                     ProjectionStorageConfiguration config)
+                                     IServiceProvider provider)
         {
             _logger = logger;
-            _config = config;
+            _provider = provider;
         }
 
         /// <inheritdoc />
         public async Task<Result> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var environment = await GetEnvironmentInternal(identifier, context);
 
@@ -112,7 +112,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> ApplyChanges(StructureIdentifier identifier, IList<ConfigKeyAction> actions)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var structure = await GetStructureInternal(identifier, context);
 
@@ -196,9 +197,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> Connect()
         {
-            using (var connection = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
-                await connection.Database.EnsureCreatedAsync();
+                await context.Database.EnsureCreatedAsync();
 
                 return Result.Success();
             }
@@ -207,7 +209,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> CreateEnvironment(EnvironmentIdentifier identifier, bool defaultEnvironment)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 if (await GetEnvironmentInternal(identifier, context) != null)
                 {
@@ -259,7 +262,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                   IDictionary<string, string> keys,
                                                   IDictionary<string, string> variables)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 if (await GetStructureInternal(identifier, context) != null)
                 {
@@ -305,7 +309,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> DeleteEnvironment(EnvironmentIdentifier identifier)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var foundEnvironment = await GetEnvironmentInternal(identifier, context);
 
@@ -331,7 +336,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result> DeleteStructure(StructureIdentifier identifier)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var foundStructure = await GetStructureInternal(identifier, context);
 
@@ -361,7 +367,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result<EnvironmentSnapshot>> GetEnvironment(EnvironmentIdentifier identifier)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var environment = await GetEnvironmentInternal(identifier, context);
 
@@ -382,7 +389,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var environment = await GetEnvironmentInternal(identifier, context);
 
@@ -414,7 +422,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<long?> GetLatestProjectedEventId()
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var metadata = await context.Metadata.FirstOrDefaultAsync();
 
@@ -432,7 +441,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result<StructureSnapshot>> GetStructure(StructureIdentifier identifier)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var structure = await GetStructureInternal(identifier, context);
 
@@ -461,7 +471,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                     DateTime? validFrom,
                                                     DateTime? validTo)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var foundEnvironment = await GetEnvironmentInternal(environment.Identifier, context);
 
@@ -519,7 +530,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<ConfigurationIdentifier> GetLatestActiveConfiguration()
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var metadata = await context.Metadata.FirstOrDefaultAsync();
 
@@ -548,7 +560,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task SetLatestActiveConfiguration(ConfigurationIdentifier identifier)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var metadata = await context.Metadata.FirstOrDefaultAsync();
 
@@ -576,7 +589,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task SetLatestProjectedEventId(long latestEventId)
         {
-            using (var context = OpenProjectionStore())
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
             {
                 var metadata = await context.Metadata.FirstOrDefaultAsync();
 
@@ -602,66 +616,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         {
             return await context.Structures.FirstOrDefaultAsync(str => str.Name == identifier.Name &&
                                                                        str.Version == identifier.Version);
-        }
-
-        private ProjectionStore OpenProjectionStore(ProjectionStore existingConnection = null)
-            => existingConnection ?? new ProjectionStore(_config);
-
-        // property accessors are actually required for EFCore
-        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-        private class ProjectionStore : DbContext
-        {
-            private readonly ProjectionStorageConfiguration _config;
-
-            public ProjectionStore(ProjectionStorageConfiguration config)
-            {
-                _config = config;
-            }
-
-            public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
-
-            public DbSet<ProjectionMetadata> Metadata { get; set; }
-
-            public DbSet<ProjectedConfiguration> ProjectedConfigurations { get; set; }
-
-            public DbSet<Structure> Structures { get; set; }
-
-            /// <inheritdoc />
-            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-                => optionsBuilder.UseLazyLoadingProxies()
-                                 .UseSqlServer(_config.ConnectionString);
-
-            /// <inheritdoc />
-            protected override void OnModelCreating(ModelBuilder modelBuilder)
-            {
-                base.OnModelCreating(modelBuilder);
-
-                modelBuilder.Entity<ProjectionMetadata>();
-
-                modelBuilder.Entity<Structure>();
-                modelBuilder.Entity<StructureKey>();
-                modelBuilder.Entity<StructureVariable>();
-                modelBuilder.Entity<ConfigEnvironment>();
-                modelBuilder.Entity<ConfigEnvironmentKey>();
-                modelBuilder.Entity<ProjectedConfiguration>();
-                modelBuilder.Entity<ProjectedConfigurationKey>();
-            }
-        }
-
-        public class ProjectionMetadata
-        {
-            public Guid Id { get; set; }
-
-            /// <summary>
-            ///     null to indicate that no events have been projected
-            /// </summary>
-            public long? LatestEvent { get; set; }
-
-            /// <summary>
-            ///     Id of the last known active Configuration
-            ///     if this changes an OnConfigurationPublished event should be published containing the new configuration-information
-            /// </summary>
-            public Guid LastActiveConfigurationId { get; set; }
         }
     }
 }

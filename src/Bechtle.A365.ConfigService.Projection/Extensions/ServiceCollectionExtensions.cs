@@ -13,7 +13,6 @@ using Bechtle.A365.Logging.NLog.Extension;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ESLogger = EventStore.ClientAPI.ILogger;
 
@@ -62,10 +61,10 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         ///     add configuration as a whole, and parts of it
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="context"></param>
+        /// <param name="configuration"></param>
         /// <returns></returns>
-        public static IServiceCollection AddProjectionConfiguration(this IServiceCollection services, HostBuilderContext context)
-            => services.AddSingleton(context.Configuration)
+        public static IServiceCollection AddProjectionConfiguration(this IServiceCollection services, IConfiguration configuration)
+            => services.AddSingleton(configuration)
                        .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ProjectionConfiguration>())
                        .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventBus)
                        .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventStore)
