@@ -4,15 +4,37 @@ using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Bechtle.A365.ConfigService.Parsing
 {
     /// <inheritdoc cref="IConfigurationParser" />
     public class AntlrConfigurationParser : ConfigReferenceParserBaseVisitor<ConfigValuePart[]>, IConfigurationParser
     {
+        private readonly Dictionary<string, ReferenceCommand> _commandLookup =
+            new Dictionary<string, ReferenceCommand>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                {"using", ReferenceCommand.Using},
+                {"alias", ReferenceCommand.Alias},
+                {"path", ReferenceCommand.Path},
+                {"default", ReferenceCommand.Fallback},
+                {"fallback", ReferenceCommand.Fallback}
+            };
+
+        private readonly ILogger<AntlrConfigurationParser> _logger;
+
+        public AntlrConfigurationParser(ILogger<AntlrConfigurationParser> logger = null)
+        {
+            _logger = logger ?? new NullLogger<AntlrConfigurationParser>();
+        }
+
         /// <inheritdoc />
         public List<ConfigValuePart> Parse(string text)
         {
+            if (_logger.IsEnabled(LogLevel.Trace))
+                _logger.LogTrace($"parsing: {text}");
+
             var inputStream = new AntlrInputStream(text);
             var lexer = new ConfigReferenceLexer(inputStream);
             var commonTokenStream = new CommonTokenStream(lexer);
@@ -20,23 +42,11 @@ namespace Bechtle.A365.ConfigService.Parsing
 
             parser.Context = parser.input();
 
-            return Visit(parser.Context)?.ToList() ?? new List<ConfigValuePart>();
-        }
+            var result = Visit(parser.Context)?.ToList() ?? new List<ConfigValuePart>();
 
-        /// <inheritdoc />
-        public override ConfigValuePart[] VisitInput(ConfigReferenceParser.InputContext context) => VisitChildren(context);
+            _logger.LogDebug($"parsed '{result.Count}' parts");
 
-        /// <inheritdoc />
-        public override ConfigValuePart[] VisitFluff(ConfigReferenceParser.FluffContext context)
-        {
-            var builder = new StringBuilder();
-            foreach (var fluff in context.FLUFF().Concat(context.SINGLE_BRACES())
-                                         .OrderBy(t => t.Symbol.StartIndex))
-            {
-                builder.Append(fluff.Symbol.Text);
-            }
-
-            return new ConfigValuePart[] {new ValuePart(builder.ToString())};
+            return result;
         }
 
         /// <inheritdoc />
@@ -49,169 +59,90 @@ namespace Bechtle.A365.ConfigService.Parsing
                          .ToArray();
 
         /// <inheritdoc />
-        public override ConfigValuePart[] VisitReference(ConfigReferenceParser.ReferenceContext context)
-        {
-            var children = VisitChildren(context);
-
-            // collect the commands of all sub-references into one result-dictionary
-            return new ConfigValuePart[]
-            {
-                new ReferencePart(children.OfType<ReferencePart>()
-                                          .SelectMany(r => r.Commands.ToArray())
-                                          .ToDictionary(c => c.Key, c => c.Value))
-            };
-        }
-
-        /// <inheritdoc />
-        public override ConfigValuePart[] Visit(IParseTree tree)
-        {
-            var result = base.Visit(tree);
-            return result;
-        }
-
-        /// <inheritdoc />
-        public override ConfigValuePart[] VisitCommandReference(ConfigReferenceParser.CommandReferenceContext context)
-        {
-            try
-            {
-                var commandName = context.REF_CMND_NAME().GetText();
-
-                var commands = new Dictionary<ReferenceCommand, string>
-                {
-                    {ParseCommand(SanitizeReferenceCommand(commandName)), string.Empty}
-                };
-
-                return new ConfigValuePart[] {new ReferencePart(commands)};
-            }
-            catch (Exception e)
-            {
-                return new ConfigValuePart[0];
-            }
-        }
-
-        /// <inheritdoc />
         public override ConfigValuePart[] VisitCommandRecursive(ConfigReferenceParser.CommandRecursiveContext context)
-        {
-            try
-            {
-                var commandName = context.REF_CMND_NAME().GetText();
+            => VisitReferenceInternal(context,
+                                      c => c.REF_CMND_NAME().GetText(),
+                                      c => string.Empty,
+                                      true);
 
-                var commands = new Dictionary<ReferenceCommand, string>
-                {
-                    {ParseCommand(SanitizeReferenceCommand(commandName)), string.Empty}
-                };
-
-                return new ConfigValuePart[] {new ReferencePart(commands)}.Concat(VisitChildren(context))
-                                                                          .ToArray();
-            }
-            catch (Exception e)
-            {
-                return new ConfigValuePart[0];
-            }
-        }
+        public override ConfigValuePart[] VisitCommandReference(ConfigReferenceParser.CommandReferenceContext context)
+            => VisitReferenceInternal(context,
+                                      c => c.REF_CMND_NAME().GetText(),
+                                      c => string.Empty,
+                                      false);
 
         /// <inheritdoc />
-        public override ConfigValuePart[] VisitValueReference(ConfigReferenceParser.ValueReferenceContext context)
+        public override ConfigValuePart[] VisitFluff(ConfigReferenceParser.FluffContext context)
         {
             try
             {
-                var commands = new Dictionary<ReferenceCommand, string>
-                {
-                    {
-                        ReferenceCommand.Path,
-                        SanitizeReferenceValue(context.REF_CMND_VAL()
-                                                      .GetText())
-                    }
-                };
+                var builder = new StringBuilder();
+                foreach (var fluff in context.FLUFF().Concat(context.SINGLE_BRACES())
+                                             .OrderBy(t => t.Symbol.StartIndex))
+                    builder.Append(fluff.Symbol.Text);
 
-                return new ConfigValuePart[] {new ReferencePart(commands)};
+                var result = builder.ToString();
+
+                if (_logger.IsEnabled(LogLevel.Trace))
+                    _logger.LogTrace($"adding ValuePart: {result}");
+
+                return new ConfigValuePart[] {new ValuePart(result)};
             }
             catch (Exception e)
             {
-                return new ConfigValuePart[0];
-            }
-        }
-
-        /// <inheritdoc />
-        public override ConfigValuePart[] VisitFullReference(ConfigReferenceParser.FullReferenceContext context)
-        {
-            try
-            {
-                var commandName = context.REF_CMND_NAME().GetText();
-                var commandValue = context.REF_CMND_VAL().GetText();
-
-                var commands = new Dictionary<ReferenceCommand, string>
-                {
-                    {
-                        ParseCommand(SanitizeReferenceCommand(commandName)),
-                        SanitizeReferenceValue(commandValue)
-                    }
-                };
-
-                return new ConfigValuePart[] {new ReferencePart(commands)};
-            }
-            catch (Exception e)
-            {
-                return new ConfigValuePart[0];
-            }
-        }
-
-        /// <inheritdoc />
-        public override ConfigValuePart[] VisitValueRecursive(ConfigReferenceParser.ValueRecursiveContext context)
-        {
-            try
-            {
-                var commands = new Dictionary<ReferenceCommand, string>
-                {
-                    {
-                        ReferenceCommand.Path,
-                        SanitizeReferenceValue(context.REF_CMND_VAL()
-                                                      .GetText())
-                    }
-                };
-
-                return new ConfigValuePart[] {new ReferencePart(commands)}.Concat(VisitChildren(context))
-                                                                          .ToArray();
-            }
-            catch (Exception e)
-            {
+                _logger.LogError(e, "failed to add ValuePart");
                 return new ConfigValuePart[0];
             }
         }
 
         /// <inheritdoc />
         public override ConfigValuePart[] VisitFullRecursive(ConfigReferenceParser.FullRecursiveContext context)
-        {
-            try
-            {
-                var commands = new Dictionary<ReferenceCommand, string>
-                {
-                    {
-                        ParseCommand(SanitizeReferenceCommand(context.REF_CMND_NAME()
-                                                                     .GetText())),
-                        SanitizeReferenceValue(context.REF_CMND_VAL()
-                                                      .GetText())
-                    }
-                };
+            => VisitReferenceInternal(context,
+                                      c => c.REF_CMND_NAME().GetText(),
+                                      c => SanitizeReferenceValue(c.REF_CMND_VAL().GetText()),
+                                      true);
 
-                return new ConfigValuePart[] {new ReferencePart(commands)}.Concat(VisitChildren(context))
-                                                                          .ToArray();
-            }
-            catch (Exception e)
+        /// <inheritdoc />
+        public override ConfigValuePart[] VisitFullReference(ConfigReferenceParser.FullReferenceContext context)
+            => VisitReferenceInternal(context,
+                                      c => c.REF_CMND_NAME().GetText(),
+                                      c => SanitizeReferenceValue(c.REF_CMND_VAL().GetText()),
+                                      false);
+
+        /// <inheritdoc />
+        public override ConfigValuePart[] VisitInput(ConfigReferenceParser.InputContext context) => VisitChildren(context);
+
+        /// <inheritdoc />
+        public override ConfigValuePart[] VisitReference(ConfigReferenceParser.ReferenceContext context)
+        {
+            var children = VisitChildren(context);
+
+            var commands = children.OfType<ReferencePart>()
+                                   .SelectMany(r => r.Commands.ToArray())
+                                   .ToArray();
+
+            _logger.LogDebug($"ReferencePart is being assembled from '{commands.Length}' commands");
+
+            // collect the commands of all sub-references into one result-dictionary
+            return new ConfigValuePart[]
             {
-                return new ConfigValuePart[0];
-            }
+                new ReferencePart(commands.ToDictionary(c => c.Key, c => c.Value))
+            };
         }
 
-        private readonly Dictionary<string, ReferenceCommand> _commandLookup =
-            new Dictionary<string, ReferenceCommand>(StringComparer.InvariantCultureIgnoreCase)
-            {
-                {"using", ReferenceCommand.Using},
-                {"alias", ReferenceCommand.Alias},
-                {"path", ReferenceCommand.Path},
-                {"default", ReferenceCommand.Fallback},
-                {"fallback", ReferenceCommand.Fallback},
-            };
+        /// <inheritdoc />
+        public override ConfigValuePart[] VisitValueRecursive(ConfigReferenceParser.ValueRecursiveContext context)
+            => VisitReferenceInternal(context,
+                                      ReferenceCommand.Path,
+                                      c => SanitizeReferenceValue(c.REF_CMND_VAL().GetText()),
+                                      true);
+
+        /// <inheritdoc />
+        public override ConfigValuePart[] VisitValueReference(ConfigReferenceParser.ValueReferenceContext context)
+            => VisitReferenceInternal(context,
+                                      ReferenceCommand.Path,
+                                      c => SanitizeReferenceValue(c.REF_CMND_VAL().GetText()),
+                                      false);
 
         private ReferenceCommand ParseCommand(string keyword)
         {
@@ -234,5 +165,61 @@ namespace Bechtle.A365.ConfigService.Parsing
                                                                   : value;
 
         private string TrimTrailingSemicolon(string value) => value.TrimEnd(';');
+
+        private ConfigValuePart[] VisitReferenceInternal<T>(T context,
+                                                            ReferenceCommand command,
+                                                            Func<T, string> valueSelector,
+                                                            bool usingChildren)
+            where T : IRuleNode
+        {
+            try
+            {
+                return VisitReferenceInternal(context, command, valueSelector(context), usingChildren);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "could not parse to ReferencePart");
+                return new ConfigValuePart[0];
+            }
+        }
+
+        private ConfigValuePart[] VisitReferenceInternal<T>(T context,
+                                                            Func<T, string> nameSelector,
+                                                            Func<T, string> valueSelector,
+                                                            bool usingChildren)
+            where T : IRuleNode
+        {
+            try
+            {
+                return VisitReferenceInternal(context,
+                                              ParseCommand(SanitizeReferenceCommand(nameSelector(context))),
+                                              valueSelector(context),
+                                              usingChildren);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "could not parse to ReferencePart");
+                return new ConfigValuePart[0];
+            }
+        }
+
+        private ConfigValuePart[] VisitReferenceInternal(IRuleNode context, ReferenceCommand command, string value, bool usingChildren)
+        {
+            try
+            {
+                var commands = new Dictionary<ReferenceCommand, string> {{command, value}};
+
+                if (usingChildren)
+                    return new ConfigValuePart[] {new ReferencePart(commands)}.Concat(VisitChildren(context))
+                                                                              .ToArray();
+
+                return new ConfigValuePart[] {new ReferencePart(commands)};
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "could not parse to ReferencePart");
+                return new ConfigValuePart[0];
+            }
+        }
     }
 }
