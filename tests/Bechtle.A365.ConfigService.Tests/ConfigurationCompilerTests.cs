@@ -14,7 +14,7 @@ namespace Bechtle.A365.ConfigService.Tests
         private static IConfigurationCompiler Compiler => new ConfigurationCompiler(new LoggerFactory().AddConsole(LogLevel.Warning)
                                                                                                        .CreateLogger<ConfigurationCompiler>());
 
-        private static IConfigurationParser Parser => new ConfigurationParser();
+        private static IConfigurationParser Parser => new AntlrConfigurationParser();
 
         /// <summary>
         ///     resolve a reference to a complex result (object)
