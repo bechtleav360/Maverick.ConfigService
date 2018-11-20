@@ -20,7 +20,7 @@ mode Reference;
 
 REF_WHITESPACE : ('\t' | ' ' | '\r' | '\n') -> skip;
 REF_CMND_SEP   : SEMICOLON;
-REF_CMND_NAME  : VALUE+ ' '* COLON;
+REF_CMND_NAME  : (VALUE+ COLON) | (VALUE+ ' '+ COLON);
 REF_CMND_VAL   : (QUOTES VALUE+ QUOTES) | (VALUE+);
 REF_CLOSE      : REF_CLOSE_BRACES -> popMode;
 
@@ -30,6 +30,7 @@ fragment VALUE: (
         | DIGIT
         | GER_UMLAUTS
         | SP_CHARS
+        | ' '
     );
 fragment LOWERCASE        : [a-z];
 fragment UPPERCASE        : [A-Z];

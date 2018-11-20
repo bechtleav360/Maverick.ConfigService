@@ -115,19 +115,27 @@ namespace Bechtle.A365.ConfigService.Parsing
         /// <inheritdoc />
         public override ConfigValuePart[] VisitReference(ConfigReferenceParser.ReferenceContext context)
         {
-            var children = VisitChildren(context);
-
-            var commands = children.OfType<ReferencePart>()
-                                   .SelectMany(r => r.Commands.ToArray())
-                                   .ToArray();
-
-            _logger.LogDebug($"ReferencePart is being assembled from '{commands.Length}' commands");
-
-            // collect the commands of all sub-references into one result-dictionary
-            return new ConfigValuePart[]
+            try
             {
-                new ReferencePart(commands.ToDictionary(c => c.Key, c => c.Value))
-            };
+                var children = VisitChildren(context);
+
+                var commands = children.OfType<ReferencePart>()
+                                       .SelectMany(r => r.Commands.ToArray())
+                                       .ToArray();
+
+                _logger.LogDebug($"ReferencePart is being assembled from '{commands.Length}' commands");
+
+                // collect the commands of all sub-references into one result-dictionary
+                return new ConfigValuePart[]
+                {
+                    new ReferencePart(commands.ToDictionary(c => c.Key, c => c.Value))
+                };
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "failed to parse reference");
+                return new ConfigValuePart[0];
+            }
         }
 
         /// <inheritdoc />
@@ -156,7 +164,10 @@ namespace Bechtle.A365.ConfigService.Parsing
                                                                           .TrimEnd(':')
                                                                           .TrimEnd();
 
-        private string SanitizeReferenceValue(string value) => TrimSurroundingQuotes(TrimTrailingSemicolon(value));
+        private string SanitizeReferenceValue(string value) =>
+            TrimWhitespace(
+                TrimSurroundingQuotes(
+                    TrimTrailingSemicolon(value)));
 
         private string TrimSurroundingQuotes(string value) => value.StartsWith("\"") &&
                                                               value.EndsWith("\"")
@@ -165,6 +176,8 @@ namespace Bechtle.A365.ConfigService.Parsing
                                                                   : value;
 
         private string TrimTrailingSemicolon(string value) => value.TrimEnd(';');
+
+        private string TrimWhitespace(string value) => value.Trim();
 
         private ConfigValuePart[] VisitReferenceInternal<T>(T context,
                                                             ReferenceCommand command,

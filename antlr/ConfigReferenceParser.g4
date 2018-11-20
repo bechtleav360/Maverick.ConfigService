@@ -4,7 +4,7 @@ options {
     tokenVocab = ConfigReferenceLexer;
 }
 
-input : (fluff | reference)+;
+input : (fluff | reference)* EOF;
 
 fluff : (FLUFF | SINGLE_BRACES)+;
 

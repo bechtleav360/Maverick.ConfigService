@@ -46,3 +46,4 @@ this is fluff {{   /Some/Path/To/The/Unknown   ;   Using: nothing;}}
 this is fluff {{ Path: "/Some/Path/To/The/Unknown"; Using: "nothing"; }}
 this is fluff {{ Path: "Foo"; Using: \"nothing\" }}
 this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}
+{{$struct/ConsoleLogLevels; Fallback: Debug, Info, Warn, Error, Fatal}}
