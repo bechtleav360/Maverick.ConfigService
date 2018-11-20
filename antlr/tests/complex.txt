@@ -4,7 +4,6 @@
       throwExceptions=\"true\">
     <variable name=\"logDirectory\" value=\"E:/logs/Bechtle.A365.AdminService\"/>
     <variable name=\"logConfiguration\" value=\"Development\"/>
-    {{ Foo: "Bar"; }}
     <targets>
         <target name=\"console\" xsi:type=\"ColoredConsole\" layout=\"${longdate} ${logger} ${level} ${message}\" />
         <target name=\"file\" xsi:type=\"File\" fileName=\"${logDirectory}/current.log\" maxArchiveFiles=\"30\" archiveFileName=\"${logDirectory}/{#}.log\" archiveAboveSize=\"10485760\" archiveEvery=\"Day\" archiveNumbering=\"DateAndSequence\" archiveDateFormat=\"yyyy-MM-dd\" layout=\"${longdate} ${logger} ${level} ${message}\"/>

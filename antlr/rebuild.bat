@@ -1,1 +1,1 @@
-(make.bat & cls & test-reference.bat & test-fluff.bat & test-parser.bat)
+(make & cls & test-reference & test-fluff & test-parser & test-references)

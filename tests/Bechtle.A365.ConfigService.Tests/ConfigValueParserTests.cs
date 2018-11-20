@@ -8,6 +8,8 @@ namespace Bechtle.A365.ConfigService.Tests
 {
     public class ConfigValueParserTests
     {
+        private IConfigurationParser Parser => new AntlrConfigurationParser();
+
         /// <summary>
         ///     used for <see cref="GetReferencesFromString"/>
         /// </summary>
@@ -53,12 +55,30 @@ namespace Bechtle.A365.ConfigService.Tests
             new object[] {"{{Using:Some/Path/To/Somewhere/Other/Than/Here; Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)}}
         };
 
+        private List<ConfigValuePart> Parse(string text) => Parser.Parse(text);
+
+        [Fact]
+        public void ParseSimpleReference()
+        {
+            var result = Parser.Parse("{{Path: Some/Path/To/The/Unknown}}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.True(reference.Commands.Keys.Count == 1);
+            Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
+        }
+
         [Theory]
         [MemberData(nameof(ReferenceData))]
         public void GetReferencesFromString(string text, int expectedResults, Type[] expectedTypes)
         {
-            var parser = new ConfigurationParser();
-            var result = parser.Parse(text);
+            var result = Parse(text);
 
             Assert.NotNull(result);
             Assert.Equal(expectedResults, result.Count);
@@ -71,9 +91,8 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void IgnoreSingleBraces()
         {
-            var parser = new ConfigurationParser();
             var input = "${longdate} ${logger} ${level} ${message}";
-            var result = parser.Parse(input);
+            var result = Parse(input);
 
             Assert.NotNull(result);
             Assert.True(result.Count == 1);
@@ -84,9 +103,9 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void ExtractCorrectReference()
         {
-            var result = new ConfigurationParser().Parse("this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}");
+            var result = Parse("this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}");
 
-            Assert.True(result.Count == 2);
+            Assert.Equal(2, result.Count);
             Assert.IsType<ValuePart>(result[0]);
             Assert.IsType<ReferencePart>(result[1]);
 
@@ -104,7 +123,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void TrimPathValues()
         {
-            var result = new ConfigurationParser().Parse("this is fluff {{   /Some/Path/To/The/Unknown   ;   Using: nothing;}}");
+            var result = Parse("this is fluff {{   /Some/Path/To/The/Unknown   ;   Using: nothing;}}");
 
             Assert.Equal(2, result.Count);
             Assert.IsType<ValuePart>(result[0]);
@@ -119,12 +138,76 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
         }
 
+        [Fact]
+        public void QuotedValueWithSpaces()
+        {
+            var result = Parse("{{ \"/Some/Path/To/The/Unknown\" }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Fact]
+        public void QuotedValueWithSpacesAndTrailingSemicolon()
+        {
+            var result = Parse("{{ \"/Some/Path/To/The/Unknown\"; }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Fact]
+        public void ValueWithSpaces()
+        {
+            var result = Parse("{{ /Some/Path/To/The/Unknown }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Fact]
+        public void ValueWithSpacesAndTrailingSemicolon()
+        {
+            var result = Parse("{{ /Some/Path/To/The/Unknown; }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
         [Theory]
         [InlineData("{{ Fallback: ; /Some/Path/To/The/Unknown; }}")]
         [InlineData("{{ /Some/Path/To/The/Unknown; Fallback: }}")]
         public void ExtractValueAndEmptyFallback(string text)
         {
-            var result = new ConfigurationParser().Parse(text);
+            var result = Parse(text);
 
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
@@ -147,7 +230,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [InlineData("{{Fallback: ; }}")]
         public void ExtractEmptyCommands(string text)
         {
-            var result = new ConfigurationParser().Parse(text);
+            var result = Parse(text);
 
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
