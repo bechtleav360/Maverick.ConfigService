@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
@@ -35,16 +36,24 @@ namespace Bechtle.A365.ConfigService.Parsing
             if (_logger.IsEnabled(LogLevel.Trace))
                 _logger.LogTrace($"parsing: {text}");
 
-            var inputStream = new AntlrInputStream(text);
-            var lexer = new ConfigReferenceLexer(inputStream);
-            var commonTokenStream = new CommonTokenStream(lexer);
-            var parser = new ConfigReferenceParser(commonTokenStream);
+            var errorListener = new AntlrErrorListener(_logger);
 
+            var inputStream = new AntlrInputStream(text);
+
+            var lexer = new ConfigReferenceLexer(inputStream);
+            lexer.RemoveErrorListeners();
+            lexer.AddErrorListener(errorListener);
+
+            var commonTokenStream = new CommonTokenStream(lexer);
+
+            var parser = new ConfigReferenceParser(commonTokenStream);
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(errorListener);
             parser.Context = parser.input();
 
             var result = Visit(parser.Context)?.ToList() ?? new List<ConfigValuePart>();
 
-            _logger.LogDebug($"parsed '{result.Count}' parts");
+            _logger.LogTrace($"parsed '{result.Count}' parts");
 
             return result;
         }
@@ -65,6 +74,7 @@ namespace Bechtle.A365.ConfigService.Parsing
                                       c => string.Empty,
                                       true);
 
+        /// <inheritdoc />
         public override ConfigValuePart[] VisitCommandReference(ConfigReferenceParser.CommandReferenceContext context)
             => VisitReferenceInternal(context,
                                       c => c.REF_CMND_NAME().GetText(),
@@ -123,7 +133,7 @@ namespace Bechtle.A365.ConfigService.Parsing
                                        .SelectMany(r => r.Commands.ToArray())
                                        .ToArray();
 
-                _logger.LogDebug($"ReferencePart is being assembled from '{commands.Length}' commands");
+                _logger.LogTrace($"ReferencePart is being assembled from '{commands.Length} / {children.Length}' commands");
 
                 // collect the commands of all sub-references into one result-dictionary
                 return new ConfigValuePart[]
