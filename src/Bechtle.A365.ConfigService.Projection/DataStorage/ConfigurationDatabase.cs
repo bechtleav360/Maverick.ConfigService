@@ -22,6 +22,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         {
             _logger = logger;
             _provider = provider;
+
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            {
+                context.Database.Migrate();
+            }
         }
 
         /// <inheritdoc />
