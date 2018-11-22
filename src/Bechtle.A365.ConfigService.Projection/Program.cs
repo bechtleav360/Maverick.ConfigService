@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
@@ -43,6 +44,7 @@ namespace Bechtle.A365.ConfigService.Projection
         private static void ConfigureServicesInternal(IServiceCollection services, IConfiguration configuration)
             => services.AddDbContext<ProjectionStore>(
                            (provider, builder) => builder.UseLazyLoadingProxies()
+                                                         .UseLoggerFactory(new NullLoggerFactory())
                                                          .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
                                                                                .ConnectionString))
 
