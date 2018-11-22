@@ -100,7 +100,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>()
                     .AddScoped<IConfigurationCompiler, ConfigurationCompiler>()
                     .AddScoped<IJsonTranslator, JsonTranslator>()
-                    .AddScoped<IConfigurationParser, ConfigurationParser>()
+                    .AddScoped<IConfigurationParser, AntlrConfigurationParser>()
                     .AddSingleton<IEventStore, Services.EventStore>()
                     .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton<IJsonTranslator, JsonTranslator>()

@@ -1,0 +1,49 @@
+{{  Word  }}
+{{  Word}}
+{{ /Some/Path/To/The/Unknown }}
+{{ /Some/Path/To/The/Unknown; }}
+{{ /Some/Path/To/The/Unknown; Fallback: }}
+{{ "/Some/Path/To/The/Unknown" }}
+{{ "/Some/Path/To/The/Unknown"; }}
+{{ A }}
+{{ camelCasePath }}
+{{ Fallback: ; /Some/Path/To/The/Unknown; }}
+{{ lowercasepath }}
+{{ Path : Some/Path/To/Somewhere/Other/Than/Here }}
+{{ path_with_underscores }}
+{{ path-with-dashes }}
+{{ Path:Some/Path/To/Somewhere/Other/Than/Here }}
+{{ Some/Path/To/Somewhere/Other/Than/Here }}
+{{ Some/Path/To/Somewhere/Other/Than/Here }} some fluff after the reference
+{{ Word }}
+{{ Word}}
+{{A}}
+{{camelCasePath}}
+{{Fallback: ; }}
+{{Fallback: ;}}
+{{Fallback:;}}
+{{Fallback:}}
+{{lowercasepath}}
+{{Path : Some/Path/To/Somewhere/Other/Than/Here}}
+{{path_with_underscores}}
+{{path-with-dashes}}
+{{Path: Some/Path/To/The/Unknown}}
+{{Path:;}}
+{{Path:}}
+{{Path:Some/Path/To/Somewhere/Other/Than/Here}}
+{{Some/Path/To/Somewhere/Other/Than/Here}}
+{{Some/Path/To/Somewhere/Other/Than/Here}} some fluff after the reference
+{{Using:Some/Path/To/Somewhere/Other/Than/Here; Alias:somewhereIBelong}}
+{{Using:Some/Path/To/Somewhere/Other/Than/Here;Alias:somewhereIBelong}}
+{{Word  }}
+{{Word }}
+{{Word}}
+${longdate} ${logger} ${level} ${message}
+simple, value
+simple, value - with some stuff
+this is a value: hello {{Planetoids/General}}, and these are invalid }} parts of references that: shall; not; pass
+this is fluff {{   /Some/Path/To/The/Unknown   ;   Using: nothing;}}
+this is fluff {{ Path: "/Some/Path/To/The/Unknown"; Using: "nothing"; }}
+this is fluff {{ Path: "Foo"; Using: \"nothing\" }}
+this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}
+{{$struct/ConsoleLogLevels; Fallback: Debug, Info, Warn, Error, Fatal}}

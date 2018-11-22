@@ -11,7 +11,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         public ProjectionStore(DbContextOptions<ProjectionStore> options)
             : base(options)
         {
-            Database.Migrate();
         }
 
         public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }

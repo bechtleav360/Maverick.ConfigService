@@ -1,0 +1,1 @@
+{{ Foo: "Foo\Bar\Baz\Ümläütö\@\4711\(abc[def]ghi)" }}

@@ -19,31 +19,24 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             _logger = logger;
         }
 
+        // basically, do the compilation for each key in parallel - as parallel as PLINQ wants it to be
+        // then collect the results and convert it to a dictionary
         /// <inheritdoc />
-        public async Task<IDictionary<string, string>> Compile(EnvironmentCompilationInfo environment,
-                                                               StructureCompilationInfo structure,
-                                                               IConfigurationParser parser)
-        {
-            var context = new CompilationContext
-            {
-                CurrentKey = string.Empty,
-                StructureInfo = structure,
-                EnvironmentInfo = environment,
-                Parser = parser
-            };
-
-            foreach (var kvp in structure.Keys)
-            {
-                context.CurrentKey = kvp.Key;
-
-                var result = await CompileInternal(context, kvp.Value);
-
-                foreach (var (key, value) in result)
-                    context.Result[key] = value;
-            }
-
-            return context.Result;
-        }
+        public IDictionary<string, string> Compile(EnvironmentCompilationInfo environment,
+                                                   StructureCompilationInfo structure,
+                                                   IConfigurationParser parser)
+            => structure.Keys
+                        .AsParallel()
+                        .SelectMany(kvp => CompileInternal(new CompilationContext
+                                                           {
+                                                               CurrentKey = kvp.Key,
+                                                               StructureInfo = structure,
+                                                               EnvironmentInfo = environment,
+                                                               Parser = parser
+                                                           },
+                                                           kvp.Value))
+                        .ToArray()
+                        .ToDictionary(t => t.Key, t => t.Value);
 
         /// <summary>
         ///     analyze the given parts and determine if they can be compiled and what would be the result
@@ -51,11 +44,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="context"></param>
         /// <param name="parts"></param>
         /// <returns></returns>
-        private async Task<CompilationPlan> AnalyzeCompilation(CompilationContext context,
-                                                               IList<ConfigValuePart> parts)
+        private CompilationPlan AnalyzeCompilation(CompilationContext context,
+                                                   IList<ConfigValuePart> parts)
         {
-            await Task.Yield();
-
             _logger.LogTrace(WithContext(context, "analyzing compilation"));
 
             // no compilation possible / needed, but still a valid value
@@ -110,9 +101,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             };
         }
 
-        private async Task<(string Key, string Value)[]> CompileInternal(CompilationContext context, string value)
+        private (string Key, string Value)[] CompileInternal(CompilationContext context, string value)
         {
             _logger.LogTrace(WithContext(context, $"compiling key, recursion: '{context.RecursionLevel}'"));
+
+            if (string.IsNullOrEmpty(value))
+                return new[] {(context.CurrentKey, string.Empty)};
 
             if (context.RecursionLevel > KeyRecursionLimit)
             {
@@ -123,7 +117,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             _logger.LogTrace(WithContext(context, "parsing value for references"));
             var parts = context.Parser.Parse(value);
 
-            var plan = await AnalyzeCompilation(context, parts);
+            var plan = AnalyzeCompilation(context, parts);
 
             if (!plan.CompilationPossible)
             {
@@ -148,7 +142,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 }
 
                 // inspect reference and add alias to context if possible
-                await HandleAliasCommands(context, reference);
+                HandleAliasCommands(context, reference);
 
                 // if we don't have a path to substitute and only modify the context we can continue
                 if (!reference.Commands.ContainsKey(ReferenceCommand.Path))
@@ -156,10 +150,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 // inspect reference and get current Path and Repository
                 // Repository can be changed by accessing different aliases
-                var (path, repository) = await HandlePathCommands(context, reference);
+                var (path, repository) = HandlePathCommands(context, reference);
 
                 if (path.EndsWith("*"))
-                    return await HandleRegionSelection(context, repository, path);
+                    return HandleRegionSelection(context, repository, path);
 
                 // now comes the part where we handle a single compiled result...
                 // actually match
@@ -192,7 +186,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var innerContext = new CompilationContext(context) {CurrentKey = path};
                 innerContext.IncrementRecursionLevel();
 
-                var result = await CompileInternal(innerContext, matchedValue);
+                var result = CompileInternal(innerContext, matchedValue);
 
                 // if the result doesn't contain anything we just go on with our lives...
                 // if it turns out the compiled reference does actually point to a region we need to handle it as such and return immediately
@@ -217,10 +211,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="context"></param>
         /// <param name="reference"></param>
         /// <returns></returns>
-        private async Task HandleAliasCommands(CompilationContext context, ReferencePart reference)
+        private void HandleAliasCommands(CompilationContext context, ReferencePart reference)
         {
-            await Task.Yield();
-
             var commands = reference.Commands;
             if (commands.ContainsKey(ReferenceCommand.Alias) && commands.ContainsKey(ReferenceCommand.Using))
             {
@@ -243,10 +235,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
         }
 
-        private async Task<(string Path, IDictionary<string, string> Repository)> HandlePathCommands(CompilationContext context, ReferencePart reference)
+        private (string Path, IDictionary<string, string> Repository) HandlePathCommands(CompilationContext context, ReferencePart reference)
         {
-            await Task.Yield();
-
             // default path = path given without de-referencing aliases and the like
             var path = reference.Commands[ReferenceCommand.Path];
 
@@ -292,9 +282,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             return (Path: path, Repository: repository);
         }
 
-        private async Task<(string Key, string Value)[]> HandleRegionSelection(CompilationContext context,
-                                                                               IDictionary<string, string> repository,
-                                                                               string path)
+        private (string Key, string Value)[] HandleRegionSelection(CompilationContext context,
+                                                                   IDictionary<string, string> repository,
+                                                                   string path)
         {
             var pathMatcher = path.TrimEnd('*');
 
@@ -315,14 +305,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var regionContext = new CompilationContext(context) {CurrentKey = itemKey};
                 regionContext.IncrementRecursionLevel();
 
-                var regionResult = await CompileInternal(regionContext, itemValue);
+                var regionResult = CompileInternal(regionContext, itemValue);
 
                 foreach (var (k, v) in regionResult)
                 {
                     var relativePath = k.Substring(pathMatcher.Length);
 
-                    if(context.CurrentKey.EndsWith('/') || relativePath.StartsWith('/'))
-                        resultItems[context.CurrentKey + relativePath]= v;
+                    if (context.CurrentKey.EndsWith('/') || relativePath.StartsWith('/'))
+                        resultItems[context.CurrentKey + relativePath] = v;
                     else
                         resultItems[$"{context.CurrentKey}/{relativePath}"] = v;
                 }
@@ -356,7 +346,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 EnvironmentInfo = context.EnvironmentInfo;
                 StructureInfo = context.StructureInfo;
                 RecursionLevel = context.RecursionLevel;
-                Result = context.Result;
                 CurrentKey = context.CurrentKey;
                 Parser = context.Parser;
             }
@@ -370,8 +359,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             public int RecursionLevel { get; private set; }
 
             public Dictionary<string, string> ReferenceAliases { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            public Dictionary<string, string> Result { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             public StructureCompilationInfo StructureInfo { get; set; }
 

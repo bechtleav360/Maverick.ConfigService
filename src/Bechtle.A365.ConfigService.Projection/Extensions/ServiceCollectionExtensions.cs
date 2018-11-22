@@ -89,7 +89,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                                                               config.EventStore.ConnectionName);
                        })
                        .AddSingleton<IEventDeserializer, EventDeserializer>()
-                       .AddSingleton<IConfigurationParser, ConfigurationParser>()
+                       .AddSingleton<IConfigurationParser, AntlrConfigurationParser>()
                        .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
                        .AddSingleton<IConfigurationDatabase, ConfigurationDatabase>()
                        .AddSingleton<IJsonTranslator, JsonTranslator>()

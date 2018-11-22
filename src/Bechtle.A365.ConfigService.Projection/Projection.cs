@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
         private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
-            _logger.LogInformation($"subscription: {subscription.SubscriptionName}; " +
+            _logger.LogInformation($"Stream: {resolvedEvent.OriginalStreamId}#{resolvedEvent.OriginalEventNumber}; " +
                                    $"EventId: {resolvedEvent.OriginalEvent.EventId}; " +
                                    $"EventType: {resolvedEvent.OriginalEvent.EventType}; " +
                                    $"Created: {resolvedEvent.OriginalEvent.Created}; " +
