@@ -3,7 +3,7 @@
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <summary>
-    ///     Configuration-Structure, filled out with data from <see cref="EnvironmentIdentifier" /> to create a Configuration
+    ///     Configuration-Structure, filled out with data from <see cref="StructureIdentifier" /> to create a Configuration
     /// </summary>
     public class StructureIdentifier : Identifier
     {
@@ -25,7 +25,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <summary>
-        ///     name of this structure, indicates uses the Configuration built from this and <see cref="EnvironmentIdentifier" />
+        ///     name of this structure, indicates uses the Configuration built from this and <see cref="StructureIdentifier" />
         /// </summary>
         public string Name { get; set; }
 
@@ -34,6 +34,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public int Version { get; set; }
 
-        public override string ToString() => $"[{nameof(EnvironmentIdentifier)}; {nameof(Name)}: '{Name}'; {nameof(Version)}: '{Version}']";
+        public override string ToString() => $"[{nameof(StructureIdentifier)}; {nameof(Name)}: '{Name}'; {nameof(Version)}: '{Version}']";
     }
 }
