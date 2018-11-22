@@ -13,8 +13,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="structure"></param>
         /// <param name="parser"></param>
         /// <returns></returns>
-        Task<IDictionary<string, string>> Compile(EnvironmentCompilationInfo environment,
-                                                  StructureCompilationInfo structure,
-                                                  IConfigurationParser parser);
+        IDictionary<string, string> Compile(EnvironmentCompilationInfo environment,
+                                            StructureCompilationInfo structure,
+                                            IConfigurationParser parser);
     }
 }

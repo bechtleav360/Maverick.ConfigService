@@ -83,9 +83,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Variables = variableSnapshot
             };
 
-            var compiled = await _compiler.Compile(environmentInfo,
-                                                   structureInfo,
-                                                   _parser);
+            var compiled = _compiler.Compile(environmentInfo,
+                                             structureInfo,
+                                             _parser);
 
             var json = _translator.ToJson(compiled);
 
@@ -124,9 +124,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Variables = previewOptions.Variables
             };
 
-            var compiled = await _compiler.Compile(environmentInfo,
-                                                   structureInfo,
-                                                   _parser);
+            var compiled = _compiler.Compile(environmentInfo,
+                                             structureInfo,
+                                             _parser);
 
             var json = _translator.ToJson(compiled);
 

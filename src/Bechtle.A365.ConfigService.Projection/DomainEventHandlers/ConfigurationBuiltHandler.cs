@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Core.EventBus.Events.Events;
 using Bechtle.A365.Core.EventBus.Events.Messages;
+using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 {
@@ -18,19 +19,22 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         private readonly IConfigurationParser _parser;
         private readonly IJsonTranslator _translator;
         private readonly IEventBus _eventBus;
+        private readonly ILogger<ConfigurationBuiltHandler> _logger;
 
         /// <inheritdoc />
         public ConfigurationBuiltHandler(IConfigurationDatabase database,
                                          IConfigurationCompiler compiler,
                                          IConfigurationParser parser,
                                          IJsonTranslator translator,
-                                         IEventBus eventBus)
+                                         IEventBus eventBus,
+                                         ILogger<ConfigurationBuiltHandler> logger)
         {
             _database = database;
             _compiler = compiler;
             _parser = parser;
             _translator = translator;
             _eventBus = eventBus;
+            _logger = logger;
         }
 
         /// <inheritdoc />
@@ -38,6 +42,8 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         {
             var envId = domainEvent.Identifier.Environment;
             var structId = domainEvent.Identifier.Structure;
+
+            _logger.LogInformation($"building Configuration for {envId} {structId}");
 
             var structureResult = await _database.GetStructure(structId);
             if (structureResult.IsError)
@@ -63,9 +69,9 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                 Variables = structureSnapshot.Variables
             };
 
-            var compiled = await _compiler.Compile(environmentInfo,
-                                                   structureInfo,
-                                                   _parser);
+            var compiled = _compiler.Compile(environmentInfo,
+                                             structureInfo,
+                                             _parser);
 
             var json = _translator.ToJson(compiled)
                                   .ToString();
