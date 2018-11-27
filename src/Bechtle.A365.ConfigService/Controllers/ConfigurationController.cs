@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
@@ -19,16 +20,19 @@ namespace Bechtle.A365.ConfigService.Controllers
     {
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
+        private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
                                        IEventStore eventStore,
-                                       IProjectionStore store)
+                                       IProjectionStore store,
+                                       IJsonTranslator translator)
             : base(provider, logger)
         {
             _eventStore = eventStore;
             _store = store;
+            _translator = translator;
         }
 
         /// <summary>
@@ -77,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
             var availableStructures = await _store.Structures.GetAvailableVersions(structureName);
 
-            if(availableStructures.IsError)
+            if (availableStructures.IsError)
                 return ProviderError(availableStructures);
 
             foreach (var structureId in availableStructures.Data
@@ -228,12 +232,33 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                               [FromRoute] int structureVersion,
                                                               [FromRoute] DateTime when)
         {
-            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+            try
+            {
+                var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+                var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when);
+                var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when);
 
-            return Result(result);
+                if (result.IsError)
+                    return ProviderError(result);
+
+                var json = _translator.ToJson(result.Data);
+
+                if (json is null)
+                    return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
+
+                return Ok(json);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"failed to retrieve configuration for (" +
+                                   $"{nameof(environmentCategory)}: {environmentCategory}, " +
+                                   $"{nameof(environmentName)}: {environmentName}, " +
+                                   $"{nameof(structureName)}: {structureName}, " +
+                                   $"{nameof(structureVersion)}: {structureVersion}, " +
+                                   $"{nameof(when)}: {when:O})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
+            }
         }
 
         /// <summary>
