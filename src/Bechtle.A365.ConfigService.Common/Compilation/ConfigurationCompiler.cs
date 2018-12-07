@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Parsing;
 using Microsoft.Extensions.Logging;
 
@@ -44,19 +43,15 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="context"></param>
         /// <param name="parts"></param>
         /// <returns></returns>
-        private CompilationPlan AnalyzeCompilation(CompilationContext context,
-                                                   IList<ConfigValuePart> parts)
+        private (bool CompilationPossible, string Reason) AnalyzeCompilation(CompilationContext context,
+                                                                             IList<ConfigValuePart> parts)
         {
             _logger.LogTrace(WithContext(context, "analyzing compilation"));
 
             // no compilation possible / needed, but still a valid value
             // simplest possible plan - no references and only values
             if (!parts.Any() || parts.All(p => p is ValuePart))
-                return new CompilationPlan
-                {
-                    CompilationPossible = true,
-                    Reason = string.Empty
-                };
+                return (CompilationPossible: true, Reason: string.Empty);
 
             var valueParts = parts.OfType<ValuePart>()
                                   .ToArray();
@@ -70,35 +65,19 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             // can't compile something that references multiple regions at the same time
             if (regionReferences.Length > 1)
-                return new CompilationPlan
-                {
-                    CompilationPossible = false,
-                    Reason = "multiple region-spanning references found"
-                };
+                return (CompilationPossible: false, Reason: "multiple region-spanning references found");
 
             // can't reference a region when other stuff would be discarded
             if (regionReferences.Any() && valueParts.Any())
-                return new CompilationPlan
-                {
-                    CompilationPossible = false,
-                    Reason = "region-spanning reference found within non-reference text"
-                };
+                return (CompilationPossible: false, Reason: "region-spanning reference found within non-reference text");
 
             // can't compile something that references a region and keys at the same time
             // at least some stuff would be discarded, and that does not qualify as a valid compilation
             if (pathReferences.Length > 1 &&
                 pathReferences.Any(p => p.Commands[ReferenceCommand.Path].EndsWith('*')))
-                return new CompilationPlan
-                {
-                    CompilationPossible = false,
-                    Reason = "region-spanning and value-only references found"
-                };
+                return (CompilationPossible: false, Reason: "region-spanning and value-only references found");
 
-            return new CompilationPlan
-            {
-                CompilationPossible = true,
-                Reason = string.Empty
-            };
+            return (CompilationPossible: true, Reason: string.Empty);
         }
 
         private (string Key, string Value)[] CompileInternal(CompilationContext context, string value)
@@ -323,15 +302,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                               .ToArray();
         }
 
+        /// <summary>
+        ///     used to log messages with the current CompilationContext
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
         private static string WithContext(CompilationContext context, string message)
             => $"'{context.EnvironmentInfo.Name}' / '{context.StructureInfo.Name}' / '{context.CurrentKey}' {message}";
-
-        private struct CompilationPlan
-        {
-            public bool CompilationPossible { get; set; }
-
-            public string Reason { get; set; }
-        }
 
         private class CompilationContext
         {

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Parsing;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation
