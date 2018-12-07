@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve environments");
+                _logger.LogError($"failed to retrieve environments: {e}");
                 return Result<IList<EnvironmentIdentifier>>.Error("failed to retrieve environments", ErrorCode.DbQueryError);
             }
         }
@@ -66,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve environments");
+                _logger.LogError($"failed to retrieve environments: {e}");
                 return Result<IList<EnvironmentIdentifier>>.Error($"failed to retrieve environments in '{category}'", ErrorCode.DbQueryError);
             }
         }
@@ -95,8 +95,8 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve keys for environment " +
-                                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})");
+                _logger.LogError($"failed to retrieve keys for environment " +
+                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
 
                 return Result<IDictionary<string, string>>.Error(
                     "failed to retrieve keys for environment " +
@@ -143,8 +143,8 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve keys for environment " +
-                                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})");
+                _logger.LogError($"failed to retrieve keys for environment " +
+                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
 
                 return Result<IDictionary<string, string>>.Error(
                     "failed to retrieve keys for environment " +

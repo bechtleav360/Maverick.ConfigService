@@ -14,7 +14,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private bool _isDefault;
 
         /// <summary>
-        ///     set the identifier of this <see cref="ConfigEnvironment"/> to the given value
+        ///     set the identifier of this <see cref="Common.DbObjects.ConfigEnvironment"/> to the given value
         /// </summary>
         /// <param name="identifier"></param>
         /// <param name="isDefault"></param>

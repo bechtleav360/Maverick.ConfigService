@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve projected configurations");
+                _logger.LogError($"failed to retrieve projected configurations: {e}");
                 return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
@@ -78,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve projected configurations");
+                _logger.LogError($"failed to retrieve projected configurations: {e}");
                 return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
@@ -104,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve projected configurations");
+                _logger.LogError($"failed to retrieve projected configurations: {e}");
                 return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
@@ -140,7 +140,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to retrieve projected configuration keys for id: {formattedParams}");
+                _logger.LogError($"failed to retrieve projected configuration keys for id: {formattedParams}: {e}");
                 return Result<IDictionary<string, string>>.Error($"failed to retrieve projected configuration keys for id: {formattedParams}",
                                                                  ErrorCode.DbQueryError);
             }
@@ -176,13 +176,13 @@ namespace Bechtle.A365.ConfigService.Services
                 }
                 catch (JsonException e)
                 {
-                    _logger.LogError(e, "failed to parse projected Configuration-Json into token");
+                    _logger.LogError($"failed to parse projected Configuration-Json into token: {e}");
                     throw;
                 }
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to retrieve projected configuration keys for id: {formattedParams}");
+                _logger.LogError($"failed to retrieve projected configuration keys for id: {formattedParams}: {e}");
                 return Result<JToken>.Error($"failed to retrieve projected configuration keys for id: {formattedParams}",
                                             ErrorCode.DbQueryError);
             }

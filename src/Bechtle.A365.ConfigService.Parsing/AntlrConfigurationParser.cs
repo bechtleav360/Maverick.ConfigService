@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
@@ -53,8 +52,6 @@ namespace Bechtle.A365.ConfigService.Parsing
 
             var result = Visit(parser.Context)?.ToList() ?? new List<ConfigValuePart>();
 
-            _logger.LogTrace($"parsed '{result.Count}' parts");
-
             return result;
         }
 
@@ -100,7 +97,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to add ValuePart");
+                _logger.LogError($"failed to add ValuePart: {e}");
                 return new ConfigValuePart[0];
             }
         }
@@ -143,7 +140,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to parse reference");
+                _logger.LogError($"failed to parse reference: {e}");
                 return new ConfigValuePart[0];
             }
         }
@@ -201,7 +198,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "could not parse to ReferencePart");
+                _logger.LogError($"could not parse to ReferencePart: {e}");
                 return new ConfigValuePart[0];
             }
         }
@@ -221,7 +218,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "could not parse to ReferencePart");
+                _logger.LogError($"could not parse to ReferencePart: {e}");
                 return new ConfigValuePart[0];
             }
         }
@@ -240,7 +237,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "could not parse to ReferencePart");
+                _logger.LogError($"could not parse to ReferencePart: {e}");
                 return new ConfigValuePart[0];
             }
         }

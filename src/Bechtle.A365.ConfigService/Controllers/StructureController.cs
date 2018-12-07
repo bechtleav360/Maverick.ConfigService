@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "failed to retrieve available structures");
+                Logger.LogError($"failed to retrieve available structures: {e}");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve available structures");
             }
         }
@@ -84,7 +84,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                Logger.LogError($"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
@@ -122,7 +122,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                Logger.LogError($"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
@@ -158,7 +158,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to translate structure ({nameof(name)}: {name}, {nameof(version)}: {version}) to JSON");
+                Logger.LogError($"failed to translate structure ({nameof(name)}: {name}, {nameof(version)}: {version}) to JSON: {e}");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to translate structure to JSON");
             }
         }
@@ -188,7 +188,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to retrieve structure-variables of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                Logger.LogError($"failed to retrieve structure-variables of ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
@@ -223,7 +223,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to retrieve structure-variables of ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                Logger.LogError($"failed to retrieve structure-variables of ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
@@ -278,7 +278,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
+                Logger.LogError($"failed to process given Structure.{nameof(DtoStructure.Structure)}: {e}");
                 return StatusCode((int) HttpStatusCode.InternalServerError, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
             }
         }
@@ -319,7 +319,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                Logger.LogError($"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
                 return StatusCode(HttpStatusCode.InternalServerError,
                                   $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
             }
@@ -361,7 +361,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
+                Logger.LogError($"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
                 return StatusCode(HttpStatusCode.InternalServerError,
                                   $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
             }

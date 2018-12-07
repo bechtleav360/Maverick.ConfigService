@@ -98,7 +98,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="previewOptions"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
+        public IActionResult PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {
             if (previewOptions is null)
                 return BadRequest("no preview-data received");

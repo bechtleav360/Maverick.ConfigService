@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve structures");
+                _logger.LogError($"failed to retrieve structures: {e}");
                 return Result<IList<StructureIdentifier>>.Error("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }
@@ -65,7 +65,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve structures");
+                _logger.LogError($"failed to retrieve structures: {e}");
                 return Result<IList<int>>.Error("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }
@@ -95,8 +95,8 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve keys for structure " +
-                                    $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})");
+                _logger.LogError("failed to retrieve keys for structure " +
+                                 $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version}): {e}");
 
                 return Result<IDictionary<string, string>>.Error(
                     "failed to retrieve keys for structure " +
@@ -130,8 +130,8 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to retrieve variables for structure " +
-                                    $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})");
+                _logger.LogError("failed to retrieve variables for structure " +
+                                 $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version}): {e}");
 
                 return Result<IDictionary<string, string>>.Error(
                     "failed to retrieve variables for structure " +
