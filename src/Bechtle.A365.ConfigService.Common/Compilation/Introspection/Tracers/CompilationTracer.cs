@@ -24,7 +24,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         }
 
         /// <inheritdoc />
-        public TraceResult[] GetResults() => Tracers.Select(t => t.GetResult())
+        public TraceResult[] GetResults() => Tracers.Where(t => !(t is null))
+                                                    .Select(t => t.GetResult())
                                                     .ToArray();
     }
 }
