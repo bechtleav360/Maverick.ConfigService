@@ -87,7 +87,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                                              structureInfo,
                                              _parser);
 
-            var json = _translator.ToJson(compiled);
+            var json = _translator.ToJson(compiled.CompiledConfiguration);
 
             return Ok(json);
         }
@@ -128,11 +128,11 @@ namespace Bechtle.A365.ConfigService.Controllers
                                              structureInfo,
                                              _parser);
 
-            var json = _translator.ToJson(compiled);
+            var json = _translator.ToJson(compiled.CompiledConfiguration);
 
             return Ok(new PreviewResult
             {
-                Map = compiled,
+                Map = compiled.CompiledConfiguration,
                 Json = json
             });
         }

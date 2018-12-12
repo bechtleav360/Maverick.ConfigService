@@ -73,12 +73,12 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                              structureInfo,
                                              _parser);
 
-            var json = _translator.ToJson(compiled)
+            var json = _translator.ToJson(compiled.CompiledConfiguration)
                                   .ToString();
 
             await _database.SaveConfiguration(environmentSnapshot,
                                               structureSnapshot,
-                                              compiled,
+                                              compiled.CompiledConfiguration,
                                               json,
                                               domainEvent.ValidFrom,
                                               domainEvent.ValidTo);

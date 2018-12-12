@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Bechtle.A365.ConfigService.Common.Compilation.Introspection;
+using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers;
 using Bechtle.A365.ConfigService.Parsing;
 using Microsoft.Extensions.Logging;
 
@@ -21,21 +23,27 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         // basically, do the compilation for each key in parallel - as parallel as PLINQ wants it to be
         // then collect the results and convert it to a dictionary
         /// <inheritdoc />
-        public IDictionary<string, string> Compile(EnvironmentCompilationInfo environment,
-                                                   StructureCompilationInfo structure,
-                                                   IConfigurationParser parser)
-            => structure.Keys
-                        .AsParallel()
-                        .SelectMany(kvp => CompileInternal(new CompilationContext
-                                                           {
-                                                               CurrentKey = kvp.Key,
-                                                               StructureInfo = structure,
-                                                               EnvironmentInfo = environment,
-                                                               Parser = parser
-                                                           },
-                                                           kvp.Value))
-                        .ToArray()
-                        .ToDictionary(t => t.Key, t => t.Value);
+        public CompilationResult Compile(EnvironmentCompilationInfo environment,
+                                         StructureCompilationInfo structure,
+                                         IConfigurationParser parser)
+        {
+            ICompilationTracer compilationTracer = new CompilationTracer();
+            var configuration = structure.Keys
+                                         .AsParallel()
+                                         .SelectMany(kvp => CompileInternal(new CompilationContext
+                                                                            {
+                                                                                Tracer = compilationTracer.AddKey(kvp.Key, kvp.Value),
+                                                                                CurrentKey = kvp.Key,
+                                                                                StructureInfo = structure,
+                                                                                EnvironmentInfo = environment,
+                                                                                Parser = parser
+                                                                            },
+                                                                            kvp.Value))
+                                         .ToArray()
+                                         .ToDictionary(t => t.Key, t => t.Value);
+
+            return new CompilationResult(configuration, compilationTracer.GetResults());
+        }
 
         /// <summary>
         ///     analyze the given parts and determine if they can be compiled and what would be the result
@@ -110,6 +118,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             {
                 if (part is ValuePart valuePart)
                 {
+                    context.Tracer.AddStaticValue(valuePart.Text);
                     valueBuilder.Append(valuePart.Text);
                     continue;
                 }
@@ -120,26 +129,24 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     continue;
                 }
 
-                // inspect reference and add alias to context if possible
                 HandleAliasCommands(context, reference);
 
                 // if we don't have a path to substitute and only modify the context we can continue
                 if (!reference.Commands.ContainsKey(ReferenceCommand.Path))
                     continue;
 
-                // inspect reference and get current Path and Repository
-                // Repository can be changed by accessing different aliases
                 var (path, repository) = HandlePathCommands(context, reference);
 
                 if (path.EndsWith("*"))
                     return HandleRegionSelection(context, repository, path);
 
                 // now comes the part where we handle a single compiled result...
-                // actually match
                 var match = repository.Keys.FirstOrDefault(key => key.Equals(path, StringComparison.OrdinalIgnoreCase));
                 string matchedValue;
 
-                if (match is null)
+                if (!(match is null))
+                    matchedValue = repository[match];
+                else
                 {
                     // if 'Fallback' or 'Default' are set in the reference,
                     // we can use the it instead of the value we're searching for
@@ -156,13 +163,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         continue;
                     }
                 }
-                else
-                {
-                    matchedValue = repository[match];
-                }
 
                 // compile the matched result until it's done
-                var innerContext = new CompilationContext(context) {CurrentKey = path};
+                var matchTracer = context.Tracer.AddPathResolution(path);
+                var innerContext = new CompilationContext(context)
+                {
+                    CurrentKey = path,
+                    Tracer = matchTracer.AddPathResult(matchedValue)
+                };
                 innerContext.IncrementRecursionLevel();
 
                 var result = CompileInternal(innerContext, matchedValue);
@@ -200,6 +208,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var @using = commands[ReferenceCommand.Using];
 
                 _logger.LogTrace(WithContext(context, $"adding alias '{alias}' => '{@using}' to the context"));
+                context.Tracer.AddCommand(ReferenceCommand.Using, @using);
+                context.Tracer.AddCommand(ReferenceCommand.Alias, alias);
                 context.ReferenceAliases[alias] = @using;
             }
             else if (!commands.ContainsKey(ReferenceCommand.Alias) && !commands.ContainsKey(ReferenceCommand.Using))
@@ -214,6 +224,13 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
         }
 
+        /// <summary>
+        ///     inspect reference and get current Path and Repository
+        ///     Repository can be changed by accessing different aliases
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="reference"></param>
+        /// <returns></returns>
         private (string Path, IDictionary<string, string> Repository) HandlePathCommands(CompilationContext context, ReferencePart reference)
         {
             // default path = path given without de-referencing aliases and the like
@@ -265,6 +282,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                                                    IDictionary<string, string> repository,
                                                                    string path)
         {
+            var regionTracer = context.Tracer.AddPathResolution(path);
+
             var pathMatcher = path.TrimEnd('*');
 
             _logger.LogTrace(WithContext(context, $"matching '{pathMatcher}' against '{repository.Count}' keys"));
@@ -281,7 +300,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             var resultItems = new Dictionary<string, string>(matchedItems.Length);
             foreach (var (itemKey, itemValue) in matchedItems)
             {
-                var regionContext = new CompilationContext(context) {CurrentKey = itemKey};
+                var regionContext = new CompilationContext(context)
+                {
+                    CurrentKey = itemKey,
+                    Tracer = regionTracer.AddPathResult(itemKey, itemValue)
+                };
                 regionContext.IncrementRecursionLevel();
 
                 var regionResult = CompileInternal(regionContext, itemValue);
@@ -339,6 +362,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             public Dictionary<string, string> ReferenceAliases { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             public StructureCompilationInfo StructureInfo { get; set; }
+
+            public ITracer Tracer { get; set; }
 
             public void IncrementRecursionLevel() => RecursionLevel += 1;
         }
