@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Compilation;
@@ -132,49 +133,11 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var json = _translator.ToJson(compiled.CompiledConfiguration);
 
-            var traceResults = new List<KeyTraceResult>();
-            var traceStack = new Stack<TraceResult>();
-
-            foreach (var trace in compiled.CompilationTrace)
-                traceStack.Push(trace);
-
-            while (traceStack.TryPop(out var trace))
-            {
-                foreach (var _ in trace.Children)
-                    traceStack.Push(_);
-
-                if (trace is KeyTraceResult keyTrace)
-                    traceResults.Add(keyTrace);
-            }
-
-            var x = traceResults.Where(k => environmentInfo.Keys.ContainsKey(k.Key))
-                                .GroupBy(r => r.Key)
-                                .Select(g => g.First())
-                                .ToArray();
-
-            var stack = new Stack<TraceResult>();
-            foreach (var item in x)
-                stack.Push(item);
-
-            var usedKeys = new List<string>();
-
-            while (stack.TryPop(out var r))
-            {
-                if (r is KeyTraceResult k)
-                    usedKeys.Add(k.Key);
-
-                foreach (var c in r.Children)
-                    stack.Push(c);
-            }
-
             return Ok(new PreviewResult
             {
-                Map = compiled.CompiledConfiguration,
+                Map = compiled.CompiledConfiguration.ToImmutableSortedDictionary(),
                 Json = json,
-                UsedKeys = usedKeys.GroupBy(_ => _)
-                                   .Select(_ => _.Key)
-                                   .OrderBy(_ => _)
-                                   .ToList()
+                UsedKeys = compiled.GetUsedKeys().Where(key => environmentInfo.Keys.ContainsKey(key))
             });
         }
     }
@@ -210,6 +173,6 @@ namespace Bechtle.A365.ConfigService.Controllers
 
         /// <summary>
         /// </summary>
-        public List<string> UsedKeys { get; set; }
+        public IEnumerable<string> UsedKeys { get; set; }
     }
 }

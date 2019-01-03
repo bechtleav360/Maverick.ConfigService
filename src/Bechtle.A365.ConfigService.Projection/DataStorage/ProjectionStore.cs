@@ -33,6 +33,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             modelBuilder.Entity<StructureVariable>();
             modelBuilder.Entity<ConfigEnvironment>();
             modelBuilder.Entity<ConfigEnvironmentKey>();
+            modelBuilder.Entity<UsedConfigurationKey>();
             modelBuilder.Entity<ProjectedConfiguration>();
             modelBuilder.Entity<ProjectedConfigurationKey>();
         }

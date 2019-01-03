@@ -147,6 +147,53 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
+        ///     get the used environment-keys of a specific configuration
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <returns></returns>
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,
+                                                     [FromRoute] string environmentName,
+                                                     [FromRoute] string structureName,
+                                                     [FromRoute] int structureVersion)
+            => await GetUsedKeys(environmentCategory,
+                                 environmentName,
+                                 structureName,
+                                 structureVersion,
+                                 DateTime.UtcNow);
+
+        /// <summary>
+        ///     get the used environment-keys of a specific configuration
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
+        /// <returns></returns>
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/{when}/usedKeys")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,
+                                                     [FromRoute] string environmentName,
+                                                     [FromRoute] string structureName,
+                                                     [FromRoute] int structureVersion,
+                                                     [FromRoute] DateTime when)
+        {
+            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+
+            var result = await _store.Configurations.GetUsedConfigurationKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when);
+
+            return Result(result);
+        }
+
+        /// <summary>
         ///     get the keys of a specific configuration
         /// </summary>
         /// <param name="environmentCategory"></param>

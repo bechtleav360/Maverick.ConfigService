@@ -80,6 +80,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                               structureSnapshot,
                                               compiled.CompiledConfiguration,
                                               json,
+                                              compiled.GetUsedKeys(),
                                               domainEvent.ValidFrom,
                                               domainEvent.ValidTo);
 

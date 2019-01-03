@@ -31,8 +31,10 @@ namespace Bechtle.A365.ConfigService.Services
 
             modelBuilder.Entity<Structure>();
             modelBuilder.Entity<StructureKey>();
+            modelBuilder.Entity<StructureVariable>();
             modelBuilder.Entity<ConfigEnvironment>();
             modelBuilder.Entity<ConfigEnvironmentKey>();
+            modelBuilder.Entity<UsedConfigurationKey>();
             modelBuilder.Entity<ProjectedConfiguration>();
             modelBuilder.Entity<ProjectedConfigurationKey>();
         }

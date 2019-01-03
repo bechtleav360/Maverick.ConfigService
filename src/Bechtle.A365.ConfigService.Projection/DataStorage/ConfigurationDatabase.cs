@@ -474,6 +474,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                     StructureSnapshot structure,
                                                     IDictionary<string, string> configuration,
                                                     string configurationJson,
+                                                    IEnumerable<string> usedKeys,
                                                     DateTime? validFrom,
                                                     DateTime? validTo)
         {
@@ -494,6 +495,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     ConfigurationJson = configurationJson,
                     ValidFrom = validFrom,
                     ValidTo = validTo,
+                    UsedConfigurationKeys = usedKeys.Where(k => environment.Data.ContainsKey(k))
+                                                    .Select(key => new UsedConfigurationKey
+                                                    {
+                                                        Id = Guid.NewGuid(),
+                                                        Key = key
+                                                    })
+                                                    .ToList(),
                     Keys = configuration.Select(kvp => new ProjectedConfigurationKey
                                         {
                                             Id = Guid.NewGuid(),

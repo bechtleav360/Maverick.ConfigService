@@ -147,6 +147,43 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
+        public async Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when)
+        {
+            var formattedParams = "(" +
+                                  $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
+                                  $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Name)}: {identifier.Environment.Name}; " +
+                                  $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Name)}: {identifier.Structure.Name}; " +
+                                  $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Version)}: {identifier.Structure.Version}" +
+                                  ")";
+
+            try
+            {
+                var dbResult = await _context.ProjectedConfigurations
+                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                             .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
+                                                                       c.ConfigEnvironment.Category == identifier.Environment.Category &&
+                                                                       c.Structure.Name == identifier.Structure.Name &&
+                                                                       c.Structure.Version == identifier.Structure.Version);
+
+                if (dbResult is null)
+                    return Result<IEnumerable<string>>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+
+                var result = dbResult.UsedConfigurationKeys
+                                     .Select(usedKey => usedKey.Key)
+                                     .OrderBy(_ => _)
+                                     .ToArray();
+
+                return Result<IEnumerable<string>>.Success(result);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"failed to retrieve used environment keys for id: {formattedParams}: {e}");
+                return Result<IEnumerable<string>>.Error($"failed to retrieve used environment keys for id: {formattedParams}: {e}",
+                                                         ErrorCode.DbQueryError);
+            }
+        }
+
+        /// <inheritdoc />
         public async Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when)
         {
             var formattedParams = "(" +

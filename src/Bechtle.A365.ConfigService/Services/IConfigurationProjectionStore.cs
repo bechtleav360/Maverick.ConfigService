@@ -44,6 +44,14 @@ namespace Bechtle.A365.ConfigService.Services
         Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when);
 
         /// <summary>
+        ///     get the used environment-keys for a configuration
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="when"></param>
+        /// <returns></returns>
+        Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when);
+
+        /// <summary>
         ///     get the json of a Configuration
         /// </summary>
         /// <param name="identifier"></param>

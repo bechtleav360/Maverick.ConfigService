@@ -110,6 +110,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="structure"></param>
         /// <param name="configuration"></param>
         /// <param name="configurationJson"></param>
+        /// <param name="usedKeys"></param>
         /// <param name="validFrom"></param>
         /// <param name="validTo"></param>
         /// <returns></returns>
@@ -117,6 +118,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                        StructureSnapshot structure,
                                        IDictionary<string, string> configuration,
                                        string configurationJson,
+                                       IEnumerable<string> usedKeys,
                                        DateTime? validFrom,
                                        DateTime? validTo);
 

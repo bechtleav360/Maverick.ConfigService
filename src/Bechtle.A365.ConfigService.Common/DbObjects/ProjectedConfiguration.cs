@@ -15,6 +15,8 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         public virtual List<ProjectedConfigurationKey> Keys { get; set; }
 
+        public virtual List<UsedConfigurationKey> UsedConfigurationKeys { get; set; }
+
         public Guid StructureId { get; set; }
 
         public virtual Structure Structure { get; set; }
