@@ -33,6 +33,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{91F3AC39-12E2-441F-B147-76D86B898ABB}"
 EndProject
+Project("{368362B6-E04D-4D3F-A26E-371D7D841DB7}") = "docker-compose", "docker-compose.dcproj", "{19DB8239-F3DD-48C3-80E0-74A2130DDB9C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -133,6 +135,10 @@ Global
 		{91F3AC39-12E2-441F-B147-76D86B898ABB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{91F3AC39-12E2-441F-B147-76D86B898ABB}.Release|x86.ActiveCfg = Release|Any CPU
 		{91F3AC39-12E2-441F-B147-76D86B898ABB}.Release|x86.Build.0 = Release|Any CPU
+		{19DB8239-F3DD-48C3-80E0-74A2130DDB9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19DB8239-F3DD-48C3-80E0-74A2130DDB9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19DB8239-F3DD-48C3-80E0-74A2130DDB9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19DB8239-F3DD-48C3-80E0-74A2130DDB9C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
