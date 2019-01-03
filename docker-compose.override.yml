@@ -1,37 +1,8 @@
 version: '3.4'
 
 services:
-  eventbus:
-    environment:
-        #- SERVER:CERTIFICATE=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
-        #- SERVER:CERTIFICATEPASSWORD=1234
-        - 'A365:LOGCONFIGURATION=<?xml version="1.0" encoding="utf-8"?><nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" throwExceptions="true"><targets><target name="console" xsi:type="Console" layout="$${longdate} | $${level} | $${logger} | $${message} $${exception:format=toString,Data}" /></targets><rules><logger name="*" levels="Info,Warn,Error,Fatal" writeTo="console" /></rules></nlog>'
-    ports:
-      - 9082:8080
-
-  eventstore:
-    ports:
-      - 2113:2113
-      - 1113:1113 
-
-  mssql:
-    environment:     
-      - SA_PASSWORD=qwer#1234
-    ports:
-      - 1443:1443
-
-  maverick.configservice:
+  bechtle.a365.maverick.configuration.restapi:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - EVENTBUSCONNECTION:SERVER=http://eventbus:8080
-      - EVENTSTORECONNECTION:URI=tcp://admin:changeit@eventstore:1113
-      - PROJECTIONSTORAGE:CONNECTIONSTRING=Server=mssql;Database=ConfigProjection;User Id=sa;Password=qwer#1234;
     ports:
-      - 8085:80
-
-  maverick.configservice.projection:
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - EVENTBUS:SERVER=http://eventbus:8080
-      - EVENTSTORE:URI=tcp://admin:changeit@eventstore:1113
-      - STORAGE:CONNECTIONSTRING=Server=mssql;Database=ConfigProjection;User Id=sa;Password=qwer#1234;
+      - "80"

@@ -1,27 +1,8 @@
 version: '3.4'
 
 services:
-  eventbus:
-    image: maverick.azurecr.io/signalrservice
-
-  eventstore:
-    image: eventstore/eventstore
-
-  mssql:
-    image: microsoft/mssql-server-linux
-    environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_PID=Developer
-
-  maverick.configservice:
-    image: maverick.azurecr.io/configservice
+  bechtle.a365.maverick.configuration.restapi:
+    image: ${DOCKER_REGISTRY}bechtlea365configservice
     build:
       context: .
       dockerfile: src/Bechtle.A365.ConfigService/Dockerfile
-      
-  maverick.configservice.projection:
-    image: maverick.azurecr.io/configservice-projection
-    build:
-      context: .
-      dockerfile: src/Bechtle.A365.ConfigService.Projection/Dockerfile
-  
