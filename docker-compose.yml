@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  bechtle.a365.maverick.configuration.restapi:
+    image: ${DOCKER_REGISTRY}bechtlea365configservice
+    build:
+      context: .
+      dockerfile: src/Bechtle.A365.ConfigService/Dockerfile
