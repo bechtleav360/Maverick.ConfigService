@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         ///     get available structures
         /// </summary>
         /// <returns></returns>
-        [HttpGet("available")]
+        [HttpGet("available", Name = "GetAvailableStructures")]
         public async Task<IActionResult> GetAvailableStructures()
         {
             try
@@ -71,7 +71,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/keys")]
+        [HttpGet("{name}/{version}/keys", Name = "GetStructureAsKeys")]
         public async Task<IActionResult> GetStructureKeys(string name, int version)
         {
             var identifier = new StructureIdentifier(name, version);
@@ -95,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/json")]
+        [HttpGet("{name}/{version}/json", Name = "GetStructureAsJson")]
         public async Task<IActionResult> GetStructureJson(string name, int version)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -134,7 +134,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="version"></param>
         /// <returns></returns>
         [Obsolete]
-        [HttpGet("{name}/{version}")]
+        [HttpGet("{name}/{version}", Name = "GetStructureObsolete")]
         public async Task<IActionResult> GetStructure(string name, int version)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -169,7 +169,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/variables/keys")]
+        [HttpGet("{name}/{version}/variables/keys", Name = "GetVariablesAsKeys")]
         public async Task<IActionResult> GetVariables(string name, int version)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -199,7 +199,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/variables/json")]
+        [HttpGet("{name}/{version}/variables/json", Name = "GetVariablesAsJson")]
         public async Task<IActionResult> GetVariablesJson(string name, int version)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -233,7 +233,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="structure"></param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPost(Name = "AddStructure")]
         public async Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
         {
             if (structure is null)
@@ -290,7 +290,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="version"></param>
         /// <param name="changes"></param>
         /// <returns></returns>
-        [HttpPut("{name}/{version}/variables/keys")]
+        [HttpPut("{name}/{version}/variables/keys", Name = "UpdateVariablesInStructure")]
         public async Task<IActionResult> UpdateVariables([FromRoute] string name,
                                                          [FromRoute] int version,
                                                          [FromBody] Dictionary<string, string> changes)
@@ -332,7 +332,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="version"></param>
         /// <param name="variables"></param>
         /// <returns></returns>
-        [HttpDelete("{name}/{version}/variables/keys")]
+        [HttpDelete("{name}/{version}/variables/keys", Name = "DeleteVariablesFromStructure")]
         public async Task<IActionResult> RemoveVariables([FromRoute] string name,
                                                          [FromRoute] int version,
                                                          [FromBody] string[] variables)

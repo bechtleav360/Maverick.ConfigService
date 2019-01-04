@@ -30,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="dictionary"></param>
         /// <returns></returns>
-        [HttpPost("map/json")]
+        [HttpPost("map/json", Name = "ConvertDictionaryToJson")]
         public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary)
         {
             try
@@ -54,7 +54,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        [HttpPost("json/map")]
+        [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
         public IActionResult JsonToDictionary([FromBody] JToken json)
         {
             try

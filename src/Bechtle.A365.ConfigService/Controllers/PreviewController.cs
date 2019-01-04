@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "PreviewConfigurationWithStoredValues")]
         public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
                                                               [FromRoute] string structureName,
@@ -99,7 +99,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="previewOptions"></param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
         public IActionResult PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {
             if (previewOptions is null)

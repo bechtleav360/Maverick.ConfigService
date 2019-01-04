@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [HttpPost("{category}/{name}")]
+        [HttpPost("{category}/{name}", Name = "AddEnvironment")]
         public async Task<IActionResult> AddEnvironment(string category, string name)
         {
             if (string.IsNullOrWhiteSpace(category))
@@ -99,7 +99,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [HttpDelete("{category}/{name}/keys")]
+        [HttpDelete("{category}/{name}/keys", Name = "DeleteFromEnvironmentWithKeys")]
         public async Task<IActionResult> DeleteKeys([FromRoute] string category,
                                                     [FromRoute] string name,
                                                     [FromBody] string[] keys)
@@ -138,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="json"></param>
         /// <returns></returns>
-        [HttpDelete("{category}/{name}/json")]
+        [HttpDelete("{category}/{name}/json", Name = "DeleteFromEnvironmentWithJson")]
         public async Task<IActionResult> DeleteKeysFromJson([FromRoute] string category,
                                                             [FromRoute] string name,
                                                             [FromBody] JToken json)
@@ -157,7 +157,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         ///     get a list of available environments
         /// </summary>
         /// <returns></returns>
-        [HttpGet("available")]
+        [HttpGet("available", Name = "GetAvailableEnvironments")]
         public async Task<IActionResult> GetAvailableEnvironments()
         {
             var result = await _store.Environments.GetAvailable();
@@ -171,7 +171,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [HttpGet("{category}/{name}/keys")]
+        [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeys")]
         public async Task<IActionResult> GetKeys(string category, string name)
         {
             var identifier = new EnvironmentIdentifier(category, name);
@@ -187,7 +187,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [HttpGet("{category}/{name}/json")]
+        [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson(string category, string name)
         {
             var identifier = new EnvironmentIdentifier(category, name);
@@ -209,7 +209,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [HttpPut("{category}/{name}/keys")]
+        [HttpPut("{category}/{name}/keys", Name = "UpdateEnvironmentWithKeys")]
         public async Task<IActionResult> UpdateKeys([FromRoute] string category,
                                                     [FromRoute] string name,
                                                     [FromBody] Dictionary<string, string> keys)
@@ -248,7 +248,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="json"></param>
         /// <returns></returns>
-        [HttpPut("{category}/{name}/json")]
+        [HttpPut("{category}/{name}/json", Name = "UpdateEnvironmentWithJson")]
         public async Task<IActionResult> UpdateKeysFromJson([FromRoute] string category,
                                                             [FromRoute] string name,
                                                             [FromBody] JToken json)
