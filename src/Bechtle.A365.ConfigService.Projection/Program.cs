@@ -16,8 +16,11 @@ namespace Bechtle.A365.ConfigService.Projection
     {
         // entry point for application when designing migrations
         // ReSharper disable once UnusedMember.Global
+        //
+        // Configure and ConfigureServices are both required, either as Fluent invocations here or as actual methods in this class - even if they're empty.
+        // they're both called here to not clutter this class with empty functions
         public static IWebHost BuildWebHost(string[] args) => WebHost.CreateDefaultBuilder(args)
-                                                                     .Configure(builder => { })
+                                                                     .Configure(builder => { }) // don't delete, see comment above
                                                                      .ConfigureServices(
                                                                          (context, collection) => ConfigureServicesInternal(collection,
                                                                                                                             context.Configuration))
