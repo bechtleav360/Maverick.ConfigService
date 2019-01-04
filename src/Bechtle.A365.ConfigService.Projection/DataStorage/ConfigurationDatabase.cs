@@ -524,12 +524,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     if (existingConfiguration != null)
                     {
                         context.ProjectedConfigurations.Remove(existingConfiguration);
-                        await context.SaveChangesAsync();
+                        context.SaveChanges();
                     }
 
-                    await context.ProjectedConfigurations.AddAsync(compiledConfiguration);
+                    context.ProjectedConfigurations.Add(compiledConfiguration);
 
-                    await context.SaveChangesAsync();
+                    context.SaveChanges();
 
                     return Result.Success();
                 }

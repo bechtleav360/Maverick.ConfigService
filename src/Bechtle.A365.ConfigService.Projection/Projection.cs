@@ -53,6 +53,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
             if (domainEvent == null)
                 return;
+
             try
             {
                 await Project(domainEvent);
