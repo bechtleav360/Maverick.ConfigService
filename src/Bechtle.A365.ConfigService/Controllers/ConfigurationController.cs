@@ -36,6 +36,32 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
+        ///     validate each build-option and return the appropriate error, or null if everything is valid
+        /// </summary>
+        /// <param name="buildOptions"></param>
+        /// <returns></returns>
+        private IActionResult ValidateBuildOptions(ConfigurationBuildOptions buildOptions)
+        {
+            if (buildOptions is null)
+                return BadRequest("no build-options received");
+
+            // if both ValidFrom and ValidTo are set, we make sure that they're valid
+            if (!(buildOptions.ValidFrom is null) && !(buildOptions.ValidTo is null))
+            {
+                if (buildOptions.ValidFrom > buildOptions.ValidTo)
+                    return BadRequest($"{nameof(buildOptions.ValidFrom)} can't be later than {nameof(buildOptions.ValidTo)}");
+
+                var minimumActiveTime = TimeSpan.FromMinutes(1.0d);
+
+                if (buildOptions.ValidTo - buildOptions.ValidFrom < minimumActiveTime)
+                    return BadRequest("the configuration needs to be valid for at least " +
+                                      $"'{minimumActiveTime:g}' ({buildOptions.ValidTo - buildOptions.ValidFrom})");
+            }
+
+            return null;
+        }
+
+        /// <summary>
         ///     create a new configuration for each combination of given Environment and available structure
         /// </summary>
         /// <param name="environmentCategory"></param>
@@ -47,6 +73,10 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                             [FromRoute] string environmentName,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
         {
+            var buildError = ValidateBuildOptions(buildOptions);
+            if (!(buildError is null))
+                return buildError;
+
             var availableStructures = await _store.Structures.GetAvailable();
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
@@ -88,6 +118,10 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                             [FromRoute] string structureName,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
         {
+            var buildError = ValidateBuildOptions(buildOptions);
+            if (!(buildError is null))
+                return buildError;
+
             var availableStructures = await _store.Structures.GetAvailable();
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
@@ -140,6 +174,10 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                             [FromRoute] int structureVersion,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
         {
+            var buildError = ValidateBuildOptions(buildOptions);
+            if (!(buildError is null))
+                return buildError;
+
             var availableStructures = await _store.Structures.GetAvailable();
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
