@@ -130,16 +130,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("available", Name = "GetAvailableConfigurations")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetAvailableConfigurations() => await GetAvailableConfigurations(DateTime.UtcNow);
-
-        /// <summary>
-        ///     get all available configurations
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("available/{when}", Name = "GetAvailableConfigurationsAtPointInTime")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetAvailableConfigurations([FromRoute] DateTime when)
+        public async Task<IActionResult> GetAvailableConfigurations([FromQuery] DateTime when)
         {
             var result = await _store.Configurations.GetAvailable(when);
 
@@ -153,6 +144,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="environmentName"></param>
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "GetUsedEnvironmentKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
@@ -160,30 +152,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,
                                                      [FromRoute] string environmentName,
                                                      [FromRoute] string structureName,
-                                                     [FromRoute] int structureVersion)
-            => await GetUsedKeys(environmentCategory,
-                                 environmentName,
-                                 structureName,
-                                 structureVersion,
-                                 DateTime.UtcNow);
-
-        /// <summary>
-        ///     get the used environment-keys of a specific configuration
-        /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
-        /// <param name="structureName"></param>
-        /// <param name="structureVersion"></param>
-        /// <param name="when"></param>
-        /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/{when}/usedKeys", Name = "GetUsedEnvironmentKeysAtPointInTime")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,
-                                                     [FromRoute] string environmentName,
-                                                     [FromRoute] string structureName,
                                                      [FromRoute] int structureVersion,
-                                                     [FromRoute] DateTime when)
+                                                     [FromQuery] DateTime when)
         {
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
@@ -200,6 +170,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="environmentName"></param>
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = "GetConfigurationKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
@@ -207,30 +178,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         public async Task<IActionResult> GetConfiguration([FromRoute] string environmentCategory,
                                                           [FromRoute] string environmentName,
                                                           [FromRoute] string structureName,
-                                                          [FromRoute] int structureVersion)
-            => await GetConfiguration(environmentCategory,
-                                      environmentName,
-                                      structureName,
-                                      structureVersion,
-                                      DateTime.UtcNow);
-
-        /// <summary>
-        ///     get the keys of a specific configuration
-        /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
-        /// <param name="structureName"></param>
-        /// <param name="structureVersion"></param>
-        /// <param name="when"></param>
-        /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/{when}/keys", Name = "GetConfigurationKeysAtPointInTime")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetConfiguration([FromRoute] string environmentCategory,
-                                                          [FromRoute] string environmentName,
-                                                          [FromRoute] string structureName,
                                                           [FromRoute] int structureVersion,
-                                                          [FromRoute] DateTime when)
+                                                          [FromQuery] DateTime when)
         {
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
@@ -247,6 +196,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="environmentName"></param>
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/json", Name = "GetConfigurationJson")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
@@ -254,30 +204,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         public async Task<IActionResult> GetConfigurationJson([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
                                                               [FromRoute] string structureName,
-                                                              [FromRoute] int structureVersion)
-            => await GetConfigurationJson(environmentCategory,
-                                          environmentName,
-                                          structureName,
-                                          structureVersion,
-                                          DateTime.UtcNow);
-
-        /// <summary>
-        ///     get the keys of a specific configuration
-        /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
-        /// <param name="structureName"></param>
-        /// <param name="structureVersion"></param>
-        /// <param name="when"></param>
-        /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/{when}/json", Name = "GetConfigurationJsonAtPointInTime")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetConfigurationJson([FromRoute] string environmentCategory,
-                                                              [FromRoute] string environmentName,
-                                                              [FromRoute] string structureName,
                                                               [FromRoute] int structureVersion,
-                                                              [FromRoute] DateTime when)
+                                                              [FromQuery] DateTime when)
         {
             try
             {
