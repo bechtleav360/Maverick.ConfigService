@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Dto;
 
 namespace Bechtle.A365.ConfigService.Services
 {
@@ -36,5 +37,19 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <returns></returns>
         Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     get the keys of an Environment as Objects
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     get the keys of an Environment as Objects, and inheriting keys from Default Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjectsWithInheritance(EnvironmentIdentifier identifier);
     }
 }

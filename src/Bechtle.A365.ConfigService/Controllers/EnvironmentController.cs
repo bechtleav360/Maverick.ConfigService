@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -7,10 +6,10 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Dto;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -99,7 +98,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [HttpDelete("{category}/{name}/keys", Name = "DeleteFromEnvironmentWithKeys")]
+        [HttpDelete("{category}/{name}/keys", Name = "DeleteFromEnvironment")]
         public async Task<IActionResult> DeleteKeys([FromRoute] string category,
                                                     [FromRoute] string name,
                                                     [FromBody] string[] keys)
@@ -132,28 +131,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     delete keys from the environment, paths are implied from the given JSON
-        /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        [HttpDelete("{category}/{name}/json", Name = "DeleteFromEnvironmentWithJson")]
-        public async Task<IActionResult> DeleteKeysFromJson([FromRoute] string category,
-                                                            [FromRoute] string name,
-                                                            [FromBody] JToken json)
-        {
-            if (json is null)
-                return BadRequest("no json received");
-
-            var keys = _translator.ToDictionary(json)
-                                  .Select(kvp => kvp.Key)
-                                  .ToArray();
-
-            return await DeleteKeys(category, name, keys);
-        }
-
-        /// <summary>
         ///     get a list of available environments
         /// </summary>
         /// <returns></returns>
@@ -179,6 +156,33 @@ namespace Bechtle.A365.ConfigService.Controllers
             var result = await _store.Environments.GetKeys(identifier);
 
             return Result(result);
+        }
+
+        /// <summary>
+        ///     get the keys contained in an environment including all their metadata
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
+        public async Task<IActionResult> GetKeysWithMetadata(string category, string name)
+        {
+            var identifier = new EnvironmentIdentifier(category, name);
+
+            var result = await _store.Environments.GetKeyObjects(identifier);
+
+            if (result.IsError)
+                return ProviderError(result);
+
+            foreach (var item in result.Data)
+            {
+                if (item.Description is null)
+                    item.Description = string.Empty;
+                if (item.Type is null)
+                    item.Type = string.Empty;
+            }
+
+            return Ok(result.Data);
         }
 
         /// <summary>
@@ -209,10 +213,10 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [HttpPut("{category}/{name}/keys", Name = "UpdateEnvironmentWithKeys")]
+        [HttpPut("{category}/{name}/keys", Name = "UpdateEnvironment")]
         public async Task<IActionResult> UpdateKeys([FromRoute] string category,
                                                     [FromRoute] string name,
-                                                    [FromBody] Dictionary<string, string> keys)
+                                                    [FromBody] DtoConfigKey[] keys)
         {
             if (string.IsNullOrWhiteSpace(category))
                 return BadRequest($"{nameof(category)} is empty");
@@ -223,9 +227,21 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (keys == null || !keys.Any())
                 return BadRequest("no keys received");
 
+            var groups = keys.GroupBy(k => k.Key)
+                             .ToArray();
+
+            if (groups.Any(g => g.Count() > 1))
+                return BadRequest("duplicate keys received: " +
+                                  string.Join(';',
+                                              groups.Where(g => g.Count() > 1)
+                                                    .Select(g => $"'{g.Key}'")));
+
             try
             {
-                var actions = keys.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
+                var actions = keys.Select(key => ConfigKeyAction.Set(key.Key,
+                                                                     key.Value,
+                                                                     key.Description,
+                                                                     key.Type))
                                   .ToArray();
 
                 await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
@@ -239,28 +255,6 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Logger.LogError($"failed to update keys of Environment ({nameof(category)}: {category}; {nameof(name)}: {name}): {e}");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
             }
-        }
-
-        /// <summary>
-        ///     add or update keys in the environment, paths are implied from the given json
-        /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        [HttpPut("{category}/{name}/json", Name = "UpdateEnvironmentWithJson")]
-        public async Task<IActionResult> UpdateKeysFromJson([FromRoute] string category,
-                                                            [FromRoute] string name,
-                                                            [FromBody] JToken json)
-        {
-            if (json == null)
-                return BadRequest("no keys received");
-
-            // convert given IDictionary to a Dictionary without casting
-            var keys = _translator.ToDictionary(json)
-                                  .ToDictionary(k => k.Key, k => k.Value);
-
-            return await UpdateKeys(category, name, keys);
         }
     }
 }

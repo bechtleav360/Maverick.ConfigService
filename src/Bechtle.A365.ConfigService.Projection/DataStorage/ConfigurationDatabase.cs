@@ -67,10 +67,16 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                     Id = Guid.NewGuid(),
                                     ConfigEnvironmentId = environment.Id,
                                     Key = action.Key,
-                                    Value = action.Value
+                                    Value = action.Value,
+                                    Description = action.Description,
+                                    Type = action.ValueType
                                 });
                             else
+                            {
                                 existingKey.Value = action.Value;
+                                existingKey.Description = action.Description;
+                                existingKey.Type = action.ValueType;
+                            }
 
                             break;
                         }
