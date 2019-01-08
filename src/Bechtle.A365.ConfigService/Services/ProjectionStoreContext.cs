@@ -38,5 +38,13 @@ namespace Bechtle.A365.ConfigService.Services
             modelBuilder.Entity<ProjectedConfiguration>();
             modelBuilder.Entity<ProjectedConfigurationKey>();
         }
+
+        /// <inheritdoc />
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+
+            optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        }
     }
 }
