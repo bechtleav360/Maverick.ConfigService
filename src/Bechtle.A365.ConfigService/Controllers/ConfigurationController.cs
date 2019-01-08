@@ -48,11 +48,21 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
         {
             var availableStructures = await _store.Structures.GetAvailable();
-
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
 
-            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var availableEnvironments = await _store.Environments.GetAvailable();
+            if (availableEnvironments.IsError)
+                return ProviderError(availableEnvironments);
+
+            var environment = availableEnvironments.Data
+                                                   .FirstOrDefault(e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase) &&
+                                                                        e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
+
+            if (environment is null)
+                return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
+
+            var envId = new EnvironmentIdentifier(environment.Category, environment.Name);
 
             foreach (var structure in availableStructures.Data)
                 await new ConfigSnapshot().IdentifiedBy(structure, envId)
@@ -78,14 +88,33 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                             [FromRoute] string structureName,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
         {
-            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var availableStructures = await _store.Structures.GetAvailableVersions(structureName);
-
+            var availableStructures = await _store.Structures.GetAvailable();
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
 
-            foreach (var structureId in availableStructures.Data
-                                                           .Select(v => new StructureIdentifier(structureName, v)))
+            var availableEnvironments = await _store.Environments.GetAvailable();
+            if (availableEnvironments.IsError)
+                return ProviderError(availableEnvironments);
+
+            var environment = availableEnvironments.Data
+                                                   .FirstOrDefault(e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase) &&
+                                                                        e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
+
+            if (environment is null)
+                return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
+
+            var envId = new EnvironmentIdentifier(environment.Category, environment.Name);
+
+            var structures = availableStructures.Data
+                                                .Where(s => s.Name.Equals(structureName))
+                                                .OrderBy(s => s.Version)
+                                                .Select(s => new StructureIdentifier(s.Name, s.Version))
+                                                .ToArray();
+
+            if (!structures.Any())
+                return NotFound($"no versions of structure '{structureName}' found");
+
+            foreach (var structureId in structures)
                 await new ConfigSnapshot().IdentifiedBy(structureId, envId)
                                           .ValidFrom(buildOptions?.ValidFrom)
                                           .ValidTo(buildOptions?.ValidTo)
@@ -111,8 +140,31 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                             [FromRoute] int structureVersion,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
         {
-            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureId = new StructureIdentifier(structureName, structureVersion);
+            var availableStructures = await _store.Structures.GetAvailable();
+            if (availableStructures.IsError)
+                return ProviderError(availableStructures);
+
+            var availableEnvironments = await _store.Environments.GetAvailable();
+            if (availableEnvironments.IsError)
+                return ProviderError(availableEnvironments);
+
+            var environment = availableEnvironments.Data
+                                                   .FirstOrDefault(e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase) &&
+                                                                        e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
+
+            if (environment is null)
+                return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
+
+            var envId = new EnvironmentIdentifier(environment.Category, environment.Name);
+
+            var structure = availableStructures.Data
+                                               .FirstOrDefault(s => s.Name.Equals(structureName) &&
+                                                                    s.Version == structureVersion);
+
+            if (structure is null)
+                return NotFound($"no versions of structure '{structureName}' found");
+
+            var structureId = new StructureIdentifier(structure.Name, structure.Version);
 
             await new ConfigSnapshot().IdentifiedBy(structureId, envId)
                                       .ValidFrom(buildOptions?.ValidFrom)
@@ -120,7 +172,13 @@ namespace Bechtle.A365.ConfigService.Controllers
                                       .Create()
                                       .Save(_eventStore);
 
-            return AcceptedAtAction(nameof(GetConfiguration), new {environmentCategory, environmentName, structureName, structureVersion});
+            return AcceptedAtAction(nameof(GetConfiguration), new
+            {
+                EnvironmentName = environment.Category,
+                EnvironmentCategory = environment.Name,
+                StructureName = structure.Name,
+                StructureVersion = structure.Version
+            });
         }
 
         /// <summary>
