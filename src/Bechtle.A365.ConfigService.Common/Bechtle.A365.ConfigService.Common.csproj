@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.1" />
+    <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.1.1-rc" />
   </ItemGroup>
 
   <ItemGroup>

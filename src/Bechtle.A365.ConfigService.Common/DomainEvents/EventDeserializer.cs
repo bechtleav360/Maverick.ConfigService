@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.EventFactories;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace Bechtle.A365.ConfigService.Projection
+namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     public class EventDeserializer : IEventDeserializer
     {

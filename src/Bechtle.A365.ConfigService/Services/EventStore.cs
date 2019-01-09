@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.EventFactories;
@@ -13,28 +15,31 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
 {
-    /// <summary>
-    /// </summary>
+    /// <inheritdoc />
     public class EventStore : IEventStore
     {
         private readonly ConfigServiceConfiguration _configuration;
         private readonly IEventStoreConnection _eventStore;
         private readonly ILogger _logger;
         private readonly IServiceProvider _provider;
+        private readonly IEventDeserializer _eventDeserializer;
 
         /// <summary>
         /// </summary>
         /// <param name="logger"></param>
         /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>
+        /// <param name="eventDeserializer"></param>
         /// <param name="configuration"></param>
         public EventStore(ILogger<EventStore> logger,
                           ESLogger eventStoreLogger,
                           IServiceProvider provider,
+                          IEventDeserializer eventDeserializer,
                           ConfigServiceConfiguration configuration)
         {
             _logger = logger;
             _provider = provider;
+            _eventDeserializer = eventDeserializer;
             _configuration = configuration;
 
             _logger.LogInformation($"connecting to '{configuration.EventStoreConnection.Uri}' " +
@@ -50,10 +55,7 @@ namespace Bechtle.A365.ConfigService.Services
             _eventStore.ConnectAsync().RunSync();
         }
 
-        /// <summary>
-        /// </summary>
-        /// <param name="domainEvent"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public async Task WriteEvent<T>(T domainEvent) where T : DomainEvent
         {
             _logger.LogDebug($"{nameof(WriteEvent)}('{domainEvent.GetType().Name}')");
@@ -81,6 +83,32 @@ namespace Bechtle.A365.ConfigService.Services
                              $"NextExpectedVersion: {result.NextExpectedVersion}; " +
                              $"CommitPosition: {result.LogPosition.CommitPosition}; " +
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents()
+        {
+            // readSize must be below 4096
+            var readSize = 512;
+            long currentPosition = 0;
+
+            var allEvents = new List<(RecordedEvent, DomainEvent)>();
+            var continueReading = true;
+
+            do
+            {
+                var slice = await _eventStore.ReadStreamEventsForwardAsync(_configuration.EventStoreConnection.Stream,
+                                                                           currentPosition,
+                                                                           readSize,
+                                                                           true);
+
+                allEvents.AddRange(slice.Events.Select(e => (e.Event, _eventDeserializer.ToDomainEvent(e))));
+
+                currentPosition = slice.NextEventNumber;
+                continueReading = !slice.IsEndOfStream;
+            } while (continueReading);
+
+            return allEvents;
         }
 
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent

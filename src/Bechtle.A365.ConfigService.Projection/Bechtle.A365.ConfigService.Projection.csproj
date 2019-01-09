@@ -33,7 +33,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
-    <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.1.1-rc" />
   </ItemGroup>
 
   <ItemGroup>
