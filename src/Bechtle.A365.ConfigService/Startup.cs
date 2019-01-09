@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using ESLogger = EventStore.ClientAPI.ILogger;
@@ -93,6 +94,7 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
                     .AddDbContext<ProjectionStoreContext>(
                         (provider, builder) => builder.UseLazyLoadingProxies()
+                                                      .UseLoggerFactory(new NullLoggerFactory())
                                                       .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
                                                                             .ConnectionString))
                     .AddScoped<IProjectionStore, ProjectionStore>()
