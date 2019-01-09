@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when)
+        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range)
         {
             try
             {
@@ -38,6 +38,8 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenBy(s => s.ConfigEnvironment.Name)
                                              .ThenBy(s => s.Structure.Name)
                                              .ThenByDescending(s => s.Structure.Version)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .Select(s => new ConfigurationIdentifier(
                                                          new EnvironmentIdentifier(s.ConfigEnvironment.Category,
                                                                                    s.ConfigEnvironment.Name),
@@ -58,7 +60,9 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when)
+        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment,
+                                                                                              DateTime when,
+                                                                                              QueryRange range)
         {
             try
             {
@@ -68,6 +72,8 @@ namespace Bechtle.A365.ConfigService.Services
                                                          c.ConfigEnvironment.Name == environment.Name)
                                              .OrderBy(s => s.Structure.Name)
                                              .ThenByDescending(s => s.Structure.Version)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .ToListAsync();
 
                 var result = dbResult?.Select(s => new ConfigurationIdentifier(s))
@@ -84,7 +90,9 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when)
+        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure,
+                                                                                            DateTime when,
+                                                                                            QueryRange range)
         {
             try
             {
@@ -94,6 +102,8 @@ namespace Bechtle.A365.ConfigService.Services
                                                          c.Structure.Version == structure.Version)
                                              .OrderBy(s => s.ConfigEnvironment.Category)
                                              .ThenBy(s => s.ConfigEnvironment.Name)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .ToListAsync();
 
                 var result = dbResult?.Select(s => new ConfigurationIdentifier(s))
@@ -110,7 +120,9 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when)
+        public async Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier,
+                                                                       DateTime when,
+                                                                       QueryRange range)
         {
             var formattedParams = "(" +
                                   $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
@@ -132,6 +144,9 @@ namespace Bechtle.A365.ConfigService.Services
                     return Result<IDictionary<string, string>>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 var result = dbResult.Keys
+                                     .OrderBy(k => k.Key)
+                                     .Skip(range.Offset)
+                                     .Take(range.Length)
                                      .ToImmutableSortedDictionary(k => k.Key,
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
@@ -147,7 +162,9 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when)
+        public async Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier,
+                                                                                DateTime when,
+                                                                                QueryRange range)
         {
             var formattedParams = "(" +
                                   $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
@@ -169,8 +186,10 @@ namespace Bechtle.A365.ConfigService.Services
                     return Result<IEnumerable<string>>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 var result = dbResult.UsedConfigurationKeys
+                                     .OrderBy(k => k.Key)
+                                     .Skip(range.Offset)
+                                     .Take(range.Length)
                                      .Select(usedKey => usedKey.Key)
-                                     .OrderBy(_ => _)
                                      .ToArray();
 
                 return Result<IEnumerable<string>>.Success(result);

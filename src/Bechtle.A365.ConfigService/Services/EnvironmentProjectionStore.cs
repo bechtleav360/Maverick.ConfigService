@@ -26,13 +26,15 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<EnvironmentIdentifier>>> GetAvailable()
+        public async Task<Result<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range)
         {
             try
             {
                 var dbResult = await _context.ConfigEnvironments
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
                                              .ToListAsync();
 
@@ -49,7 +51,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category)
+        public async Task<Result<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range)
         {
             try
             {
@@ -57,6 +59,8 @@ namespace Bechtle.A365.ConfigService.Services
                                              .Where(s => s.Category == category)
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
                                              .ToListAsync();
 
@@ -73,7 +77,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier)
+        public async Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -88,6 +92,9 @@ namespace Bechtle.A365.ConfigService.Services
                                                                      ErrorCode.NotFound);
 
                 var result = dbResult.Keys
+                                     .OrderBy(k => k.Key)
+                                     .Skip(range.Offset)
+                                     .Take(range.Length)
                                      .ToImmutableSortedDictionary(k => k.Key,
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
@@ -107,7 +114,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier)
+        public async Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -125,8 +132,19 @@ namespace Bechtle.A365.ConfigService.Services
                                                        .FirstOrDefaultAsync(s => s.Category == identifier.Category &&
                                                                                  s.Name == "Default");
 
-                var defaultEnvironmentKeys = defaultEnvironment?.Keys ?? new List<ConfigEnvironmentKey>();
-                var environmentKeys = environment.Keys ?? new List<ConfigEnvironmentKey>();
+                var defaultEnvironmentKeys = defaultEnvironment?.Keys
+                                                               ?.OrderBy(k => k.Key)
+                                                               .Skip(range.Offset)
+                                                               .Take(range.Length)
+                                                               .ToList()
+                                             ?? new List<ConfigEnvironmentKey>();
+
+                var environmentKeys = environment.Keys
+                                                 ?.OrderBy(k => k.Key)
+                                                 .Skip(range.Offset)
+                                                 .Take(range.Length)
+                                                 .ToList()
+                                      ?? new List<ConfigEnvironmentKey>();
 
                 IDictionary<string, string> result = new Dictionary<string, string>(Math.Max(environmentKeys.Count, defaultEnvironmentKeys.Count));
 
@@ -155,7 +173,8 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier)
+        public async Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range)
+
         {
             try
             {
@@ -171,6 +190,8 @@ namespace Bechtle.A365.ConfigService.Services
 
                 var result = environment.Keys
                                         .OrderBy(k => k.Key)
+                                        .Skip(range.Offset)
+                                        .Take(range.Length)
                                         .Select(k => new DtoConfigKey
                                         {
                                             Key = k.Key,
@@ -195,7 +216,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjectsWithInheritance(EnvironmentIdentifier identifier)
+        public async Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjectsWithInheritance(EnvironmentIdentifier identifier, QueryRange range)
         {
             try
             {

@@ -40,13 +40,18 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <summary>
         ///     get available structures
         /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("available", Name = "GetAvailableStructures")]
-        public async Task<IActionResult> GetAvailableStructures()
+        public async Task<IActionResult> GetAvailableStructures([FromQuery] int offset = -1,
+                                                                [FromQuery] int length = -1)
         {
             try
             {
-                var result = await _store.Structures.GetAvailable();
+                var range = QueryRange.Make(offset, length);
+
+                var result = await _store.Structures.GetAvailable(range);
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -70,15 +75,21 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="name"></param>
         /// <param name="version"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{name}/{version}/keys", Name = "GetStructureAsKeys")]
-        public async Task<IActionResult> GetStructureKeys(string name, int version)
+        public async Task<IActionResult> GetStructureKeys([FromRoute] string name,
+                                                          [FromRoute] int version,
+                                                          [FromQuery] int offset = -1,
+                                                          [FromQuery] int length = -1)
         {
+            var range = QueryRange.Make(offset, length);
             var identifier = new StructureIdentifier(name, version);
 
             try
             {
-                var result = await _store.Structures.GetKeys(identifier);
+                var result = await _store.Structures.GetKeys(identifier, range);
 
                 return Result(result);
             }
@@ -96,7 +107,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="version"></param>
         /// <returns></returns>
         [HttpGet("{name}/{version}/json", Name = "GetStructureAsJson")]
-        public async Task<IActionResult> GetStructureJson(string name, int version)
+        public async Task<IActionResult> GetStructureJson([FromRoute] string name,
+                                                          [FromRoute] int version)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest("no name provided");
@@ -108,7 +120,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var result = await _store.Structures.GetKeys(identifier);
+                var result = await _store.Structures.GetKeys(identifier, QueryRange.All);
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -132,10 +144,15 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="name"></param>
         /// <param name="version"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [Obsolete]
         [HttpGet("{name}/{version}", Name = "GetStructureObsolete")]
-        public async Task<IActionResult> GetStructure(string name, int version)
+        public async Task<IActionResult> GetStructure([FromRoute] string name,
+                                                      [FromRoute] int version,
+                                                      [FromQuery] int offset = -1,
+                                                      [FromQuery] int length = -1)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest();
@@ -143,11 +160,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (version <= 0)
                 return BadRequest($"invalid version provided '{version}'");
 
+            var range = QueryRange.Make(offset, length);
             var identifier = new StructureIdentifier(name, version);
 
             try
             {
-                var result = await _store.Structures.GetKeys(identifier);
+                var result = await _store.Structures.GetKeys(identifier, range);
 
                 if (result.Data?.Any() != true)
                     return Ok(new JObject());
@@ -168,9 +186,14 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="name"></param>
         /// <param name="version"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{name}/{version}/variables/keys", Name = "GetVariablesAsKeys")]
-        public async Task<IActionResult> GetVariables(string name, int version)
+        public async Task<IActionResult> GetVariables([FromRoute] string name,
+                                                      [FromRoute] int version,
+                                                      [FromQuery] int offset = -1,
+                                                      [FromQuery] int length = -1)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest("no name provided");
@@ -178,11 +201,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (version <= 0)
                 return BadRequest($"invalid version provided '{version}'");
 
+            var range = QueryRange.Make(offset, length);
             var identifier = new StructureIdentifier(name, version);
 
             try
             {
-                var result = await _store.Structures.GetVariables(identifier);
+                var result = await _store.Structures.GetVariables(identifier, range);
 
                 return Result(result);
             }
@@ -200,7 +224,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="version"></param>
         /// <returns></returns>
         [HttpGet("{name}/{version}/variables/json", Name = "GetVariablesAsJson")]
-        public async Task<IActionResult> GetVariablesJson(string name, int version)
+        public async Task<IActionResult> GetVariablesJson([FromRoute] string name,
+                                                          [FromRoute] int version)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest("no name provided");
@@ -212,7 +237,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var result = await _store.Structures.GetVariables(identifier);
+                var result = await _store.Structures.GetVariables(identifier, QueryRange.All);
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -256,7 +281,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var existingStructures = await _store.Structures.GetAvailableVersions(structure.Name);
+                var existingStructures = await _store.Structures.GetAvailableVersions(structure.Name, QueryRange.All);
 
                 if (existingStructures.IsError)
                     return ProviderError(existingStructures);

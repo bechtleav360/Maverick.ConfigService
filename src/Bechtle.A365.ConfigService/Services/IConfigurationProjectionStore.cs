@@ -16,40 +16,45 @@ namespace Bechtle.A365.ConfigService.Services
         ///     get a list of available projected Configurations
         /// </summary>
         /// <param name="when"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when);
+        Task<Result<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range);
 
         /// <summary>
         ///     get a list of available projected Configurations constrained to the specified Environment
         /// </summary>
         /// <param name="environment"></param>
         /// <param name="when"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when);
+        Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get a list of available projected Configurations constrained to the specified Structure
         /// </summary>
         /// <param name="structure"></param>
         /// <param name="when"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when);
+        Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get the keys of a Configuration
         /// </summary>
         /// <param name="identifier"></param>
         /// <param name="when"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when);
+        Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get the used environment-keys for a configuration
         /// </summary>
         /// <param name="identifier"></param>
         /// <param name="when"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when);
+        Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get the json of a Configuration

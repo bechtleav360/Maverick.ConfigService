@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -57,15 +58,15 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structId = new StructureIdentifier(structureName, structureVersion);
 
-            var structureKeyResult = await _store.Structures.GetKeys(structId);
+            var structureKeyResult = await _store.Structures.GetKeys(structId, QueryRange.All);
             if (structureKeyResult.IsError)
                 throw new Exception(structureKeyResult.Message);
 
-            var structureVariableResult = await _store.Structures.GetVariables(structId);
+            var structureVariableResult = await _store.Structures.GetVariables(structId, QueryRange.All);
             if (structureVariableResult.IsError)
                 throw new Exception(structureVariableResult.Message);
 
-            var environmentResult = await _store.Environments.GetKeys(envId);
+            var environmentResult = await _store.Environments.GetKeys(envId, QueryRange.All);
             if (environmentResult.IsError)
                 throw new Exception(environmentResult.Message);
 

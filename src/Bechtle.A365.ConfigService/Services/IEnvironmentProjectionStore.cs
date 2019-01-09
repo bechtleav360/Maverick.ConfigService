@@ -14,42 +14,48 @@ namespace Bechtle.A365.ConfigService.Services
         /// <summary>
         ///     get a list of projected Environments
         /// </summary>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<EnvironmentIdentifier>>> GetAvailable();
+        Task<Result<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range);
 
         /// <summary>
         ///     get a list of projected Environments within a category
         /// </summary>
         /// <param name="category"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category);
+        Task<Result<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment
         /// </summary>
         /// <param name="identifier"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier);
+        Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment, and inheriting keys from Default Environment
         /// </summary>
         /// <param name="identifier"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier);
+        Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment as Objects
         /// </summary>
         /// <param name="identifier"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier);
+        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment as Objects, and inheriting keys from Default Environment
         /// </summary>
         /// <param name="identifier"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjectsWithInheritance(EnvironmentIdentifier identifier);
+        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjectsWithInheritance(EnvironmentIdentifier identifier, QueryRange range);
     }
 }

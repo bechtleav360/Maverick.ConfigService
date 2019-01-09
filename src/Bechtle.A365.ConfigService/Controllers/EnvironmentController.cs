@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var existingEnvs = await _store.Environments.GetAvailableInCategory(category);
+                var existingEnvs = await _store.Environments.GetAvailableInCategory(category, QueryRange.All);
 
                 if (existingEnvs.IsError)
                     return ProviderError(existingEnvs);
@@ -133,11 +133,16 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <summary>
         ///     get a list of available environments
         /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("available", Name = "GetAvailableEnvironments")]
-        public async Task<IActionResult> GetAvailableEnvironments()
+        public async Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
+                                                                  [FromQuery] int length = -1)
         {
-            var result = await _store.Environments.GetAvailable();
+            var range = QueryRange.Make(offset, length);
+
+            var result = await _store.Environments.GetAvailable(range);
 
             return Result(result);
         }
@@ -147,13 +152,20 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="category"></param>
         /// <param name="name"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeys")]
-        public async Task<IActionResult> GetKeys(string category, string name)
+        public async Task<IActionResult> GetKeys([FromRoute] string category,
+                                                 [FromRoute] string name,
+                                                 [FromQuery] int offset = -1,
+                                                 [FromQuery] int length = -1)
         {
+            var range = QueryRange.Make(offset, length);
+
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeys(identifier);
+            var result = await _store.Environments.GetKeys(identifier, range);
 
             return Result(result);
         }
@@ -163,13 +175,20 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="category"></param>
         /// <param name="name"></param>
+        /// <param name="offset"/>
+        /// <param name="length"/>
         /// <returns></returns>
         [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
-        public async Task<IActionResult> GetKeysWithMetadata(string category, string name)
+        public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
+                                                             [FromRoute] string name,
+                                                             [FromQuery] int offset = -1,
+                                                             [FromQuery] int length = -1)
         {
+            var range = QueryRange.Make(offset, length);
+
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeyObjects(identifier);
+            var result = await _store.Environments.GetKeyObjects(identifier, range);
 
             if (result.IsError)
                 return ProviderError(result);
@@ -192,11 +211,12 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
-        public async Task<IActionResult> GetKeysAsJson(string category, string name)
+        public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
+                                                       [FromRoute] string name)
         {
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeys(identifier);
+            var result = await _store.Environments.GetKeys(identifier, QueryRange.All);
 
             if (result.IsError)
                 return ProviderError(result);

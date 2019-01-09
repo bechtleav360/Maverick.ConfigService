@@ -24,13 +24,15 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<StructureIdentifier>>> GetAvailable()
+        public async Task<Result<IList<StructureIdentifier>>> GetAvailable(QueryRange range)
         {
             try
             {
                 var dbResult = await _context.Structures
                                              .OrderBy(s => s.Name)
                                              .ThenByDescending(s => s.Version)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .Select(s => new StructureIdentifier(s.Name, s.Version))
                                              .ToListAsync();
 
@@ -47,7 +49,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<int>>> GetAvailableVersions(string name)
+        public async Task<Result<IList<int>>> GetAvailableVersions(string name, QueryRange range)
         {
             try
             {
@@ -55,6 +57,8 @@ namespace Bechtle.A365.ConfigService.Services
                                              .Where(s => s.Name == name)
                                              .OrderBy(s => s.Name)
                                              .ThenByDescending(s => s.Version)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .ToListAsync();
 
                 var result = dbResult?.Select(s => s.Version)
@@ -71,7 +75,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetKeys(StructureIdentifier identifier)
+        public async Task<Result<IDictionary<string, string>>> GetKeys(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -87,6 +91,9 @@ namespace Bechtle.A365.ConfigService.Services
                                                                      ErrorCode.NotFound);
 
                 var result = dbResult.Keys
+                                     .OrderBy(k => k.Key)
+                                     .Skip(range.Offset)
+                                     .Take(range.Length)
                                      .ToImmutableSortedDictionary(k => k.Key,
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
@@ -106,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier)
+        public async Task<Result<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -122,6 +129,9 @@ namespace Bechtle.A365.ConfigService.Services
                                                                      ErrorCode.NotFound);
 
                 var result = dbResult.Variables
+                                     .OrderBy(v => v.Key)
+                                     .Skip(range.Offset)
+                                     .Take(range.Length)
                                      .ToImmutableSortedDictionary(k => k.Key,
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);

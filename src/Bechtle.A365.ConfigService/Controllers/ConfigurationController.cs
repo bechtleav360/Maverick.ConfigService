@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
@@ -77,11 +78,11 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (!(buildError is null))
                 return buildError;
 
-            var availableStructures = await _store.Structures.GetAvailable();
+            var availableStructures = await _store.Structures.GetAvailable(QueryRange.All);
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
 
-            var availableEnvironments = await _store.Environments.GetAvailable();
+            var availableEnvironments = await _store.Environments.GetAvailable(QueryRange.All);
             if (availableEnvironments.IsError)
                 return ProviderError(availableEnvironments);
 
@@ -122,11 +123,11 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (!(buildError is null))
                 return buildError;
 
-            var availableStructures = await _store.Structures.GetAvailable();
+            var availableStructures = await _store.Structures.GetAvailable(QueryRange.All);
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
 
-            var availableEnvironments = await _store.Environments.GetAvailable();
+            var availableEnvironments = await _store.Environments.GetAvailable(QueryRange.All);
             if (availableEnvironments.IsError)
                 return ProviderError(availableEnvironments);
 
@@ -178,11 +179,11 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (!(buildError is null))
                 return buildError;
 
-            var availableStructures = await _store.Structures.GetAvailable();
+            var availableStructures = await _store.Structures.GetAvailable(QueryRange.All);
             if (availableStructures.IsError)
                 return ProviderError(availableStructures);
 
-            var availableEnvironments = await _store.Environments.GetAvailable();
+            var availableEnvironments = await _store.Environments.GetAvailable(QueryRange.All);
             if (availableEnvironments.IsError)
                 return ProviderError(availableEnvironments);
 
@@ -222,13 +223,19 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <summary>
         ///     get all available configurations
         /// </summary>
+        /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("available", Name = "GetAvailableConfigurations")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetAvailableConfigurations([FromQuery] DateTime when)
+        public async Task<IActionResult> GetAvailableConfigurations([FromQuery] DateTime when,
+                                                                    [FromQuery] int offset = -1,
+                                                                    [FromQuery] int length = -1)
         {
-            var result = await _store.Configurations.GetAvailable(when);
+            var range = QueryRange.Make(offset, length);
+            var result = await _store.Configurations.GetAvailable(when, range);
 
             return Result(result);
         }
@@ -241,6 +248,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "GetUsedEnvironmentKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
@@ -249,12 +258,15 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                      [FromRoute] string environmentName,
                                                      [FromRoute] string structureName,
                                                      [FromRoute] int structureVersion,
-                                                     [FromQuery] DateTime when)
+                                                     [FromQuery] DateTime when,
+                                                     [FromQuery] int offset = -1,
+                                                     [FromQuery] int length = -1)
         {
+            var range = QueryRange.Make(offset, length);
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var result = await _store.Configurations.GetUsedConfigurationKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when);
+            var result = await _store.Configurations.GetUsedConfigurationKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, range);
 
             return Result(result);
         }
@@ -267,6 +279,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = "GetConfigurationKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
@@ -275,12 +289,15 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                           [FromRoute] string environmentName,
                                                           [FromRoute] string structureName,
                                                           [FromRoute] int structureVersion,
-                                                          [FromQuery] DateTime when)
+                                                          [FromQuery] DateTime when,
+                                                          [FromQuery] int offset = -1,
+                                                          [FromQuery] int length = -1)
         {
+            var range = QueryRange.Make(offset, length);
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when);
+            var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, range);
 
             return Result(result);
         }
@@ -308,7 +325,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
                 var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-                var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when);
+                var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, QueryRange.All);
 
                 if (result.IsError)
                     return ProviderError(result);
