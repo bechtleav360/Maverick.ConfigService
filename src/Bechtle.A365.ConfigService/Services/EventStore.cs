@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Utilities;
 using EventStore.ClientAPI;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 // god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is essentially a core component of the eco-system
@@ -18,11 +19,13 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc />
     public class EventStore : IEventStore
     {
+        private const string CacheKeyReplayedEvents = nameof(CacheKeyReplayedEvents);
+        private readonly IMemoryCache _cache;
         private readonly ConfigServiceConfiguration _configuration;
+        private readonly IEventDeserializer _eventDeserializer;
         private readonly IEventStoreConnection _eventStore;
         private readonly ILogger _logger;
         private readonly IServiceProvider _provider;
-        private readonly IEventDeserializer _eventDeserializer;
 
         /// <summary>
         /// </summary>
@@ -30,16 +33,19 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>
         /// <param name="eventDeserializer"></param>
+        /// <param name="cache"></param>
         /// <param name="configuration"></param>
         public EventStore(ILogger<EventStore> logger,
                           ESLogger eventStoreLogger,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer,
+                          IMemoryCache cache,
                           ConfigServiceConfiguration configuration)
         {
             _logger = logger;
             _provider = provider;
             _eventDeserializer = eventDeserializer;
+            _cache = cache;
             _configuration = configuration;
 
             _logger.LogInformation($"connecting to '{configuration.EventStoreConnection.Uri}' " +
@@ -53,6 +59,56 @@ namespace Bechtle.A365.ConfigService.Services
                                                       configuration.EventStoreConnection.ConnectionName);
 
             _eventStore.ConnectAsync().RunSync();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents()
+        {
+            try
+            {
+                if (_cache.TryGetValue(CacheKeyReplayedEvents, out var cachedEvents))
+                {
+                    _logger.LogDebug("grabbing replayed events from cache");
+                    return (IEnumerable<(RecordedEvent, DomainEvent)>) cachedEvents;
+                }
+            }
+            catch (InvalidCastException)
+            {
+                // if the cached item is somehow not what we expect,
+                // continue as usual and overwrite the cached item
+            }
+
+            // readSize must be below 4096
+            var readSize = 512;
+            long currentPosition = 0;
+            var stream = _configuration.EventStoreConnection.Stream;
+            var allEvents = new List<(RecordedEvent, DomainEvent)>();
+            bool continueReading;
+
+            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
+
+            do
+            {
+                var slice = await _eventStore.ReadStreamEventsForwardAsync(stream,
+                                                                           currentPosition,
+                                                                           readSize,
+                                                                           true);
+
+                _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
+
+                allEvents.AddRange(slice.Events.Select(e => (e.Event, _eventDeserializer.ToDomainEvent(e))));
+
+                currentPosition = slice.NextEventNumber;
+                continueReading = !slice.IsEndOfStream;
+            } while (continueReading);
+
+            _cache.Set(CacheKeyReplayedEvents, allEvents, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10.0d),
+                SlidingExpiration = TimeSpan.FromMinutes(1)
+            });
+
+            return allEvents;
         }
 
         /// <inheritdoc />
@@ -83,36 +139,6 @@ namespace Bechtle.A365.ConfigService.Services
                              $"NextExpectedVersion: {result.NextExpectedVersion}; " +
                              $"CommitPosition: {result.LogPosition.CommitPosition}; " +
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
-        }
-
-        /// <inheritdoc />
-        public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents()
-        {
-            // readSize must be below 4096
-            var readSize = 512;
-            long currentPosition = 0;
-            var stream = _configuration.EventStoreConnection.Stream;
-            var allEvents = new List<(RecordedEvent, DomainEvent)>();
-            bool continueReading;
-
-            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
-
-            do
-            {
-                var slice = await _eventStore.ReadStreamEventsForwardAsync(stream,
-                                                                           currentPosition,
-                                                                           readSize,
-                                                                           true);
-
-                _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
-
-                allEvents.AddRange(slice.Events.Select(e => (e.Event, _eventDeserializer.ToDomainEvent(e))));
-
-                currentPosition = slice.NextEventNumber;
-                continueReading = !slice.IsEndOfStream;
-            } while (continueReading);
-
-            return allEvents;
         }
 
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
