@@ -91,16 +91,20 @@ namespace Bechtle.A365.ConfigService.Services
             // readSize must be below 4096
             var readSize = 512;
             long currentPosition = 0;
-
+            var stream = _configuration.EventStoreConnection.Stream;
             var allEvents = new List<(RecordedEvent, DomainEvent)>();
-            var continueReading = true;
+            bool continueReading;
+
+            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
 
             do
             {
-                var slice = await _eventStore.ReadStreamEventsForwardAsync(_configuration.EventStoreConnection.Stream,
+                var slice = await _eventStore.ReadStreamEventsForwardAsync(stream,
                                                                            currentPosition,
                                                                            readSize,
                                                                            true);
+
+                _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
 
                 allEvents.AddRange(slice.Events.Select(e => (e.Event, _eventDeserializer.ToDomainEvent(e))));
 
