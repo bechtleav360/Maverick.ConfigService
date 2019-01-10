@@ -14,32 +14,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private bool _isDefault;
 
         /// <summary>
-        ///     set the identifier of this <see cref="Common.DbObjects.ConfigEnvironment"/> to the given value
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="isDefault"></param>
-        /// <returns></returns>
-        public ConfigEnvironment IdentifiedBy(EnvironmentIdentifier identifier, bool isDefault = false)
-        {
-            _identifier = identifier;
-            if (isDefault)
-            {
-                _isDefault = true;
-                _identifier.Name = "Default";
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        ///     set the identifier of this <see cref="ConfigEnvironment"/> to
-        ///     the correct value for a Default-Environment in the given category
-        /// </summary>
-        /// <param name="category"></param>
-        /// <returns></returns>
-        public ConfigEnvironment DefaultIdentifiedBy(string category) => IdentifiedBy(new EnvironmentIdentifier(category, "Default"), true);
-
-        /// <summary>
         ///     create Events that Create this DomainObject when saved
         /// </summary>
         /// <returns></returns>
@@ -54,6 +28,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
+        ///     set the identifier of this <see cref="ConfigEnvironment" /> to
+        ///     the correct value for a Default-Environment in the given category
+        /// </summary>
+        /// <param name="category"></param>
+        /// <returns></returns>
+        public ConfigEnvironment DefaultIdentifiedBy(string category) => IdentifiedBy(new EnvironmentIdentifier(category, "Default"), true);
+
+        /// <summary>
         ///     create Events that Delete this DomainObject when saved
         /// </summary>
         /// <returns></returns>
@@ -61,6 +43,24 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             if (!_isDefault)
                 RecordedEvents.Add(new EnvironmentDeleted(_identifier));
+
+            return this;
+        }
+
+        /// <summary>
+        ///     set the identifier of this <see cref="Common.DbObjects.ConfigEnvironment" /> to the given value
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="isDefault"></param>
+        /// <returns></returns>
+        public ConfigEnvironment IdentifiedBy(EnvironmentIdentifier identifier, bool isDefault = false)
+        {
+            _identifier = identifier;
+            if (isDefault)
+            {
+                _isDefault = true;
+                _identifier.Name = "Default";
+            }
 
             return this;
         }

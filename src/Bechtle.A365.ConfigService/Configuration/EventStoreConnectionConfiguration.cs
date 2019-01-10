@@ -6,6 +6,11 @@
     public class EventStoreConnectionConfiguration
     {
         /// <summary>
+        ///     name of this connection
+        /// </summary>
+        public string ConnectionName { get; set; }
+
+        /// <summary>
         ///     stream to which events should be written
         /// </summary>
         public string Stream { get; set; }
@@ -14,10 +19,5 @@
         ///     Uri with connection-credentials
         /// </summary>
         public string Uri { get; set; }
-
-        /// <summary>
-        ///     name of this connection
-        /// </summary>
-        public string ConnectionName { get; set; }
     }
 }

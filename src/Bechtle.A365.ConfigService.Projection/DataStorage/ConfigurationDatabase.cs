@@ -62,6 +62,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                   : null;
 
                             if (existingKey is null)
+                            {
                                 addedKeys.Add(new ConfigEnvironmentKey
                                 {
                                     Id = Guid.NewGuid(),
@@ -71,6 +72,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                     Description = action.Description,
                                     Type = action.ValueType
                                 });
+                            }
                             else
                             {
                                 existingKey.Value = action.Value;
@@ -432,6 +434,36 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
+        public async Task<ConfigurationIdentifier> GetLatestActiveConfiguration()
+        {
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            {
+                var metadata = await context.Metadata.FirstOrDefaultAsync();
+
+                if (metadata is null)
+                {
+                    metadata = new ProjectionMetadata();
+                    await context.Metadata.AddAsync(metadata);
+                    await context.SaveChangesAsync();
+                }
+
+                var configId = metadata.LastActiveConfigurationId;
+                if (configId == Guid.Empty)
+                    return null;
+
+                var configuration = await context.ProjectedConfigurations
+                                                 .Where(c => c.Id == configId)
+                                                 .Select(c => new ConfigurationIdentifier(
+                                                             new EnvironmentIdentifier(c.ConfigEnvironment.Category, c.ConfigEnvironment.Name),
+                                                             new StructureIdentifier(c.Structure.Name, c.Structure.Version)))
+                                                 .FirstOrDefaultAsync();
+
+                return configuration;
+            }
+        }
+
+        /// <inheritdoc />
         public async Task<long?> GetLatestProjectedEventId()
         {
             using (var scope = _provider.CreateScope())
@@ -544,36 +576,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     _logger.LogError($"could not save compiled configuration: {e}");
                     return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
                 }
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<ConfigurationIdentifier> GetLatestActiveConfiguration()
-        {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
-            {
-                var metadata = await context.Metadata.FirstOrDefaultAsync();
-
-                if (metadata is null)
-                {
-                    metadata = new ProjectionMetadata();
-                    await context.Metadata.AddAsync(metadata);
-                    await context.SaveChangesAsync();
-                }
-
-                var configId = metadata.LastActiveConfigurationId;
-                if (configId == Guid.Empty)
-                    return null;
-
-                var configuration = await context.ProjectedConfigurations
-                                                 .Where(c => c.Id == configId)
-                                                 .Select(c => new ConfigurationIdentifier(
-                                                             new EnvironmentIdentifier(c.ConfigEnvironment.Category, c.ConfigEnvironment.Name),
-                                                             new StructureIdentifier(c.Structure.Name, c.Structure.Version)))
-                                                 .FirstOrDefaultAsync();
-
-                return configuration;
             }
         }
 

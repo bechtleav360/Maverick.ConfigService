@@ -2,8 +2,8 @@
 {
     public class ProjectionEventBusConfiguration
     {
-        public string Server { get; set; }
-
         public string Hub { get; set; }
+
+        public string Server { get; set; }
     }
 }

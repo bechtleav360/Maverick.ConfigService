@@ -6,8 +6,8 @@
 
         public ProjectionEventStoreConfiguration EventStore { get; set; }
 
-        public ProjectionStorageConfiguration Storage { get; set; }
-
         public string LoggingConfiguration { get; set; }
+
+        public ProjectionStorageConfiguration Storage { get; set; }
     }
 }

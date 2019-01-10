@@ -28,7 +28,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <param name="store"></param>
         public virtual async Task Save(IEventStore store)
         {
-            foreach (var @event in RecordedEvents) 
+            foreach (var @event in RecordedEvents)
                 await store.WriteEvent(@event);
         }
     }

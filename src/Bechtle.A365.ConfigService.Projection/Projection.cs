@@ -13,12 +13,12 @@ namespace Bechtle.A365.ConfigService.Projection
 {
     public class Projection : HostedService
     {
-        private readonly ILogger<Projection> _logger;
         private readonly ProjectionConfiguration _configuration;
-        private readonly IEventStoreConnection _store;
-        private readonly IServiceProvider _provider;
-        private readonly IEventDeserializer _eventDeserializer;
         private readonly IConfigurationDatabase _database;
+        private readonly IEventDeserializer _eventDeserializer;
+        private readonly ILogger<Projection> _logger;
+        private readonly IServiceProvider _provider;
+        private readonly IEventStoreConnection _store;
 
         // so many injected things, better not get addicted
         public Projection(ILogger<Projection> logger,
@@ -37,6 +37,38 @@ namespace Bechtle.A365.ConfigService.Projection
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _eventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
+        }
+
+        /// <inheritdoc />
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("running projection...");
+
+            await _database.Connect();
+
+            await _store.ConnectAsync();
+
+            var latestEvent = await _database.GetLatestProjectedEventId();
+
+            _store.SubscribeToStreamFrom(_configuration.EventStore.SubscriptionName,
+                                         latestEvent,
+                                         new CatchUpSubscriptionSettings(_configuration.EventStore.MaxLiveQueueSize,
+                                                                         _configuration.EventStore.ReadBatchSize,
+                                                                         false,
+                                                                         true,
+                                                                         _configuration.EventStore.SubscriptionName),
+                                         EventAppeared,
+                                         subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
+                                         (subscription, reason, exception) =>
+                                         {
+                                             _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
+                                                                 $"dropped for reason: {reason}; exception {exception}");
+                                         });
+
+            while (!cancellationToken.IsCancellationRequested)
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+
+            _logger.LogInformation("stopping projection...");
         }
 
         private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
@@ -112,38 +144,6 @@ namespace Bechtle.A365.ConfigService.Projection
                 default:
                     throw new ArgumentOutOfRangeException(nameof(domainEvent));
             }
-        }
-
-        /// <inheritdoc />
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("running projection...");
-
-            await _database.Connect();
-
-            await _store.ConnectAsync();
-
-            var latestEvent = await _database.GetLatestProjectedEventId();
-
-            _store.SubscribeToStreamFrom(_configuration.EventStore.SubscriptionName,
-                                         latestEvent,
-                                         new CatchUpSubscriptionSettings(_configuration.EventStore.MaxLiveQueueSize,
-                                                                         _configuration.EventStore.ReadBatchSize,
-                                                                         false,
-                                                                         true,
-                                                                         _configuration.EventStore.SubscriptionName),
-                                         EventAppeared,
-                                         subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
-                                         (subscription, reason, exception) =>
-                                         {
-                                             _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
-                                                                 $"dropped for reason: {reason}; exception {exception}");
-                                         });
-
-            while (!cancellationToken.IsCancellationRequested)
-                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
-
-            _logger.LogInformation("stopping projection...");
         }
     }
 }

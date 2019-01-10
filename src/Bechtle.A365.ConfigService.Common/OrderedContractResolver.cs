@@ -7,7 +7,7 @@ using Newtonsoft.Json.Serialization;
 namespace Bechtle.A365.ConfigService.Common
 {
     /// <summary>
-    ///     custom contract resolver based on other <see cref="IContractResolver"/>, but implementing additional rules
+    ///     custom contract resolver based on other <see cref="IContractResolver" />, but implementing additional rules
     /// </summary>
     public class OrderedContractResolver : CamelCasePropertyNamesContractResolver
     {
@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Common
             {typeof(byte), 6},
             {typeof(char), 7},
             {typeof(string), 8},
-            {typeof(void), 9},
+            {typeof(void), 9}
         };
 
         /// <inheritdoc />

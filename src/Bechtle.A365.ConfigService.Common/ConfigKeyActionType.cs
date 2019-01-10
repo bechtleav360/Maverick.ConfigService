@@ -6,7 +6,7 @@
     public enum ConfigKeyActionType
     {
         /// <summary>
-        ///     add / update the value of the key 
+        ///     add / update the value of the key
         /// </summary>
         Set,
 

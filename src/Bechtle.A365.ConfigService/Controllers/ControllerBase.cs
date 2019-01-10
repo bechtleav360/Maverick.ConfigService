@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     return either the result of <paramref name="successor"/> or <see cref="ProviderError"/>
+        ///     return either the result of <paramref name="successor" /> or <see cref="ProviderError" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="result"></param>
@@ -83,7 +83,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     return either <see cref="OkResult"/> or <see cref="ProviderError"/>
+        ///     return either <see cref="OkResult" /> or <see cref="ProviderError" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="result"></param>
@@ -91,7 +91,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         protected IActionResult Result<T>(Result<T> result) => Result(result, Ok);
 
         /// <summary>
-        ///     return either the result of <paramref name="successor"/> or <see cref="ProviderError"/>
+        ///     return either the result of <paramref name="successor" /> or <see cref="ProviderError" />
         /// </summary>
         /// <param name="result"></param>
         /// <param name="successor"></param>
@@ -105,7 +105,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     return either <see cref="OkResult"/> or <see cref="ProviderError"/>
+        ///     return either <see cref="OkResult" /> or <see cref="ProviderError" />
         /// </summary>
         /// <param name="result"></param>
         /// <returns></returns>

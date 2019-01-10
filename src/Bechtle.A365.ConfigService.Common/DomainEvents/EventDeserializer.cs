@@ -9,15 +9,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     public class EventDeserializer : IEventDeserializer
     {
-        private ILogger Logger { get; }
-        private IServiceProvider Provider { get; }
-
         /// <inheritdoc />
         public EventDeserializer(IServiceProvider provider, ILogger<EventDeserializer> logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(Logger));
             Provider = provider;
         }
+
+        private ILogger Logger { get; }
+
+        private IServiceProvider Provider { get; }
 
         /// <inheritdoc />
         public DomainEvent ToDomainEvent(ResolvedEvent resolvedEvent)

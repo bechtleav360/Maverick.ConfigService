@@ -21,8 +21,8 @@ namespace Bechtle.A365.ConfigService.Controllers
     [Route(ApiBaseRoute + "structures")]
     public class StructureController : ControllerBase
     {
-        private readonly IProjectionStore _store;
         private readonly IEventStore _eventStore;
+        private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
@@ -35,6 +35,61 @@ namespace Bechtle.A365.ConfigService.Controllers
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
+        }
+
+        /// <summary>
+        ///     save another version of a named config-structure
+        /// </summary>
+        /// <param name="structure"></param>
+        /// <returns></returns>
+        [HttpPost(Name = "AddStructure")]
+        public async Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
+        {
+            if (structure is null)
+                return BadRequest("no Structure received");
+
+            if (string.IsNullOrWhiteSpace(structure.Name))
+                return BadRequest($"Structure.{nameof(DtoStructure.Name)} is empty");
+
+            if (structure.Version <= 0)
+                return BadRequest($"invalid version provided '{structure.Version}'");
+
+            if (structure.Structure is null)
+                return BadRequest($"Structure.{nameof(DtoStructure.Structure)} is empty");
+
+            if (!structure.Structure.Children().Any())
+                return BadRequest($"Structure.{nameof(DtoStructure.Structure)} is invalid; does not contain child-nodes");
+
+            if (structure.Variables is null || !structure.Variables.Any())
+                Logger.LogDebug($"Structure.{nameof(DtoStructure.Variables)} is null or empty, seems fishy but may be correct");
+
+            try
+            {
+                var existingStructures = await _store.Structures.GetAvailableVersions(structure.Name, QueryRange.All);
+
+                if (existingStructures.IsError)
+                    return ProviderError(existingStructures);
+
+                // structure has already been submitted and can be viewed at the returned location
+                if (existingStructures.Data.Any(v => v == structure.Version))
+                    return RedirectToAction(nameof(GetStructureKeys), new {name = structure.Name, version = structure.Version});
+
+                var keys = _translator.ToDictionary(structure.Structure);
+                var variables = structure.Variables ?? new Dictionary<string, string>();
+
+                await new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
+                                           .Create(keys, variables)
+                                           .Save(_eventStore);
+
+                return AcceptedAtAction(nameof(GetStructureKeys),
+                                        new {name = structure.Name, version = structure.Version},
+                                        keys);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"failed to process given Structure.{nameof(DtoStructure.Structure)}: {e}");
+                return StatusCode((int) HttpStatusCode.InternalServerError, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
+            }
         }
 
         /// <summary>
@@ -71,19 +126,26 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     get the specified config-structure as list of Key / Value pairs
+        ///     get the specified config-structure as JSON
         /// </summary>
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/keys", Name = "GetStructureAsKeys")]
-        public async Task<IActionResult> GetStructureKeys([FromRoute] string name,
-                                                          [FromRoute] int version,
-                                                          [FromQuery] int offset = -1,
-                                                          [FromQuery] int length = -1)
+        [Obsolete]
+        [HttpGet("{name}/{version}", Name = "GetStructureObsolete")]
+        public async Task<IActionResult> GetStructure([FromRoute] string name,
+                                                      [FromRoute] int version,
+                                                      [FromQuery] int offset = -1,
+                                                      [FromQuery] int length = -1)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest();
+
+            if (version <= 0)
+                return BadRequest($"invalid version provided '{version}'");
+
             var range = QueryRange.Make(offset, length);
             var identifier = new StructureIdentifier(name, version);
 
@@ -91,12 +153,17 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var result = await _store.Structures.GetKeys(identifier, range);
 
-                return Result(result);
+                if (result.Data?.Any() != true)
+                    return Ok(new JObject());
+
+                var json = _translator.ToJson(result.Data);
+
+                return Ok(json);
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
-                return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve structure");
+                Logger.LogError($"failed to translate structure ({nameof(name)}: {name}, {nameof(version)}: {version}) to JSON: {e}");
+                return StatusCode((int) HttpStatusCode.InternalServerError, "failed to translate structure to JSON");
             }
         }
 
@@ -140,26 +207,19 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     get the specified config-structure as JSON
+        ///     get the specified config-structure as list of Key / Value pairs
         /// </summary>
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [Obsolete]
-        [HttpGet("{name}/{version}", Name = "GetStructureObsolete")]
-        public async Task<IActionResult> GetStructure([FromRoute] string name,
-                                                      [FromRoute] int version,
-                                                      [FromQuery] int offset = -1,
-                                                      [FromQuery] int length = -1)
+        [HttpGet("{name}/{version}/keys", Name = "GetStructureAsKeys")]
+        public async Task<IActionResult> GetStructureKeys([FromRoute] string name,
+                                                          [FromRoute] int version,
+                                                          [FromQuery] int offset = -1,
+                                                          [FromQuery] int length = -1)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest();
-
-            if (version <= 0)
-                return BadRequest($"invalid version provided '{version}'");
-
             var range = QueryRange.Make(offset, length);
             var identifier = new StructureIdentifier(name, version);
 
@@ -167,17 +227,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var result = await _store.Structures.GetKeys(identifier, range);
 
-                if (result.Data?.Any() != true)
-                    return Ok(new JObject());
-
-                var json = _translator.ToJson(result.Data);
-
-                return Ok(json);
+                return Result(result);
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to translate structure ({nameof(name)}: {name}, {nameof(version)}: {version}) to JSON: {e}");
-                return StatusCode((int) HttpStatusCode.InternalServerError, "failed to translate structure to JSON");
+                Logger.LogError($"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
+                return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
 
@@ -254,57 +309,44 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     save another version of a named config-structure
+        ///     remove variables from the specified config-structure
         /// </summary>
-        /// <param name="structure"></param>
+        /// <param name="name"></param>
+        /// <param name="version"></param>
+        /// <param name="variables"></param>
         /// <returns></returns>
-        [HttpPost(Name = "AddStructure")]
-        public async Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
+        [HttpDelete("{name}/{version}/variables/keys", Name = "DeleteVariablesFromStructure")]
+        public async Task<IActionResult> RemoveVariables([FromRoute] string name,
+                                                         [FromRoute] int version,
+                                                         [FromBody] string[] variables)
         {
-            if (structure is null)
-                return BadRequest("no Structure received");
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("no name received");
 
-            if (string.IsNullOrWhiteSpace(structure.Name))
-                return BadRequest($"Structure.{nameof(DtoStructure.Name)} is empty");
+            if (version <= 0)
+                return BadRequest("invalid version version received");
 
-            if (structure.Version <= 0)
-                return BadRequest($"invalid version provided '{structure.Version}'");
-
-            if (structure.Structure is null)
-                return BadRequest($"Structure.{nameof(DtoStructure.Structure)} is empty");
-
-            if (!structure.Structure.Children().Any())
-                return BadRequest($"Structure.{nameof(DtoStructure.Structure)} is invalid; does not contain child-nodes");
-
-            if (structure.Variables is null || !structure.Variables.Any())
-                Logger.LogDebug($"Structure.{nameof(DtoStructure.Variables)} is null or empty, seems fishy but may be correct");
+            if (variables is null || !variables.Any())
+                return BadRequest("no changes received");
 
             try
             {
-                var existingStructures = await _store.Structures.GetAvailableVersions(structure.Name, QueryRange.All);
+                var identifier = new StructureIdentifier(name, version);
 
-                if (existingStructures.IsError)
-                    return ProviderError(existingStructures);
+                var actions = variables.Select(ConfigKeyAction.Delete)
+                                       .ToArray();
 
-                // structure has already been submitted and can be viewed at the returned location
-                if (existingStructures.Data.Any(v => v == structure.Version))
-                    return RedirectToAction(nameof(GetStructureKeys), new {name = structure.Name, version = structure.Version});
-
-                var keys = _translator.ToDictionary(structure.Structure);
-                var variables = structure.Variables ?? new Dictionary<string, string>();
-
-                await new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
-                                           .Create(keys, variables)
+                await new ConfigStructure().IdentifiedBy(identifier)
+                                           .ModifyVariables(actions)
                                            .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetStructureKeys),
-                                        new {name = structure.Name, version = structure.Version},
-                                        keys);
+                return AcceptedAtAction(nameof(GetVariables), new {name, version});
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to process given Structure.{nameof(DtoStructure.Structure)}: {e}");
-                return StatusCode((int) HttpStatusCode.InternalServerError, $"failed to process given Structure.{nameof(DtoStructure.Structure)}");
+                Logger.LogError($"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
+                return StatusCode(HttpStatusCode.InternalServerError,
+                                  $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
             }
         }
 
@@ -335,48 +377,6 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 var actions = changes.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
                                      .ToArray();
-
-                await new ConfigStructure().IdentifiedBy(identifier)
-                                           .ModifyVariables(actions)
-                                           .Save(_eventStore);
-
-                return AcceptedAtAction(nameof(GetVariables), new {name, version});
-            }
-            catch (Exception e)
-            {
-                Logger.LogError($"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version}): {e}");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(version)}: {version})");
-            }
-        }
-
-        /// <summary>
-        ///     remove variables from the specified config-structure
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="version"></param>
-        /// <param name="variables"></param>
-        /// <returns></returns>
-        [HttpDelete("{name}/{version}/variables/keys", Name = "DeleteVariablesFromStructure")]
-        public async Task<IActionResult> RemoveVariables([FromRoute] string name,
-                                                         [FromRoute] int version,
-                                                         [FromBody] string[] variables)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest("no name received");
-
-            if (version <= 0)
-                return BadRequest("invalid version version received");
-
-            if (variables is null || !variables.Any())
-                return BadRequest("no changes received");
-
-            try
-            {
-                var identifier = new StructureIdentifier(name, version);
-
-                var actions = variables.Select(ConfigKeyAction.Delete)
-                                       .ToArray();
 
                 await new ConfigStructure().IdentifiedBy(identifier)
                                            .ModifyVariables(actions)

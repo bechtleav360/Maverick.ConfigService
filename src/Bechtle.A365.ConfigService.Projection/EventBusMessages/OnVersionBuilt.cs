@@ -5,7 +5,7 @@ namespace Bechtle.A365.ConfigService.Projection.EventBusMessages
 {
     /// <summary>
     ///     Sent by ConfigService.Projection to indicate that a new Configuration was built
-    ///     and can be retrieved in the period between <see cref="ValidFrom"/> and <see cref="ValidTo"/>
+    ///     and can be retrieved in the period between <see cref="ValidFrom" /> and <see cref="ValidTo" />
     /// </summary>
     public class OnVersionBuilt : EventMessage
     {

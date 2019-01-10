@@ -2,11 +2,11 @@
 {
     public class ValuePart : ConfigValuePart
     {
-        public string Text { get; }
-
         public ValuePart(string text)
         {
             Text = text;
         }
+
+        public string Text { get; }
     }
 }

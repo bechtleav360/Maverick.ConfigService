@@ -10,9 +10,9 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         public string Key { get; set; }
 
-        public Guid StructureId { get; set; }
-
         public virtual Structure Structure { get; set; }
+
+        public Guid StructureId { get; set; }
 
         public string Value { get; set; }
     }

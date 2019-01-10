@@ -46,6 +46,15 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         }
 
         /// <summary>
+        ///     used to log messages with the current CompilationContext
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        private static string WithContext(CompilationContext context, string message)
+            => $"'{context.EnvironmentInfo.Name}' / '{context.StructureInfo.Name}' / '{context.CurrentKey}' {message}";
+
+        /// <summary>
         ///     analyze the given parts and determine if they can be compiled and what would be the result
         /// </summary>
         /// <param name="context"></param>
@@ -145,7 +154,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 string matchedValue;
 
                 if (!(match is null))
+                {
                     matchedValue = repository[match];
+                }
                 else
                 {
                     // if 'Fallback' or 'Default' are set in the reference,
@@ -324,15 +335,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             return resultItems.Select(item => (Key: item.Key, Value: item.Value))
                               .ToArray();
         }
-
-        /// <summary>
-        ///     used to log messages with the current CompilationContext
-        /// </summary>
-        /// <param name="context"></param>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        private static string WithContext(CompilationContext context, string message)
-            => $"'{context.EnvironmentInfo.Name}' / '{context.StructureInfo.Name}' / '{context.CurrentKey}' {message}";
 
         private class CompilationContext
         {

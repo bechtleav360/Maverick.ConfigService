@@ -1,6 +1,6 @@
 ﻿namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
-    /// <inheritdoc cref="DomainEvent"/>
+    /// <inheritdoc cref="DomainEvent" />
     /// <summary>
     ///     a number of variables within the Structure have been changed
     /// </summary>
@@ -18,7 +18,7 @@
         {
         }
 
-        /// <inheritdoc cref="StructureIdentifier"/>
+        /// <inheritdoc cref="StructureIdentifier" />
         public StructureIdentifier Identifier { get; set; }
 
         /// <summary>

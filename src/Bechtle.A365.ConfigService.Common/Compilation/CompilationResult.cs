@@ -6,16 +6,16 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 {
     public class CompilationResult
     {
-        public IDictionary<string, string> CompiledConfiguration { get; }
-
-        public TraceResult[] CompilationTrace { get; }
-
         /// <inheritdoc />
         public CompilationResult(IDictionary<string, string> compiledConfiguration, IEnumerable<TraceResult> traceResults)
         {
             CompiledConfiguration = compiledConfiguration;
             CompilationTrace = traceResults.ToArray();
         }
+
+        public TraceResult[] CompilationTrace { get; }
+
+        public IDictionary<string, string> CompiledConfiguration { get; }
 
         public string[] GetUsedKeys()
         {
@@ -34,12 +34,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     traceResults.Add(keyTrace);
             }
 
-            var x = traceResults.GroupBy(r => r.Key)
-                                .Select(g => g.First())
-                                .ToArray();
-
             var stack = new Stack<TraceResult>();
-            foreach (var item in x)
+            foreach (var item in traceResults.GroupBy(r => r.Key)
+                                             .Select(g => g.First()))
                 stack.Push(item);
 
             var usedKeys = new List<string>();

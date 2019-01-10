@@ -39,6 +39,14 @@ namespace Bechtle.A365.ConfigService.Services
         Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
 
         /// <summary>
+        ///     get the json of a Configuration
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="when"></param>
+        /// <returns></returns>
+        Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when);
+
+        /// <summary>
         ///     get the keys of a Configuration
         /// </summary>
         /// <param name="identifier"></param>
@@ -55,13 +63,5 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="range"></param>
         /// <returns></returns>
         Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
-
-        /// <summary>
-        ///     get the json of a Configuration
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="when"></param>
-        /// <returns></returns>
-        Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when);
     }
 }

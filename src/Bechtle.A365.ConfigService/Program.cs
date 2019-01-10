@@ -6,6 +6,8 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using NLog;
+using NLog.Config;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -34,7 +36,7 @@ namespace Bechtle.A365.ConfigService
                                                                             .Get<ConfigServiceConfiguration>()
                                                                             .LoggingConfiguration))
                           using (var xmlReader = XmlReader.Create(stringReader))
-                              NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(xmlReader, null);
+                              LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
 
                           builder.ClearProviders()
                                  .AddProvider(new A365NLogProvider());

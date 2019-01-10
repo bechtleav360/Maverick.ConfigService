@@ -5,13 +5,13 @@
     /// </summary>
     public interface IProjectionStore
     {
-        /// <inheritdoc cref="IStructureProjectionStore"/>
-        IStructureProjectionStore Structures { get; }
+        /// <inheritdoc cref="IConfigurationProjectionStore" />
+        IConfigurationProjectionStore Configurations { get; }
 
-        /// <inheritdoc cref="IEnvironmentProjectionStore"/>
+        /// <inheritdoc cref="IEnvironmentProjectionStore" />
         IEnvironmentProjectionStore Environments { get; }
 
-        /// <inheritdoc cref="IConfigurationProjectionStore"/>
-        IConfigurationProjectionStore Configurations { get; }
+        /// <inheritdoc cref="IStructureProjectionStore" />
+        IStructureProjectionStore Structures { get; }
     }
 }

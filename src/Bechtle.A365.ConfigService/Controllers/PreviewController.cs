@@ -22,8 +22,8 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class PreviewController : ControllerBase
     {
         private readonly IConfigurationCompiler _compiler;
-        private readonly IProjectionStore _store;
         private readonly IConfigurationParser _parser;
+        private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
@@ -165,11 +165,11 @@ namespace Bechtle.A365.ConfigService.Controllers
     {
         /// <summary>
         /// </summary>
-        public IDictionary<string, string> Map { get; set; }
+        public JToken Json { get; set; }
 
         /// <summary>
         /// </summary>
-        public JToken Json { get; set; }
+        public IDictionary<string, string> Map { get; set; }
 
         /// <summary>
         /// </summary>

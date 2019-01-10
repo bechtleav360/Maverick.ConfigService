@@ -171,12 +171,34 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
+        ///     get the keys contained in an environment, converted to JSON
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
+        public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
+                                                       [FromRoute] string name)
+        {
+            var identifier = new EnvironmentIdentifier(category, name);
+
+            var result = await _store.Environments.GetKeys(identifier, QueryRange.All);
+
+            if (result.IsError)
+                return ProviderError(result);
+
+            var json = _translator.ToJson(result.Data);
+
+            return Ok(json);
+        }
+
+        /// <summary>
         ///     get the keys contained in an environment including all their metadata
         /// </summary>
         /// <param name="category"></param>
         /// <param name="name"></param>
-        /// <param name="offset"/>
-        /// <param name="length"/>
+        /// <param name="offset" />
+        /// <param name="length" />
         /// <returns></returns>
         [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
@@ -202,28 +224,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
 
             return Ok(result.Data);
-        }
-
-        /// <summary>
-        ///     get the keys contained in an environment, converted to JSON
-        /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
-        public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
-                                                       [FromRoute] string name)
-        {
-            var identifier = new EnvironmentIdentifier(category, name);
-
-            var result = await _store.Environments.GetKeys(identifier, QueryRange.All);
-
-            if (result.IsError)
-                return ProviderError(result);
-
-            var json = _translator.ToJson(result.Data);
-
-            return Ok(json);
         }
 
         /// <summary>

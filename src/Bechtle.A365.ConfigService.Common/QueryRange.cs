@@ -31,7 +31,7 @@
         public static readonly QueryRange All = new QueryRange(0, int.MaxValue);
 
         /// <summary>
-        ///     make a new <see cref="QueryRange"/> and override its parameters where necessary - otherwise create an all-inclusive range
+        ///     make a new <see cref="QueryRange" /> and override its parameters where necessary - otherwise create an all-inclusive range
         /// </summary>
         /// <param name="offset"></param>
         /// <param name="length"></param>

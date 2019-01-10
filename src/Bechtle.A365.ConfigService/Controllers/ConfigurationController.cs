@@ -37,32 +37,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     validate each build-option and return the appropriate error, or null if everything is valid
-        /// </summary>
-        /// <param name="buildOptions"></param>
-        /// <returns></returns>
-        private IActionResult ValidateBuildOptions(ConfigurationBuildOptions buildOptions)
-        {
-            if (buildOptions is null)
-                return BadRequest("no build-options received");
-
-            // if both ValidFrom and ValidTo are set, we make sure that they're valid
-            if (!(buildOptions.ValidFrom is null) && !(buildOptions.ValidTo is null))
-            {
-                if (buildOptions.ValidFrom > buildOptions.ValidTo)
-                    return BadRequest($"{nameof(buildOptions.ValidFrom)} can't be later than {nameof(buildOptions.ValidTo)}");
-
-                var minimumActiveTime = TimeSpan.FromMinutes(1.0d);
-
-                if (buildOptions.ValidTo - buildOptions.ValidFrom < minimumActiveTime)
-                    return BadRequest("the configuration needs to be valid for at least " +
-                                      $"'{minimumActiveTime:g}' ({buildOptions.ValidTo - buildOptions.ValidFrom})");
-            }
-
-            return null;
-        }
-
-        /// <summary>
         ///     create a new configuration for each combination of given Environment and available structure
         /// </summary>
         /// <param name="environmentCategory"></param>
@@ -241,37 +215,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     get the used environment-keys of a specific configuration
-        /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
-        /// <param name="structureName"></param>
-        /// <param name="structureVersion"></param>
-        /// <param name="when"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "GetUsedEnvironmentKeys")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,
-                                                     [FromRoute] string environmentName,
-                                                     [FromRoute] string structureName,
-                                                     [FromRoute] int structureVersion,
-                                                     [FromQuery] DateTime when,
-                                                     [FromQuery] int offset = -1,
-                                                     [FromQuery] int length = -1)
-        {
-            var range = QueryRange.Make(offset, length);
-            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
-
-            var result = await _store.Configurations.GetUsedConfigurationKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, range);
-
-            return Result(result);
-        }
-
-        /// <summary>
         ///     get the keys of a specific configuration
         /// </summary>
         /// <param name="environmentCategory"></param>
@@ -339,7 +282,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to retrieve configuration for (" +
+                Logger.LogError("failed to retrieve configuration for (" +
                                 $"{nameof(environmentCategory)}: {environmentCategory}, " +
                                 $"{nameof(environmentName)}: {environmentName}, " +
                                 $"{nameof(structureName)}: {structureName}, " +
@@ -394,5 +337,62 @@ namespace Bechtle.A365.ConfigService.Controllers
                                       structureName,
                                       structureVersion,
                                       when);
+
+        /// <summary>
+        ///     get the used environment-keys of a specific configuration
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "GetUsedEnvironmentKeys")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,
+                                                     [FromRoute] string environmentName,
+                                                     [FromRoute] string structureName,
+                                                     [FromRoute] int structureVersion,
+                                                     [FromQuery] DateTime when,
+                                                     [FromQuery] int offset = -1,
+                                                     [FromQuery] int length = -1)
+        {
+            var range = QueryRange.Make(offset, length);
+            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+
+            var result = await _store.Configurations.GetUsedConfigurationKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, range);
+
+            return Result(result);
+        }
+
+        /// <summary>
+        ///     validate each build-option and return the appropriate error, or null if everything is valid
+        /// </summary>
+        /// <param name="buildOptions"></param>
+        /// <returns></returns>
+        private IActionResult ValidateBuildOptions(ConfigurationBuildOptions buildOptions)
+        {
+            if (buildOptions is null)
+                return BadRequest("no build-options received");
+
+            // if both ValidFrom and ValidTo are set, we make sure that they're valid
+            if (!(buildOptions.ValidFrom is null) && !(buildOptions.ValidTo is null))
+            {
+                if (buildOptions.ValidFrom > buildOptions.ValidTo)
+                    return BadRequest($"{nameof(buildOptions.ValidFrom)} can't be later than {nameof(buildOptions.ValidTo)}");
+
+                var minimumActiveTime = TimeSpan.FromMinutes(1.0d);
+
+                if (buildOptions.ValidTo - buildOptions.ValidFrom < minimumActiveTime)
+                    return BadRequest("the configuration needs to be valid for at least " +
+                                      $"'{minimumActiveTime:g}' ({buildOptions.ValidTo - buildOptions.ValidFrom})");
+            }
+
+            return null;
+        }
     }
 }

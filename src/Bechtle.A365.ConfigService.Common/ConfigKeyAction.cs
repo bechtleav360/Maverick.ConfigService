@@ -6,31 +6,6 @@
     public class ConfigKeyAction
     {
         /// <summary>
-        ///     type of action to apply to this key
-        /// </summary>
-        public ConfigKeyActionType Type { get; }
-
-        /// <summary>
-        ///     key to which this action is applied
-        /// </summary>
-        public string Key { get; }
-
-        /// <summary>
-        ///     optional value 
-        /// </summary>
-        public string Value { get; }
-
-        /// <summary>
-        ///     short description of this key
-        /// </summary>
-        public string Description { get; }
-
-        /// <summary>
-        ///     intended type of this key
-        /// </summary>
-        public string ValueType { get; }
-
-        /// <summary>
         /// </summary>
         /// <param name="type"></param>
         /// <param name="key"></param>
@@ -49,6 +24,37 @@
         }
 
         /// <summary>
+        ///     short description of this key
+        /// </summary>
+        public string Description { get; }
+
+        /// <summary>
+        ///     key to which this action is applied
+        /// </summary>
+        public string Key { get; }
+
+        /// <summary>
+        ///     type of action to apply to this key
+        /// </summary>
+        public ConfigKeyActionType Type { get; }
+
+        /// <summary>
+        ///     optional value
+        /// </summary>
+        public string Value { get; }
+
+        /// <summary>
+        ///     intended type of this key
+        /// </summary>
+        public string ValueType { get; }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static ConfigKeyAction Delete(string key) => new ConfigKeyAction(ConfigKeyActionType.Delete, key, null, null, null);
+
+        /// <summary>
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
@@ -64,11 +70,5 @@
         /// <returns></returns>
         public static ConfigKeyAction Set(string key, string value, string description, string valueType)
             => new ConfigKeyAction(ConfigKeyActionType.Set, key, value, description, valueType);
-
-        /// <summary>
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public static ConfigKeyAction Delete(string key) => new ConfigKeyAction(ConfigKeyActionType.Delete, key, null, null, null);
     }
 }

@@ -21,12 +21,12 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public IStructureProjectionStore Structures { get; }
+        public IConfigurationProjectionStore Configurations { get; }
 
         /// <inheritdoc />
         public IEnvironmentProjectionStore Environments { get; }
 
         /// <inheritdoc />
-        public IConfigurationProjectionStore Configurations { get; }
+        public IStructureProjectionStore Structures { get; }
     }
 }

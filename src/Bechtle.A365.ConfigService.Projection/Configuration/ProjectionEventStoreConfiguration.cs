@@ -4,12 +4,12 @@
     {
         public string ConnectionName { get; set; }
 
-        public string Uri { get; set; }
-
         public int MaxLiveQueueSize { get; set; }
 
         public int ReadBatchSize { get; set; }
 
         public string SubscriptionName { get; set; }
+
+        public string Uri { get; set; }
     }
 }

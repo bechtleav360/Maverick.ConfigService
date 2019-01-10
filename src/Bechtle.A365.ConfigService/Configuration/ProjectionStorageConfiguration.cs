@@ -8,6 +8,6 @@
         /// <summary>
         ///     connection-string to projection database
         /// </summary>
-        public string ConnectionString {get; set; }
+        public string ConnectionString { get; set; }
     }
 }

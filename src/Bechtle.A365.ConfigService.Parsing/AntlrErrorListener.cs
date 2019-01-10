@@ -15,24 +15,24 @@ namespace Bechtle.A365.ConfigService.Parsing
         }
 
         /// <inheritdoc />
-        public void SyntaxError(TextWriter output, 
-                                IRecognizer recognizer, 
-                                int offendingSymbol, 
-                                int line, 
-                                int charPositionInLine, 
-                                string msg, 
+        public void SyntaxError(TextWriter output,
+                                IRecognizer recognizer,
+                                int offendingSymbol,
+                                int line,
+                                int charPositionInLine,
+                                string msg,
                                 RecognitionException e)
         {
             _logger.LogError($"failed to tokenize '{e.InputStream}'[{line}:{charPositionInLine}]: {msg}");
         }
 
         /// <inheritdoc />
-        public void SyntaxError(TextWriter output, 
-                                IRecognizer recognizer, 
-                                IToken offendingSymbol, 
-                                int line, 
-                                int charPositionInLine, 
-                                string msg, 
+        public void SyntaxError(TextWriter output,
+                                IRecognizer recognizer,
+                                IToken offendingSymbol,
+                                int line,
+                                int charPositionInLine,
+                                string msg,
                                 RecognitionException e)
         {
             _logger.LogError($"failed to parse '{e.InputStream}'[{line}:{charPositionInLine}]: {msg}");

@@ -16,9 +16,9 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         }
 
         /// <inheritdoc />
-        public JToken ToJson(IDictionary<string, string> dict) => _dictToJsonConverter.ToJson(dict);
+        public IDictionary<string, string> ToDictionary(JToken json) => _jsonToDictConverter.ToDict(json);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionary(JToken json) => _jsonToDictConverter.ToDict(json);
+        public JToken ToJson(IDictionary<string, string> dict) => _dictToJsonConverter.ToJson(dict);
     }
 }

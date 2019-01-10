@@ -13,9 +13,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
             Value = value;
         }
 
-        public string Value { get; }
-
         public ReferenceCommand Command { get; }
+
+        public string Value { get; }
 
         /// <inheritdoc />
         public override TraceResult GetResult() => new CommandTraceResult

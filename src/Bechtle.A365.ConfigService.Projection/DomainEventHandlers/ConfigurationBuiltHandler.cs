@@ -14,12 +14,12 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 {
     public class ConfigurationBuiltHandler : IDomainEventHandler<ConfigurationBuilt>
     {
-        private readonly IConfigurationDatabase _database;
         private readonly IConfigurationCompiler _compiler;
-        private readonly IConfigurationParser _parser;
-        private readonly IJsonTranslator _translator;
+        private readonly IConfigurationDatabase _database;
         private readonly IEventBus _eventBus;
         private readonly ILogger<ConfigurationBuiltHandler> _logger;
+        private readonly IConfigurationParser _parser;
+        private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
         public ConfigurationBuiltHandler(IConfigurationDatabase database,
@@ -121,7 +121,6 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
             if (from is null && to is null ||
                 !(from is null) && from < now && to is null ||
                 !(from is null) && from < now && !(to is null) && to > now)
-            {
                 await _eventBus.Publish(new EventMessage
                 {
                     Event = new OnConfigurationPublished
@@ -132,7 +131,6 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                         StructureVersion = domainEvent.Identifier.Structure.Version
                     }
                 });
-            }
         }
     }
 }

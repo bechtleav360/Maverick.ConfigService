@@ -8,9 +8,9 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 {
     public abstract class HostedService : IHostedService
     {
-        private Task _executingTask;
         private CancellationTokenSource _cancellationTokenSource;
-        private IServiceProvider _serviceProvider;
+        private Task _executingTask;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <inheritdoc />
         protected HostedService(IServiceProvider serviceProvider)

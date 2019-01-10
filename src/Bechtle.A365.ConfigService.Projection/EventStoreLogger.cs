@@ -24,6 +24,12 @@ namespace Bechtle.A365.ConfigService.Projection
         }
 
         /// <inheritdoc />
+        public void Debug(string format, params object[] args) => _logger.LogDebug(string.Format(format, args));
+
+        /// <inheritdoc />
+        public void Debug(Exception ex, string format, params object[] args) => _logger.LogDebug(ex, string.Format(format, args));
+
+        /// <inheritdoc />
         public void Error(string format, params object[] args) => _logger.LogError(string.Format(format, args));
 
         /// <inheritdoc />
@@ -34,11 +40,5 @@ namespace Bechtle.A365.ConfigService.Projection
 
         /// <inheritdoc />
         public void Info(Exception ex, string format, params object[] args) => _logger.LogInformation(ex, string.Format(format, args));
-
-        /// <inheritdoc />
-        public void Debug(string format, params object[] args) => _logger.LogDebug(string.Format(format, args));
-
-        /// <inheritdoc />
-        public void Debug(Exception ex, string format, params object[] args) => _logger.LogDebug(ex, string.Format(format, args));
     }
 }

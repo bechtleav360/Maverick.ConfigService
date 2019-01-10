@@ -14,18 +14,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private StructureIdentifier _identifier;
 
         /// <summary>
-        ///     set the identifier for this <see cref="ConfigStructure"/> to the given identifier
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
-        public ConfigStructure IdentifiedBy(StructureIdentifier identifier)
-        {
-            _identifier = identifier;
-
-            return this;
-        }
-
-        /// <summary>
         ///     create events that Create this DomainObject when saved
         /// </summary>
         /// <param name="keys"></param>
@@ -45,6 +33,18 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public ConfigStructure Delete()
         {
             RecordedEvents.Add(new StructureDeleted(_identifier));
+
+            return this;
+        }
+
+        /// <summary>
+        ///     set the identifier for this <see cref="ConfigStructure" /> to the given identifier
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        public ConfigStructure IdentifiedBy(StructureIdentifier identifier)
+        {
+            _identifier = identifier;
 
             return this;
         }

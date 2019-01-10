@@ -36,7 +36,7 @@
         NotFound = 5,
 
         /// <summary>
-        ///     given data is invalid or unsupported 
+        ///     given data is invalid or unsupported
         /// </summary>
         InvalidData = 6,
 
@@ -48,6 +48,6 @@
         /// <summary>
         ///     error while querying database
         /// </summary>
-        DbQueryError = 8,
+        DbQueryError = 8
     }
 }

@@ -27,22 +27,6 @@ namespace Bechtle.A365.ConfigService.Services
         Task<Result<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range);
 
         /// <summary>
-        ///     get the keys of an Environment
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range);
-
-        /// <summary>
-        ///     get the keys of an Environment, and inheriting keys from Default Environment
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier, QueryRange range);
-
-        /// <summary>
         ///     get the keys of an Environment as Objects
         /// </summary>
         /// <param name="identifier"></param>
@@ -57,5 +41,21 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="range"></param>
         /// <returns></returns>
         Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjectsWithInheritance(EnvironmentIdentifier identifier, QueryRange range);
+
+        /// <summary>
+        ///     get the keys of an Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range);
+
+        /// <summary>
+        ///     get the keys of an Environment, and inheriting keys from Default Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier, QueryRange range);
     }
 }

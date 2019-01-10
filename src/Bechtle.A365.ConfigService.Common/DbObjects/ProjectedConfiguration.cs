@@ -7,23 +7,23 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
     // necessary for lazy-loading
     public class ProjectedConfiguration
     {
+        public virtual ConfigEnvironment ConfigEnvironment { get; set; }
+
         public Guid ConfigEnvironmentId { get; set; }
 
-        public virtual ConfigEnvironment ConfigEnvironment { get; set; }
+        public string ConfigurationJson { get; set; }
 
         public Guid Id { get; set; }
 
         public virtual List<ProjectedConfigurationKey> Keys { get; set; }
 
-        public virtual List<UsedConfigurationKey> UsedConfigurationKeys { get; set; }
+        public virtual Structure Structure { get; set; }
 
         public Guid StructureId { get; set; }
 
-        public virtual Structure Structure { get; set; }
-
         public int StructureVersion { get; set; }
 
-        public string ConfigurationJson { get; set; }
+        public virtual List<UsedConfigurationKey> UsedConfigurationKeys { get; set; }
 
         public DateTime? ValidFrom { get; set; }
 

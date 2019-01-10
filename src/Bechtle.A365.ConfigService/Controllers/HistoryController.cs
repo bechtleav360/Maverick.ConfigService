@@ -52,7 +52,6 @@ namespace Bechtle.A365.ConfigService.Controllers
                     continue;
 
                 foreach (var action in keysModified.ModifiedKeys)
-                {
                     switch (action.Type)
                     {
                         case ConfigKeyActionType.Set:
@@ -71,7 +70,6 @@ namespace Bechtle.A365.ConfigService.Controllers
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
-                }
             }
 
             return Ok(blameData);

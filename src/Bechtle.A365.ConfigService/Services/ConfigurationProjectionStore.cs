@@ -120,6 +120,48 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
+        public async Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when)
+        {
+            var formattedParams = "(" +
+                                  $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
+                                  $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Name)}: {identifier.Environment.Name}; " +
+                                  $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Name)}: {identifier.Structure.Name}; " +
+                                  $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Version)}: {identifier.Structure.Version}" +
+                                  ")";
+
+            try
+            {
+                var dbResult = await _context.ProjectedConfigurations
+                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                             .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
+                                                                       c.ConfigEnvironment.Category == identifier.Environment.Category &&
+                                                                       c.Structure.Name == identifier.Structure.Name &&
+                                                                       c.Structure.Version == identifier.Structure.Version);
+
+                if (dbResult is null)
+                    return Result<JToken>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+
+                try
+                {
+                    var result = JToken.Parse(dbResult.ConfigurationJson);
+
+                    return Result<JToken>.Success(result);
+                }
+                catch (JsonException e)
+                {
+                    _logger.LogError($"failed to parse projected Configuration-Json into token: {e}");
+                    throw;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"failed to retrieve projected configuration keys for id: {formattedParams}: {e}");
+                return Result<JToken>.Error($"failed to retrieve projected configuration keys for id: {formattedParams}",
+                                            ErrorCode.DbQueryError);
+            }
+        }
+
+        /// <inheritdoc />
         public async Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier,
                                                                        DateTime when,
                                                                        QueryRange range)
@@ -199,48 +241,6 @@ namespace Bechtle.A365.ConfigService.Services
                 _logger.LogError($"failed to retrieve used environment keys for id: {formattedParams}: {e}");
                 return Result<IEnumerable<string>>.Error($"failed to retrieve used environment keys for id: {formattedParams}: {e}",
                                                          ErrorCode.DbQueryError);
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when)
-        {
-            var formattedParams = "(" +
-                                  $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
-                                  $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Name)}: {identifier.Environment.Name}; " +
-                                  $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Name)}: {identifier.Structure.Name}; " +
-                                  $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Version)}: {identifier.Structure.Version}" +
-                                  ")";
-
-            try
-            {
-                var dbResult = await _context.ProjectedConfigurations
-                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                             .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
-                                                                       c.ConfigEnvironment.Category == identifier.Environment.Category &&
-                                                                       c.Structure.Name == identifier.Structure.Name &&
-                                                                       c.Structure.Version == identifier.Structure.Version);
-
-                if (dbResult is null)
-                    return Result<JToken>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
-
-                try
-                {
-                    var result = JToken.Parse(dbResult.ConfigurationJson);
-
-                    return Result<JToken>.Success(result);
-                }
-                catch (JsonException e)
-                {
-                    _logger.LogError($"failed to parse projected Configuration-Json into token: {e}");
-                    throw;
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError($"failed to retrieve projected configuration keys for id: {formattedParams}: {e}");
-                return Result<JToken>.Error($"failed to retrieve projected configuration keys for id: {formattedParams}",
-                                            ErrorCode.DbQueryError);
             }
         }
     }

@@ -98,7 +98,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                            var config = provider.GetService<ProjectionEventBusConfiguration>();
                            var loggerFactory = provider.GetService<ILoggerFactory>();
 
-                           var client = new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(), 
+                           var client = new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
                                                                     loggerFactory);
 
                            client.Connect().Wait();
