@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [HttpGet("blame/environment/{category}/{name}")]
+        [HttpGet("blame/environment/{category}/{name}", Name = "Blame")]
         public async Task<IActionResult> BlameEnvironment([FromRoute] string category,
                                                           [FromRoute] string name)
         {
@@ -82,11 +82,17 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="category"></param>
         /// <param name="name"></param>
+        /// <param name="key"></param>
         /// <returns></returns>
-        [HttpGet("environment/{category}/{name}")]
+        [HttpGet("environment/{category}/{name}", Name = "GetEnvironmentHistory")]
         public async Task<IActionResult> GetEnvironmentHistory([FromRoute] string category,
-                                                               [FromRoute] string name)
+                                                               [FromRoute] string name,
+                                                               [FromQuery] string key = null)
         {
+            // key must be url-encoded to be transmitted correctly
+            if (!(key is null))
+                key = Uri.UnescapeDataString(key);
+
             var events = (await _eventStore.ReplayEvents()).ToArray();
 
             var history = new Dictionary<string, KeyHistory>();
@@ -103,17 +109,18 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 foreach (var action in keysModified.ModifiedKeys)
                 {
+                    // if key is set - ignore all keys that don't match with what we're given
+                    if (!(key is null) &&
+                        !action.Key.StartsWith(key, StringComparison.InvariantCultureIgnoreCase))
+                        continue;
+
                     if (!history.ContainsKey(action.Key))
-                        history[action.Key] = new KeyHistory
-                        {
-                            Key = action.Key,
-                            History = new SortedList<DateTime, KeyRevision>()
-                        };
+                        history[action.Key] = new KeyHistory(action.Key);
 
                     switch (action.Type)
                     {
                         case ConfigKeyActionType.Set:
-                            history[action.Key].History.Add(recordedEvent.Created, new KeyRevision
+                            history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
                             {
                                 Type = ConfigKeyActionType.Set,
                                 DateTime = recordedEvent.Created,
@@ -122,7 +129,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                             break;
 
                         case ConfigKeyActionType.Delete:
-                            history[action.Key].History.Add(recordedEvent.Created, new KeyRevision
+                            history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
                             {
                                 Type = ConfigKeyActionType.Delete,
                                 DateTime = recordedEvent.Created,
@@ -144,16 +151,29 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             public DateTime DateTime { get; set; }
 
-            public string Value { get; set; }
-
             public ConfigKeyActionType Type { get; set; }
+
+            public string Value { get; set; }
         }
 
         private class KeyHistory
         {
-            public string Key { get; set; }
+            /// <inheritdoc />
+            public KeyHistory()
+            {
+                Key = string.Empty;
+                Changes = new SortedList<DateTime, KeyRevision>();
+            }
 
-            public SortedList<DateTime, KeyRevision> History { get; set; }
+            /// <inheritdoc />
+            public KeyHistory(string key) : this()
+            {
+                Key = key;
+            }
+
+            public SortedList<DateTime, KeyRevision> Changes { get; }
+
+            public string Key { get; }
         }
         // ReSharper restore UnusedAutoPropertyAccessor.Local
     }
