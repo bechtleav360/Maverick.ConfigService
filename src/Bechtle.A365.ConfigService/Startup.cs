@@ -81,7 +81,8 @@ namespace Bechtle.A365.ConfigService
             {
                 app.Configure(a => a.UseDeveloperExceptionPage(), _ => _logger.LogInformation("adding Development Exception-Handler"));
             }
-            else
+            // disable HTTPS when running in Docker
+            else if (Configuration.GetValue("DOTNET_RUNNING_IN_CONTAINER", false))
             {
                 app.Configure(a => a.UseHsts(), _ => _logger.LogInformation("adding HSTS"))
                    .Configure(a => a.UseHttpsRedirection(), _ => _logger.LogInformation("adding HTTPS-Redirect"));
