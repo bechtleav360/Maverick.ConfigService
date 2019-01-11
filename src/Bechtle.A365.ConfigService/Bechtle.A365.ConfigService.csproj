@@ -6,8 +6,6 @@
     <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <LangVersion>7.3</LangVersion>
-    <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
-    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <DockerTargetOS>Linux</DockerTargetOS>
     <UserSecretsId>2b826f2b-63ef-4c6e-8ada-31dda61c5e2d</UserSecretsId>
   </PropertyGroup>
