@@ -57,5 +57,14 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="range"></param>
         /// <returns></returns>
         Task<Result<IDictionary<string, string>>> GetKeysWithInheritance(EnvironmentIdentifier identifier, QueryRange range);
+
+        /// <summary>
+        ///     get a list of possible next terms for the given key
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="key"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<Result<IList<string>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
     }
 }

@@ -272,5 +272,67 @@ namespace Bechtle.A365.ConfigService.Services
                     ErrorCode.DbQueryError);
             }
         }
+
+        /// <inheritdoc />
+        public async Task<Result<IList<string>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range)
+        {
+            try
+            {
+                var environmentKey = await _context.ConfigEnvironments
+                                                   .Where(s => s.Category == identifier.Category &&
+                                                               s.Name == identifier.Name)
+                                                   .Select(env => env.Id)
+                                                   .FirstOrDefaultAsync();
+
+                if (environmentKey == Guid.Empty)
+                    return Result<IList<string>>.Error("no environment found with (" +
+                                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                                       $"{nameof(identifier.Name)}: {identifier.Name})",
+                                                       ErrorCode.NotFound);
+
+                key = Uri.UnescapeDataString(key);
+
+                var parts = key.Split('/');
+                IEnumerable<string> paths;
+
+                if (parts.Length == 1)
+                {
+                    var lastPart = parts.Last();
+
+                    paths = await _context.AutoCompletePaths
+                                          .Where(p => p.Path.Contains(lastPart))
+                                          .OrderBy(p => p.Path)
+                                          .Select(p => p.Path)
+                                          .ToListAsync();
+                }
+                else
+                {
+                    var lastPart = parts.Last();
+                    var fullPathMatch = string.Join('/', parts.Take(parts.Length - 1));
+
+                    paths = await _context.AutoCompletePaths
+                                          .Where(p => p.Path.Contains(lastPart))
+                                          .Where(p => p.FullPath.StartsWith(fullPathMatch))
+                                          .OrderBy(p => p.Path)
+                                          .Select(p => p.Path)
+                                          .ToListAsync();
+                }
+
+                return Result.Success((IList<string>) paths.GroupBy(p => p)
+                                                           .Select(p => p.Key)
+                                                           .Skip(range.Offset)
+                                                           .Take(range.Length)
+                                                           .ToList());
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"failed to get autocomplete data for '{key}' in " +
+                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
+
+                return Result<IList<string>>.Error($"failed to get autocomplete data for '{key}' in " +
+                                                   $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}",
+                                                   ErrorCode.DbQueryError);
+            }
+        }
     }
 }

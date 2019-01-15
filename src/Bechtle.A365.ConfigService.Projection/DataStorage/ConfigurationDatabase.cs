@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -370,6 +371,88 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 {
                     _logger.LogError($"could not delete Structure {identifier} from database: {e}");
                     return Result.Error($"could not delete Structure {identifier} from database: {e}", ErrorCode.DbUpdateError);
+                }
+            }
+        }
+
+        public async Task<Result> GenerateEnvironmentKeyAutocompleteData(EnvironmentIdentifier identifier)
+        {
+            using (var scope = _provider.CreateScope())
+            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            {
+                var environment = await GetEnvironmentInternal(identifier, context);
+
+                var roots = new List<ConfigEnvironmentKeyPath>();
+
+                foreach (var environmentKey in environment.Keys.OrderBy(k => k.Key))
+                {
+                    var parts = environmentKey.Key.Split('/');
+
+                    var rootPart = parts.First();
+                    var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (root is null)
+                    {
+                        root = new ConfigEnvironmentKeyPath
+                        {
+                            Id = Guid.NewGuid(),
+                            ConfigEnvironment = environment,
+                            ConfigEnvironmentId = environment.Id,
+                            Children = new List<ConfigEnvironmentKeyPath>(),
+                            Parent = null,
+                            ParentId = null,
+                            Path = rootPart,
+                            FullPath = rootPart
+                        };
+
+                        roots.Add(root);
+                    }
+
+                    var current = root;
+
+                    foreach (var part in parts.Skip(1))
+                    {
+                        var next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
+
+                        if (next is null)
+                        {
+                            next = new ConfigEnvironmentKeyPath
+                            {
+                                Id = Guid.NewGuid(),
+                                ConfigEnvironment = environment,
+                                ConfigEnvironmentId = environment.Id,
+                                Children = new List<ConfigEnvironmentKeyPath>(),
+                                Parent = current,
+                                ParentId = current.Id,
+                                Path = part,
+                                FullPath = current.FullPath + '/' + part
+                            };
+
+                            current.Children.Add(next);
+                        }
+
+                        current = next;
+                    }
+                }
+
+                var existingPaths = await context.AutoCompletePaths
+                                                 .Where(p => p.ConfigEnvironmentId == environment.Id)
+                                                 .ToListAsync();
+
+                context.AutoCompletePaths.RemoveRange(existingPaths);
+
+                await context.AutoCompletePaths.AddRangeAsync(roots);
+
+                try
+                {
+                    await context.SaveChangesAsync();
+
+                    return Result.Success();
+                }
+                catch (DbUpdateException e)
+                {
+                    _logger.LogError($"could not update auto-completion data for environment '{identifier}': {e}");
+                    return Result.Error($"could not update auto-completion data for environment '{identifier}'", ErrorCode.DbUpdateError);
                 }
             }
         }

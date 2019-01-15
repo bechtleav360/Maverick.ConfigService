@@ -30,6 +30,10 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 
             await _database.ApplyChanges(domainEvent.Identifier,
                                          domainEvent.ModifiedKeys);
+
+            _logger.LogInformation($"generating autocomplete-data for environment '{domainEvent.Identifier}'");
+
+            await _database.GenerateEnvironmentKeyAutocompleteData(domainEvent.Identifier);
         }
     }
 }

@@ -13,13 +13,37 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         {
         }
 
+        /// <summary>
+        /// </summary>
         public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
 
+        /// <summary>
+        /// </summary>
+        public DbSet<ConfigEnvironmentKey> ConfigEnvironmentKeys { get; set; }
+
+        /// <summary>
+        /// </summary>
         public DbSet<ProjectionMetadata> Metadata { get; set; }
 
+        /// <summary>
+        /// </summary>
         public DbSet<ProjectedConfiguration> ProjectedConfigurations { get; set; }
 
+        /// <summary>
+        /// </summary>
+        public DbSet<ProjectedConfigurationKey> ProjectedConfigurationKeys { get; set; }
+
+        /// <summary>
+        /// </summary>
         public DbSet<Structure> Structures { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public DbSet<StructureKey> StructureKeys { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public DbSet<ConfigEnvironmentKeyPath> AutoCompletePaths { get; set; }
 
         /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -29,13 +53,27 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             modelBuilder.Entity<ProjectionMetadata>();
 
             modelBuilder.Entity<Structure>();
-            modelBuilder.Entity<StructureKey>();
-            modelBuilder.Entity<StructureVariable>();
+
+            modelBuilder.Entity<StructureKey>()
+                        .ToTable(nameof(StructureKey));
+
+            modelBuilder.Entity<StructureVariable>()
+                        .ToTable(nameof(StructureVariable));
+
             modelBuilder.Entity<ConfigEnvironment>();
-            modelBuilder.Entity<ConfigEnvironmentKey>();
-            modelBuilder.Entity<UsedConfigurationKey>();
+
+            modelBuilder.Entity<ConfigEnvironmentKey>()
+                        .ToTable(nameof(ConfigEnvironmentKey));
+
+            modelBuilder.Entity<UsedConfigurationKey>()
+                        .ToTable(nameof(UsedConfigurationKey));
+
             modelBuilder.Entity<ProjectedConfiguration>();
-            modelBuilder.Entity<ProjectedConfigurationKey>();
+
+            modelBuilder.Entity<ProjectedConfigurationKey>()
+                        .ToTable(nameof(ProjectedConfigurationKey));
+
+            modelBuilder.Entity<ConfigEnvironmentKeyPath>();
         }
     }
 }

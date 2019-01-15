@@ -64,6 +64,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<Result> DeleteStructure(StructureIdentifier identifier);
 
         /// <summary>
+        ///     retrieve all current keys for the given environment and generate Auto-Complete data for it
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<Result> GenerateEnvironmentKeyAutocompleteData(EnvironmentIdentifier identifier);
+
+        /// <summary>
         ///     get all data for the Default-Environment for the given category
         /// </summary>
         /// <param name="category"></param>
