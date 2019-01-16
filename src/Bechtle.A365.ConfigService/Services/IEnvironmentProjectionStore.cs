@@ -35,6 +35,15 @@ namespace Bechtle.A365.ConfigService.Services
         Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range);
 
         /// <summary>
+        ///     get the keys of an Environment as Objects
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="filter"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range);
+
+        /// <summary>
         ///     get the keys of an Environment
         /// </summary>
         /// <param name="identifier"></param>

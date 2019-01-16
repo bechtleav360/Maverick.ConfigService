@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Dto;
 using Microsoft.EntityFrameworkCore;
@@ -138,55 +140,52 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range)
+        public Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range)
+            => GetKeysInternal(identifier,
+                               null,
+                               range,
+                               item => new DtoConfigKey
+                               {
+                                   Key = item.Key,
+                                   Value = item.Value,
+                                   Description = item.Description,
+                                   Type = item.Type
+                               },
+                               items => items);
 
-        {
-            try
-            {
-                var environment = await _context.ConfigEnvironments
-                                                .FirstOrDefaultAsync(s => s.Category == identifier.Category &&
-                                                                          s.Name == identifier.Name);
-
-                if (environment is null)
-                    return Result<IEnumerable<DtoConfigKey>>.Error("no environment found with (" +
-                                                                   $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                                                   $"{nameof(identifier.Name)}: {identifier.Name})",
-                                                                   ErrorCode.NotFound);
-
-                var result = environment.Keys
-                                        .OrderBy(k => k.Key)
-                                        .Skip(range.Offset)
-                                        .Take(range.Length)
-                                        .Select(k => new DtoConfigKey
-                                        {
-                                            Key = k.Key,
-                                            Value = k.Value,
-                                            Description = k.Description,
-                                            Type = k.Type
-                                        })
-                                        .ToArray();
-
-                return Result<IEnumerable<DtoConfigKey>>.Success(result);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("failed to retrieve keys for environment " +
-                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
-
-                return Result<IEnumerable<DtoConfigKey>>.Error(
-                    "failed to retrieve keys for environment " +
-                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
-                    ErrorCode.DbQueryError);
-            }
-        }
+        /// <inheritdoc />
+        public Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range)
+            => GetKeysInternal(identifier,
+                               filter,
+                               range,
+                               item => new DtoConfigKey
+                               {
+                                   Key = item.Key,
+                                   Value = item.Value,
+                                   Description = item.Description,
+                                   Type = item.Type
+                               },
+                               items => items);
 
         /// <inheritdoc />
         public Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range)
-            => GetKeysInternal(identifier, null, range);
+            => GetKeysInternal(identifier,
+                               null,
+                               range,
+                               item => item,
+                               keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
+                                                                                                      item => item.Value,
+                                                                                                      StringComparer.OrdinalIgnoreCase));
 
         /// <inheritdoc />
         public Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range)
-            => GetKeysInternal(identifier, filter, range);
+            => GetKeysInternal(identifier,
+                               filter,
+                               range,
+                               item => item,
+                               keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
+                                                                                                      item => item.Value,
+                                                                                                      StringComparer.OrdinalIgnoreCase));
 
         /// <summary>
         ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
@@ -194,8 +193,14 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <param name="filter"></param>
         /// <param name="range"></param>
+        /// <param name="selector"></param>
+        /// <param name="transform"></param>
         /// <returns></returns>
-        private async Task<Result<IDictionary<string, string>>> GetKeysInternal(EnvironmentIdentifier identifier, string filter, QueryRange range)
+        private async Task<Result<TResult>> GetKeysInternal<TItem, TResult>(EnvironmentIdentifier identifier,
+                                                                            string filter,
+                                                                            QueryRange range,
+                                                                            Expression<Func<ConfigEnvironmentKey, TItem>> selector,
+                                                                            Func<IEnumerable<TItem>, TResult> transform)
         {
             try
             {
@@ -206,10 +211,10 @@ namespace Bechtle.A365.ConfigService.Services
                                           .FirstOrDefaultAsync();
 
                 if (envId == default(Guid))
-                    return Result<IDictionary<string, string>>.Error("no environment found with (" +
-                                                                     $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                                                     $"{nameof(identifier.Name)}: {identifier.Name})",
-                                                                     ErrorCode.NotFound);
+                    return Result<TResult>.Error("no environment found with (" +
+                                                 $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                                 $"{nameof(identifier.Name)}: {identifier.Name})",
+                                                 ErrorCode.NotFound);
 
                 var query = _context.ConfigEnvironmentKeys
                                     .Where(k => k.ConfigEnvironmentId == envId);
@@ -221,20 +226,17 @@ namespace Bechtle.A365.ConfigService.Services
                 var keys = await query.OrderBy(k => k.Key)
                                       .Skip(range.Offset)
                                       .Take(range.Length)
+                                      .Select(selector)
                                       .ToListAsync();
 
-                var result = keys.ToImmutableSortedDictionary(k => k.Key,
-                                                              k => k.Value,
-                                                              StringComparer.OrdinalIgnoreCase);
-
-                return Result<IDictionary<string, string>>.Success(result);
+                return Result<TResult>.Success(transform(keys));
             }
             catch (Exception e)
             {
                 _logger.LogError("failed to retrieve keys for environment " +
                                  $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
 
-                return Result<IDictionary<string, string>>.Error(
+                return Result<TResult>.Error(
                     "failed to retrieve keys for environment " +
                     $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
                     ErrorCode.DbQueryError);

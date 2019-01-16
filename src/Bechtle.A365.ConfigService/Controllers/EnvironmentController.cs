@@ -212,12 +212,14 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="category"></param>
         /// <param name="name"></param>
+        /// <param name="filter"></param>
         /// <param name="offset" />
         /// <param name="length" />
         /// <returns></returns>
         [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
                                                              [FromRoute] string name,
+                                                             [FromQuery] string filter,
                                                              [FromQuery] int offset = -1,
                                                              [FromQuery] int length = -1)
         {
@@ -225,7 +227,12 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeyObjects(identifier, range);
+            Result<IEnumerable<DtoConfigKey>> result;
+
+            if (string.IsNullOrWhiteSpace(filter))
+                result = await _store.Environments.GetKeyObjects(identifier, range);
+            else
+                result = await _store.Environments.GetKeyObjects(identifier, filter, range);
 
             if (result.IsError)
                 return ProviderError(result);
