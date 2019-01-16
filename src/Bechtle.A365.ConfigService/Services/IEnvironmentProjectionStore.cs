@@ -43,6 +43,15 @@ namespace Bechtle.A365.ConfigService.Services
         Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range);
 
         /// <summary>
+        ///     get the keys of an Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="filter"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range);
+
+        /// <summary>
         ///     get a list of possible next terms for the given key
         /// </summary>
         /// <param name="identifier"></param>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -152,12 +153,14 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="category"></param>
         /// <param name="name"></param>
+        /// <param name="filter"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeys")]
         public async Task<IActionResult> GetKeys([FromRoute] string category,
                                                  [FromRoute] string name,
+                                                 [FromQuery] string filter,
                                                  [FromQuery] int offset = -1,
                                                  [FromQuery] int length = -1)
         {
@@ -165,7 +168,12 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeys(identifier, range);
+            Result<IDictionary<string, string>> result;
+
+            if (string.IsNullOrWhiteSpace(filter))
+                result = await _store.Environments.GetKeys(identifier, range);
+            else
+                result = await _store.Environments.GetKeys(identifier, filter, range);
 
             return Result(result);
         }
@@ -175,14 +183,21 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="category"></param>
         /// <param name="name"></param>
+        /// <param name="filter"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
-                                                       [FromRoute] string name)
+                                                       [FromRoute] string name,
+                                                       [FromQuery] string filter)
         {
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeys(identifier, QueryRange.All);
+            Result<IDictionary<string, string>> result;
+
+            if (string.IsNullOrWhiteSpace(filter))
+                result = await _store.Environments.GetKeys(identifier, QueryRange.All);
+            else
+                result = await _store.Environments.GetKeys(identifier, filter, QueryRange.All);
 
             if (result.IsError)
                 return ProviderError(result);
