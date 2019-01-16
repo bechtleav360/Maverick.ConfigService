@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -82,6 +83,9 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(key))
+                    return Result.Success((IList<string>) new string[0]);
+
                 var environmentKey = await _context.ConfigEnvironments
                                                    .Where(s => s.Category == identifier.Category &&
                                                                s.Name == identifier.Name)
@@ -96,37 +100,84 @@ namespace Bechtle.A365.ConfigService.Services
 
                 key = Uri.UnescapeDataString(key);
 
-                var parts = key.Split('/');
-                IEnumerable<string> paths;
+                var parts = new Queue<string>(key.Contains('/')
+                                                  ? key.Split('/')
+                                                  : new[] {key});
 
-                if (parts.Length == 1)
+                var rootPart = parts.Dequeue();
+
+                // get all the root-paths we could take
+                var possibleRoots = await _context.AutoCompletePaths
+                                                  .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                              p.ParentId == null &&
+                                                              p.Path.Contains(rootPart))
+                                                  .ToListAsync();
+
+                // look for exact matches, so we might ignore multiple matching roots
+                var exactMatchingRoot = possibleRoots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.OrdinalIgnoreCase));
+
+                // if we have an exactMatchingRoot, we don't really care for ambiguities in the root-part
+                if (exactMatchingRoot is null && possibleRoots.Count > 1)
                 {
-                    var lastPart = parts.Last();
+                    // if we don't have an exact match, multiple roots to choose from AND should search deeper (parts left to walk)
+                    // it can only mean that the root-path doesn't point to any valid root
+                    if (parts.Any())
+                        return Result<IList<string>>.Error($"key '{key}' is ambiguous, matches '{possibleRoots.Count}' roots",
+                                                           ErrorCode.NotFound);
 
-                    paths = await _context.AutoCompletePaths
-                                          .Where(p => p.Path.Contains(lastPart))
-                                          .OrderBy(p => p.Path)
-                                          .Select(p => p.Path)
-                                          .ToListAsync();
+                    // if we don't need to search any deeper we show the user which root-paths he can take
+                    return Result.Success((IList<string>) possibleRoots.Select(p => p.Path)
+                                                                       .OrderBy(p => p)
+                                                                       .Skip(range.Offset)
+                                                                       .Take(range.Length)
+                                                                       .ToList());
                 }
-                else
+
+                // there should only be either an EXACT match, or ONE match
+                // other cases should've been handled by the previous passage
+                var current = exactMatchingRoot ?? possibleRoots.Single();
+
+                // try walking the given path to the deepest part, and return all options the user can take from here
+                while (parts.TryDequeue(out var part))
                 {
-                    var lastPart = parts.Last();
-                    var fullPathMatch = string.Join('/', parts.Take(parts.Length - 1));
+                    var next = current.Children
+                                      .FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
 
-                    paths = await _context.AutoCompletePaths
-                                          .Where(p => p.Path.Contains(lastPart))
-                                          .Where(p => p.FullPath.StartsWith(fullPathMatch))
-                                          .OrderBy(p => p.Path)
-                                          .Select(p => p.Path)
-                                          .ToListAsync();
+                    if (next is null)
+                    {
+                        // take the current ConfigEnvironmentPath object and walk its parents back to the root
+                        // to gather info for a more descriptive error-message
+                        var walkedPath = new List<string>();
+                        var x = current;
+
+                        while (!(x is null))
+                        {
+                            walkedPath.Add(x.Path);
+                            x = x.Parent;
+                        }
+
+                        walkedPath.Add("{VOID}");
+                        walkedPath.Reverse();
+
+                        var walkedPathStr = string.Join(" => ", walkedPath);
+
+                        _logger.LogDebug($"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
+                                         $"taken path to get to this dead-end: {walkedPathStr}");
+
+                        return Result<IList<string>>.Error($"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
+                                                           $"taken path to get to this dead-end: {walkedPathStr}",
+                                                           ErrorCode.NotFound);
+                    }
+
+                    current = next;
                 }
 
-                return Result.Success((IList<string>) paths.GroupBy(p => p)
-                                                           .Select(p => p.Key)
-                                                           .Skip(range.Offset)
-                                                           .Take(range.Length)
-                                                           .ToList());
+                return Result.Success((IList<string>) current.Children
+                                                             .Select(c => c.Path)
+                                                             .OrderBy(p => p)
+                                                             .Skip(range.Offset)
+                                                             .Take(range.Length)
+                                                             .ToList());
             }
             catch (Exception e)
             {
