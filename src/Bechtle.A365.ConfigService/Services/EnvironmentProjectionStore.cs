@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -81,8 +80,22 @@ namespace Bechtle.A365.ConfigService.Services
         /// <inheritdoc />
         public async Task<Result<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range)
         {
+            Result<IList<DtoConfigKeyCompletion>> CreateResult(IEnumerable<ConfigEnvironmentKeyPath> paths)
+                => Result.Success((IList<DtoConfigKeyCompletion>) paths.OrderBy(p => p.Path)
+                                                                       .Skip(range.Offset)
+                                                                       .Take(range.Length)
+                                                                       .Select(p => new DtoConfigKeyCompletion
+                                                                       {
+                                                                           Completion = p.Path,
+                                                                           FullPath = p.FullPath,
+                                                                           HasChildren = p.Children.Any()
+                                                                       })
+                                                                       .ToList());
+
             try
             {
+                key = Uri.UnescapeDataString(key);
+
                 if (string.IsNullOrWhiteSpace(key))
                     return Result.Success((IList<DtoConfigKeyCompletion>) new DtoConfigKeyCompletion[0]);
 
@@ -98,97 +111,95 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        $"{nameof(identifier.Name)}: {identifier.Name})",
                                                                        ErrorCode.NotFound);
 
-                key = Uri.UnescapeDataString(key);
-
                 var parts = new Queue<string>(key.Contains('/')
                                                   ? key.Split('/')
                                                   : new[] {key});
 
                 var rootPart = parts.Dequeue();
 
-                // get all the root-paths we could take
-                var possibleRoots = await _context.AutoCompletePaths
-                                                  .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                              p.ParentId == null &&
-                                                              p.Path.Contains(rootPart))
-                                                  .ToListAsync();
-
-                // look for exact matches, so we might ignore multiple matching roots
-                var exactMatchingRoot = possibleRoots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.OrdinalIgnoreCase));
-
-                // if we have an exactMatchingRoot, we don't really care for ambiguities in the root-part
-                if (exactMatchingRoot is null && possibleRoots.Count > 1)
+                // if the user is searching within the roots
+                if (!parts.Any())
                 {
-                    // if we don't have an exact match, multiple roots to choose from AND should search deeper (parts left to walk)
-                    // it can only mean that the root-path doesn't point to any valid root
-                    if (parts.Any())
-                        return Result<IList<DtoConfigKeyCompletion>>.Error($"key '{key}' is ambiguous, matches '{possibleRoots.Count}' roots",
-                                                                           ErrorCode.NotFound);
+                    var possibleRoots = await _context.AutoCompletePaths
+                                                      .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                                  p.ParentId == null &&
+                                                                  p.Path.Contains(rootPart))
+                                                      .ToListAsync();
 
-                    // if we don't need to search any deeper we show the user which root-paths he can take
-                    return Result.Success((IList<DtoConfigKeyCompletion>) possibleRoots.OrderBy(c => c.Path)
-                                                                                       .Skip(range.Offset)
-                                                                                       .Take(range.Length)
-                                                                                       .Select(c => new DtoConfigKeyCompletion
-                                                                                       {
-                                                                                           Completion = c.Path,
-                                                                                           FullPath = c.FullPath,
-                                                                                           HasChildren = c.Children.Any()
-                                                                                       })
-                                                                                       .ToList());
+                    if (possibleRoots.Count == 1 && possibleRoots.First().Path.Equals(rootPart, StringComparison.OrdinalIgnoreCase))
+                        return CreateResult(possibleRoots.First().Children);
+
+                    return CreateResult(possibleRoots);
                 }
 
-                // there should only be either an EXACT match, or ONE match
-                // other cases should've been handled by the previous passage
-                var current = exactMatchingRoot ?? possibleRoots.Single();
+                var root = await _context.AutoCompletePaths
+                                         .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                     p.ParentId == null &&
+                                                     p.Path == rootPart)
+                                         .FirstOrDefaultAsync();
+
+                if (root is null)
+                    return Result<IList<DtoConfigKeyCompletion>>.Error($"key '{key}' is ambiguous, root does not match anything",
+                                                                       ErrorCode.NotFound);
+
+                var current = root;
+                var result = new List<ConfigEnvironmentKeyPath>();
 
                 // try walking the given path to the deepest part, and return all options the user can take from here
                 while (parts.TryDequeue(out var part))
                 {
-                    var next = current.Children
-                                      .FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
-
-                    if (next is null)
+                    if (string.IsNullOrWhiteSpace(part))
                     {
-                        // take the current ConfigEnvironmentPath object and walk its parents back to the root
-                        // to gather info for a more descriptive error-message
-                        var walkedPath = new List<string>();
-                        var x = current;
-
-                        while (!(x is null))
-                        {
-                            walkedPath.Add(x.Path);
-                            x = x.Parent;
-                        }
-
-                        walkedPath.Add("{VOID}");
-                        walkedPath.Reverse();
-
-                        var walkedPathStr = string.Join(" => ", walkedPath);
-
-                        _logger.LogDebug($"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
-                                         $"taken path to get to this dead-end: {walkedPathStr}");
-
-                        return Result<IList<DtoConfigKeyCompletion>>.Error(
-                            $"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
-                            $"taken path to get to this dead-end: {walkedPathStr}",
-                            ErrorCode.NotFound);
+                        result = current.Children;
+                        break;
                     }
 
-                    current = next;
+                    var match = current.Children.FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
+
+                    if (!(match is null))
+                    {
+                        current = match;
+                        result = match.Children;
+                        continue;
+                    }
+
+                    var suggested = current.Children
+                                           .Where(c => c.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
+                                           .ToList();
+
+                    if (suggested.Any())
+                    {
+                        result = suggested;
+                        break;
+                    }
+
+                    // take the current ConfigEnvironmentPath object and walk its parents back to the root
+                    // to gather info for a more descriptive error-message
+                    var walkedPath = new List<string>();
+                    var x = current;
+
+                    walkedPath.Add($"{{END; '{part}'}}");
+
+                    while (!(x is null))
+                    {
+                        walkedPath.Add(x.Path);
+                        x = x.Parent;
+                    }
+
+                    walkedPath.Add("{START}");
+                    walkedPath.Reverse();
+
+                    var walkedPathStr = string.Join(" => ", walkedPath);
+
+                    var logMsg = $"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
+                                 $"path taken to get to this dead-end: {walkedPathStr}";
+
+                    _logger.LogDebug(logMsg);
+
+                    return Result<IList<DtoConfigKeyCompletion>>.Error(logMsg, ErrorCode.NotFound);
                 }
 
-                return Result.Success((IList<DtoConfigKeyCompletion>) current.Children
-                                                                             .OrderBy(c => c.Path)
-                                                                             .Skip(range.Offset)
-                                                                             .Take(range.Length)
-                                                                             .Select(c => new DtoConfigKeyCompletion
-                                                                             {
-                                                                                 Completion = c.Path,
-                                                                                 FullPath = c.FullPath,
-                                                                                 HasChildren = c.Children.Any()
-                                                                             })
-                                                                             .ToList());
+                return CreateResult(result);
             }
             catch (Exception e)
             {
