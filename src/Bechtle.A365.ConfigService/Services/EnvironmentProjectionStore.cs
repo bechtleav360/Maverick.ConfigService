@@ -79,12 +79,12 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<string>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range)
+        public async Task<Result<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(key))
-                    return Result.Success((IList<string>) new string[0]);
+                    return Result.Success((IList<DtoConfigKeyCompletion>) new DtoConfigKeyCompletion[0]);
 
                 var environmentKey = await _context.ConfigEnvironments
                                                    .Where(s => s.Category == identifier.Category &&
@@ -93,10 +93,10 @@ namespace Bechtle.A365.ConfigService.Services
                                                    .FirstOrDefaultAsync();
 
                 if (environmentKey == Guid.Empty)
-                    return Result<IList<string>>.Error("no environment found with (" +
-                                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                                       $"{nameof(identifier.Name)}: {identifier.Name})",
-                                                       ErrorCode.NotFound);
+                    return Result<IList<DtoConfigKeyCompletion>>.Error("no environment found with (" +
+                                                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                                                       $"{nameof(identifier.Name)}: {identifier.Name})",
+                                                                       ErrorCode.NotFound);
 
                 key = Uri.UnescapeDataString(key);
 
@@ -122,15 +122,20 @@ namespace Bechtle.A365.ConfigService.Services
                     // if we don't have an exact match, multiple roots to choose from AND should search deeper (parts left to walk)
                     // it can only mean that the root-path doesn't point to any valid root
                     if (parts.Any())
-                        return Result<IList<string>>.Error($"key '{key}' is ambiguous, matches '{possibleRoots.Count}' roots",
-                                                           ErrorCode.NotFound);
+                        return Result<IList<DtoConfigKeyCompletion>>.Error($"key '{key}' is ambiguous, matches '{possibleRoots.Count}' roots",
+                                                                           ErrorCode.NotFound);
 
                     // if we don't need to search any deeper we show the user which root-paths he can take
-                    return Result.Success((IList<string>) possibleRoots.Select(p => p.Path)
-                                                                       .OrderBy(p => p)
-                                                                       .Skip(range.Offset)
-                                                                       .Take(range.Length)
-                                                                       .ToList());
+                    return Result.Success((IList<DtoConfigKeyCompletion>) possibleRoots.OrderBy(c => c.Path)
+                                                                                       .Skip(range.Offset)
+                                                                                       .Take(range.Length)
+                                                                                       .Select(c => new DtoConfigKeyCompletion
+                                                                                       {
+                                                                                           Completion = c.Path,
+                                                                                           FullPath = c.FullPath,
+                                                                                           HasChildren = c.Children.Any()
+                                                                                       })
+                                                                                       .ToList());
                 }
 
                 // there should only be either an EXACT match, or ONE match
@@ -164,29 +169,35 @@ namespace Bechtle.A365.ConfigService.Services
                         _logger.LogDebug($"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
                                          $"taken path to get to this dead-end: {walkedPathStr}");
 
-                        return Result<IList<string>>.Error($"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
-                                                           $"taken path to get to this dead-end: {walkedPathStr}",
-                                                           ErrorCode.NotFound);
+                        return Result<IList<DtoConfigKeyCompletion>>.Error(
+                            $"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
+                            $"taken path to get to this dead-end: {walkedPathStr}",
+                            ErrorCode.NotFound);
                     }
 
                     current = next;
                 }
 
-                return Result.Success((IList<string>) current.Children
-                                                             .Select(c => c.Path)
-                                                             .OrderBy(p => p)
-                                                             .Skip(range.Offset)
-                                                             .Take(range.Length)
-                                                             .ToList());
+                return Result.Success((IList<DtoConfigKeyCompletion>) current.Children
+                                                                             .OrderBy(c => c.Path)
+                                                                             .Skip(range.Offset)
+                                                                             .Take(range.Length)
+                                                                             .Select(c => new DtoConfigKeyCompletion
+                                                                             {
+                                                                                 Completion = c.Path,
+                                                                                 FullPath = c.FullPath,
+                                                                                 HasChildren = c.Children.Any()
+                                                                             })
+                                                                             .ToList());
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to get autocomplete data for '{key}' in " +
                                  $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
 
-                return Result<IList<string>>.Error($"failed to get autocomplete data for '{key}' in " +
-                                                   $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}",
-                                                   ErrorCode.DbQueryError);
+                return Result<IList<DtoConfigKeyCompletion>>.Error($"failed to get autocomplete data for '{key}' in " +
+                                                                   $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}",
+                                                                   ErrorCode.DbQueryError);
             }
         }
 

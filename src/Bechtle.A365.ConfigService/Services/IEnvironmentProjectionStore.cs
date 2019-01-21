@@ -67,6 +67,6 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="key"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<string>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
+        Task<Result<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
     }
 }
