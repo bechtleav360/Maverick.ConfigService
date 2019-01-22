@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = "GetKeyAutocomplete")]
         public async Task<IActionResult> GetKeyAutocompleteList([FromRoute] string category,
                                                                 [FromRoute] string name,
-                                                                [FromQuery] string query,
+                                                                [FromQuery] string query = null,
                                                                 [FromQuery] int offset = -1,
                                                                 [FromQuery] int length = -1)
         {

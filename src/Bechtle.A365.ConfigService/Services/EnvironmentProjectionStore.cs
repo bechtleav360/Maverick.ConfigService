@@ -87,17 +87,14 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        .Select(p => new DtoConfigKeyCompletion
                                                                        {
                                                                            Completion = p.Path,
-                                                                           FullPath = p.FullPath,
+                                                                           FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
                                                                            HasChildren = p.Children.Any()
                                                                        })
                                                                        .ToList());
 
             try
             {
-                key = Uri.UnescapeDataString(key);
-
-                if (string.IsNullOrWhiteSpace(key))
-                    return Result.Success((IList<DtoConfigKeyCompletion>) new DtoConfigKeyCompletion[0]);
+                key = Uri.UnescapeDataString(key ?? string.Empty);
 
                 var environmentKey = await _context.ConfigEnvironments
                                                    .Where(s => s.Category == identifier.Category &&
@@ -110,6 +107,13 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        $"{nameof(identifier.Category)}: {identifier.Category}; " +
                                                                        $"{nameof(identifier.Name)}: {identifier.Name})",
                                                                        ErrorCode.NotFound);
+
+                // send auto-completion data for all roots
+                if (string.IsNullOrWhiteSpace(key))
+                    return CreateResult(await _context.AutoCompletePaths
+                                                      .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                                  p.ParentId == null)
+                                                      .ToListAsync());
 
                 var parts = new Queue<string>(key.Contains('/')
                                                   ? key.Split('/')
