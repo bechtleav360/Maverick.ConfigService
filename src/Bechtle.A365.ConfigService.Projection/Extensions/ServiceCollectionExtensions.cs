@@ -2,7 +2,6 @@
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
@@ -44,8 +43,8 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         /// <returns></returns>
         public static IServiceCollection AddDomainEventServices(this IServiceCollection services)
             => services
-               // add DomainEventSerializer as generic class for IDomainEventSerializer
-               .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>))
+               // add DomainEventConverter as generic class for IDomainEventConverter
+               .AddSingleton(typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
                // register all IDomainEventHandlers
                // IMPORTANT: this needs to be updated once new events are added
                .AddSingleton<IDomainEventHandler<DefaultEnvironmentCreated>, DefaultEnvironmentCreatedHandler>()

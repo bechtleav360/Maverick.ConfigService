@@ -4,7 +4,6 @@ using System.Reflection;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
@@ -110,7 +109,7 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton<IJsonTranslator, JsonTranslator>()
                     .AddSingleton<IEventDeserializer, EventDeserializer>()
-                    .AddSingleton(typeof(IDomainEventSerializer<>), typeof(DomainEventSerializer<>));
+                    .AddSingleton(typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>));
         }
     }
 }

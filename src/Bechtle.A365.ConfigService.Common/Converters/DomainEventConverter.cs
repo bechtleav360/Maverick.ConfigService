@@ -2,12 +2,12 @@
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.Common.EventFactories
+namespace Bechtle.A365.ConfigService.Common.Converters
 {
-    public class DomainEventSerializer<T> : IDomainEventSerializer<T> where T : DomainEvent
+    public class DomainEventConverter<T> : IDomainEventConverter<T> where T : DomainEvent
     {
         /// <inheritdoc />
-        DomainEvent IDomainEventSerializer.Deserialize(byte[] data, byte[] metadata) => Deserialize(data, metadata);
+        DomainEvent IDomainEventConverter.Deserialize(byte[] data, byte[] metadata) => Deserialize(data, metadata);
 
         /// <inheritdoc />
         public (byte[] Data, byte[] Metadata) Serialize(DomainEvent created) => Serialize(created as T);

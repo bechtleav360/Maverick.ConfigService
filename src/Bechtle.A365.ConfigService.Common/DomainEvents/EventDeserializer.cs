@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Bechtle.A365.ConfigService.Common.EventFactories;
+using Bechtle.A365.ConfigService.Common.Converters;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -25,14 +25,14 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
             var factoryAssociations = new Dictionary<string, Type>
             {
-                {DomainEvent.GetEventType<ConfigurationBuilt>(), typeof(IDomainEventSerializer<ConfigurationBuilt>)},
-                {DomainEvent.GetEventType<DefaultEnvironmentCreated>(), typeof(IDomainEventSerializer<DefaultEnvironmentCreated>)},
-                {DomainEvent.GetEventType<EnvironmentCreated>(), typeof(IDomainEventSerializer<EnvironmentCreated>)},
-                {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventSerializer<EnvironmentDeleted>)},
-                {DomainEvent.GetEventType<EnvironmentKeysModified>(), typeof(IDomainEventSerializer<EnvironmentKeysModified>)},
-                {DomainEvent.GetEventType<StructureCreated>(), typeof(IDomainEventSerializer<StructureCreated>)},
-                {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventSerializer<StructureDeleted>)},
-                {DomainEvent.GetEventType<StructureVariablesModified>(), typeof(IDomainEventSerializer<StructureVariablesModified>)}
+                {DomainEvent.GetEventType<ConfigurationBuilt>(), typeof(IDomainEventConverter<ConfigurationBuilt>)},
+                {DomainEvent.GetEventType<DefaultEnvironmentCreated>(), typeof(IDomainEventConverter<DefaultEnvironmentCreated>)},
+                {DomainEvent.GetEventType<EnvironmentCreated>(), typeof(IDomainEventConverter<EnvironmentCreated>)},
+                {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventConverter<EnvironmentDeleted>)},
+                {DomainEvent.GetEventType<EnvironmentKeysModified>(), typeof(IDomainEventConverter<EnvironmentKeysModified>)},
+                {DomainEvent.GetEventType<StructureCreated>(), typeof(IDomainEventConverter<StructureCreated>)},
+                {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventConverter<StructureDeleted>)},
+                {DomainEvent.GetEventType<StructureVariablesModified>(), typeof(IDomainEventConverter<StructureVariablesModified>)}
             };
 
             foreach (var factory in factoryAssociations)
@@ -40,7 +40,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 if (factory.Key != resolvedEvent.OriginalEvent.EventType)
                     continue;
 
-                var serializer = (IDomainEventSerializer) Provider.GetService(factory.Value);
+                var serializer = (IDomainEventConverter) Provider.GetService(factory.Value);
 
                 return serializer.Deserialize(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
             }

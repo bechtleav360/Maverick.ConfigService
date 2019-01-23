@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Common.EventFactories;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Utilities;
 using EventStore.ClientAPI;
@@ -142,7 +142,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
-            => _provider.GetService<IDomainEventSerializer<T>>()
+            => _provider.GetService<IDomainEventConverter<T>>()
                         .Serialize(domainEvent);
     }
 }
