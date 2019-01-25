@@ -51,6 +51,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 // many small changes to EF-List environment.Keys will result in abysmal performance
                 var addedKeys = new List<ConfigEnvironmentKey>();
                 var removedKeys = new List<ConfigEnvironmentKey>();
+                var changedKeys = new List<ConfigEnvironmentKey>();
 
                 foreach (var action in actions)
                     switch (action.Type)
@@ -78,6 +79,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                 existingKey.Value = action.Value;
                                 existingKey.Description = action.Description;
                                 existingKey.Type = action.ValueType;
+
+                                changedKeys.Add(existingKey);
                             }
 
                             break;
@@ -103,6 +106,27 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                             _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
                             return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
                     }
+
+                // mark configurations as changed when:
+                // UsedKeys contains one of the Changed / Deleted Keys
+
+                foreach (var builtConfiguration in context.FullProjectedConfigurations
+                                                          .Where(c => c.UpToDate)
+                                                          .ToArray())
+                {
+                    var usedKeys = builtConfiguration.UsedConfigurationKeys
+                                                     .OrderBy(k => k.Key)
+                                                     .ToArray();
+
+                    // if any of the Changed- or Removed-Keys is found in the Keys used to build this Configuration - mark it as stale
+                    if (changedKeys.Select(ck => ck.Key)
+                                   .Any(ck => usedKeys.Select(uk => uk.Key)
+                                                      .Contains(ck)) ||
+                        removedKeys.Select(ck => ck.Key)
+                                   .Any(ck => usedKeys.Select(uk => uk.Key)
+                                                      .Contains(ck)))
+                        builtConfiguration.UpToDate = false;
+                }
 
                 try
                 {
@@ -235,10 +259,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 // additional check to make sure there is only ever one default-environment per category
                 if (defaultEnvironment)
                 {
-                    var defaultEnvironments = context.ConfigEnvironments.Count(env => string.Equals(env.Category,
-                                                                                                    identifier.Category,
-                                                                                                    StringComparison.OrdinalIgnoreCase)
-                                                                                      && env.DefaultEnvironment);
+                    var defaultEnvironments = context.ConfigEnvironments
+                                                     .Count(env => string.Equals(env.Category,
+                                                                                 identifier.Category,
+                                                                                 StringComparison.OrdinalIgnoreCase)
+                                                                   && env.DefaultEnvironment);
 
                     if (defaultEnvironments > 0)
                     {
@@ -613,6 +638,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     StructureId = foundStructure.Id,
                     StructureVersion = foundStructure.Version,
                     ConfigurationJson = configurationJson,
+                    UpToDate = true,
                     ValidFrom = validFrom,
                     ValidTo = validTo,
                     UsedConfigurationKeys = usedKeys.Where(k => environment.Data.ContainsKey(k))

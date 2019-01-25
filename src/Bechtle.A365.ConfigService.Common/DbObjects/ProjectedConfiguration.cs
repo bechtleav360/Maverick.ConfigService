@@ -13,6 +13,8 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         public string ConfigurationJson { get; set; }
 
+        public bool UpToDate { get; set; }
+
         public Guid Id { get; set; }
 
         public virtual List<ProjectedConfigurationKey> Keys { get; set; }
