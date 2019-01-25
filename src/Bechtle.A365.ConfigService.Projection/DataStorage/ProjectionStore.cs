@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,14 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             : base(options)
         {
         }
+
+        public IQueryable<ConfigEnvironment> FullConfigEnvironments => ConfigEnvironments.Include(env => env.Keys);
+
+        public IQueryable<ProjectedConfiguration> FullProjectedConfigurations => ProjectedConfigurations.Include(c => c.Keys)
+                                                                                                        .Include(c => c.UsedConfigurationKeys);
+
+        public IQueryable<Structure> FullStructures => Structures.Include(s => s.Keys)
+                                                                 .Include(s => s.Variables);
 
         /// <summary>
         /// </summary>

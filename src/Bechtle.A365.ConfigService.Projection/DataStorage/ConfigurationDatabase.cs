@@ -534,7 +534,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 if (configId == Guid.Empty)
                     return null;
 
-                var configuration = await context.ProjectedConfigurations
+                var configuration = await context.FullProjectedConfigurations
                                                  .Where(c => c.Id == configId)
                                                  .Select(c => new ConfigurationIdentifier(
                                                              new EnvironmentIdentifier(c.ConfigEnvironment.Category, c.ConfigEnvironment.Name),
@@ -711,15 +711,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         private async Task<ConfigEnvironment> GetEnvironmentInternal(EnvironmentIdentifier identifier, ProjectionStore context)
-        {
-            return await context.ConfigEnvironments.FirstOrDefaultAsync(env => env.Category == identifier.Category &&
-                                                                               env.Name == identifier.Name);
-        }
+            => await context.FullConfigEnvironments
+                            .FirstOrDefaultAsync(env => env.Category == identifier.Category &&
+                                                        env.Name == identifier.Name);
 
         private async Task<Structure> GetStructureInternal(StructureIdentifier identifier, ProjectionStore context)
-        {
-            return await context.Structures.FirstOrDefaultAsync(str => str.Name == identifier.Name &&
-                                                                       str.Version == identifier.Version);
-        }
+            => await context.FullStructures
+                            .FirstOrDefaultAsync(str => str.Name == identifier.Name &&
+                                                        str.Version == identifier.Version);
     }
 }

@@ -45,19 +45,13 @@ namespace Bechtle.A365.ConfigService.Projection
                      .RunConsoleAsync();
 
         private static void ConfigureServicesInternal(IServiceCollection services, IConfiguration configuration)
-            => services.AddDbContext<ProjectionStore>(
-                           (provider, builder) => builder.UseLazyLoadingProxies()
-                                                         .UseLoggerFactory(new NullLoggerFactory())
-                                                         .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
-                                                                               .ConnectionString))
-
-                       // required for lazy-loading proxies
-                       .AddEntityFrameworkProxies()
+            => services.AddDbContext<ProjectionStore>((provider, builder) => builder.UseLoggerFactory(new NullLoggerFactory())
+                                                                                    .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
+                                                                                                          .ConnectionString))
                        .AddCustomLogging()
                        .AddProjectionConfiguration(configuration)
                        .AddProjectionServices()
                        .AddDomainEventServices()
-
                        // add the service that should be run
                        .AddHostedService<Projection>();
     }
