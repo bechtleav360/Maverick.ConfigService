@@ -40,17 +40,44 @@ namespace Bechtle.A365.ConfigService.Services
                                              .ThenByDescending(s => s.Structure.Version)
                                              .Skip(range.Offset)
                                              .Take(range.Length)
-                                             .Select(s => new ConfigurationIdentifier(
-                                                         new EnvironmentIdentifier(s.ConfigEnvironment.Category,
-                                                                                   s.ConfigEnvironment.Name),
-                                                         new StructureIdentifier(s.Structure.Name,
-                                                                                 s.Structure.Version)))
+                                             .ToListAsync();
+                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(
+                                                       new EnvironmentIdentifier(s.ConfigEnvironment.Category, s.ConfigEnvironment.Name),
+                                                       new StructureIdentifier(s.Structure.Name, s.Structure.Version)))
+                                          .ToList()
+                                  ?? new List<ConfigurationIdentifier>();
+
+                return Result<IList<ConfigurationIdentifier>>.Success(identifiers);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"failed to retrieve projected configurations: {e}");
+                return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<IList<ConfigurationIdentifier>>> GetStale(QueryRange range)
+        {
+            try
+            {
+                var dbResult = await _context.ProjectedConfigurations
+                                             .Where(p => !p.UpToDate)
+                                             .OrderBy(s => s.ConfigEnvironment.Category)
+                                             .ThenBy(s => s.ConfigEnvironment.Name)
+                                             .ThenBy(s => s.Structure.Name)
+                                             .ThenByDescending(s => s.Structure.Version)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
                                              .ToListAsync();
 
-                var result = dbResult?.ToList()
-                             ?? new List<ConfigurationIdentifier>();
+                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(
+                                                       new EnvironmentIdentifier(s.ConfigEnvironment.Category, s.ConfigEnvironment.Name),
+                                                       new StructureIdentifier(s.Structure.Name, s.Structure.Version)))
+                                          .ToList()
+                                  ?? new List<ConfigurationIdentifier>();
 
-                return Result<IList<ConfigurationIdentifier>>.Success(result);
+                return Result<IList<ConfigurationIdentifier>>.Success(identifiers);
             }
             catch (Exception e)
             {

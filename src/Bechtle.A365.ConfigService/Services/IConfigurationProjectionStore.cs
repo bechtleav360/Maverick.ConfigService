@@ -39,6 +39,13 @@ namespace Bechtle.A365.ConfigService.Services
         Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
 
         /// <summary>
+        ///     get configurations, that have stale configurations
+        /// </summary>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<Result<IList<ConfigurationIdentifier>>> GetStale(QueryRange range);
+
+        /// <summary>
         ///     get the json of a Configuration
         /// </summary>
         /// <param name="identifier"></param>

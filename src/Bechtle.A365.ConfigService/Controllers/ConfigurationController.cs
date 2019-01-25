@@ -339,6 +339,22 @@ namespace Bechtle.A365.ConfigService.Controllers
                                       when);
 
         /// <summary>
+        ///     get configurations whose keys are stale, that should be re-built
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet("stale")]
+        public async Task<IActionResult> GetStaleConfigurations([FromQuery] int offset = -1,
+                                                                [FromQuery] int length = -1)
+        {
+            var range = QueryRange.Make(offset, length);
+            var result = await _store.Configurations.GetStale(range);
+
+            return Result(result);
+        }
+
+        /// <summary>
         ///     get the used environment-keys of a specific configuration
         /// </summary>
         /// <param name="environmentCategory"></param>
