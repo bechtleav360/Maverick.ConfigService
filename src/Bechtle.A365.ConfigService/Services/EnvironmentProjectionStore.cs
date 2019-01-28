@@ -80,18 +80,6 @@ namespace Bechtle.A365.ConfigService.Services
         /// <inheritdoc />
         public async Task<Result<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range)
         {
-            Result<IList<DtoConfigKeyCompletion>> CreateResult(IEnumerable<ConfigEnvironmentKeyPath> paths)
-                => Result.Success((IList<DtoConfigKeyCompletion>) paths.OrderBy(p => p.Path)
-                                                                       .Skip(range.Offset)
-                                                                       .Take(range.Length)
-                                                                       .Select(p => new DtoConfigKeyCompletion
-                                                                       {
-                                                                           Completion = p.Path,
-                                                                           FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
-                                                                           HasChildren = p.Children.Any()
-                                                                       })
-                                                                       .ToList());
-
             try
             {
                 key = Uri.UnescapeDataString(key ?? string.Empty);
@@ -110,10 +98,11 @@ namespace Bechtle.A365.ConfigService.Services
 
                 // send auto-completion data for all roots
                 if (string.IsNullOrWhiteSpace(key))
-                    return CreateResult(await _context.AutoCompletePaths
-                                                      .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                                  p.ParentId == null)
-                                                      .ToListAsync());
+                    return await CreateResult(await _context.FullAutoCompletePaths
+                                                            .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                                        p.ParentId == null)
+                                                            .ToListAsync(),
+                                              range);
 
                 var parts = new Queue<string>(key.Contains('/')
                                                   ? key.Split('/')
@@ -124,19 +113,22 @@ namespace Bechtle.A365.ConfigService.Services
                 // if the user is searching within the roots
                 if (!parts.Any())
                 {
-                    var possibleRoots = await _context.AutoCompletePaths
+                    var possibleRoots = await _context.FullAutoCompletePaths
+                                                      .Include(c => c.Children)
+                                                      .ThenInclude(c => c.Children)
                                                       .Where(p => p.ConfigEnvironmentId == environmentKey &&
                                                                   p.ParentId == null &&
                                                                   p.Path.Contains(rootPart))
                                                       .ToListAsync();
 
-                    if (possibleRoots.Count == 1 && possibleRoots.First().Path.Equals(rootPart, StringComparison.OrdinalIgnoreCase))
-                        return CreateResult(possibleRoots.First().Children);
-
-                    return CreateResult(possibleRoots);
+                    return await (possibleRoots.Count == 1 && possibleRoots.First()
+                                                                           .Path
+                                                                           .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
+                                      ? CreateResult(possibleRoots.First().Children, range)
+                                      : CreateResult(possibleRoots, range));
                 }
 
-                var root = await _context.AutoCompletePaths
+                var root = await _context.FullAutoCompletePaths
                                          .Where(p => p.ConfigEnvironmentId == environmentKey &&
                                                      p.ParentId == null &&
                                                      p.Path == rootPart)
@@ -146,64 +138,7 @@ namespace Bechtle.A365.ConfigService.Services
                     return Result<IList<DtoConfigKeyCompletion>>.Error($"key '{key}' is ambiguous, root does not match anything",
                                                                        ErrorCode.NotFound);
 
-                var current = root;
-                var result = new List<ConfigEnvironmentKeyPath>();
-
-                // try walking the given path to the deepest part, and return all options the user can take from here
-                while (parts.TryDequeue(out var part))
-                {
-                    if (string.IsNullOrWhiteSpace(part))
-                    {
-                        result = current.Children;
-                        break;
-                    }
-
-                    var match = current.Children.FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
-
-                    if (!(match is null))
-                    {
-                        current = match;
-                        result = match.Children;
-                        continue;
-                    }
-
-                    var suggested = current.Children
-                                           .Where(c => c.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
-                                           .ToList();
-
-                    if (suggested.Any())
-                    {
-                        result = suggested;
-                        break;
-                    }
-
-                    // take the current ConfigEnvironmentPath object and walk its parents back to the root
-                    // to gather info for a more descriptive error-message
-                    var walkedPath = new List<string>();
-                    var x = current;
-
-                    walkedPath.Add($"{{END; '{part}'}}");
-
-                    while (!(x is null))
-                    {
-                        walkedPath.Add(x.Path);
-                        x = x.Parent;
-                    }
-
-                    walkedPath.Add("{START}");
-                    walkedPath.Reverse();
-
-                    var walkedPathStr = string.Join(" => ", walkedPath);
-
-                    var logMsg = $"can't auto-complete '{key}', next path to walk would be '{part}' but no matching objects; " +
-                                 $"path taken to get to this dead-end: {walkedPathStr}";
-
-                    _logger.LogDebug(logMsg);
-
-                    return Result<IList<DtoConfigKeyCompletion>>.Error(logMsg, ErrorCode.NotFound);
-                }
-
-                return CreateResult(result);
+                return await GetKeyAutoCompleteInternal(root, parts, range);
             }
             catch (Exception e)
             {
@@ -265,6 +200,47 @@ namespace Bechtle.A365.ConfigService.Services
                                                                                                       StringComparer.OrdinalIgnoreCase));
 
         /// <summary>
+        ///     retrieve all direct children for the given paths
+        /// </summary>
+        /// <param name="paths"></param>
+        /// <returns></returns>
+        private async Task CollectChildren(params ConfigEnvironmentKeyPath[] paths)
+        {
+            foreach (var path in paths)
+                path.Children = await _context.AutoCompletePaths
+                                              .Include(p => p.Parent)
+                                              .Include(p => p.ConfigEnvironment)
+                                              .Where(p => p.ParentId == path.Id)
+                                              .OrderBy(p => p.Path)
+                                              .ToListAsync();
+        }
+
+        /// <summary>
+        ///     take the given paths - retrieve children if necessary - and return an them as DTOs + Result
+        /// </summary>
+        /// <param name="paths"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        private async Task<Result<IList<DtoConfigKeyCompletion>>> CreateResult(IEnumerable<ConfigEnvironmentKeyPath> paths, QueryRange range)
+        {
+            var array = paths.ToArray();
+            foreach (var path in array)
+                if (path.Children is null)
+                    await CollectChildren(path);
+
+            return Result.Success((IList<DtoConfigKeyCompletion>) array.OrderBy(p => p.Path)
+                                                                       .Skip(range.Offset)
+                                                                       .Take(range.Length)
+                                                                       .Select(p => new DtoConfigKeyCompletion
+                                                                       {
+                                                                           Completion = p.Path,
+                                                                           FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                                                                           HasChildren = p.Children.Any()
+                                                                       })
+                                                                       .ToList());
+        }
+
+        /// <summary>
         ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
         /// </summary>
         /// <param name="identifier"></param>
@@ -281,7 +257,7 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
-                var envId = await _context.ConfigEnvironments
+                var envId = await _context.FullConfigEnvironments
                                           .Where(s => s.Category == identifier.Category &&
                                                       s.Name == identifier.Name)
                                           .Select(e => e.Id)
@@ -318,6 +294,79 @@ namespace Bechtle.A365.ConfigService.Services
                     $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
                     ErrorCode.DbQueryError);
             }
+        }
+
+        /// <summary>
+        ///     walk the path given in <paramref name="parts"/>, from <paramref name="root"/> and return the next possible values
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="parts"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        private async Task<Result<IList<DtoConfigKeyCompletion>>> GetKeyAutoCompleteInternal(ConfigEnvironmentKeyPath root, IEnumerable<string> parts, QueryRange range)
+        {
+            var current = root;
+            var result = new List<ConfigEnvironmentKeyPath>();
+            var queue = new Queue<string>(parts);
+
+            // try walking the given path to the deepest part, and return all options the user can take from here
+            while (queue.TryDequeue(out var part))
+            {
+                await CollectChildren(current);
+
+                if (string.IsNullOrWhiteSpace(part))
+                {
+                    result = current.Children;
+                    break;
+                }
+
+                var match = current.Children.FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
+
+                if (!(match is null))
+                {
+                    await CollectChildren(match);
+                    current = match;
+                    result = match.Children;
+                    continue;
+                }
+
+                var suggested = current.Children
+                                       .Where(c => c.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
+                                       .ToList();
+
+                if (suggested.Any())
+                {
+                    result = suggested;
+                    break;
+                }
+
+                // take the current ConfigEnvironmentPath object and walk its parents back to the root
+                // to gather info for a more descriptive error-message
+                var walkedPath = new List<string>();
+                var x = current;
+
+                walkedPath.Add($"{{END; '{part}'}}");
+
+                while (!(x is null))
+                {
+                    walkedPath.Add(x.Path);
+                    x = x.Parent;
+                }
+
+                walkedPath.Add("{START}");
+                walkedPath.Reverse();
+
+                var walkedPathStr = string.Join(" => ", walkedPath);
+
+                var logMsg = $"no matching objects for '{part}' found; " +
+                             $"path taken to get to this dead-end: {walkedPathStr}";
+
+                _logger.LogDebug(logMsg);
+
+                return Result<IList<DtoConfigKeyCompletion>>.Error(logMsg, ErrorCode.NotFound);
+            }
+
+            return await CreateResult(result, range);
         }
     }
 }
