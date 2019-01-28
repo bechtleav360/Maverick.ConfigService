@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -14,7 +15,6 @@ namespace Bechtle.A365.ConfigService.Projection
     public class Projection : HostedService
     {
         private readonly ProjectionConfiguration _configuration;
-        private readonly IConfigurationDatabase _database;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly ILogger<Projection> _logger;
         private readonly IServiceProvider _provider;
@@ -23,7 +23,6 @@ namespace Bechtle.A365.ConfigService.Projection
         // so many injected things, better not get addicted
         public Projection(ILogger<Projection> logger,
                           ProjectionConfiguration configuration,
-                          IConfigurationDatabase database,
                           IEventStoreConnection store,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer)
@@ -33,7 +32,6 @@ namespace Bechtle.A365.ConfigService.Projection
             _logger.LogInformation("starting projection...");
 
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _database = database ?? throw new ArgumentNullException(nameof(database));
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _eventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
@@ -44,11 +42,16 @@ namespace Bechtle.A365.ConfigService.Projection
         {
             _logger.LogInformation("running projection...");
 
-            await _database.Connect();
+            long? latestEvent;
+
+            using (var scope = _provider.CreateScope())
+            {
+                var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
+                await database.Connect();
+                latestEvent = await database.GetLatestProjectedEventId();
+            }
 
             await _store.ConnectAsync();
-
-            var latestEvent = await _database.GetLatestProjectedEventId();
 
             _store.SubscribeToStreamFrom(_configuration.EventStore.SubscriptionName,
                                          latestEvent,
@@ -88,21 +91,39 @@ namespace Bechtle.A365.ConfigService.Projection
 
             try
             {
-                await Project(domainEvent);
+                using (var scope = _provider.CreateScope())
+                {
+                    var context = scope.ServiceProvider.GetService<ProjectionStore>();
+                    var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
 
-                await _database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
+                    await Project(domainEvent, scope.ServiceProvider);
+                    await database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
+
+                    _logger.LogInformation("saving changes made to the database...");
+
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                        _logger.LogDebug($"saving '{context.ChangeTracker.Entries().Count()}' changes made to the database...");
+
+                    await context.SaveChangesAsync();
+                }
             }
             catch (Exception e)
             {
                 _logger.LogCritical(e, $"could not project domain-event of type '{domainEvent.EventType}'");
             }
+            finally
+            {
+                _logger.LogDebug("forcing GC.Collect...");
+
+                GC.Collect();
+            }
         }
 
-        private async Task Project(DomainEvent domainEvent)
+        private async Task Project(DomainEvent domainEvent, IServiceProvider provider)
         {
             // inner function to not clutter this class any more
-            Task HandleDomainEvent<T>(T @event) where T : DomainEvent => _provider.GetService<IDomainEventHandler<T>>()
-                                                                                  .HandleDomainEvent(@event);
+            Task HandleDomainEvent<T>(T @event) where T : DomainEvent => provider.GetService<IDomainEventHandler<T>>()
+                                                                                 .HandleDomainEvent(@event);
 
             switch (domainEvent)
             {

@@ -47,14 +47,14 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                .AddSingleton(typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
                // register all IDomainEventHandlers
                // IMPORTANT: this needs to be updated once new events are added
-               .AddSingleton<IDomainEventHandler<DefaultEnvironmentCreated>, DefaultEnvironmentCreatedHandler>()
-               .AddSingleton<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
-               .AddSingleton<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
-               .AddSingleton<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeysModifiedHandler>()
-               .AddSingleton<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
-               .AddSingleton<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
-               .AddSingleton<IDomainEventHandler<StructureVariablesModified>, StructureVariablesModifiedHandler>()
-               .AddSingleton<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();
+               .AddScoped<IDomainEventHandler<DefaultEnvironmentCreated>, DefaultEnvironmentCreatedHandler>()
+               .AddScoped<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
+               .AddScoped<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
+               .AddScoped<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeysModifiedHandler>()
+               .AddScoped<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
+               .AddScoped<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
+               .AddScoped<IDomainEventHandler<StructureVariablesModified>, StructureVariablesModifiedHandler>()
+               .AddScoped<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>();
 
         /// <summary>
         ///     add configuration as a whole, and parts of it
@@ -75,7 +75,11 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         /// <param name="services"></param>
         /// <returns></returns>
         public static IServiceCollection AddProjectionServices(this IServiceCollection services)
-            => services.AddSingleton(provider =>
+            => services.AddScoped<IConfigurationParser, AntlrConfigurationParser>()
+                       .AddScoped<IConfigurationCompiler, ConfigurationCompiler>()
+                       .AddScoped<IConfigurationDatabase, ConfigurationDatabase>()
+                       .AddScoped<IJsonTranslator, JsonTranslator>()
+                       .AddSingleton(provider =>
                        {
                            var config = provider.GetService<ProjectionConfiguration>()
                                         ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
@@ -88,10 +92,6 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                                                               config.EventStore.ConnectionName);
                        })
                        .AddSingleton<IEventDeserializer, EventDeserializer>()
-                       .AddSingleton<IConfigurationParser, AntlrConfigurationParser>()
-                       .AddSingleton<IConfigurationCompiler, ConfigurationCompiler>()
-                       .AddSingleton<IConfigurationDatabase, ConfigurationDatabase>()
-                       .AddSingleton<IJsonTranslator, JsonTranslator>()
                        .AddSingleton<IEventBus, WebSocketEventBusClient>(provider =>
                        {
                            var config = provider.GetService<ProjectionEventBusConfiguration>();

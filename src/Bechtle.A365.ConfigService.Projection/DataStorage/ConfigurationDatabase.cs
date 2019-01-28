@@ -7,293 +7,258 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     public class ConfigurationDatabase : IConfigurationDatabase
     {
+        private readonly ProjectionStore _context;
         private readonly ILogger<ConfigurationDatabase> _logger;
-        private readonly IServiceProvider _provider;
 
-        public ConfigurationDatabase(ILogger<ConfigurationDatabase> logger,
-                                     IServiceProvider provider)
+        public ConfigurationDatabase(ILogger<ConfigurationDatabase> logger, ProjectionStore context)
         {
             _logger = logger;
-            _provider = provider;
-
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
-            {
-                context.Database.Migrate();
-            }
+            _context = context;
         }
 
         /// <inheritdoc />
         public async Task<Result> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var environment = await GetEnvironmentInternal(identifier);
+
+            if (environment is null)
             {
-                var environment = await GetEnvironmentInternal(identifier, context);
+                _logger.LogError($"could not find environment {identifier} to apply modifications");
+                return Result.Error($"could not find environment {identifier} to apply modifications", ErrorCode.NotFound);
+            }
 
-                if (environment is null)
+            // 'look-up table' string=>ConfigEnvironmentKey to prevent searching the entire list for each and every key
+            var keyDict = environment.Keys.ToDictionary(k => k.Key, k => k);
+
+            // changes we want to make later on
+            // many small changes to EF-List environment.Keys will result in abysmal performance
+            var addedKeys = new List<ConfigEnvironmentKey>();
+            var removedKeys = new List<ConfigEnvironmentKey>();
+            var changedKeys = new List<ConfigEnvironmentKey>();
+
+            foreach (var action in actions)
+                switch (action.Type)
                 {
-                    _logger.LogError($"could not find environment {identifier} to apply modifications");
-                    return Result.Error($"could not find environment {identifier} to apply modifications", ErrorCode.NotFound);
-                }
-
-                // 'look-up table' string=>ConfigEnvironmentKey to prevent searching the entire list for each and every key
-                var keyDict = environment.Keys.ToDictionary(k => k.Key, k => k);
-
-                // changes we want to make later on
-                // many small changes to EF-List environment.Keys will result in abysmal performance
-                var addedKeys = new List<ConfigEnvironmentKey>();
-                var removedKeys = new List<ConfigEnvironmentKey>();
-                var changedKeys = new List<ConfigEnvironmentKey>();
-
-                foreach (var action in actions)
-                    switch (action.Type)
+                    case ConfigKeyActionType.Set:
                     {
-                        case ConfigKeyActionType.Set:
+                        var existingKey = keyDict.ContainsKey(action.Key)
+                                              ? keyDict[action.Key]
+                                              : null;
+
+                        if (existingKey is null)
                         {
-                            var existingKey = keyDict.ContainsKey(action.Key)
-                                                  ? keyDict[action.Key]
-                                                  : null;
-
-                            if (existingKey is null)
+                            addedKeys.Add(new ConfigEnvironmentKey
                             {
-                                addedKeys.Add(new ConfigEnvironmentKey
-                                {
-                                    Id = Guid.NewGuid(),
-                                    ConfigEnvironmentId = environment.Id,
-                                    Key = action.Key,
-                                    Value = action.Value,
-                                    Description = action.Description,
-                                    Type = action.ValueType
-                                });
-                            }
-                            else
-                            {
-                                existingKey.Value = action.Value;
-                                existingKey.Description = action.Description;
-                                existingKey.Type = action.ValueType;
+                                Id = Guid.NewGuid(),
+                                ConfigEnvironmentId = environment.Id,
+                                Key = action.Key,
+                                Value = action.Value,
+                                Description = action.Description,
+                                Type = action.ValueType
+                            });
+                        }
+                        else
+                        {
+                            existingKey.Value = action.Value;
+                            existingKey.Description = action.Description;
+                            existingKey.Type = action.ValueType;
 
-                                changedKeys.Add(existingKey);
-                            }
-
-                            break;
+                            changedKeys.Add(existingKey);
                         }
 
-                        case ConfigKeyActionType.Delete:
-                        {
-                            var existingKey = keyDict.ContainsKey(action.Key)
-                                                  ? keyDict[action.Key]
-                                                  : null;
-
-                            if (existingKey is null)
-                            {
-                                _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
-                                return Result.Error($"could not remove key '{action.Key}' from environment {identifier}", ErrorCode.NotFound);
-                            }
-
-                            removedKeys.Add(existingKey);
-                            break;
-                        }
-
-                        default:
-                            _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
-                            return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
+                        break;
                     }
 
-                // mark configurations as changed when:
-                // UsedKeys contains one of the Changed / Deleted Keys
+                    case ConfigKeyActionType.Delete:
+                    {
+                        var existingKey = keyDict.ContainsKey(action.Key)
+                                              ? keyDict[action.Key]
+                                              : null;
 
-                foreach (var builtConfiguration in context.FullProjectedConfigurations
-                                                          .Where(c => c.UpToDate)
-                                                          .ToArray())
-                {
-                    var usedKeys = builtConfiguration.UsedConfigurationKeys
-                                                     .OrderBy(k => k.Key)
-                                                     .ToArray();
+                        if (existingKey is null)
+                        {
+                            _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
+                            return Result.Error($"could not remove key '{action.Key}' from environment {identifier}", ErrorCode.NotFound);
+                        }
 
-                    // if any of the Changed- or Removed-Keys is found in the Keys used to build this Configuration - mark it as stale
-                    if (changedKeys.Select(ck => ck.Key)
-                                   .Any(ck => usedKeys.Select(uk => uk.Key)
-                                                      .Contains(ck)) ||
-                        removedKeys.Select(ck => ck.Key)
-                                   .Any(ck => usedKeys.Select(uk => uk.Key)
-                                                      .Contains(ck)))
-                        builtConfiguration.UpToDate = false;
+                        removedKeys.Add(existingKey);
+                        break;
+                    }
+
+                    default:
+                        _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
+                        return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
                 }
 
-                try
-                {
-                    if (removedKeys.Any())
-                        environment.Keys.RemoveRange(removedKeys);
+            // mark configurations as changed when:
+            // UsedKeys contains one of the Changed / Deleted Keys
 
-                    if (addedKeys.Any())
-                        environment.Keys.AddRange(addedKeys);
+            foreach (var builtConfiguration in _context.FullProjectedConfigurations
+                                                       .Where(c => c.UpToDate)
+                                                       .ToArray())
+            {
+                var usedKeys = builtConfiguration.UsedConfigurationKeys
+                                                 .OrderBy(k => k.Key)
+                                                 .ToArray();
 
-                    await context.SaveChangesAsync();
-                    return Result.Success();
-                }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not apply actions to environment {identifier}: {e}");
-                    return Result.Error($"could not apply actions to environment {identifier}: {e}", ErrorCode.DbUpdateError);
-                }
+                // if any of the Changed- or Removed-Keys is found in the Keys used to build this Configuration - mark it as stale
+                if (changedKeys.Select(ck => ck.Key)
+                               .Any(ck => usedKeys.Select(uk => uk.Key)
+                                                  .Contains(ck)) ||
+                    removedKeys.Select(ck => ck.Key)
+                               .Any(ck => usedKeys.Select(uk => uk.Key)
+                                                  .Contains(ck)))
+                    builtConfiguration.UpToDate = false;
+            }
+
+            try
+            {
+                if (removedKeys.Any())
+                    environment.Keys.RemoveRange(removedKeys);
+
+                if (addedKeys.Any())
+                    environment.Keys.AddRange(addedKeys);
+
+
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not apply actions to environment {identifier}: {e}");
+                return Result.Error($"could not apply actions to environment {identifier}: {e}", ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
         public async Task<Result> ApplyChanges(StructureIdentifier identifier, IList<ConfigKeyAction> actions)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var structure = await GetStructureInternal(identifier);
+
+            if (structure is null)
             {
-                var structure = await GetStructureInternal(identifier, context);
+                _logger.LogError($"could not find structure {identifier} to apply modifications");
+                return Result.Error($"could not find structure {identifier} to apply modifications", ErrorCode.NotFound);
+            }
 
-                if (structure is null)
+            // 'look-up table' string=>StructureVariable to prevent searching the entire list for each and every key
+            var keyDict = structure.Variables.ToDictionary(k => k.Key, k => k);
+
+            // changes we want to make later on
+            // many small changes to EF-List environment.Keys will result in abysmal performance
+            var addedKeys = new List<StructureVariable>();
+            var removedKeys = new List<StructureVariable>();
+
+            foreach (var action in actions)
+                switch (action.Type)
                 {
-                    _logger.LogError($"could not find structure {identifier} to apply modifications");
-                    return Result.Error($"could not find structure {identifier} to apply modifications", ErrorCode.NotFound);
-                }
-
-                // 'look-up table' string=>StructureVariable to prevent searching the entire list for each and every key
-                var keyDict = structure.Variables.ToDictionary(k => k.Key, k => k);
-
-                // changes we want to make later on
-                // many small changes to EF-List environment.Keys will result in abysmal performance
-                var addedKeys = new List<StructureVariable>();
-                var removedKeys = new List<StructureVariable>();
-
-                foreach (var action in actions)
-                    switch (action.Type)
+                    case ConfigKeyActionType.Set:
                     {
-                        case ConfigKeyActionType.Set:
-                        {
-                            var existingKey = keyDict.ContainsKey(action.Key)
-                                                  ? keyDict[action.Key]
-                                                  : null;
+                        var existingKey = keyDict.ContainsKey(action.Key)
+                                              ? keyDict[action.Key]
+                                              : null;
 
-                            if (existingKey is null)
-                                addedKeys.Add(new StructureVariable
-                                {
-                                    Id = Guid.NewGuid(),
-                                    StructureId = structure.Id,
-                                    Key = action.Key,
-                                    Value = action.Value
-                                });
-                            else
-                                existingKey.Value = action.Value;
-
-                            break;
-                        }
-
-                        case ConfigKeyActionType.Delete:
-                        {
-                            var existingKey = keyDict.ContainsKey(action.Key)
-                                                  ? keyDict[action.Key]
-                                                  : null;
-
-                            if (existingKey is null)
+                        if (existingKey is null)
+                            addedKeys.Add(new StructureVariable
                             {
-                                _logger.LogError($"could not remove variable '{action.Key}' from structure {identifier}: not found");
-                                return Result.Error($"could not remove variable '{action.Key}' from structure {identifier}", ErrorCode.NotFound);
-                            }
+                                Id = Guid.NewGuid(),
+                                StructureId = structure.Id,
+                                Key = action.Key,
+                                Value = action.Value
+                            });
+                        else
+                            existingKey.Value = action.Value;
 
-                            removedKeys.Add(existingKey);
-                            break;
-                        }
-
-                        default:
-                            _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
-                            return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
+                        break;
                     }
 
-                try
-                {
-                    if (removedKeys.Any())
-                        structure.Variables.RemoveRange(removedKeys);
+                    case ConfigKeyActionType.Delete:
+                    {
+                        var existingKey = keyDict.ContainsKey(action.Key)
+                                              ? keyDict[action.Key]
+                                              : null;
 
-                    if (addedKeys.Any())
-                        structure.Variables.AddRange(addedKeys);
+                        if (existingKey is null)
+                        {
+                            _logger.LogError($"could not remove variable '{action.Key}' from structure {identifier}: not found");
+                            return Result.Error($"could not remove variable '{action.Key}' from structure {identifier}", ErrorCode.NotFound);
+                        }
 
-                    await context.SaveChangesAsync();
-                    return Result.Success();
+                        removedKeys.Add(existingKey);
+                        break;
+                    }
+
+                    default:
+                        _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
+                        return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
                 }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not apply actions to structure {identifier}: {e}");
-                    return Result.Error($"could not apply actions to structure {identifier}: {e}", ErrorCode.DbUpdateError);
-                }
+
+            try
+            {
+                if (removedKeys.Any())
+                    structure.Variables.RemoveRange(removedKeys);
+
+                if (addedKeys.Any())
+                    structure.Variables.AddRange(addedKeys);
+
+
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not apply actions to structure {identifier}: {e}");
+                return Result.Error($"could not apply actions to structure {identifier}: {e}", ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
         public async Task<Result> Connect()
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
-            {
-                await context.Database.EnsureCreatedAsync();
-
-                return Result.Success();
-            }
+            await _context.Database.MigrateAsync();
+            return Result.Success();
         }
 
         /// <inheritdoc />
         public async Task<Result> CreateEnvironment(EnvironmentIdentifier identifier, bool defaultEnvironment)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            if (await GetEnvironmentInternal(identifier) != null)
             {
-                if (await GetEnvironmentInternal(identifier, context) != null)
-                {
-                    _logger.LogError($"environment with id {identifier} already exists");
-                    return Result.Error($"environment with id {identifier} already exists", ErrorCode.EnvironmentAlreadyExists);
-                }
+                _logger.LogError($"environment with id {identifier} already exists");
+                return Result.Error($"environment with id {identifier} already exists", ErrorCode.EnvironmentAlreadyExists);
+            }
 
-                // additional check to make sure there is only ever one default-environment per category
-                if (defaultEnvironment)
-                {
-                    var defaultEnvironments = context.ConfigEnvironments
-                                                     .Count(env => string.Equals(env.Category,
-                                                                                 identifier.Category,
-                                                                                 StringComparison.OrdinalIgnoreCase)
-                                                                   && env.DefaultEnvironment);
+            // additional check to make sure there is only ever one default-environment per category
+            if (defaultEnvironment)
+            {
+                var defaultEnvironments = _context.ConfigEnvironments
+                                                  .Count(env => string.Equals(env.Category,
+                                                                              identifier.Category,
+                                                                              StringComparison.OrdinalIgnoreCase)
+                                                                && env.DefaultEnvironment);
 
-                    if (defaultEnvironments > 0)
-                    {
-                        _logger.LogError($"can not create another default-environment in category '{identifier.Category}'");
-                        return Result.Error($"can not create another default-environment in category '{identifier.Category}'",
-                                            ErrorCode.DefaultEnvironmentAlreadyExists);
-                    }
-                }
-
-                await context.ConfigEnvironments.AddAsync(new ConfigEnvironment
+                if (defaultEnvironments > 0)
                 {
-                    Id = Guid.NewGuid(),
-                    Name = identifier.Name,
-                    Category = identifier.Category,
-                    DefaultEnvironment = defaultEnvironment,
-                    Keys = new List<ConfigEnvironmentKey>()
-                });
-
-                try
-                {
-                    await context.SaveChangesAsync();
-
-                    return Result.Success();
-                }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not save new Environment {identifier} to database: {e}");
-                    return Result.Error($"could not save new Environment {identifier} to database: {e}", ErrorCode.DbUpdateError);
+                    _logger.LogError($"can not create another default-environment in category '{identifier.Category}'");
+                    return Result.Error($"can not create another default-environment in category '{identifier.Category}'",
+                                        ErrorCode.DefaultEnvironmentAlreadyExists);
                 }
             }
+
+            await _context.ConfigEnvironments.AddAsync(new ConfigEnvironment
+            {
+                Id = Guid.NewGuid(),
+                Name = identifier.Name,
+                Category = identifier.Category,
+                DefaultEnvironment = defaultEnvironment,
+                Keys = new List<ConfigEnvironmentKey>()
+            });
+
+            return Result.Success();
         }
 
         /// <inheritdoc />
@@ -301,183 +266,159 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                   IDictionary<string, string> keys,
                                                   IDictionary<string, string> variables)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            if (await GetStructureInternal(identifier) != null)
             {
-                if (await GetStructureInternal(identifier, context) != null)
-                {
-                    _logger.LogError($"structure with id {identifier} already exists");
-                    return Result.Error($"structure with id {identifier} already exists", ErrorCode.StructureAlreadyExists);
-                }
+                _logger.LogError($"structure with id {identifier} already exists");
+                return Result.Error($"structure with id {identifier} already exists", ErrorCode.StructureAlreadyExists);
+            }
 
-                await context.Structures.AddAsync(new Structure
-                {
-                    Id = Guid.NewGuid(),
-                    Name = identifier.Name,
-                    Version = identifier.Version,
-                    Keys = keys.Select(kvp => new StructureKey
-                               {
-                                   Id = Guid.NewGuid(),
-                                   Key = kvp.Key,
-                                   Value = kvp.Value
-                               })
-                               .ToList(),
-                    Variables = variables.Select(kvp => new StructureVariable
-                                         {
-                                             Id = Guid.NewGuid(),
-                                             Key = kvp.Key,
-                                             Value = kvp.Value
-                                         })
-                                         .ToList()
-                });
+            await _context.Structures.AddAsync(new Structure
+            {
+                Id = Guid.NewGuid(),
+                Name = identifier.Name,
+                Version = identifier.Version,
+                Keys = keys.Select(kvp => new StructureKey
+                           {
+                               Id = Guid.NewGuid(),
+                               Key = kvp.Key,
+                               Value = kvp.Value
+                           })
+                           .ToList(),
+                Variables = variables.Select(kvp => new StructureVariable
+                                     {
+                                         Id = Guid.NewGuid(),
+                                         Key = kvp.Key,
+                                         Value = kvp.Value
+                                     })
+                                     .ToList()
+            });
 
-                try
-                {
-                    await context.SaveChangesAsync();
-
-                    return Result.Success();
-                }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not save new Structure {identifier} to database: {e}");
-                    return Result.Error($"could not save new Structure {identifier} to database: {e}", ErrorCode.DbUpdateError);
-                }
+            try
+            {
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not save new Structure {identifier} to database: {e}");
+                return Result.Error($"could not save new Structure {identifier} to database: {e}", ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
         public async Task<Result> DeleteEnvironment(EnvironmentIdentifier identifier)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var foundEnvironment = await GetEnvironmentInternal(identifier);
+
+            if (foundEnvironment is null)
+                return Result.Success();
+
+            _context.ConfigEnvironments.Remove(foundEnvironment);
+
+            try
             {
-                var foundEnvironment = await GetEnvironmentInternal(identifier, context);
-
-                if (foundEnvironment is null)
-                    return Result.Success();
-
-                context.ConfigEnvironments.Remove(foundEnvironment);
-
-                try
-                {
-                    await context.SaveChangesAsync();
-
-                    return Result.Success();
-                }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not delete environment {identifier} from database: {e}");
-                    return Result.Error($"could not delete environment {identifier} from database: {e}", ErrorCode.DbUpdateError);
-                }
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not delete environment {identifier} from database: {e}");
+                return Result.Error($"could not delete environment {identifier} from database: {e}", ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
         public async Task<Result> DeleteStructure(StructureIdentifier identifier)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var foundStructure = await GetStructureInternal(identifier);
+
+            if (foundStructure is null)
+                return Result.Success();
+
+            _context.Structures.Remove(foundStructure);
+
+            try
             {
-                var foundStructure = await GetStructureInternal(identifier, context);
-
-                if (foundStructure is null)
-                    return Result.Success();
-
-                context.Structures.Remove(foundStructure);
-
-                try
-                {
-                    await context.SaveChangesAsync();
-
-                    return Result.Success();
-                }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not delete Structure {identifier} from database: {e}");
-                    return Result.Error($"could not delete Structure {identifier} from database: {e}", ErrorCode.DbUpdateError);
-                }
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not delete Structure {identifier} from database: {e}");
+                return Result.Error($"could not delete Structure {identifier} from database: {e}", ErrorCode.DbUpdateError);
             }
         }
 
         public async Task<Result> GenerateEnvironmentKeyAutocompleteData(EnvironmentIdentifier identifier)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var environment = await GetEnvironmentInternal(identifier);
+
+            var roots = new List<ConfigEnvironmentKeyPath>();
+
+            foreach (var environmentKey in environment.Keys.OrderBy(k => k.Key))
             {
-                var environment = await GetEnvironmentInternal(identifier, context);
+                var parts = environmentKey.Key.Split('/');
 
-                var roots = new List<ConfigEnvironmentKeyPath>();
+                var rootPart = parts.First();
+                var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
 
-                foreach (var environmentKey in environment.Keys.OrderBy(k => k.Key))
+                if (root is null)
                 {
-                    var parts = environmentKey.Key.Split('/');
-
-                    var rootPart = parts.First();
-                    var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
-
-                    if (root is null)
+                    root = new ConfigEnvironmentKeyPath
                     {
-                        root = new ConfigEnvironmentKeyPath
+                        Id = Guid.NewGuid(),
+                        ConfigEnvironment = environment,
+                        ConfigEnvironmentId = environment.Id,
+                        Children = new List<ConfigEnvironmentKeyPath>(),
+                        Parent = null,
+                        ParentId = null,
+                        Path = rootPart,
+                        FullPath = rootPart
+                    };
+
+                    roots.Add(root);
+                }
+
+                var current = root;
+
+                foreach (var part in parts.Skip(1))
+                {
+                    var next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (next is null)
+                    {
+                        next = new ConfigEnvironmentKeyPath
                         {
                             Id = Guid.NewGuid(),
                             ConfigEnvironment = environment,
                             ConfigEnvironmentId = environment.Id,
                             Children = new List<ConfigEnvironmentKeyPath>(),
-                            Parent = null,
-                            ParentId = null,
-                            Path = rootPart,
-                            FullPath = rootPart
+                            Parent = current,
+                            ParentId = current.Id,
+                            Path = part,
+                            FullPath = current.FullPath + '/' + part
                         };
 
-                        roots.Add(root);
+                        current.Children.Add(next);
                     }
 
-                    var current = root;
-
-                    foreach (var part in parts.Skip(1))
-                    {
-                        var next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
-
-                        if (next is null)
-                        {
-                            next = new ConfigEnvironmentKeyPath
-                            {
-                                Id = Guid.NewGuid(),
-                                ConfigEnvironment = environment,
-                                ConfigEnvironmentId = environment.Id,
-                                Children = new List<ConfigEnvironmentKeyPath>(),
-                                Parent = current,
-                                ParentId = current.Id,
-                                Path = part,
-                                FullPath = current.FullPath + '/' + part
-                            };
-
-                            current.Children.Add(next);
-                        }
-
-                        current = next;
-                    }
+                    current = next;
                 }
+            }
 
-                var existingPaths = await context.AutoCompletePaths
-                                                 .Where(p => p.ConfigEnvironmentId == environment.Id)
-                                                 .ToListAsync();
+            var existingPaths = await _context.AutoCompletePaths
+                                              .Where(p => p.ConfigEnvironmentId == environment.Id)
+                                              .ToListAsync();
 
-                context.AutoCompletePaths.RemoveRange(existingPaths);
+            _context.AutoCompletePaths.RemoveRange(existingPaths);
 
-                await context.AutoCompletePaths.AddRangeAsync(roots);
+            await _context.AutoCompletePaths.AddRangeAsync(roots);
 
-                try
-                {
-                    await context.SaveChangesAsync();
-
-                    return Result.Success();
-                }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not update auto-completion data for environment '{identifier}': {e}");
-                    return Result.Error($"could not update auto-completion data for environment '{identifier}'", ErrorCode.DbUpdateError);
-                }
+            try
+            {
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not update auto-completion data for environment '{identifier}': {e}");
+                return Result.Error($"could not update auto-completion data for environment '{identifier}'", ErrorCode.DbUpdateError);
             }
         }
 
@@ -488,130 +429,108 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<Result<EnvironmentSnapshot>> GetEnvironment(EnvironmentIdentifier identifier)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var environment = await GetEnvironmentInternal(identifier);
+
+            if (environment == null)
             {
-                var environment = await GetEnvironmentInternal(identifier, context);
-
-                if (environment == null)
-                {
-                    _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
-                    return Result<EnvironmentSnapshot>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
-                }
-
-                var environmentData = environment.Keys
-                                                 .ToDictionary(data => data.Key,
-                                                               data => data.Value);
-
-                return Result.Success(new EnvironmentSnapshot(identifier, environmentData));
+                _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
+                return Result<EnvironmentSnapshot>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
             }
+
+            var environmentData = environment.Keys
+                                             .ToDictionary(data => data.Key,
+                                                           data => data.Value);
+
+            return Result.Success(new EnvironmentSnapshot(identifier, environmentData));
         }
 
         /// <inheritdoc />
         public async Task<Result<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var environment = await GetEnvironmentInternal(identifier);
+
+            if (environment is null)
             {
-                var environment = await GetEnvironmentInternal(identifier, context);
-
-                if (environment is null)
-                {
-                    _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
-                    return Result<EnvironmentSnapshot>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
-                }
-
-                var environmentData = environment.Keys
-                                                 .ToDictionary(data => data.Key,
-                                                               data => data.Value);
-
-                var defaultEnv = await GetEnvironmentInternal(new EnvironmentIdentifier(identifier.Category, "Default"), context);
-
-                // add all keys from defaultEnv to environmentData that are not already set in environmentData
-                // inherit by adding instead of overriding keys
-                if (defaultEnv is null)
-                    _logger.LogWarning($"no default-environment found for category '{identifier.Category}'");
-                else
-                    foreach (var kvp in defaultEnv.Keys)
-                        if (!environmentData.ContainsKey(kvp.Key))
-                            environmentData[kvp.Key] = kvp.Value;
-
-                return Result.Success(new EnvironmentSnapshot(identifier, environmentData));
+                _logger.LogError($"no {nameof(Environment)} with id {identifier} found");
+                return Result<EnvironmentSnapshot>.Error($"no {nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
             }
+
+            var environmentData = environment.Keys
+                                             .ToDictionary(data => data.Key,
+                                                           data => data.Value);
+
+            var defaultEnv = await GetEnvironmentInternal(new EnvironmentIdentifier(identifier.Category, "Default"));
+
+            // add all keys from defaultEnv to environmentData that are not already set in environmentData
+            // inherit by adding instead of overriding keys
+            if (defaultEnv is null)
+                _logger.LogWarning($"no default-environment found for category '{identifier.Category}'");
+            else
+                foreach (var kvp in defaultEnv.Keys)
+                    if (!environmentData.ContainsKey(kvp.Key))
+                        environmentData[kvp.Key] = kvp.Value;
+
+            return Result.Success(new EnvironmentSnapshot(identifier, environmentData));
         }
 
         /// <inheritdoc />
         public async Task<ConfigurationIdentifier> GetLatestActiveConfiguration()
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+
+            if (metadata is null)
             {
-                var metadata = await context.Metadata.FirstOrDefaultAsync();
-
-                if (metadata is null)
-                {
-                    metadata = new ProjectionMetadata();
-                    await context.Metadata.AddAsync(metadata);
-                    await context.SaveChangesAsync();
-                }
-
-                var configId = metadata.LastActiveConfigurationId;
-                if (configId == Guid.Empty)
-                    return null;
-
-                var configuration = await context.FullProjectedConfigurations
-                                                 .Where(c => c.Id == configId)
-                                                 .Select(c => new ConfigurationIdentifier(
-                                                             new EnvironmentIdentifier(c.ConfigEnvironment.Category, c.ConfigEnvironment.Name),
-                                                             new StructureIdentifier(c.Structure.Name, c.Structure.Version)))
-                                                 .FirstOrDefaultAsync();
-
-                return configuration;
+                metadata = new ProjectionMetadata();
+                await _context.Metadata.AddAsync(metadata);
             }
+
+            var configId = metadata.LastActiveConfigurationId;
+            if (configId == Guid.Empty)
+                return null;
+
+            var configuration = await _context.FullProjectedConfigurations
+                                              .Where(c => c.Id == configId)
+                                              .Select(c => new ConfigurationIdentifier(
+                                                          new EnvironmentIdentifier(c.ConfigEnvironment.Category, c.ConfigEnvironment.Name),
+                                                          new StructureIdentifier(c.Structure.Name, c.Structure.Version)))
+                                              .FirstOrDefaultAsync();
+
+            return configuration;
         }
 
         /// <inheritdoc />
         public async Task<long?> GetLatestProjectedEventId()
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+
+            if (metadata is null)
             {
-                var metadata = await context.Metadata.FirstOrDefaultAsync();
-
-                if (metadata is null)
-                {
-                    metadata = new ProjectionMetadata();
-                    await context.Metadata.AddAsync(metadata);
-                    await context.SaveChangesAsync();
-                }
-
-                return metadata.LatestEvent;
+                metadata = new ProjectionMetadata();
+                await _context.Metadata.AddAsync(metadata);
             }
+
+            return metadata.LatestEvent;
         }
 
         /// <inheritdoc />
         public async Task<Result<StructureSnapshot>> GetStructure(StructureIdentifier identifier)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var structure = await GetStructureInternal(identifier);
+
+            if (structure == null)
             {
-                var structure = await GetStructureInternal(identifier, context);
-
-                if (structure == null)
-                {
-                    _logger.LogError($"no {nameof(Structure)} with id {identifier} found");
-                    return Result<StructureSnapshot>.Error($"no {nameof(Structure)} with id {identifier} found", ErrorCode.NotFound);
-                }
-
-                return Result.Success(new StructureSnapshot(identifier,
-                                                            structure.Version,
-                                                            structure.Keys
-                                                                     .ToDictionary(data => data.Key,
-                                                                                   data => data.Value),
-                                                            structure.Variables
-                                                                     .ToDictionary(data => data.Key,
-                                                                                   data => data.Value)));
+                _logger.LogError($"no {nameof(Structure)} with id {identifier} found");
+                return Result<StructureSnapshot>.Error($"no {nameof(Structure)} with id {identifier} found", ErrorCode.NotFound);
             }
+
+            return Result.Success(new StructureSnapshot(identifier,
+                                                        structure.Version,
+                                                        structure.Keys
+                                                                 .ToDictionary(data => data.Key,
+                                                                               data => data.Value),
+                                                        structure.Variables
+                                                                 .ToDictionary(data => data.Key,
+                                                                               data => data.Value)));
         }
 
         /// <inheritdoc />
@@ -623,127 +542,105 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                     DateTime? validFrom,
                                                     DateTime? validTo)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var foundEnvironment = await GetEnvironmentInternal(environment.Identifier);
+
+            // version is already included in structure.Identifier, as opposed to environment.Identifier
+            var foundStructure = await GetStructureInternal(structure.Identifier);
+
+            var compiledConfiguration = new ProjectedConfiguration
             {
-                var foundEnvironment = await GetEnvironmentInternal(environment.Identifier, context);
+                Id = Guid.NewGuid(),
+                ConfigEnvironmentId = foundEnvironment.Id,
+                StructureId = foundStructure.Id,
+                StructureVersion = foundStructure.Version,
+                ConfigurationJson = configurationJson,
+                UpToDate = true,
+                ValidFrom = validFrom,
+                ValidTo = validTo,
+                UsedConfigurationKeys = usedKeys.Where(k => environment.Data.ContainsKey(k))
+                                                .Select(key => new UsedConfigurationKey
+                                                {
+                                                    Id = Guid.NewGuid(),
+                                                    Key = key
+                                                })
+                                                .ToList(),
+                Keys = configuration.Select(kvp => new ProjectedConfigurationKey
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        Key = kvp.Key,
+                                        Value = kvp.Value
+                                    })
+                                    .ToList()
+            };
 
-                // version is already included in structure.Identifier, as opposed to environment.Identifier
-                var foundStructure = await GetStructureInternal(structure.Identifier, context);
+            var existingConfiguration = await _context.ProjectedConfigurations
+                                                      .FirstOrDefaultAsync(c => c.ConfigEnvironment.Category == environment.Identifier.Category &&
+                                                                                c.ConfigEnvironment.Name == environment.Identifier.Name &&
+                                                                                c.Structure.Name == structure.Identifier.Name &&
+                                                                                c.Structure.Version == structure.Identifier.Version &&
+                                                                                c.ValidFrom == validFrom &&
+                                                                                c.ValidTo == validTo);
 
-                var compiledConfiguration = new ProjectedConfiguration
-                {
-                    Id = Guid.NewGuid(),
-                    ConfigEnvironmentId = foundEnvironment.Id,
-                    StructureId = foundStructure.Id,
-                    StructureVersion = foundStructure.Version,
-                    ConfigurationJson = configurationJson,
-                    UpToDate = true,
-                    ValidFrom = validFrom,
-                    ValidTo = validTo,
-                    UsedConfigurationKeys = usedKeys.Where(k => environment.Data.ContainsKey(k))
-                                                    .Select(key => new UsedConfigurationKey
-                                                    {
-                                                        Id = Guid.NewGuid(),
-                                                        Key = key
-                                                    })
-                                                    .ToList(),
-                    Keys = configuration.Select(kvp => new ProjectedConfigurationKey
-                                        {
-                                            Id = Guid.NewGuid(),
-                                            Key = kvp.Key,
-                                            Value = kvp.Value
-                                        })
-                                        .ToList()
-                };
+            try
+            {
+                if (existingConfiguration != null)
+                    _context.ProjectedConfigurations.Remove(existingConfiguration);
 
-                var existingConfiguration = await context.ProjectedConfigurations
-                                                         .FirstOrDefaultAsync(c => c.ConfigEnvironment.Category == environment.Identifier.Category &&
-                                                                                   c.ConfigEnvironment.Name == environment.Identifier.Name &&
-                                                                                   c.Structure.Name == structure.Identifier.Name &&
-                                                                                   c.Structure.Version == structure.Identifier.Version &&
-                                                                                   c.ValidFrom == validFrom &&
-                                                                                   c.ValidTo == validTo);
+                _context.ProjectedConfigurations.Add(compiledConfiguration);
 
-                try
-                {
-                    if (existingConfiguration != null)
-                    {
-                        context.ProjectedConfigurations.Remove(existingConfiguration);
-                        context.SaveChanges();
-                    }
-
-                    context.ProjectedConfigurations.Add(compiledConfiguration);
-
-                    context.SaveChanges();
-
-                    return Result.Success();
-                }
-                catch (DbUpdateException e)
-                {
-                    _logger.LogError($"could not save compiled configuration: {e}");
-                    return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
-                }
+                return Result.Success();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogError($"could not save compiled configuration: {e}");
+                return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
         public async Task SetLatestActiveConfiguration(ConfigurationIdentifier identifier)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+
+            if (metadata is null)
             {
-                var metadata = await context.Metadata.FirstOrDefaultAsync();
-
-                if (metadata is null)
-                {
-                    metadata = new ProjectionMetadata();
-                    await context.Metadata.AddAsync(metadata);
-                    await context.SaveChangesAsync();
-                }
-
-                var configuration = await context.ProjectedConfigurations
-                                                 .Where(c => c.ConfigEnvironment.Category == identifier.Environment.Category &&
-                                                             c.ConfigEnvironment.Name == identifier.Environment.Name &&
-                                                             c.Structure.Name == identifier.Structure.Name &&
-                                                             c.Structure.Version == identifier.Structure.Version)
-                                                 .Select(c => c.Id)
-                                                 .FirstOrDefaultAsync();
-
-                metadata.LastActiveConfigurationId = configuration;
-
-                await context.SaveChangesAsync();
+                metadata = new ProjectionMetadata();
+                await _context.Metadata.AddAsync(metadata);
             }
+
+            var configuration = await _context.ProjectedConfigurations
+                                              .Where(c => c.ConfigEnvironment.Category == identifier.Environment.Category &&
+                                                          c.ConfigEnvironment.Name == identifier.Environment.Name &&
+                                                          c.Structure.Name == identifier.Structure.Name &&
+                                                          c.Structure.Version == identifier.Structure.Version)
+                                              .Select(c => c.Id)
+                                              .FirstOrDefaultAsync();
+
+            metadata.LastActiveConfigurationId = configuration;
         }
 
         /// <inheritdoc />
         public async Task SetLatestProjectedEventId(long latestEventId)
         {
-            using (var scope = _provider.CreateScope())
-            using (var context = scope.ServiceProvider.GetService<ProjectionStore>())
+            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+
+            if (metadata is null)
             {
-                var metadata = await context.Metadata.FirstOrDefaultAsync();
-
-                if (metadata is null)
-                {
-                    metadata = new ProjectionMetadata();
-                    await context.Metadata.AddAsync(metadata);
-                    await context.SaveChangesAsync();
-                }
-
-                metadata.LatestEvent = latestEventId;
-                await context.SaveChangesAsync();
+                metadata = new ProjectionMetadata();
+                await _context.Metadata.AddAsync(metadata);
             }
+
+            metadata.LatestEvent = latestEventId;
         }
 
-        private async Task<ConfigEnvironment> GetEnvironmentInternal(EnvironmentIdentifier identifier, ProjectionStore context)
-            => await context.FullConfigEnvironments
-                            .FirstOrDefaultAsync(env => env.Category == identifier.Category &&
-                                                        env.Name == identifier.Name);
+        private async Task<ConfigEnvironment> GetEnvironmentInternal(EnvironmentIdentifier identifier)
+            => await _context.FullConfigEnvironments
+                             .FirstOrDefaultAsync(env => env.Category == identifier.Category &&
+                                                         env.Name == identifier.Name);
 
-        private async Task<Structure> GetStructureInternal(StructureIdentifier identifier, ProjectionStore context)
-            => await context.FullStructures
-                            .FirstOrDefaultAsync(str => str.Name == identifier.Name &&
-                                                        str.Version == identifier.Version);
+        private async Task<Structure> GetStructureInternal(StructureIdentifier identifier)
+            => await _context.FullStructures
+                             .FirstOrDefaultAsync(str => str.Name == identifier.Name &&
+                                                         str.Version == identifier.Version);
     }
 }
