@@ -87,15 +87,13 @@ namespace Bechtle.A365.ConfigService
             });
 
             // setup services for DI
-            services.AddEntityFrameworkProxies()
-                    .AddMemoryCache()
+            services.AddMemoryCache()
                     .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
                     .AddDbContext<ProjectionStoreContext>(
-                        (provider, builder) => builder.UseLazyLoadingProxies()
-                                                      .UseLoggerFactory(new NullLoggerFactory())
+                        (provider, builder) => builder.UseLoggerFactory(new NullLoggerFactory())
                                                       .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
                                                                             .ConnectionString))
                     .AddScoped<IProjectionStore, ProjectionStore>()

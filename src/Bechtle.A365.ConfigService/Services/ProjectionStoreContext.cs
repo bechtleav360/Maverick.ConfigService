@@ -1,4 +1,5 @@
-﻿using Bechtle.A365.ConfigService.Common.DbObjects;
+﻿using System.Linq;
+using Bechtle.A365.ConfigService.Common.DbObjects;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bechtle.A365.ConfigService.Services
@@ -23,6 +24,26 @@ namespace Bechtle.A365.ConfigService.Services
         /// <summary>
         /// </summary>
         public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public IQueryable<ConfigEnvironmentKeyPath> FullAutoCompletePaths => AutoCompletePaths.Include(p => p.Parent)
+                                                                                              .Include(p => p.Children)
+                                                                                              .Include(p => p.ConfigEnvironment);
+
+        /// <summary>
+        /// </summary>
+        public IQueryable<ConfigEnvironment> FullConfigEnvironments => ConfigEnvironments.Include(env => env.Keys);
+
+        /// <summary>
+        /// </summary>
+        public IQueryable<ProjectedConfiguration> FullProjectedConfigurations => ProjectedConfigurations.Include(c => c.Keys)
+                                                                                                        .Include(c => c.UsedConfigurationKeys);
+
+        /// <summary>
+        /// </summary>
+        public IQueryable<Structure> FullStructures => Structures.Include(s => s.Keys)
+                                                                 .Include(s => s.Variables);
 
         /// <summary>
         /// </summary>

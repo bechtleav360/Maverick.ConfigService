@@ -31,7 +31,7 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
-                var dbResult = await _context.ConfigEnvironments
+                var dbResult = await _context.FullConfigEnvironments
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)
                                              .Skip(range.Offset)
@@ -56,7 +56,7 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
-                var dbResult = await _context.ConfigEnvironments
+                var dbResult = await _context.FullConfigEnvironments
                                              .Where(s => s.Category == category)
                                              .OrderBy(s => s.Category)
                                              .ThenBy(s => s.Name)

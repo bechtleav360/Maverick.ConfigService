@@ -14,17 +14,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         {
         }
 
-        public IQueryable<ConfigEnvironment> FullConfigEnvironments => ConfigEnvironments.Include(env => env.Keys);
-
-        public IQueryable<ProjectedConfiguration> FullProjectedConfigurations => ProjectedConfigurations.Include(c => c.Keys)
-                                                                                                        .Include(c => c.UsedConfigurationKeys);
-
-        public IQueryable<Structure> FullStructures => Structures.Include(s => s.Keys)
-                                                                 .Include(s => s.Variables);
-
         /// <summary>
         /// </summary>
-        public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
+        public DbSet<ConfigEnvironmentKeyPath> AutoCompletePaths { get; set; }
 
         /// <summary>
         /// </summary>
@@ -32,11 +24,25 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
         /// <summary>
         /// </summary>
-        public DbSet<ProjectionMetadata> Metadata { get; set; }
+        public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
 
         /// <summary>
         /// </summary>
-        public DbSet<ProjectedConfiguration> ProjectedConfigurations { get; set; }
+        public IQueryable<ConfigEnvironment> FullConfigEnvironments => ConfigEnvironments.Include(env => env.Keys);
+
+        /// <summary>
+        /// </summary>
+        public IQueryable<ProjectedConfiguration> FullProjectedConfigurations => ProjectedConfigurations.Include(c => c.Keys)
+                                                                                                        .Include(c => c.UsedConfigurationKeys);
+
+        /// <summary>
+        /// </summary>
+        public IQueryable<Structure> FullStructures => Structures.Include(s => s.Keys)
+                                                                 .Include(s => s.Variables);
+
+        /// <summary>
+        /// </summary>
+        public DbSet<ProjectionMetadata> Metadata { get; set; }
 
         /// <summary>
         /// </summary>
@@ -44,7 +50,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
         /// <summary>
         /// </summary>
-        public DbSet<Structure> Structures { get; set; }
+        public DbSet<ProjectedConfiguration> ProjectedConfigurations { get; set; }
 
         /// <summary>
         /// </summary>
@@ -52,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
         /// <summary>
         /// </summary>
-        public DbSet<ConfigEnvironmentKeyPath> AutoCompletePaths { get; set; }
+        public DbSet<Structure> Structures { get; set; }
 
         /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)

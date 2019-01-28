@@ -32,6 +32,8 @@ namespace Bechtle.A365.ConfigService.Services
             {
                 var utcWhen = when.ToUniversalTime();
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Include(c => c.ConfigEnvironment)
+                                             .Include(c => c.Structure)
                                              .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= utcWhen &&
                                                          (c.ValidTo ?? DateTime.MaxValue) >= utcWhen)
                                              .OrderBy(s => s.ConfigEnvironment.Category)
@@ -41,9 +43,7 @@ namespace Bechtle.A365.ConfigService.Services
                                              .Skip(range.Offset)
                                              .Take(range.Length)
                                              .ToListAsync();
-                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(
-                                                       new EnvironmentIdentifier(s.ConfigEnvironment.Category, s.ConfigEnvironment.Name),
-                                                       new StructureIdentifier(s.Structure.Name, s.Structure.Version)))
+                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s))
                                           .ToList()
                                   ?? new List<ConfigurationIdentifier>();
 
@@ -62,6 +62,8 @@ namespace Bechtle.A365.ConfigService.Services
             try
             {
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Include(c => c.ConfigEnvironment)
+                                             .Include(c => c.Structure)
                                              .Where(p => !p.UpToDate)
                                              .OrderBy(s => s.ConfigEnvironment.Category)
                                              .ThenBy(s => s.ConfigEnvironment.Name)
@@ -71,9 +73,7 @@ namespace Bechtle.A365.ConfigService.Services
                                              .Take(range.Length)
                                              .ToListAsync();
 
-                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(
-                                                       new EnvironmentIdentifier(s.ConfigEnvironment.Category, s.ConfigEnvironment.Name),
-                                                       new StructureIdentifier(s.Structure.Name, s.Structure.Version)))
+                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s))
                                           .ToList()
                                   ?? new List<ConfigurationIdentifier>();
 
@@ -94,6 +94,8 @@ namespace Bechtle.A365.ConfigService.Services
             try
             {
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Include(c => c.ConfigEnvironment)
+                                             .Include(c => c.Structure)
                                              .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                              .Where(c => c.ConfigEnvironment.Category == environment.Category &&
                                                          c.ConfigEnvironment.Name == environment.Name)
@@ -124,6 +126,8 @@ namespace Bechtle.A365.ConfigService.Services
             try
             {
                 var dbResult = await _context.ProjectedConfigurations
+                                             .Include(c => c.ConfigEnvironment)
+                                             .Include(c => c.Structure)
                                              .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                              .Where(c => c.Structure.Name == structure.Name &&
                                                          c.Structure.Version == structure.Version)
@@ -160,17 +164,19 @@ namespace Bechtle.A365.ConfigService.Services
             {
                 var dbResult = await _context.ProjectedConfigurations
                                              .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                             .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
-                                                                       c.ConfigEnvironment.Category == identifier.Environment.Category &&
-                                                                       c.Structure.Name == identifier.Structure.Name &&
-                                                                       c.Structure.Version == identifier.Structure.Version);
+                                             .Where(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
+                                                         c.ConfigEnvironment.Category == identifier.Environment.Category &&
+                                                         c.Structure.Name == identifier.Structure.Name &&
+                                                         c.Structure.Version == identifier.Structure.Version)
+                                             .Select(c => c.ConfigurationJson)
+                                             .FirstOrDefaultAsync();
 
                 if (dbResult is null)
                     return Result<JToken>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 try
                 {
-                    var result = JToken.Parse(dbResult.ConfigurationJson);
+                    var result = JToken.Parse(dbResult);
 
                     return Result<JToken>.Success(result);
                 }
@@ -202,7 +208,7 @@ namespace Bechtle.A365.ConfigService.Services
 
             try
             {
-                var dbResult = await _context.ProjectedConfigurations
+                var dbResult = await _context.FullProjectedConfigurations
                                              .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                              .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
                                                                        c.ConfigEnvironment.Category == identifier.Environment.Category &&
@@ -244,7 +250,7 @@ namespace Bechtle.A365.ConfigService.Services
 
             try
             {
-                var dbResult = await _context.ProjectedConfigurations
+                var dbResult = await _context.FullProjectedConfigurations
                                              .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                              .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
                                                                        c.ConfigEnvironment.Category == identifier.Environment.Category &&

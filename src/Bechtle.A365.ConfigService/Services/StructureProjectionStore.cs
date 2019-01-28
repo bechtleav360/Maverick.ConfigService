@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
-                var dbResult = await _context.Structures
+                var dbResult = await _context.FullStructures
                                              .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
                                                                        s.Version == identifier.Version);
 
@@ -117,7 +117,7 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
-                var dbResult = await _context.Structures
+                var dbResult = await _context.FullStructures
                                              .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
                                                                        s.Version == identifier.Version);
 
