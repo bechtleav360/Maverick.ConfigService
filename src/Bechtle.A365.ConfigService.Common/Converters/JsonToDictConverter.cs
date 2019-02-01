@@ -7,7 +7,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class JsonToDictConverter
     {
-        public IDictionary<string, string> ToDict(JToken json)
+        public IDictionary<string, string> ToDict(JToken json, string separator)
         {
             var dict = new Dictionary<string, string>();
 
@@ -16,7 +16,11 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
             Visit(json, string.Empty, dict);
 
-            return dict;
+            if (separator is null || separator.Equals("/", StringComparison.OrdinalIgnoreCase))
+                return dict;
+
+            return dict.ToDictionary(kvp => kvp.Key.Replace("/", separator),
+                                     kvp => kvp.Value);
         }
 
         private string EscapePath(string p) => Uri.EscapeDataString(p);

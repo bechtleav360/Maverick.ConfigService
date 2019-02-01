@@ -29,16 +29,18 @@ namespace Bechtle.A365.ConfigService.Controllers
         ///     convert the given map to the appropriate JSON
         /// </summary>
         /// <param name="dictionary"></param>
+        /// <param name="separator"></param>
         /// <returns></returns>
         [HttpPost("map/json", Name = "ConvertDictionaryToJson")]
-        public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary)
+        public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary,
+                                              [FromQuery] string separator = null)
         {
             try
             {
                 if (dictionary is null)
                     return Ok(new JObject());
 
-                var result = _translator.ToJson(dictionary);
+                var result = _translator.ToJson(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
 
                 return Ok(result ?? new JObject());
             }
@@ -53,16 +55,18 @@ namespace Bechtle.A365.ConfigService.Controllers
         ///     convert the given json to map of path => value
         /// </summary>
         /// <param name="json"></param>
+        /// <param name="separator"></param>
         /// <returns></returns>
         [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
-        public IActionResult JsonToDictionary([FromBody] JToken json)
+        public IActionResult JsonToDictionary([FromBody] JToken json,
+                                              [FromQuery] string separator = null)
         {
             try
             {
                 if (json is null)
                     return Ok(new Dictionary<string, string>());
 
-                var result = _translator.ToDictionary(json);
+                var result = _translator.ToDictionary(json, separator ?? JsonTranslatorDefaultSettings.Separator);
 
                 return Ok(result ?? new Dictionary<string, string>());
             }

@@ -7,7 +7,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class DictToJsonConverter
     {
-        public JToken ToJson(IDictionary<string, string> dict)
+        public JToken ToJson(IDictionary<string, string> dict, string separator)
         {
             if (!dict.Any())
                 return new JObject();
@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                 var key = entry.Key;
                 var value = entry.Value;
 
-                var pathParts = new Queue<string>(key.Split('/'));
+                var pathParts = new Queue<string>(key.Split(separator));
                 var currentNode = root;
 
                 // walk the path and create new nodes as necessary
