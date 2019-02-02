@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    backend-service: configservice
+  name: configservice
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        backend-service: configservice
+    spec:
+      containers:
+      - env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: EVENTBUSCONNECTION
+          value: SERVER=http://eventbus:8080
+        - name: EVENTSTORECONNECTION
+          value: URI=tcp://admin:changeit@eventstore:1113
+        - name: PROJECTIONSTORAGE
+          value: CONNECTIONSTRING=Server=triangular-moth-mssql-linux;Database=ConfigProjection;User Id=sa;Password=qwer#1234;
+        image: maverick.azurecr.io/configservice
+        name: configservice
+        ports:
+        - containerPort: 80
+        resources: {}
+      restartPolicy: Always
+status: {}
