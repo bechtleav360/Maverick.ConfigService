@@ -1,0 +1,16 @@
+this is a list of changes from the original source, according to the license:
+
+files removed from the acquired source-code
+
+- github-specific files
+- nuget-specific files
+- samples
+- Basic-Authentication (idunno.Authentication.Basic)
+- CertificateForwarder and associated files (idunno.Authentication.Certificate)
+- Warning-Suppresions
+- tests
+
+changes made to the files that have been kept:
+
+- moved to company-namespace to ease integration
+- align code-style

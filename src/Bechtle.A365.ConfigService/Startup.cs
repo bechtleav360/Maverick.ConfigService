@@ -1,6 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Authentication.Certificates;
+using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -53,6 +57,7 @@ namespace Bechtle.A365.ConfigService
             }
 
             app.UseMvc()
+               .UseAuthentication()
                .UseCors(policy => policy.AllowAnyHeader()
                                         .AllowAnyMethod()
                                         .AllowAnyOrigin())
@@ -73,6 +78,44 @@ namespace Bechtle.A365.ConfigService
             // setup MVC
             services.AddMvc()
                     .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
+                    .AddCertificate(options =>
+                    {
+                        options.Events = new CertificateAuthenticationEvents
+                        {
+                            OnAuthenticationFailed = context => Task.CompletedTask,
+                            OnValidateCertificate = context =>
+                            {
+                                if (!context.ClientCertificate.Issuer.EndsWith("DC=A365DEV, DC=DE"))
+                                {
+                                    context.Fail("certificate does not belong to A365 domain");
+                                }
+                                else
+                                {
+                                    context.Principal = new ClaimsPrincipal(
+                                        new ClaimsIdentity(
+                                            new[]
+                                            {
+                                                new Claim(ClaimTypes.NameIdentifier,
+                                                          context.ClientCertificate.Subject,
+                                                          ClaimValueTypes.String,
+                                                          context.Options.ClaimsIssuer),
+
+                                                new Claim(ClaimTypes.Name,
+                                                          context.ClientCertificate.Subject,
+                                                          ClaimValueTypes.String,
+                                                          context.Options.ClaimsIssuer)
+                                            },
+                                            context.Scheme.Name));
+
+                                    context.Success();
+                                }
+
+                                return Task.CompletedTask;
+                            }
+                        };
+                    });
 
             // setup Swagger and Swagger-OAuth
             services.AddSwaggerGen(options =>

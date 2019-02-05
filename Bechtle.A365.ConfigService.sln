@@ -13,9 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Common", "src\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj", "{011655F9-E550-4516-81E0-6CE0C531BD83}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Parsing", "src\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj", "{2FFC115B-80A3-42C8-B77B-E65894B1A60E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Parsing", "src\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj", "{2FFC115B-80A3-42C8-B77B-E65894B1A60E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Tests", "tests\Bechtle.A365.ConfigService.Tests\Bechtle.A365.ConfigService.Tests.csproj", "{A9D007E1-AE8A-4D5F-90EC-60D70019C852}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Tests", "tests\Bechtle.A365.ConfigService.Tests\Bechtle.A365.ConfigService.Tests.csproj", "{A9D007E1-AE8A-4D5F-90EC-60D70019C852}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Authentication.Certificates", "src\Bechtle.A365.ConfigService.Authentication.Certificates\Bechtle.A365.ConfigService.Authentication.Certificates.csproj", "{BD232C51-1133-4A01-AAAA-F3B04F61D572}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,14 +37,18 @@ Global
 		{011655F9-E550-4516-81E0-6CE0C531BD83}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{011655F9-E550-4516-81E0-6CE0C531BD83}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{011655F9-E550-4516-81E0-6CE0C531BD83}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2FFC115B-80A3-42C8-B77B-E65894B1A60E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2FFC115B-80A3-42C8-B77B-E65894B1A60E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FFC115B-80A3-42C8-B77B-E65894B1A60E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FFC115B-80A3-42C8-B77B-E65894B1A60E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9D007E1-AE8A-4D5F-90EC-60D70019C852}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD232C51-1133-4A01-AAAA-F3B04F61D572}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD232C51-1133-4A01-AAAA-F3B04F61D572}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD232C51-1133-4A01-AAAA-F3B04F61D572}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD232C51-1133-4A01-AAAA-F3B04F61D572}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -51,8 +57,9 @@ Global
 		{7D900C1B-C838-436B-AB2C-918BA7630C3D} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 		{1D742901-A8E2-4248-A2BC-FAD3DB5D3F03} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 		{011655F9-E550-4516-81E0-6CE0C531BD83} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
-		{A9D007E1-AE8A-4D5F-90EC-60D70019C852} = {C1CC25C0-59DB-4C97-BC2B-5B464248E4D4}
 		{2FFC115B-80A3-42C8-B77B-E65894B1A60E} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
+		{A9D007E1-AE8A-4D5F-90EC-60D70019C852} = {C1CC25C0-59DB-4C97-BC2B-5B464248E4D4}
+		{BD232C51-1133-4A01-AAAA-F3B04F61D572} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1726AC6-C9A5-48E9-AEC6-B29C0E7BDC87}

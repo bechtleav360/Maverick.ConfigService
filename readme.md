@@ -1,6 +1,7 @@
 # Config Service 2.0
 
 - Overview & Lingo
+- Installation
 - Nutzung
 - Anbindung von Services
 - Technische Details
@@ -60,6 +61,54 @@ Ein Environment wird unter einer Kategorie -> Name Hierarchie gespeichert und be
 ### Konfiguration
 
 Eine Konfiguration wird aus einer Struktur und einem Environment erstellt, und ist optional zeitlich begrenzt.
+
+## Installation
+
+Durch die Zertifikat-basierte Authentifizierung ist die installation nicht so Straight-Forward wie bei vielen anderen Services.
+
+Der ConfigService benötigt:
+
+1. Ein Gültiges Zertifikat
+2. Erreichbar unter HTTPS
+3. Host (Kestrel / IIS / Azure) und ggf. andere Reverse Proxies müssen korrekt eingestellt sein
+
+Erklärung zu `3.`:  
+
+### Kestrel
+
+In der `Program.cs` muss `UseKestrel()` wie folgt konfiguriert werden.
+
+```c#
+public static IWebHost BuildWebHost(string[] args) =>
+    WebHost.CreateDefaultBuilder(args)
+           .UseStartup<Startup>()
+           .UseKestrel(options =>
+           {
+               options.Listen(IPAddress.Loopback, 5001, listenOptions =>
+               {
+                   listenOptions.UseHttps(new HttpsConnectionAdapterOptions
+                   {
+                       ServerCertificate = /* HTTPS Zertifikat */,
+                       ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+                       ClientCertificateValidation = CertificateValidator.DisableChannelValidation
+                   });
+               });
+           })
+           .Build();
+```
+`ClientCertificateValidation` muss auf `CertificateValidator.DisableChannelValidation` gestellt werden, um Kestrel daran zu hindern die OS-Zertifikat-Validierung zu nutzen - und stattdessen unsere Custom-Validierung durchzuführen.
+
+### IIS
+
+Im IIS Manager
+
+1. Wähle deine `Site` im `Connections`-Tab aus.
+2. Öffne `SSL Settings` in der Feature Ansicht.
+3. Aktiviere `Require SSL` und wähle `Require` unter `Client Certificates`.
+
+### Azure and Random custom web proxies
+
+Wenn der ConfigService mit Azure oder anderen Proxies genutzt werden soll, lies die original Doku [hier](https://github.com/blowdart/idunno.Authentication/tree/master/src/idunno.Authentication.Certificate)
 
 ## Nutzung
 
