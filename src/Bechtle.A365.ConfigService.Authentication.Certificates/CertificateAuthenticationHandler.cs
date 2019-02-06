@@ -88,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Authentication.Certificates
 
                 if (!certificateIsValid)
                 {
-                    using (Logger.BeginScope(clientCertificate.SHA256Thumbprint()))
+                    using (Logger.BeginScope(clientCertificate.Sha256Thumbprint()))
                     {
                         Logger.LogWarning("Client certificate failed validation, subject was {0}", clientCertificate.Subject);
                         foreach (var validationFailure in chain.ChainStatus)

@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Authentication.Certificates
         public static bool IsSelfSigned(this X509Certificate2 certificate)
             => certificate.SubjectName.RawData.SequenceEqual(certificate.IssuerName.RawData);
 
-        public static string SHA256Thumbprint(this X509Certificate2 certificate)
+        public static string Sha256Thumbprint(this X509Certificate2 certificate)
         {
             var certificateHash = SHA256.Create().ComputeHash(certificate.RawData);
             var hashString = string.Empty;
