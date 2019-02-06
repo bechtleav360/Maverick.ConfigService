@@ -4,6 +4,9 @@
     /// </summary>
     public class ConfigServiceConfiguration
     {
+        /// <inheritdoc cref="AuthenticationConfiguration" />
+        public AuthenticationConfiguration Authentication { get; set; }
+
         /// <inheritdoc cref="EventBusConnectionConfiguration" />
         public EventBusConnectionConfiguration EventBusConnection { get; set; }
 

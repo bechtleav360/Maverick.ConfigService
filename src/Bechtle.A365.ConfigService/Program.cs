@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Config;
@@ -46,15 +48,48 @@ namespace Bechtle.A365.ConfigService
                       })
                       .UseKestrel(options =>
                       {
-                          options.ListenLocalhost(5001, listenOptions =>
+                          var logger = options.ApplicationServices
+                                              .GetService<ILogger<Program>>();
+
+                          var settings = options.ApplicationServices
+                                                .GetService<ConfigServiceConfiguration>()
+                                                ?.Authentication
+                                                ?.Kestrel;
+
+                          if (settings is null)
                           {
-                              listenOptions.UseHttps(new HttpsConnectionAdapterOptions
-                              {
-                                  ServerCertificate = new X509Certificate2("localhost.pfx", "1"),
-                                  ClientCertificateMode = ClientCertificateMode.RequireCertificate,
-                                  ClientCertificateValidation = CertificateValidator.DisableChannelValidation
-                              });
-                          });
+                              logger.LogWarning($"{nameof(AuthenticationConfiguration)} is null, can't configure kestrel");
+                              return;
+                          }
+
+                          if (!settings.Enabled)
+                          {
+                              logger.LogWarning("skipping configuration of kestrel");
+                              return;
+                          }
+
+                          var connectionOptions = new HttpsConnectionAdapterOptions
+                          {
+                              ServerCertificate = settings.Password is null
+                                                      ? new X509Certificate2(settings.Certificate)
+                                                      : new X509Certificate2(settings.Certificate, settings.Password),
+                              ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+                              ClientCertificateValidation = CertificateValidator.DisableChannelValidation
+                          };
+
+                          logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
+
+                          if (settings.IpAddress == "localhost")
+                          {
+                              logger.LogInformation($"binding to: localhost:{settings.Port}");
+                              options.ListenLocalhost(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+                          }
+                          else
+                          {
+                              var ip = IPAddress.Parse(settings.IpAddress);
+                              logger.LogInformation($"binding to: {ip}:{settings.Port}");
+                              options.Listen(ip, settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+                          }
                       });
     }
 }

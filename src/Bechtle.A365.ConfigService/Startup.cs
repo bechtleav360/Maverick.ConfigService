@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common.Compilation;
@@ -20,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using CertificateValidator = Bechtle.A365.ConfigService.Services.CertificateValidator;
 using ESLogger = EventStore.ClientAPI.ILogger;
 
 namespace Bechtle.A365.ConfigService
@@ -84,36 +83,14 @@ namespace Bechtle.A365.ConfigService
                     {
                         options.Events = new CertificateAuthenticationEvents
                         {
-                            OnAuthenticationFailed = context => Task.CompletedTask,
-                            OnValidateCertificate = context =>
-                            {
-                                if (!context.ClientCertificate.Issuer.EndsWith("DC=A365DEV, DC=DE"))
-                                {
-                                    context.Fail("certificate does not belong to A365 domain");
-                                }
-                                else
-                                {
-                                    context.Principal = new ClaimsPrincipal(
-                                        new ClaimsIdentity(
-                                            new[]
-                                            {
-                                                new Claim(ClaimTypes.NameIdentifier,
-                                                          context.ClientCertificate.Subject,
-                                                          ClaimValueTypes.String,
-                                                          context.Options.ClaimsIssuer),
-
-                                                new Claim(ClaimTypes.Name,
-                                                          context.ClientCertificate.Subject,
-                                                          ClaimValueTypes.String,
-                                                          context.Options.ClaimsIssuer)
-                                            },
-                                            context.Scheme.Name));
-
-                                    context.Success();
-                                }
-
-                                return Task.CompletedTask;
-                            }
+                            OnAuthenticationFailed = context => context.HttpContext
+                                                                       .RequestServices
+                                                                       .GetService<ICertificateValidator>()
+                                                                       .Fail(context),
+                            OnValidateCertificate = context => context.HttpContext
+                                                                      .RequestServices
+                                                                      .GetService<ICertificateValidator>()
+                                                                      .Validate(context)
                         };
                     });
 
@@ -131,6 +108,7 @@ namespace Bechtle.A365.ConfigService
 
             // setup services for DI
             services.AddMemoryCache()
+                    .AddSingleton<ICertificateValidator, CertificateValidator>()
                     .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
                     .AddSingleton(provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
