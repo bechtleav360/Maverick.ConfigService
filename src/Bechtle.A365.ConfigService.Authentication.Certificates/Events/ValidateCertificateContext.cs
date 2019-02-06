@@ -14,8 +14,8 @@ namespace Bechtle.A365.ConfigService.Authentication.Certificates.Events
         /// </summary>
         /// <param name="context">The HttpContext the validate context applies too.</param>
         /// <param name="scheme">The scheme used when the Basic Authentication handler was registered.</param>
-        /// <param name="options">The <see cref="BasicAuthenticationOptions"/> for the instance of
-        /// <see cref="BasicAuthenticationMiddleware"/> creating this instance.</param>
+        /// <param name="options">The <see cref="CertificateAuthenticationOptions"/> for the instance of
+        /// <see cref="CertificateAuthenticationHandler"/> creating this instance.</param>
         public ValidateCertificateContext(HttpContext context,
                                           AuthenticationScheme scheme,
                                           CertificateAuthenticationOptions options)
