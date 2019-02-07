@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range);
+        Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range);
 
         /// <summary>
         ///     get a list of projected Environments within a category
@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="category"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range);
+        Task<IResult<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment as Objects
@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range);
+        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment as Objects
@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="filter"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range);
+        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment
@@ -49,7 +49,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range);
+        Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment
@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="filter"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range);
+        Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
@@ -67,6 +67,6 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="key"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
+        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
     }
 }

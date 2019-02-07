@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range);
+        Task<IResult<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range);
 
         /// <summary>
         ///     get a list of available projected Configurations constrained to the specified Environment
@@ -27,7 +27,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when, QueryRange range);
+        Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get a list of available projected Configurations constrained to the specified Structure
@@ -36,14 +36,14 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
+        Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get configurations, that have stale configurations
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IList<ConfigurationIdentifier>>> GetStale(QueryRange range);
+        Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range);
 
         /// <summary>
         ///     get the json of a Configuration
@@ -51,7 +51,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <param name="when"></param>
         /// <returns></returns>
-        Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when);
+        Task<IResult<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when);
 
         /// <summary>
         ///     get the keys of a Configuration
@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
+        Task<IResult<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get the used environment-keys for a configuration
@@ -69,6 +69,6 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
+        Task<IResult<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
     }
 }

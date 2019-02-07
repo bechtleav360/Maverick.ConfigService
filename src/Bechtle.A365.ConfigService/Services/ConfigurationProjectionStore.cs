@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range)
+        public async Task<IResult<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range)
         {
             try
             {
@@ -47,17 +47,17 @@ namespace Bechtle.A365.ConfigService.Services
                                           .ToList()
                                   ?? new List<ConfigurationIdentifier>();
 
-                return Result<IList<ConfigurationIdentifier>>.Success(identifiers);
+                return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve projected configurations: {e}");
-                return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
+                return Result.Error<IList<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetStale(QueryRange range)
+        public async Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range)
         {
             try
             {
@@ -77,19 +77,19 @@ namespace Bechtle.A365.ConfigService.Services
                                           .ToList()
                                   ?? new List<ConfigurationIdentifier>();
 
-                return Result<IList<ConfigurationIdentifier>>.Success(identifiers);
+                return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve projected configurations: {e}");
-                return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
+                return Result.Error<IList<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment,
-                                                                                              DateTime when,
-                                                                                              QueryRange range)
+        public async Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment,
+                                                                                               DateTime when,
+                                                                                               QueryRange range)
         {
             try
             {
@@ -109,19 +109,19 @@ namespace Bechtle.A365.ConfigService.Services
                                      .ToList()
                              ?? new List<ConfigurationIdentifier>();
 
-                return Result<IList<ConfigurationIdentifier>>.Success(result);
+                return Result.Success<IList<ConfigurationIdentifier>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve projected configurations: {e}");
-                return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
+                return Result.Error<IList<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure,
-                                                                                            DateTime when,
-                                                                                            QueryRange range)
+        public async Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure,
+                                                                                             DateTime when,
+                                                                                             QueryRange range)
         {
             try
             {
@@ -141,17 +141,17 @@ namespace Bechtle.A365.ConfigService.Services
                                      .ToList()
                              ?? new List<ConfigurationIdentifier>();
 
-                return Result<IList<ConfigurationIdentifier>>.Success(result);
+                return Result.Success<IList<ConfigurationIdentifier>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve projected configurations: {e}");
-                return Result<IList<ConfigurationIdentifier>>.Error("failed to retrieve projected configurations", ErrorCode.DbQueryError);
+                return Result.Error<IList<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when)
+        public async Task<IResult<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when)
         {
             var formattedParams = "(" +
                                   $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
@@ -172,13 +172,13 @@ namespace Bechtle.A365.ConfigService.Services
                                              .FirstOrDefaultAsync();
 
                 if (dbResult is null)
-                    return Result<JToken>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                    return Result.Error<JToken>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 try
                 {
                     var result = JToken.Parse(dbResult);
 
-                    return Result<JToken>.Success(result);
+                    return Result.Success(result);
                 }
                 catch (JsonException e)
                 {
@@ -189,15 +189,15 @@ namespace Bechtle.A365.ConfigService.Services
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve projected configuration keys for id: {formattedParams}: {e}");
-                return Result<JToken>.Error($"failed to retrieve projected configuration keys for id: {formattedParams}",
+                return Result.Error<JToken>($"failed to retrieve projected configuration keys for id: {formattedParams}",
                                             ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier,
-                                                                       DateTime when,
-                                                                       QueryRange range)
+        public async Task<IResult<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier,
+                                                                        DateTime when,
+                                                                        QueryRange range)
         {
             var formattedParams = "(" +
                                   $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
@@ -216,7 +216,7 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        c.Structure.Version == identifier.Structure.Version);
 
                 if (dbResult is null)
-                    return Result<IDictionary<string, string>>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                    return Result.Error<IDictionary<string, string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 var result = dbResult.Keys
                                      .OrderBy(k => k.Key)
@@ -226,20 +226,20 @@ namespace Bechtle.A365.ConfigService.Services
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
 
-                return Result<IDictionary<string, string>>.Success(result);
+                return Result.Success<IDictionary<string, string>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve projected configuration keys for id: {formattedParams}: {e}");
-                return Result<IDictionary<string, string>>.Error($"failed to retrieve projected configuration keys for id: {formattedParams}",
+                return Result.Error<IDictionary<string, string>>($"failed to retrieve projected configuration keys for id: {formattedParams}",
                                                                  ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier,
-                                                                                DateTime when,
-                                                                                QueryRange range)
+        public async Task<IResult<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier,
+                                                                                 DateTime when,
+                                                                                 QueryRange range)
         {
             var formattedParams = "(" +
                                   $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
@@ -258,7 +258,7 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        c.Structure.Version == identifier.Structure.Version);
 
                 if (dbResult is null)
-                    return Result<IEnumerable<string>>.Error($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                    return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 var result = dbResult.UsedConfigurationKeys
                                      .OrderBy(k => k.Key)
@@ -267,12 +267,12 @@ namespace Bechtle.A365.ConfigService.Services
                                      .Select(usedKey => usedKey.Key)
                                      .ToArray();
 
-                return Result<IEnumerable<string>>.Success(result);
+                return Result.Success<IEnumerable<string>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve used environment keys for id: {formattedParams}: {e}");
-                return Result<IEnumerable<string>>.Error($"failed to retrieve used environment keys for id: {formattedParams}: {e}",
+                return Result.Error<IEnumerable<string>>($"failed to retrieve used environment keys for id: {formattedParams}: {e}",
                                                          ErrorCode.DbQueryError);
             }
         }

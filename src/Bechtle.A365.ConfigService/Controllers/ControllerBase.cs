@@ -39,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected IActionResult ProviderError(Result result)
+        protected IActionResult ProviderError(IResult result)
         {
             Logger.LogError($"received error {result.Code:D}({result.Code:G})");
 
@@ -74,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="result"></param>
         /// <param name="successor"></param>
         /// <returns></returns>
-        protected IActionResult Result<T>(Result<T> result, Func<object, IActionResult> successor)
+        protected IActionResult Result<T>(IResult<T> result, Func<object, IActionResult> successor)
         {
             if (result.IsError)
                 return ProviderError(result);
@@ -88,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <typeparam name="T"></typeparam>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected IActionResult Result<T>(Result<T> result) => Result(result, Ok);
+        protected IActionResult Result<T>(IResult<T> result) => Result(result, Ok);
 
         /// <summary>
         ///     return either the result of <paramref name="successor" /> or <see cref="ProviderError" />
@@ -96,7 +96,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="result"></param>
         /// <param name="successor"></param>
         /// <returns></returns>
-        protected IActionResult Result(Result result, Func<IActionResult> successor)
+        protected IActionResult Result(IResult result, Func<IActionResult> successor)
         {
             if (result.IsError)
                 return ProviderError(result);
@@ -109,7 +109,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected IActionResult Result(Result result) => Result(result, Ok);
+        protected IActionResult Result(IResult result) => Result(result, Ok);
 
         /// <summary>
         ///     wrapper around <see cref="Microsoft.AspNetCore.Mvc.ControllerBase.StatusCode(int)" />

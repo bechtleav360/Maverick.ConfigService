@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<StructureIdentifier>>> GetAvailable(QueryRange range)
+        public async Task<IResult<IList<StructureIdentifier>>> GetAvailable(QueryRange range)
         {
             try
             {
@@ -39,17 +39,17 @@ namespace Bechtle.A365.ConfigService.Services
                 var result = dbResult?.ToList()
                              ?? new List<StructureIdentifier>();
 
-                return Result<IList<StructureIdentifier>>.Success(result);
+                return Result.Success<IList<StructureIdentifier>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve structures: {e}");
-                return Result<IList<StructureIdentifier>>.Error("failed to retrieve structures", ErrorCode.DbQueryError);
+                return Result.Error<IList<StructureIdentifier>>("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<IList<int>>> GetAvailableVersions(string name, QueryRange range)
+        public async Task<IResult<IList<int>>> GetAvailableVersions(string name, QueryRange range)
         {
             try
             {
@@ -65,17 +65,17 @@ namespace Bechtle.A365.ConfigService.Services
                                      .ToList()
                              ?? new List<int>();
 
-                return Result<IList<int>>.Success(result);
+                return Result.Success<IList<int>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError($"failed to retrieve structures: {e}");
-                return Result<IList<int>>.Error("failed to retrieve structures", ErrorCode.DbQueryError);
+                return Result.Error<IList<int>>("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetKeys(StructureIdentifier identifier, QueryRange range)
+        public async Task<IResult<IDictionary<string, string>>> GetKeys(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -84,7 +84,7 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        s.Version == identifier.Version);
 
                 if (dbResult is null)
-                    return Result<IDictionary<string, string>>.Error("no structure found with (" +
+                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                      $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                      $"{nameof(identifier.Version)}: {identifier.Version}" +
                                                                      ")",
@@ -98,14 +98,14 @@ namespace Bechtle.A365.ConfigService.Services
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
 
-                return Result<IDictionary<string, string>>.Success(result);
+                return Result.Success<IDictionary<string, string>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError("failed to retrieve keys for structure " +
                                  $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version}): {e}");
 
-                return Result<IDictionary<string, string>>.Error(
+                return Result.Error<IDictionary<string, string>>(
                     "failed to retrieve keys for structure " +
                     $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})",
                     ErrorCode.DbQueryError);
@@ -113,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<Result<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier, QueryRange range)
+        public async Task<IResult<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -122,7 +122,7 @@ namespace Bechtle.A365.ConfigService.Services
                                                                        s.Version == identifier.Version);
 
                 if (dbResult is null)
-                    return Result<IDictionary<string, string>>.Error("no structure found with (" +
+                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                      $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                      $"{nameof(identifier.Version)}: {identifier.Version}" +
                                                                      ")",
@@ -136,14 +136,14 @@ namespace Bechtle.A365.ConfigService.Services
                                                                   k => k.Value,
                                                                   StringComparer.OrdinalIgnoreCase);
 
-                return Result<IDictionary<string, string>>.Success(result);
+                return Result.Success<IDictionary<string, string>>(result);
             }
             catch (Exception e)
             {
                 _logger.LogError("failed to retrieve variables for structure " +
                                  $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version}): {e}");
 
-                return Result<IDictionary<string, string>>.Error(
+                return Result.Error<IDictionary<string, string>>(
                     "failed to retrieve variables for structure " +
                     $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})",
                     ErrorCode.DbQueryError);

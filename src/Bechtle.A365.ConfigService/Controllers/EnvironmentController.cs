@@ -168,7 +168,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            Result<IDictionary<string, string>> result;
+            IResult<IDictionary<string, string>> result;
 
             if (string.IsNullOrWhiteSpace(filter))
                 result = await _store.Environments.GetKeys(identifier, range);
@@ -192,7 +192,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             var identifier = new EnvironmentIdentifier(category, name);
 
-            Result<IDictionary<string, string>> result;
+            IResult<IDictionary<string, string>> result;
 
             if (string.IsNullOrWhiteSpace(filter))
                 result = await _store.Environments.GetKeys(identifier, QueryRange.All);
@@ -227,7 +227,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            Result<IEnumerable<DtoConfigKey>> result;
+            IResult<IEnumerable<DtoConfigKey>> result;
 
             if (string.IsNullOrWhiteSpace(filter))
                 result = await _store.Environments.GetKeyObjects(identifier, range);

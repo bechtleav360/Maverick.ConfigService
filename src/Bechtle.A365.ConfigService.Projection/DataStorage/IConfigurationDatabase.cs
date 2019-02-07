@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="identifier"></param>
         /// <param name="actions"></param>
         /// <returns></returns>
-        Task<Result> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions);
+        Task<IResult> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions);
 
         /// <summary>
         ///     apply a set of changes to a Structures Variables
@@ -24,13 +24,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="identifier"></param>
         /// <param name="actions"></param>
         /// <returns></returns>
-        Task<Result> ApplyChanges(StructureIdentifier identifier, IList<ConfigKeyAction> actions);
+        Task<IResult> ApplyChanges(StructureIdentifier identifier, IList<ConfigKeyAction> actions);
 
         /// <summary>
         ///     connect to the (possibly) remote database
         /// </summary>
         /// <returns></returns>
-        Task<Result> Connect();
+        Task<IResult> Connect();
 
         /// <summary>
         ///     create a new Environment with the given identifier
@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="identifier"></param>
         /// <param name="defaultEnvironment"></param>
         /// <returns></returns>
-        Task<Result> CreateEnvironment(EnvironmentIdentifier identifier, bool defaultEnvironment);
+        Task<IResult> CreateEnvironment(EnvironmentIdentifier identifier, bool defaultEnvironment);
 
         /// <summary>
         ///     create a new Structure with the given identifier
@@ -47,49 +47,49 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="keys"></param>
         /// <param name="variables"></param>
         /// <returns></returns>
-        Task<Result> CreateStructure(StructureIdentifier identifier, IDictionary<string, string> keys, IDictionary<string, string> variables);
+        Task<IResult> CreateStructure(StructureIdentifier identifier, IDictionary<string, string> keys, IDictionary<string, string> variables);
 
         /// <summary>
         ///     delete an existing Environment with the given identifier
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result> DeleteEnvironment(EnvironmentIdentifier identifier);
+        Task<IResult> DeleteEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
         ///     delete an existing Structure with the given identifier
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result> DeleteStructure(StructureIdentifier identifier);
+        Task<IResult> DeleteStructure(StructureIdentifier identifier);
 
         /// <summary>
         ///     retrieve all current keys for the given environment and generate Auto-Complete data for it
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result> GenerateEnvironmentKeyAutocompleteData(EnvironmentIdentifier identifier);
+        Task<IResult> GenerateEnvironmentKeyAutocompleteData(EnvironmentIdentifier identifier);
 
         /// <summary>
         ///     get all data for the Default-Environment for the given category
         /// </summary>
         /// <param name="category"></param>
         /// <returns></returns>
-        Task<Result<EnvironmentSnapshot>> GetDefaultEnvironment(string category);
+        Task<IResult<EnvironmentSnapshot>> GetDefaultEnvironment(string category);
 
         /// <summary>
         ///     get all data for the specified Environment
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result<EnvironmentSnapshot>> GetEnvironment(EnvironmentIdentifier identifier);
+        Task<IResult<EnvironmentSnapshot>> GetEnvironment(EnvironmentIdentifier identifier);
 
         /// <summary>
         ///     get all data for the specified Environment, and inherit keys from the Default Environment
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier);
+        Task<IResult<EnvironmentSnapshot>> GetEnvironmentWithInheritance(EnvironmentIdentifier identifier);
 
         /// <summary>
         ///     get the Identifier of the latest active Configuration
@@ -108,7 +108,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<Result<StructureSnapshot>> GetStructure(StructureIdentifier identifier);
+        Task<IResult<StructureSnapshot>> GetStructure(StructureIdentifier identifier);
 
         /// <summary>
         ///     save a configuration compiled from <paramref name="environment" /> and <paramref name="structure" />
@@ -121,7 +121,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="validFrom"></param>
         /// <param name="validTo"></param>
         /// <returns></returns>
-        Task<Result> SaveConfiguration(EnvironmentSnapshot environment,
+        Task<IResult> SaveConfiguration(EnvironmentSnapshot environment,
                                        StructureSnapshot structure,
                                        IDictionary<string, string> configuration,
                                        string configurationJson,
