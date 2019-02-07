@@ -9,6 +9,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     public class EventDeserializer : IEventDeserializer
     {
+        private readonly Dictionary<string, Type> _factoryAssociations = new Dictionary<string, Type>
+        {
+            {DomainEvent.GetEventType<ConfigurationBuilt>(), typeof(IDomainEventConverter<ConfigurationBuilt>)},
+            {DomainEvent.GetEventType<DefaultEnvironmentCreated>(), typeof(IDomainEventConverter<DefaultEnvironmentCreated>)},
+            {DomainEvent.GetEventType<EnvironmentCreated>(), typeof(IDomainEventConverter<EnvironmentCreated>)},
+            {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventConverter<EnvironmentDeleted>)},
+            {DomainEvent.GetEventType<EnvironmentKeysModified>(), typeof(IDomainEventConverter<EnvironmentKeysModified>)},
+            {DomainEvent.GetEventType<StructureCreated>(), typeof(IDomainEventConverter<StructureCreated>)},
+            {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventConverter<StructureDeleted>)},
+            {DomainEvent.GetEventType<StructureVariablesModified>(), typeof(IDomainEventConverter<StructureVariablesModified>)}
+        };
+
         /// <inheritdoc />
         public EventDeserializer(IServiceProvider provider, ILogger<EventDeserializer> logger)
         {
@@ -23,24 +35,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <inheritdoc />
         public DomainEvent ToDomainEvent(ResolvedEvent resolvedEvent)
         {
-            var factoryAssociations = new Dictionary<string, Type>
+            if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
             {
-                {DomainEvent.GetEventType<ConfigurationBuilt>(), typeof(IDomainEventConverter<ConfigurationBuilt>)},
-                {DomainEvent.GetEventType<DefaultEnvironmentCreated>(), typeof(IDomainEventConverter<DefaultEnvironmentCreated>)},
-                {DomainEvent.GetEventType<EnvironmentCreated>(), typeof(IDomainEventConverter<EnvironmentCreated>)},
-                {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventConverter<EnvironmentDeleted>)},
-                {DomainEvent.GetEventType<EnvironmentKeysModified>(), typeof(IDomainEventConverter<EnvironmentKeysModified>)},
-                {DomainEvent.GetEventType<StructureCreated>(), typeof(IDomainEventConverter<StructureCreated>)},
-                {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventConverter<StructureDeleted>)},
-                {DomainEvent.GetEventType<StructureVariablesModified>(), typeof(IDomainEventConverter<StructureVariablesModified>)}
-            };
-
-            foreach (var factory in factoryAssociations)
-            {
-                if (factory.Key != resolvedEvent.OriginalEvent.EventType)
-                    continue;
-
-                var serializer = (IDomainEventConverter) Provider.GetService(factory.Value);
+                var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
 
                 return serializer.Deserialize(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
             }
