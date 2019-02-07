@@ -68,6 +68,16 @@ namespace Bechtle.A365.ConfigService
                               return;
                           }
 
+                          if (string.IsNullOrWhiteSpace(settings.Certificate))
+                          {
+                              logger.LogError("no certificate given, provide path to a valid certificate with '" +
+                                              $"{nameof(AuthenticationConfiguration)}:" +
+                                              $"{nameof(AuthenticationConfiguration.Kestrel)}:" +
+                                              $"{nameof(AuthenticationConfiguration.Kestrel.Certificate)}" +
+                                              "'");
+                              return;
+                          }
+
                           var connectionOptions = new HttpsConnectionAdapterOptions
                           {
                               ServerCertificate = settings.Password is null
@@ -79,15 +89,25 @@ namespace Bechtle.A365.ConfigService
 
                           logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
 
+                          if (string.IsNullOrWhiteSpace(settings.IpAddress))
+                          {
+                              logger.LogError("no ip-address given, provide a valid ipv4 or ipv6 binding-address or 'localhost' for '" +
+                                              $"{nameof(AuthenticationConfiguration)}" +
+                                              $"{nameof(AuthenticationConfiguration.Kestrel)}" +
+                                              $"{nameof(AuthenticationConfiguration.Kestrel.IpAddress)}" +
+                                              "'");
+                              return;
+                          }
+
                           if (settings.IpAddress == "localhost")
                           {
-                              logger.LogInformation($"binding to: localhost:{settings.Port}");
+                              logger.LogInformation($"binding to: https://localhost:{settings.Port}");
                               options.ListenLocalhost(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
                           }
                           else
                           {
                               var ip = IPAddress.Parse(settings.IpAddress);
-                              logger.LogInformation($"binding to: {ip}:{settings.Port}");
+                              logger.LogInformation($"binding to: https://{ip}:{settings.Port}");
                               options.Listen(ip, settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
                           }
                       });
