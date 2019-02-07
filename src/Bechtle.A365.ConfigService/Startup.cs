@@ -45,6 +45,8 @@ namespace Bechtle.A365.ConfigService
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            app.UseAuthentication();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -56,7 +58,6 @@ namespace Bechtle.A365.ConfigService
             }
 
             app.UseMvc()
-               .UseAuthentication()
                .UseCors(policy => policy.AllowAnyHeader()
                                         .AllowAnyMethod()
                                         .AllowAnyOrigin())
