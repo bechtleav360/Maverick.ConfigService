@@ -9,6 +9,9 @@ namespace Bechtle.A365.ConfigService.Services
     /// </summary>
     public interface IEventStore
     {
+        /// <inheritdoc cref="Services.ConnectionState"/>
+        ConnectionState ConnectionState { get; }
+
         /// <summary>
         ///     replay all events and get the written DomainEvents
         /// </summary>

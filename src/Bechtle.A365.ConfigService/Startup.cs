@@ -9,6 +9,9 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.Maverick.Core.Health.Builder;
+using Bechtle.A365.Maverick.Core.Health.Extensions;
+using Bechtle.A365.Maverick.Core.Health.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -130,6 +133,57 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton<IJsonTranslator, JsonTranslator>()
                     .AddSingleton<IEventDeserializer, EventDeserializer>()
                     .AddSingleton(typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>));
+
+            // build the provider to grab the EventStore instance in the Health-Checks
+            // @TODO: inject ServiceProvider into health-checks somehow
+            var intermediateProvider = services.BuildServiceProvider();
+
+            services.AddHealth(builder =>
+            {
+                var config = Configuration.Get<ConfigServiceConfiguration>();
+
+                builder.ServiceName = "ConfigService";
+                builder.AnalyseInternalServices = true;
+                builder.RedStatusWhenDatabaseChecks(DatabaseType.MSSQL, config.ProjectionStorage.ConnectionString);
+                builder.YellowStatuswWhenCheck("EventStore", () =>
+                {
+                    try
+                    {
+                        var store = intermediateProvider.GetService<IEventStore>();
+
+                        if (store is null)
+                            return new ServiceStatus("EventStore.Connection", ServiceState.Red);
+
+                        switch (store.ConnectionState)
+                        {
+                            case ConnectionState.Connected:
+                                return new ServiceStatus("EventStore.Connection", ServiceState.Green);
+
+                            case ConnectionState.Reconnecting:
+                                return new ServiceStatus("EventStore.Connection", ServiceState.Yellow)
+                                {
+                                    ErrorMessage = "connection to EventStore is unavailable, but it is being re-established"
+                                };
+
+                            // let's be exact what happens in what state...
+                            // ReSharper disable once RedundantCaseLabel
+                            case ConnectionState.Disconnected:
+                            default:
+                                return new ServiceStatus("EventStore.Connection", ServiceState.Red)
+                                {
+                                    ErrorMessage = "connection to EventStore is unavailable and NOT being re-established"
+                                };
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        return new ServiceStatus("EventStore.Connection", ServiceState.Red)
+                        {
+                            ErrorMessage = $"couldn't retrieve instance of {nameof(IEventStore)}; {e}"
+                        };
+                    }
+                });
+            });
         }
     }
 }

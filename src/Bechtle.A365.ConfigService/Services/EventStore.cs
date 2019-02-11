@@ -58,8 +58,16 @@ namespace Bechtle.A365.ConfigService.Services
                                                       new Uri(configuration.EventStoreConnection.Uri),
                                                       configuration.EventStoreConnection.ConnectionName);
 
+            ConnectionState = ConnectionState.Disconnected;
+
             _eventStore.ConnectAsync().RunSync();
+            _eventStore.Connected += (sender, args) => ConnectionState = ConnectionState.Connected;
+            _eventStore.Disconnected += (sender, args) => ConnectionState = ConnectionState.Disconnected;
+            _eventStore.Reconnecting += (sender, args) => ConnectionState = ConnectionState.Reconnecting;
         }
+
+        /// <inheritdoc />
+        public ConnectionState ConnectionState { get; private set; }
 
         /// <inheritdoc />
         public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents()
