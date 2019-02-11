@@ -65,9 +65,9 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         public static IServiceCollection AddProjectionConfiguration(this IServiceCollection services, IConfiguration configuration)
             => services.AddSingleton(configuration)
                        .AddSingleton(provider => provider.GetService<IConfiguration>().Get<ProjectionConfiguration>())
-                       .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventBus)
-                       .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventStore)
-                       .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().Storage);
+                       .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventBusConnection)
+                       .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().EventStoreConnection)
+                       .AddSingleton(provider => provider.GetService<ProjectionConfiguration>().ProjectionStorage);
 
         /// <summary>
         ///     services for specific tasks within the projection
@@ -88,8 +88,8 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                                                                                 .KeepReconnecting()
                                                                                 .KeepRetrying()
                                                                                 .UseCustomLogger(provider.GetService<ESLogger>()),
-                                                              new Uri(config.EventStore.Uri),
-                                                              config.EventStore.ConnectionName);
+                                                              new Uri(config.EventStoreConnection.Uri),
+                                                              config.EventStoreConnection.ConnectionName);
                        })
                        .AddSingleton<IEventDeserializer, EventDeserializer>()
                        .AddSingleton<IEventBus, WebSocketEventBusClient>(provider =>

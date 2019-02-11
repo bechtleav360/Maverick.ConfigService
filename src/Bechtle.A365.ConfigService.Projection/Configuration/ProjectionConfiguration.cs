@@ -2,12 +2,12 @@
 {
     public class ProjectionConfiguration
     {
-        public ProjectionEventBusConfiguration EventBus { get; set; }
+        public ProjectionEventBusConfiguration EventBusConnection { get; set; }
 
-        public ProjectionEventStoreConfiguration EventStore { get; set; }
+        public ProjectionEventStoreConfiguration EventStoreConnection { get; set; }
 
         public string LoggingConfiguration { get; set; }
 
-        public ProjectionStorageConfiguration Storage { get; set; }
+        public ProjectionStorageConfiguration ProjectionStorage { get; set; }
     }
 }
