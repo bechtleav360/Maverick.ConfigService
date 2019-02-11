@@ -61,6 +61,7 @@ namespace Bechtle.A365.ConfigService
             }
 
             app.UseMvc()
+               .UseMiddleware<LoggingMiddleware>()
                .UseCors(policy => policy.AllowAnyHeader()
                                         .AllowAnyMethod()
                                         .AllowAnyOrigin())
