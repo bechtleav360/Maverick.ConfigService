@@ -19,6 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using NLog.Web;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using CertificateValidator = Bechtle.A365.ConfigService.Services.CertificateValidator;
@@ -60,8 +61,9 @@ namespace Bechtle.A365.ConfigService
                 app.UseHttpsRedirection();
             }
 
-            app.UseMvc()
-               .UseMiddleware<LoggingMiddleware>()
+            app.ApplicationServices.SetupNLogServiceLocator();
+
+            app.UseMiddleware<LoggingMiddleware>()
                .UseCors(policy => policy.AllowAnyHeader()
                                         .AllowAnyMethod()
                                         .AllowAnyOrigin())
@@ -71,7 +73,8 @@ namespace Bechtle.A365.ConfigService
                    options.SwaggerEndpoint("/swagger/v2/swagger.json", string.Empty);
                    options.DocExpansion(DocExpansion.None);
                    options.DisplayRequestDuration();
-               });
+               })
+               .UseMvc();
         }
 
         /// <summary>

@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Config;
+using NLog.Web;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -46,6 +47,7 @@ namespace Bechtle.A365.ConfigService
                           builder.ClearProviders()
                                  .AddProvider(new A365NLogProvider());
                       })
+                      .UseNLog()
                       .UseKestrel(options =>
                       {
                           var logger = options.ApplicationServices
