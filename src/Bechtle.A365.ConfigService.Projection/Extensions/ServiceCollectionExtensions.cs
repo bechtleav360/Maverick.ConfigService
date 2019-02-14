@@ -8,7 +8,6 @@ using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
-using Bechtle.A365.Logging.NLog.Extension;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,15 +24,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         /// <param name="services"></param>
         /// <returns></returns>
         public static IServiceCollection AddCustomLogging(this IServiceCollection services)
-            => services.AddSingleton(provider =>
-                       {
-                           ILoggerFactory factory = new LoggerFactory();
-                           factory.AddA365NlogProviderWithConfiguration(provider.GetService<ProjectionConfiguration>()
-                                                                                .LoggingConfiguration);
-
-                           return factory;
-                       })
-                       .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
+            => services.AddSingleton(typeof(ILogger<>), typeof(Logger<>))
                        .AddSingleton<ESLogger, EventStoreLogger>();
 
         /// <summary>

@@ -1,4 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.Extensions;
@@ -8,7 +12,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
+using NLog;
+using NLog.Config;
+using NLog.Web;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
@@ -19,34 +26,66 @@ namespace Bechtle.A365.ConfigService.Projection
         //
         // Configure and ConfigureServices are both required, either as Fluent invocations here or as actual methods in this class - even if they're empty.
         // they're both called here to not clutter this class with empty functions
-        public static IWebHost BuildWebHost(string[] args) => WebHost.CreateDefaultBuilder(args)
-                                                                     .Configure(builder => { }) // don't delete, see comment above
-                                                                     .ConfigureServices(
-                                                                         (context, collection) => ConfigureServicesInternal(collection,
-                                                                                                                            context.Configuration))
-                                                                     .ConfigureAppConfiguration(builder =>
-                                                                     {
-                                                                         builder.AddJsonFile("appsettings.json", true, true)
-                                                                                .AddCommandLine(args)
-                                                                                .AddEnvironmentVariables();
-                                                                     })
-                                                                     .Build();
+        public static IWebHost BuildWebHost(string[] args)
+            => WebHost.CreateDefaultBuilder(args)
+                      .Configure(builder => { }) // don't delete, see comment above
+                      .ConfigureAppConfiguration(builder =>
+                      {
+                          builder.AddJsonFile("appsettings.json", true, true)
+                                 .AddCommandLine(args)
+                                 .AddEnvironmentVariables();
+                      })
+                      .ConfigureServices((context, services) => ConfigureServicesInternal(services, context.Configuration))
+                      .ConfigureLogging((context, builder) =>
+                      {
+                          // set the global NLog configuration
+                          using (var stringReader = new StringReader(context.Configuration
+                                                                            .Get<ProjectionConfiguration>()
+                                                                            .LoggingConfiguration))
+                          using (var xmlReader = XmlReader.Create(stringReader))
+                              LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
+
+                          builder.ClearProviders();
+                      })
+                      .UseNLog()
+                      .Build();
+
+        private static IHostBuilder BuildHost(string[] args)
+            => new HostBuilder()
+               .ConfigureAppConfiguration(builder =>
+               {
+                   builder.AddJsonFile("appsettings.json", true, true)
+                          .AddCommandLine(args)
+                          .AddEnvironmentVariables();
+               })
+               .ConfigureServices((context, services) =>
+                                      ConfigureServicesInternal(services, context.Configuration))
+               .ConfigureLogging((context, builder) =>
+               {
+                   // set the global NLog configuration
+                   using (var stringReader = new StringReader(context.Configuration
+                                                                     .Get<ProjectionConfiguration>()
+                                                                     .LoggingConfiguration))
+                   using (var xmlReader = XmlReader.Create(stringReader))
+                       LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
+
+                   builder.ClearProviders();
+               })
+               .UseNLog();
 
         // actual entry-point for the application
         public static async Task Main(string[] args)
-            => await new HostBuilder()
-                     .ConfigureAppConfiguration(builder =>
-                     {
-                         builder.AddJsonFile("appsettings.json", true, true)
-                                .AddCommandLine(args)
-                                .AddEnvironmentVariables();
-                     })
-                     .ConfigureServices((context, services) => ConfigureServicesInternal(services, context.Configuration))
-                     .RunConsoleAsync();
+        {
+            var host = BuildHost(args);
+
+            if (!(Debugger.IsAttached || args.Any(a => a == "--console")))
+                await host.RunAsServiceAsync();
+            else
+                await host.RunConsoleAsync();
+        }
 
         private static void ConfigureServicesInternal(IServiceCollection services, IConfiguration configuration)
-            => services.AddDbContext<ProjectionStore>((provider, builder) => builder.UseLoggerFactory(new NullLoggerFactory())
-                                                                                    .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
+            => services.AddDbContext<ProjectionStore>((provider, builder) => builder.UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
                                                                                                           .ConnectionString))
                        .AddCustomLogging()
                        .AddProjectionConfiguration(configuration)

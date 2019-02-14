@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -16,8 +15,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj" />
-    <ProjectReference Include="..\..\src\Bechtle.A365.ConfigService.Projection\Bechtle.A365.ConfigService.Projection.csproj" />
+    <ProjectReference Include="..\..\src\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj" />
   </ItemGroup>
 
 </Project>
