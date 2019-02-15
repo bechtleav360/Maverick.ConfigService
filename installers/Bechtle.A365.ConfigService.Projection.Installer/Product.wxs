@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension"
+     xmlns:iis="http://schemas.microsoft.com/wix/IIsExtension">
+
+  <?define ServiceName="ConfigService"?>
+
+  <Product Id="*"
+           Name="A365 $(var.ServiceName)"
+           Language="1033"
+           Version="1.0.0.0"
+           Manufacturer="Bechtle"
+           UpgradeCode="31e46009-0c19-413a-9bef-68ecd77ef806">
+
+    <Package InstallerVersion="200"
+             Compressed="yes"
+             InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <Feature Id="ProductFeature" Title="Base Files" Level="1">
+      <ComponentGroupRef Id="App_Publish" />
+    </Feature>
+
+    <UI>
+      <UIRef Id="WixUI_InstallDir" />
+      <UIRef Id="WixUI_ErrorProgressText" />
+
+      <!-- Skip license dialog -->
+      <Publish Dialog="WelcomeDlg"
+               Control="Next"
+               Event="NewDialog"
+               Value="InstallDirDlg"
+               Order="2">
+        1
+      </Publish>
+      <Publish Dialog="InstallDirDlg"
+               Control="Back"
+               Event="NewDialog"
+               Value="WelcomeDlg"
+               Order="2">
+        1
+      </Publish>
+    </UI>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="A365ParentFolder" Name="A365">
+          <Directory Id="INSTALLFOLDER" Name="$(var.ServiceName)">
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+  </Product>
+</Wix>

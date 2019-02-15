@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension"
+     xmlns:iis="http://schemas.microsoft.com/wix/IIsExtension">
+
+  <?define ServiceName="ConfigService"?>
+  <?define DefaultServiceHostName="a365configurationservice"?>
+  <?define DefaultServiceHostDomain=$(env.USERDNSDOMAIN)?>
+
+  <Product Id="*"
+           Name="A365 $(var.ServiceName)"
+           Language="1033"
+           Version="1.0.0.0"
+           Manufacturer="Bechtle"
+           UpgradeCode="e76f9278-4faf-4229-8133-1a0b4d8e3f6b">
+
+    <Package InstallerVersion="200"
+             Compressed="yes"
+             InstallScope="perMachine" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <!-- initialize property to its default value and make it public to allow for overrides -->
+    <Property Id="SERVICECERT" Value="A365$(var.ServiceName)" />
+    <Property Id="SERVICEHOSTNAME" Value="$(var.DefaultServiceHostName)" />
+    <Property Id="SERVICEHOSTDOMAIN" Value="$(var.DefaultServiceHostDomain)" />
+
+    <Feature Id="ProductFeature" Title="Base Files" Level="1">
+      <ComponentGroupRef Id="App_Publish" />
+    </Feature>
+
+    <Feature Id="IISFeature" Title="IIS-Site registration" Level="1">
+      <ComponentRef Id="CreateTemporaryFiles" />
+      <ComponentRef Id="IISSiteComponent" />
+    </Feature>
+
+    <UI>
+      <UIRef Id="WixUI_InstallDir" />
+      <UIRef Id="WixUI_ErrorProgressText" />
+
+      <!-- Skip license dialog -->
+      <Publish Dialog="WelcomeDlg"
+               Control="Next"
+               Event="NewDialog"
+               Value="InstallDirDlg"
+               Order="2">
+        1
+      </Publish>
+      <Publish Dialog="InstallDirDlg"
+               Control="Back"
+               Event="NewDialog"
+               Value="WelcomeDlg"
+               Order="2">
+        1
+      </Publish>
+    </UI>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="A365ParentFolder" Name="A365">
+          <Directory Id="INSTALLFOLDER" Name="$(var.ServiceName)">
+
+            <Directory Id="InstallScripts" Name="_install">
+              <Component Id="CreateTemporaryFiles" Guid="015056CF-9119-497D-8532-51BE48C3219D">
+                <!-- declare scripts for later reference -->
+                <File Id="SetAppPoolNoManagedCodeScript" Source="SetAppPoolNoManagedCode.ps1" />
+                <File Id="SetBindingCertificateScript" Source="SetBindingCertificate.ps1" />
+              </Component>
+            </Directory>
+
+            <Component Id="IISSiteComponent" Guid="B4AB7953-3167-49DB-8A75-455D2C582B4A">
+
+              <!-- actually necessary -->
+              <CreateFolder />
+
+              <!-- create application-pool for reference later -->
+              <iis:WebAppPool Id="ServiceAppPool"
+                              Name="A365$(var.ServiceName)"
+                              ManagedPipelineMode="Integrated" />
+
+              <!-- create site with reference to app-pool above -->
+              <iis:WebSite Id="ServiceSite"
+                           Description="A365$(var.ServiceName)"
+                           Directory="INSTALLFOLDER"
+                           AutoStart="yes"
+                           ConfigureIfExists="yes">
+
+                <!-- ManagedRuntimeVersion=NoManagedCode is handled by a powershell custom-action -->
+                <iis:WebDirProperties Id="ServiceProperties"
+                                      AnonymousAccess="yes"
+                                      BasicAuthentication="no"
+                                      WindowsAuthentication="no" />
+
+                <!--
+                create the default binding with hostname:80
+                the hostname:443 binding is created via the SetBindingCertificate CustomAction
+                -->
+                <iis:WebAddress Id="ServiceBinding"
+                                IP="*"
+                                Port="80"
+                                Header="[SERVICEHOSTNAME].[SERVICEHOSTDOMAIN]" />
+
+                <iis:WebApplication Id="ServiceWebApplication"
+                                    Name="A365$(var.ServiceName)"
+                                    WebAppPool="ServiceAppPool" />
+
+              </iis:WebSite>
+
+            </Component>
+
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <CustomAction Id="SetAppPoolNoManagedCode"
+                  Property="InvokeSetAppPoolNoManagedCode"
+                  Value="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\SetAppPoolNoManagedCode.ps1&quot; -AppPool A365$(var.ServiceName)"
+                  Execute="immediate" />
+
+    <CustomAction Id="SetBindingCertificate"
+                  Property="InvokeSetBindingCertificate"
+                  Value="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\SetBindingCertificate.ps1&quot; -Cert [SERVICECERT] -CertStore MY -Hostname [SERVICEHOSTNAME].[SERVICEHOSTDOMAIN] -Site A365$(var.ServiceName)"
+                  Execute="immediate" />
+
+    <CustomAction Id="InvokeSetAppPoolNoManagedCode"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec64"
+                  Execute="deferred"
+                  Return="check"
+                  Impersonate="no" />
+
+    <CustomAction Id="InvokeSetBindingCertificate"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec64"
+                  Execute="deferred"
+                  Return="check"
+                  Impersonate="no" />
+
+    <CustomAction Id="Disable32BitAppPool"
+                  Directory="TARGETDIR"
+                  ExeCommand="[SystemFolder]inetsrv\appcmd set apppool /apppool.name:&quot;A365$(var.ServiceName)&quot; /enable32BitAppOnWin64:false"
+                  Execute="deferred"
+                  Return="asyncNoWait"
+                  Impersonate="no" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetAppPoolNoManagedCode" Before="CostFinalize">NOT Installed</Custom>
+      <Custom Action="SetBindingCertificate" Before="CostFinalize">NOT Installed</Custom>
+      <Custom Action="InvokeSetAppPoolNoManagedCode" Before="InstallFinalize">NOT Installed</Custom>
+      <Custom Action="InvokeSetBindingCertificate" Before="InstallFinalize">NOT Installed</Custom>
+      <Custom Action="Disable32BitAppPool" Before="InstallFinalize">NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+  </Product>
+</Wix>
