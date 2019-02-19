@@ -4,7 +4,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Configuration;
-using Bechtle.A365.Logging.NLog.Adapter;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Https;

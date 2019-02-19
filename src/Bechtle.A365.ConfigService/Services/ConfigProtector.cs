@@ -127,6 +127,9 @@ namespace Bechtle.A365.ConfigService.Services
         {
             public string Key { get; set; }
 
+            // ReSharper disable once InconsistentNaming
+            // Name is not inconsistent, it's widely known to stand for...
+            // InitializationVector
             public string IV { get; set; }
         }
     }
