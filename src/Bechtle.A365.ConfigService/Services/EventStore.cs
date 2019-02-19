@@ -16,8 +16,8 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
 {
-    /// <inheritdoc />
-    public class EventStore : IEventStore
+    /// <inheritdoc cref="IEventStore" />
+    public class EventStore : IEventStore, IDisposable
     {
         private const string CacheKeyReplayedEvents = nameof(CacheKeyReplayedEvents);
         private readonly IMemoryCache _cache;
@@ -61,10 +61,16 @@ namespace Bechtle.A365.ConfigService.Services
             ConnectionState = ConnectionState.Disconnected;
 
             _eventStore.ConnectAsync().RunSync();
-            _eventStore.Connected += (sender, args) => ConnectionState = ConnectionState.Connected;
-            _eventStore.Disconnected += (sender, args) => ConnectionState = ConnectionState.Disconnected;
-            _eventStore.Reconnecting += (sender, args) => ConnectionState = ConnectionState.Reconnecting;
+            _eventStore.Connected += OnEventStoreConnected;
+            _eventStore.Disconnected += OnEventStoreDisconnected;
+            _eventStore.Reconnecting += OnEventStoreReconnecting;
         }
+
+        private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args) => ConnectionState = ConnectionState.Reconnecting;
+
+        private void OnEventStoreDisconnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Disconnected;
+
+        private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Connected;
 
         /// <inheritdoc />
         public ConnectionState ConnectionState { get; private set; }
@@ -152,5 +158,19 @@ namespace Bechtle.A365.ConfigService.Services
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
             => _provider.GetService<IDomainEventConverter<T>>()
                         .Serialize(domainEvent);
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (!(_eventStore is null))
+            {
+                _eventStore.Connected -= OnEventStoreConnected;
+                _eventStore.Disconnected -= OnEventStoreDisconnected;
+                _eventStore.Reconnecting -= OnEventStoreReconnecting;
+            }
+
+            _cache?.Dispose();
+            _eventStore?.Dispose();
+        }
     }
 }
