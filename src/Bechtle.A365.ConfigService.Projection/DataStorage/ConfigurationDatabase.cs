@@ -125,7 +125,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 if (addedKeys.Any())
                     environment.Keys.AddRange(addedKeys);
 
-
                 return Result.Success();
             }
             catch (DbUpdateException e)
