@@ -109,7 +109,7 @@ namespace Bechtle.A365.ConfigService.Projection
             }
             catch (Exception e)
             {
-                _logger.LogCritical(e, $"could not project domain-event of type '{domainEvent.EventType}'");
+                _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}' :{e}");
             }
             finally
             {
