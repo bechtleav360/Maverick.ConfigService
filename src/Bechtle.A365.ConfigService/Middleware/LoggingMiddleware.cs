@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace Bechtle.A365.ConfigService
+namespace Bechtle.A365.ConfigService.Middleware
 {
     /// <summary>
     ///     Leaner replacement for Bechtle.A365.Logging.NLog.Infrastructure.Middleware.LoggingMiddleware.
