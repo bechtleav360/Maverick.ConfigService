@@ -169,7 +169,6 @@ namespace Bechtle.A365.ConfigService.Services
                 _eventStore.Reconnecting -= OnEventStoreReconnecting;
             }
 
-            _cache?.Dispose();
             _eventStore?.Dispose();
         }
     }
