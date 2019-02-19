@@ -1,0 +1,5 @@
+# ignore everything but this file,
+# this way git tracks this folder, but no other file in here
+
+*
+!.gitignore
