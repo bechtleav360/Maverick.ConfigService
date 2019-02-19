@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Controllers
@@ -25,6 +28,16 @@ namespace Bechtle.A365.ConfigService.Controllers
         protected IServiceProvider Provider;
 
         /// <summary>
+        ///     Data-Encryptor / -Decryptor to protect outgoing data
+        /// </summary>
+        protected IConfigProtector ConfigProtector;
+
+        /// <summary>
+        ///     Certificate-Provider for Regions (configured in appsettings.json)
+        /// </summary>
+        protected IRegionEncryptionCertProvider EncryptionCertProvider;
+
+        /// <summary>
         /// </summary>
         /// <param name="provider"></param>
         /// <param name="logger"></param>
@@ -32,6 +45,8 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             Provider = provider;
             Logger = logger;
+            ConfigProtector = Provider.GetRequiredService<IConfigProtector>();
+            EncryptionCertProvider = Provider.GetRequiredService<IRegionEncryptionCertProvider>();
         }
 
         /// <summary>
@@ -125,5 +140,24 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="value"></param>
         /// <returns></returns>
         protected IActionResult StatusCode(HttpStatusCode statusCode, object value) => StatusCode((int) statusCode, value);
+
+        /// <summary>
+        ///     encrypt <paramref name="data"/> using the registered certificates for <paramref name="region"/>
+        /// </summary>
+        /// <param name="region"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected string Encrypt(string region, string data)
+        {
+            var cert = EncryptionCertProvider.ForRegion(region);
+
+            if (cert.Equals(default(X509Certificate2)))
+            {
+                Logger.LogError($"no certificate found to encrypt region '{region}', can't encrypt response");
+                return string.Empty;
+            }
+
+            return ConfigProtector.EncryptWithPublicKey(data, cert);
+        }
     }
 }

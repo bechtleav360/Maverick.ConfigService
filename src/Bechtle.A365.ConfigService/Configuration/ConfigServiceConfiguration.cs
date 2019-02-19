@@ -19,5 +19,8 @@
 
         /// <inheritdoc cref="ProjectionStorageConfiguration" />
         public ProjectionStorageConfiguration ProjectionStorage { get; set; }
+
+        /// <inheritdoc cref="ProtectedConfiguration" />
+        public ProtectedConfiguration Protected { get; set; }
     }
 }

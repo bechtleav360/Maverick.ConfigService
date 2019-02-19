@@ -50,67 +50,70 @@ namespace Bechtle.A365.ConfigService
                       .UseNLog()
                       .UseKestrel(options =>
                       {
-                          var logger = options.ApplicationServices
-                                              .GetService<ILogger<Program>>();
-
-                          var settings = options.ApplicationServices
-                                                .GetService<ConfigServiceConfiguration>()
-                                                ?.Authentication
-                                                ?.Kestrel;
-
-                          if (settings is null)
+                          using (var scope = options.ApplicationServices.CreateScope())
                           {
-                              logger.LogWarning($"{nameof(AuthenticationConfiguration)} is null, can't configure kestrel");
-                              return;
-                          }
+                              var logger = scope.ServiceProvider
+                                                .GetService<ILogger<Program>>();
 
-                          if (!settings.Enabled)
-                          {
-                              logger.LogWarning("skipping configuration of kestrel");
-                              return;
-                          }
+                              var settings = scope.ServiceProvider
+                                                  .GetService<ConfigServiceConfiguration>()
+                                                  ?.Authentication
+                                                  ?.Kestrel;
 
-                          if (string.IsNullOrWhiteSpace(settings.Certificate))
-                          {
-                              logger.LogError("no certificate given, provide path to a valid certificate with '" +
-                                              $"{nameof(AuthenticationConfiguration)}:" +
-                                              $"{nameof(AuthenticationConfiguration.Kestrel)}:" +
-                                              $"{nameof(AuthenticationConfiguration.Kestrel.Certificate)}" +
-                                              "'");
-                              return;
-                          }
+                              if (settings is null)
+                              {
+                                  logger.LogWarning($"{nameof(AuthenticationConfiguration)} is null, can't configure kestrel");
+                                  return;
+                              }
 
-                          var connectionOptions = new HttpsConnectionAdapterOptions
-                          {
-                              ServerCertificate = settings.Password is null
-                                                      ? new X509Certificate2(settings.Certificate)
-                                                      : new X509Certificate2(settings.Certificate, settings.Password),
-                              ClientCertificateMode = ClientCertificateMode.RequireCertificate,
-                              ClientCertificateValidation = CertificateValidator.DisableChannelValidation
-                          };
+                              if (!settings.Enabled)
+                              {
+                                  logger.LogWarning("skipping configuration of kestrel");
+                                  return;
+                              }
 
-                          logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
+                              if (string.IsNullOrWhiteSpace(settings.Certificate))
+                              {
+                                  logger.LogError("no certificate given, provide path to a valid certificate with '" +
+                                                  $"{nameof(AuthenticationConfiguration)}:" +
+                                                  $"{nameof(AuthenticationConfiguration.Kestrel)}:" +
+                                                  $"{nameof(AuthenticationConfiguration.Kestrel.Certificate)}" +
+                                                  "'");
+                                  return;
+                              }
 
-                          if (string.IsNullOrWhiteSpace(settings.IpAddress))
-                          {
-                              logger.LogError("no ip-address given, provide a valid ipv4 or ipv6 binding-address or 'localhost' for '" +
-                                              $"{nameof(AuthenticationConfiguration)}" +
-                                              $"{nameof(AuthenticationConfiguration.Kestrel)}" +
-                                              $"{nameof(AuthenticationConfiguration.Kestrel.IpAddress)}" +
-                                              "'");
-                              return;
-                          }
+                              var connectionOptions = new HttpsConnectionAdapterOptions
+                              {
+                                  ServerCertificate = settings.Password is null
+                                                          ? new X509Certificate2(settings.Certificate)
+                                                          : new X509Certificate2(settings.Certificate, settings.Password),
+                                  ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+                                  ClientCertificateValidation = CertificateValidator.DisableChannelValidation
+                              };
 
-                          if (settings.IpAddress == "localhost")
-                          {
-                              logger.LogInformation($"binding to: https://localhost:{settings.Port}");
-                              options.ListenLocalhost(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
-                          }
-                          else
-                          {
-                              var ip = IPAddress.Parse(settings.IpAddress);
-                              logger.LogInformation($"binding to: https://{ip}:{settings.Port}");
-                              options.Listen(ip, settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+                              logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
+
+                              if (string.IsNullOrWhiteSpace(settings.IpAddress))
+                              {
+                                  logger.LogError("no ip-address given, provide a valid ipv4 or ipv6 binding-address or 'localhost' for '" +
+                                                  $"{nameof(AuthenticationConfiguration)}" +
+                                                  $"{nameof(AuthenticationConfiguration.Kestrel)}" +
+                                                  $"{nameof(AuthenticationConfiguration.Kestrel.IpAddress)}" +
+                                                  "'");
+                                  return;
+                              }
+
+                              if (settings.IpAddress == "localhost")
+                              {
+                                  logger.LogInformation($"binding to: https://localhost:{settings.Port}");
+                                  options.ListenLocalhost(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+                              }
+                              else
+                              {
+                                  var ip = IPAddress.Parse(settings.IpAddress);
+                                  logger.LogInformation($"binding to: https://{ip}:{settings.Port}");
+                                  options.Listen(ip, settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+                              }
                           }
                       });
     }
