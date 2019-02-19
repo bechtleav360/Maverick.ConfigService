@@ -44,8 +44,7 @@ namespace Bechtle.A365.ConfigService
                           using (var xmlReader = XmlReader.Create(stringReader))
                               LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
 
-                          builder.ClearProviders()
-                                 .AddProvider(new A365NLogProvider());
+                          builder.ClearProviders();
                       })
                       .UseNLog()
                       .UseKestrel(options =>
