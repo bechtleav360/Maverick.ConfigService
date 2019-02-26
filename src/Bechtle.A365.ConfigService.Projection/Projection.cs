@@ -150,6 +150,10 @@ namespace Bechtle.A365.ConfigService.Projection
                     await HandleDomainEvent(environmentKeyModified);
                     break;
 
+                case EnvironmentKeysImported environmentKeysImported:
+                    await HandleDomainEvent(environmentKeysImported);
+                    break;
+
                 case StructureCreated structureCreated:
                     await HandleDomainEvent(structureCreated);
                     break;

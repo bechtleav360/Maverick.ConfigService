@@ -2,6 +2,7 @@
 using System.Linq;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Dto;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -62,6 +63,19 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 _identifier.Name = "Default";
             }
 
+            return this;
+        }
+
+        /// <summary>
+        ///     create Events that import the given keys when saved
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        public ConfigEnvironment ImportKeys(IEnumerable<DtoConfigKey> keys)
+        {
+            var actions = keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type));
+
+            RecordedEvents.Add(new EnvironmentKeysImported(_identifier, actions.ToArray()));
             return this;
         }
 

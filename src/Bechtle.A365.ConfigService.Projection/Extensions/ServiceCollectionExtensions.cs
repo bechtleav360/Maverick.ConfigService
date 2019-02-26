@@ -42,6 +42,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                .AddScoped<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>()
                .AddScoped<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>()
                .AddScoped<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeysModifiedHandler>()
+               .AddScoped<IDomainEventHandler<EnvironmentKeysImported>, EnvironmentKeysImportedHandler>()
                .AddScoped<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>()
                .AddScoped<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>()
                .AddScoped<IDomainEventHandler<StructureVariablesModified>, StructureVariablesModifiedHandler>()

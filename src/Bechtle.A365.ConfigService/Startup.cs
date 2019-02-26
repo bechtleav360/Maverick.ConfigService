@@ -137,6 +137,8 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IConfigProtector, ConfigProtector>()
                     .AddScoped<IRegionEncryptionCertProvider, RegionEncryptionCertProvider>()
                     .AddScoped<IEventStore, Services.EventStore>()
+                    .AddScoped<IDataExporter, DataExporter>()
+                    .AddScoped<IDataImporter, DataImporter>()
                     .AddSingleton<ESLogger, EventStoreLogger>()
                     .AddSingleton<IJsonTranslator, JsonTranslator>()
                     .AddSingleton<IEventDeserializer, EventDeserializer>()

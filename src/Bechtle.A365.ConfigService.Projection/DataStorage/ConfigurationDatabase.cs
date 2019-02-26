@@ -262,8 +262,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
         /// <inheritdoc />
         public async Task<IResult> CreateStructure(StructureIdentifier identifier,
-                                                  IDictionary<string, string> keys,
-                                                  IDictionary<string, string> variables)
+                                                   IDictionary<string, string> keys,
+                                                   IDictionary<string, string> variables)
         {
             if (await GetStructureInternal(identifier) != null)
             {
@@ -310,6 +310,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             if (foundEnvironment is null)
                 return Result.Success();
+
+            _context.ConfigEnvironmentKeys
+                    .RemoveRange(_context.ConfigEnvironmentKeys.Where(k => k.ConfigEnvironmentId == foundEnvironment.Id));
 
             _context.ConfigEnvironments.Remove(foundEnvironment);
 
@@ -535,12 +538,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
         /// <inheritdoc />
         public async Task<IResult> SaveConfiguration(EnvironmentSnapshot environment,
-                                                    StructureSnapshot structure,
-                                                    IDictionary<string, string> configuration,
-                                                    string configurationJson,
-                                                    IEnumerable<string> usedKeys,
-                                                    DateTime? validFrom,
-                                                    DateTime? validTo)
+                                                     StructureSnapshot structure,
+                                                     IDictionary<string, string> configuration,
+                                                     string configurationJson,
+                                                     IEnumerable<string> usedKeys,
+                                                     DateTime? validFrom,
+                                                     DateTime? validTo)
         {
             var foundEnvironment = await GetEnvironmentInternal(environment.Identifier);
 
