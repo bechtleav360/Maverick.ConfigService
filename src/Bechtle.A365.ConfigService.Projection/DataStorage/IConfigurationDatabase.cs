@@ -111,6 +111,14 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         Task<IResult<StructureSnapshot>> GetStructure(StructureIdentifier identifier);
 
         /// <summary>
+        ///     Replace all keys with the given keys, remove spare keys
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="actions"></param>
+        /// <returns></returns>
+        Task<IResult> ImportEnvironment(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions);
+
+        /// <summary>
         ///     save a configuration compiled from <paramref name="environment" /> and <paramref name="structure" />
         /// </summary>
         /// <param name="environment"></param>
@@ -122,12 +130,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <param name="validTo"></param>
         /// <returns></returns>
         Task<IResult> SaveConfiguration(EnvironmentSnapshot environment,
-                                       StructureSnapshot structure,
-                                       IDictionary<string, string> configuration,
-                                       string configurationJson,
-                                       IEnumerable<string> usedKeys,
-                                       DateTime? validFrom,
-                                       DateTime? validTo);
+                                        StructureSnapshot structure,
+                                        IDictionary<string, string> configuration,
+                                        string configurationJson,
+                                        IEnumerable<string> usedKeys,
+                                        DateTime? validFrom,
+                                        DateTime? validTo);
 
         /// <summary>
         ///     set the Identifier of the latest active Configuration

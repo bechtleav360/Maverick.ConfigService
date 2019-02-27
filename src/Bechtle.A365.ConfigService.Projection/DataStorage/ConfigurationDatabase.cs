@@ -537,6 +537,33 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
+        public async Task<IResult> ImportEnvironment(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions)
+        {
+            var environment = await GetEnvironmentInternal(identifier);
+
+            if (environment is null)
+            {
+                _logger.LogError($"could not find environment {identifier} to apply modifications");
+                return Result.Error($"could not find environment {identifier} to apply modifications", ErrorCode.NotFound);
+            }
+
+            _context.ConfigEnvironmentKeys.RemoveRange(environment.Keys);
+            _context.ConfigEnvironmentKeys.AddRange(actions.Where(a => a.Type == ConfigKeyActionType.Set)
+                                                           .Select(a => new ConfigEnvironmentKey
+                                                           {
+                                                               Key = a.Key,
+                                                               Description = a.Description,
+                                                               ConfigEnvironment = environment,
+                                                               ConfigEnvironmentId = environment.Id,
+                                                               Id = Guid.NewGuid(),
+                                                               Type = a.ValueType,
+                                                               Value = a.Value
+                                                           }));
+
+            return Result.Success();
+        }
+
+        /// <inheritdoc />
         public async Task<IResult> SaveConfiguration(EnvironmentSnapshot environment,
                                                      StructureSnapshot structure,
                                                      IDictionary<string, string> configuration,

@@ -30,8 +30,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
 
             _logger.LogInformation($"setting '{setKeys}' keys, deleting '{deletedKeys}' keys");
 
-            await _database.DeleteEnvironment(domainEvent.Identifier);
-            await _database.ApplyChanges(domainEvent.Identifier, domainEvent.ModifiedKeys);
+            await _database.ImportEnvironment(domainEvent.Identifier, domainEvent.ModifiedKeys);
 
             _logger.LogInformation($"generating autocomplete-data for environment '{domainEvent.Identifier}'");
 
