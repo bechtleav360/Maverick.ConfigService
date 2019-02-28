@@ -8,7 +8,7 @@
   <?define DefaultServiceHostName="a365configurationservice"?>
   <?define DefaultServiceHostDomain=$(env.USERDNSDOMAIN)?>
 
-  <Product Id="*"
+  <Product Id="a1cd389e-fa79-4ef7-806e-e3dcd0459102"
            Name="A365 $(var.ServiceName)"
            Language="1033"
            Version="1.0.0.0"
