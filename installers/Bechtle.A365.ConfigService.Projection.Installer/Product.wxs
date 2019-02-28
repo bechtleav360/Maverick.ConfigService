@@ -4,9 +4,9 @@
      xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension"
      xmlns:iis="http://schemas.microsoft.com/wix/IIsExtension">
 
-  <?define ServiceName="ConfigService"?>
+  <?define ServiceName="ConfigService Projection"?>
 
-  <Product Id="*"
+  <Product Id="1c1e00df-713d-4a78-98a8-0db784739105"
            Name="A365 $(var.ServiceName)"
            Language="1033"
            Version="1.0.0.0"
