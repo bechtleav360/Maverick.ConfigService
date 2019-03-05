@@ -72,8 +72,8 @@
                    SuppressFragments="true"
                    SuppressRegistry="true"
                    SuppressRootDirectory="true"
-                   AutoGenerateGuids="false"
-                   GenerateGuidsNow="true"
+                   AutoGenerateGuids="true"
+                   GenerateGuidsNow="false"
                    ToolPath="$(WixToolPath)"
                    PreprocessorVariable="var.BasePath" />
   </Target>
