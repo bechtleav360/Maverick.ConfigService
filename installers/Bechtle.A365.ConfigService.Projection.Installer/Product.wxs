@@ -50,8 +50,7 @@
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="A365ParentFolder" Name="A365">
-          <Directory Id="INSTALLFOLDER" Name="$(var.ServiceName)">
-          </Directory>
+          <Directory Id="INSTALLFOLDER" Name="$(var.ServiceName)" />
         </Directory>
       </Directory>
     </Directory>

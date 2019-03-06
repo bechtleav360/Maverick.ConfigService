@@ -9,18 +9,18 @@
     <OutputName>Bechtle.A365.ConfigService.Projection</OutputName>
     <OutputType>Package</OutputType>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>Debug</DefineConstants>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <WixExtension Include="WixUtilExtension">
       <HintPath>$(WixExtDir)\WixUtilExtension.dll</HintPath>
@@ -39,32 +39,36 @@
       <Name>WixNetFxExtension</Name>
     </WixExtension>
   </ItemGroup>
-  
+
   <ItemGroup>
     <Compile Include="apppublish.wxs" />
     <Compile Include="Product.wxs" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <Content Include="WixService.xsl" />
+  </ItemGroup>
+
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
-  
+
   <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
-  
+
   <Target Name="BeforeBuild">
     <Exec Command="dotnet publish ..\..\src\Bechtle.A365.ConfigService.Projection -c $(Configuration)" />
-    
+
     <GetAssemblyIdentity AssemblyFiles="..\..\src\Bechtle.A365.ConfigService.Projection\bin\$(Configuration)\netcoreapp2.1\win10-x64\publish\Bechtle.A365.ConfigService.Projection.dll">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
     </GetAssemblyIdentity>
-    
+
     <PropertyGroup>
       <LinkerBaseInputPaths>..\..\src\Bechtle.A365.ConfigService.Projection\bin\$(Configuration)\netcoreapp2.1\win10-x64\publish</LinkerBaseInputPaths>
       <DefineConstants>BasePath=..\..\src\Bechtle.A365.ConfigService.Projection\bin\$(Configuration)\netcoreapp2.1\win10-x64\publish</DefineConstants>
     </PropertyGroup>
-    
-    <HeatDirectory OutputFile="apppublish.wxs"
+
+    <HeatDirectory OutputFile="apppublish_intermediate.wxs"
                    DirectoryRefId="INSTALLFOLDER"
                    ComponentGroupName="App_Publish"
                    SuppressCom="true"
@@ -76,5 +80,19 @@
                    GenerateGuidsNow="false"
                    ToolPath="$(WixToolPath)"
                    PreprocessorVariable="var.BasePath" />
+
+    <PropertyGroup>
+      <WixServiceParams>
+        <Parameter Name="InstallFolder" Value="INSTALLFOLDER" />
+        <Parameter Name="DisplayName" Value="Maverick Config-Projection" />
+        <Parameter Name="Name" Value="Bechtle.A365.ConfigService.Projection" />
+        <Parameter Name="Description" Value="Project Config-Events for the Maverick Backend" />
+      </WixServiceParams>
+    </PropertyGroup>
+
+    <XslTransformation XslInputPath="WixService.xsl"
+                       XmlInputPaths="apppublish_intermediate.wxs"
+                       OutputPaths="apppublish.wxs"
+                       Parameters="$(WixServiceParams)" />
   </Target>
 </Project>
