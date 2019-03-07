@@ -549,8 +549,25 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             if (environment is null)
             {
-                _logger.LogError($"could not find environment {identifier} to apply modifications");
-                return Result.Error($"could not find environment {identifier} to apply modifications", ErrorCode.NotFound);
+                _logger.LogInformation($"environment '{identifier}' does not exist yet, creating it before importing keys");
+
+                var createResult = await CreateEnvironment(identifier, false);
+                if (createResult.IsError)
+                {
+                    _logger.LogError($"could not create environment '{identifier}': {createResult.Code:G} {createResult.Message}");
+                    return createResult;
+                }
+
+                // save changes to apply added Environment
+                await _context.SaveChangesAsync();
+
+                environment = await GetEnvironmentInternal(identifier);
+
+                if (environment is null)
+                {
+                    _logger.LogError($"environment '{identifier}' still can't be found after creating it, aborting import");
+                    return Result.Error($"environment '{identifier}' couldn't be created", ErrorCode.DbUpdateError);
+                }
             }
 
             _context.ConfigEnvironmentKeys.RemoveRange(environment.Keys);
