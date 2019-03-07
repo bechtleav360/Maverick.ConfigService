@@ -353,6 +353,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         {
             var environment = await GetEnvironmentInternal(identifier);
 
+            if (environment?.Keys is null)
+            {
+                _logger.LogWarning($"couldn't generate auto-complete data for environment '{identifier}': environment was not found");
+                return Result.Error($"couldn't generate auto-complete data for environment '{identifier}': environment was not found", ErrorCode.NotFound);
+            }
+
             var roots = new List<ConfigEnvironmentKeyPath>();
 
             foreach (var environmentKey in environment.Keys.OrderBy(k => k.Key))
