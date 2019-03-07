@@ -9,6 +9,8 @@ using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
@@ -40,6 +42,8 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <inheritdoc />
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            _logger.LogInformation(FormatConfiguration());
+
             _logger.LogInformation("running projection...");
 
             long? latestEvent;
@@ -72,6 +76,15 @@ namespace Bechtle.A365.ConfigService.Projection
                 await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
 
             _logger.LogInformation("stopping projection...");
+        }
+
+        private string FormatConfiguration()
+        {
+            var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
+            settings.Converters.Add(new StringEnumConverter());
+
+            return $"using configuration (may change during runtime): \r\n" +
+                   $"{JsonConvert.SerializeObject(_configuration, settings)}";
         }
 
         private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
