@@ -58,8 +58,7 @@ namespace Bechtle.A365.ConfigService.Projection
                           .AddCommandLine(args)
                           .AddEnvironmentVariables();
                })
-               .ConfigureServices((context, services) =>
-                                      ConfigureServicesInternal(services, context.Configuration))
+               .ConfigureServices((context, services) => ConfigureServicesInternal(services, context.Configuration))
                .ConfigureLogging((context, builder) =>
                {
                    // set the global NLog configuration
