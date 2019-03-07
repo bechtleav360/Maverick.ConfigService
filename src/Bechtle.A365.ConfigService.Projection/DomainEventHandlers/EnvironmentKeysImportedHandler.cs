@@ -10,11 +10,11 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
     public class EnvironmentKeysImportedHandler : IDomainEventHandler<EnvironmentKeysImported>
     {
         private readonly IConfigurationDatabase _database;
-        private readonly ILogger<EnvironmentKeysModifiedHandler> _logger;
+        private readonly ILogger<EnvironmentKeysImportedHandler> _logger;
 
         /// <inheritdoc />
         public EnvironmentKeysImportedHandler(IConfigurationDatabase database,
-                                              ILogger<EnvironmentKeysModifiedHandler> logger)
+                                              ILogger<EnvironmentKeysImportedHandler> logger)
         {
             _database = database;
             _logger = logger;
