@@ -89,33 +89,49 @@ namespace Bechtle.A365.ConfigService.Projection
             if (domainEvent == null)
                 return;
 
-            try
+            using (var scope = _provider.CreateScope())
             {
-                using (var scope = _provider.CreateScope())
+                var context = scope.ServiceProvider.GetService<ProjectionStore>();
+                var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
+
+                using (var transaction = context.Database.BeginTransaction())
                 {
-                    var context = scope.ServiceProvider.GetService<ProjectionStore>();
-                    var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
+                    _logger.LogInformation($"using transaction '{transaction.TransactionId}' for event '{domainEvent.EventType}'");
 
-                    await Project(domainEvent, scope.ServiceProvider);
-                    await database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
+                    try
+                    {
+                        _logger.LogDebug($"projecting event '{domainEvent.EventType}'");
 
-                    _logger.LogInformation("saving changes made to the database...");
+                        await Project(domainEvent, scope.ServiceProvider);
 
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                        _logger.LogDebug($"saving '{context.ChangeTracker.Entries().Count()}' changes made to the database...");
+                        _logger.LogDebug($"recording successful projection of event #{resolvedEvent.OriginalEventNumber} to database");
 
-                    await context.SaveChangesAsync();
+                        await database.SetLatestProjectedEventId(resolvedEvent.OriginalEventNumber);
+
+                        _logger.LogInformation("saving changes made to the database...");
+
+                        if (_logger.IsEnabled(LogLevel.Debug))
+                            _logger.LogDebug($"saving '{context.ChangeTracker.Entries().Count()}' changes made to the database...");
+
+                        await context.SaveChangesAsync();
+
+                        _logger.LogInformation($"committing transaction '{transaction.TransactionId}'");
+
+                        transaction.Commit();
+                    }
+                    catch (Exception e)
+                    {
+                        transaction.Rollback();
+                        _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}', " +
+                                            $"rolling back transaction '{transaction.TransactionId}' :{e}");
+                    }
+                    finally
+                    {
+                        _logger.LogTrace("forcing GC.Collect...");
+
+                        GC.Collect();
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}' :{e}");
-            }
-            finally
-            {
-                _logger.LogDebug("forcing GC.Collect...");
-
-                GC.Collect();
             }
         }
 
