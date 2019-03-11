@@ -11,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 {
     public class ConfigurationCheck : IConnectionCheck
     {
-        public static IConfiguration EffectiveConfiguration { get; set; } = null;
+        public static IConfiguration EffectiveConfiguration { get; private set; }
 
         /// <inheritdoc />
         public string Name => "Configuration Override";
@@ -40,7 +40,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             output.Line($"Configuration loaded; '{config.AsEnumerable().Count()}' entries from '{config.Providers.Count()}' providers", 1);
             output.Line("Providers:", 1);
 
-            // @TODO: count keys per provider
             foreach (var provider in config.Providers)
                 output.Line($"{provider.GetType().Name}", 2);
 
