@@ -23,7 +23,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             IConfigurationRoot config;
 
-            if (string.IsNullOrWhiteSpace(parameters.UseDefaultConfigSources))
+            if (parameters.Sources.Any())
             {
                 output.Line("Config-Source Hierarchy:", 1);
                 foreach (var source in parameters.Sources)
@@ -31,10 +31,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
                 config = EvaluateSources(parameters);
             }
-            else
+            else if (!string.IsNullOrWhiteSpace(parameters.UseDefaultConfigSources))
             {
                 output.Line("Config-Source Hierarchy (by Convention)", 1);
                 config = EvaluateSourcesByConvention(parameters.UseDefaultConfigSources, parameters);
+            }
+            else
+            {
+                output.Line("Config-Source Hierarchy (by Convention)", 1);
+                config = EvaluateSourcesByConvention(null, parameters);
             }
 
             output.Line($"Configuration loaded; '{config.AsEnumerable().Count()}' entries from '{config.Providers.Count()}' providers", 1);
@@ -52,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             output.Line(1);
 
             output.Line($"Applying Effective Configuration to {nameof(ConfigServiceConfiguration)}", 1);
-            
+
             var csConfig = new ConfigServiceConfiguration();
             try
             {
@@ -70,9 +75,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             output.Line(1);
 
             output.Line("Setting Effective Configuration for later Checks...", 1);
-            
+
             EffectiveConfiguration = config;
-            
+
             output.Line(1);
 
             return Task.FromResult(new TestResult
@@ -98,37 +103,45 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         ///     match against the pattern file:{filename.ext}[;opt]
         ///     <example>
         ///         file:appsettings.json
-        ///         file:appsettings.json;opt
+        ///         file:appsettings.json;req
+        ///         file:appsettings.json;required
         ///         file:../../appsettings.json
-        ///         file:../../appsettings.json;opt
+        ///         file:../../appsettings.json;req
+        ///         file:../../appsettings.json;required
         ///         file:C:\A365\Service\appsettings.json
-        ///         file:C:\A365\Service\appsettings.json;opt
+        ///         file:C:\A365\Service\appsettings.json;req
+        ///         file:C:\A365\Service\appsettings.json;required
         ///         file:"C:\A365\Service\appsettings.json"
-        ///         file:"C:\A365\Service\appsettings.json";opt
+        ///         file:"C:\A365\Service\appsettings.json";req
+        ///         file:"C:\A365\Service\appsettings.json";required
         ///         file:"C:\A365\Service with spaces\appsettings.json"
-        ///         file:"C:\A365\Service with spaces\appsettings.json";opt
+        ///         file:"C:\A365\Service with spaces\appsettings.json";req
+        ///         file:"C:\A365\Service with spaces\appsettings.json";required
         ///     </example>
         /// </summary>
-        private static readonly Regex FileSourceMatcher = new Regex(@"^file\:(?<file>([\w\d\.\:\\\/]+)|(""[\s\w\d\.\:\\\/] +""))(?<opt>\;opt)?$",
+        private static readonly Regex FileSourceMatcher = new Regex(@"^file\:(?<file>([\w\d\.\:\\\/]+)|(""[\s\w\d\.\:\\\/]+""))(?<required>\;req(uired)?)?$",
                                                                     RegexOptions.Compiled);
 
         /// <summary>
-        ///     match against the pattern file:{filename.ext}[;opt]
+        ///     match against the pattern cli-args
         ///     <example>
-        ///         file:filename.ext
-        ///         file:filename.ext;opt
+        ///         cli-args
         ///     </example>
         /// </summary>
         private static readonly Regex CommandLineArgumentMatcher = new Regex(@"^cli-args$",
                                                                              RegexOptions.Compiled);
 
         private IConfigurationRoot EvaluateSourcesByConvention(string root, TestParameters parameters)
-            => new ConfigurationBuilder()
-               .AddJsonFile(Path.Combine(root, "appsettings.json"), true)
-               .AddJsonFile(Path.Combine(root, "appsettings.development.json"), true)
-               .AddEnvironmentVariables()
-               .AddCommandLine(parameters.PassThruArguments)
-               .Build();
+            => (string.IsNullOrWhiteSpace(root)
+                    ? new ConfigurationBuilder()
+                      .AddEnvironmentVariables()
+                      .AddCommandLine(parameters.PassThruArguments)
+                    : new ConfigurationBuilder()
+                      .AddJsonFile(Path.Combine(root, "appsettings.json"), true)
+                      .AddJsonFile(Path.Combine(root, "appsettings.development.json"), true)
+                      .AddEnvironmentVariables()
+                      .AddCommandLine(parameters.PassThruArguments))
+                .Build();
 
         private IConfigurationRoot EvaluateSources(TestParameters parameters)
         {
@@ -146,8 +159,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 var fileMatch = FileSourceMatcher.Match(source);
                 if (fileMatch.Success)
                 {
+                    // file is optional if group <required> is not successful
                     builder.AddJsonFile(fileMatch.Groups["file"].Value,
-                                        fileMatch.Groups["opt"].Success);
+                                        !fileMatch.Groups["required"].Success);
                     continue;
                 }
 

@@ -44,9 +44,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             var configuration = ConfigurationCheck.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
 
-            if (configuration is null)
+            if (configuration?.EventStoreConnection is null)
             {
-                output.Line("Effective Configuration is null - see previous checks", 1);
+                output.Line("Effective Configuration (EventStoreConnection) is null - see previous checks", 1);
                 return new TestResult
                 {
                     Result = false,
