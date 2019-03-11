@@ -8,10 +8,16 @@
   <ItemGroup>
     <PackageReference Include="Bechtle.A365.Utilities.Rest" Version="1.5.0-zzdevelop0011" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj" />
+    <ProjectReference Include="..\Bechtle.A365.ConfigService\Bechtle.A365.ConfigService.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -11,9 +10,10 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.Cli
+namespace Bechtle.A365.ConfigService.Cli.Commands
 {
     [Command("export", Description = "export data from the targeted ConfigService")]
     public class ExportCommand : SubCommand<Program>
@@ -24,73 +24,92 @@ namespace Bechtle.A365.ConfigService.Cli
         {
         }
 
-        [Required]
         [Option("-e|--environment", Description = "Environment to export, given in \"{Category}/{Name}\" form")]
         public string[] Environments { get; set; }
 
         [Option("-o|--output", Description = "location to export data to")]
         public string OutputFile { get; set; }
 
-        /// <inheritdoc />
-        protected override async Task<int> OnExecute(CommandLineApplication app)
-        {
-            if (string.IsNullOrWhiteSpace(Parent.ConfigServiceEndpoint))
-            {
-                LogError($"no {nameof(Parent.ConfigServiceEndpoint)} given -- see help for more information");
-                return 1;
-            }
+        [Option("--format", Description = "interpret export and format it")]
+        public ReformatKind Format { get; set; } = ReformatKind.None;
 
-            if (!Environments.Any())
+        public enum ReformatKind
+        {
+            None,
+            Compress,
+            Indent,
+        }
+
+        /// <inheritdoc />
+        protected override bool CheckParameters()
+        {
+            // check Base-Parameters
+            base.CheckParameters();
+
+            if (Environments is null || !Environments.Any())
             {
-                LogError($"no {nameof(Environments)} given -- see help for more information");
-                return 1;
+                Logger.LogError($"no {nameof(Environments)} given -- see help for more information");
+                return false;
             }
 
             // if environment doesn't contain '/' or contains multiple of them...
-            var errEnvironments = Environments.Where(e => !e.Contains('/') || e.IndexOf('/') != e.LastIndexOf('/'))
+            var errEnvironments = Environments.Where(e => !e.Contains('/') ||
+                                                          e.IndexOf('/') != e.LastIndexOf('/'))
                                               .ToArray();
 
             // ... complain about them
             if (errEnvironments.Any())
             {
-                LogError($"given environments contain errors: {string.Join("; ", errEnvironments)}");
-                return 1;
+                Logger.LogError($"given environments contain errors: {string.Join("; ", errEnvironments)}");
+                return false;
             }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        protected override async Task<int> OnExecute(CommandLineApplication app)
+        {
+            if (!CheckParameters())
+                return 1;
 
             var exportDefinition = new ExportDefinition
             {
                 Environments = Environments.Select(e =>
                                            {
                                                var split = e.Split('/');
-                                               var category = split[0];
-                                               var name = split[1];
 
                                                return new EnvironmentIdentifier
                                                {
-                                                   Category = category,
-                                                   Name = name
+                                                   Category = split[0],
+                                                   Name = split[1]
                                                };
                                            })
                                            .ToArray()
             };
 
-            var request = await RestRequest.Make()
-                                           .Post(new Uri(new Uri(Parent.ConfigServiceEndpoint), "export"),
+            var request = await RestRequest.Make(Logger)
+                                           .Post(new Uri(new Uri(ConfigServiceEndpoint), "export"),
                                                  new StringContent(JsonConvert.SerializeObject(exportDefinition, Formatting.None),
                                                                    Encoding.UTF8,
                                                                    "application/json"))
                                            .ReceiveString();
 
+            var result = await request.Take<string>();
+
+            if (Format != ReformatKind.None)
+                result = Reformat(result, Format);
+
             if (request.HttpResponseMessage?.IsSuccessStatusCode != true)
             {
-                LogError($"could not export environments '{string.Join("; ", Environments)}'");
+                Logger.LogError($"could not export environments '{string.Join("; ", Environments)}'");
                 return 1;
             }
 
             // if no file is given, redirect to stdout
             if (string.IsNullOrWhiteSpace(OutputFile))
             {
-                await Console.Out.WriteAsync(await request.Take<string>());
+                await Console.Out.WriteAsync(result);
                 return 0;
             }
 
@@ -102,8 +121,34 @@ namespace Bechtle.A365.ConfigService.Cli
             }
             catch (IOException e)
             {
-                LogError($"could not write to file '{OutputFile}': {e}");
+                Logger.LogError($"could not write to file '{OutputFile}': {e}");
                 return 1;
+            }
+        }
+
+        private string Reformat(string raw, ReformatKind format)
+        {
+            try
+            {
+                var obj = JsonConvert.DeserializeObject<ConfigExport>(raw);
+
+                switch (format)
+                {
+                    case ReformatKind.Compress:
+                        return JsonConvert.SerializeObject(obj, Formatting.None);
+
+                    case ReformatKind.Indent:
+                        return JsonConvert.SerializeObject(obj, Formatting.Indented);
+
+                    default:
+                        Logger.LogError($"unknown format '{format:G}'");
+                        return raw;
+                }
+            }
+            catch (JsonException e)
+            {
+                Logger.LogError($"can't re-interpret result: {e}");
+                return raw;
             }
         }
     }

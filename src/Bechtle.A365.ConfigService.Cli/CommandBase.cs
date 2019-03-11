@@ -1,62 +1,62 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Cli
 {
     [HelpOption("--help")]
     public abstract class CommandBase
     {
-        /// <inheritdoc cref="IConsole" />
-        protected IConsole Console { get; }
-
         /// <inheritdoc />
         protected CommandBase(IConsole console)
         {
             Console = console;
+            LoggerInstance = new ConsoleLogger(Console, LogLevel.Error);
+            Logger = LoggerInstance;
         }
 
+        [Option("-s|--service")]
+        public string ConfigServiceEndpoint { get; set; }
+
+        [Option("-v|--verbose", Description = "Increase verbosity of logging each time it's supplied")]
+        public bool[] Verbose
+        {
+            set
+            {
+                if (value.Length == 1)
+                    LoggerInstance.LogLevel = LogLevel.Information;
+                else if (value.Length == 2)
+                    LoggerInstance.LogLevel = LogLevel.Debug;
+                else if (value.Length >= 3)
+                    LoggerInstance.LogLevel = LogLevel.Trace;
+                else
+                    LoggerInstance.LogLevel = LogLevel.Error;
+            }
+        }
+
+        /// <inheritdoc cref="IConsole" />
+        protected IConsole Console { get; }
+
+        protected ILogger Logger { get; }
+
+        private ConsoleLogger LoggerInstance { get; }
+
+        protected virtual bool CheckParameters()
+        {
+            if (string.IsNullOrWhiteSpace(ConfigServiceEndpoint))
+            {
+                Logger.LogError($"no {nameof(ConfigServiceEndpoint)} given -- see help for more information");
+                return false;
+            }
+
+            return true;
+        }
+
+        // ReSharper disable once UnusedMember.Global
         protected virtual Task<int> OnExecute(CommandLineApplication app)
         {
             app.ShowHelp();
             return Task.FromResult(1);
-        }
-
-        protected virtual void LogError(string message) => Log(LogLevel.Error, message, ConsoleColor.Red);
-
-        protected virtual void LogInfo(string message) => Log(LogLevel.Info, message, ConsoleColor.White);
-
-        protected virtual void LogDebug(string message) => Log(LogLevel.Debug, message, ConsoleColor.Gray);
-
-        private void Log(LogLevel level, string message, ConsoleColor foreground)
-        {
-            Console.ForegroundColor = foreground;
-
-            var formattedMessage = $"{DateTime.Now:O} {level} {message}";
-
-            switch (level)
-            {
-                case LogLevel.Error:
-                    Console.Error.WriteLine(formattedMessage);
-                    break;
-
-                case LogLevel.Info:
-                case LogLevel.Debug:
-                    Console.WriteLine(formattedMessage);
-                    break;
-                
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(level), level, null);
-            }
-            
-            Console.ResetColor();
-        }
-
-        private enum LogLevel
-        {
-            Error,
-            Info,
-            Debug
         }
     }
 }

@@ -8,9 +8,10 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.Cli
+namespace Bechtle.A365.ConfigService.Cli.Commands
 {
     [Command("import", Description = "import data to the targeted ConfigService")]
     public class ImportCommand : SubCommand<Program>
@@ -27,29 +28,26 @@ namespace Bechtle.A365.ConfigService.Cli
         /// <inheritdoc />
         protected override async Task<int> OnExecute(CommandLineApplication app)
         {
-            if (string.IsNullOrWhiteSpace(Parent.ConfigServiceEndpoint))
-            {
-                LogError($"no {nameof(Parent.ConfigServiceEndpoint)} given -- see help for more information");
+            if (!CheckParameters())
                 return 1;
-            }
 
             var json = GetInput();
             if (!ValidateInput(json))
             {
-                LogError("input failed to validate");
+                Logger.LogError("input failed to validate");
                 return 1;
             }
 
             // name / filename must match parameter-name of ImportController.Import
             var formData = new MultipartFormDataContent {{new ByteArrayContent(Encoding.UTF8.GetBytes(json)), "file", "file"}};
 
-            var request = await RestRequest.Make()
-                                           .Post(new Uri(new Uri(Parent.ConfigServiceEndpoint), "import"), formData)
+            var request = await RestRequest.Make(Logger)
+                                           .Post(new Uri(new Uri(ConfigServiceEndpoint), "import"), formData)
                                            .ReceiveString();
 
             if (request.HttpResponseMessage?.IsSuccessStatusCode != true)
             {
-                LogError($"couldn't import '{File}': {request.HttpResponseMessage?.StatusCode:D} {await request.Take<string>()}");
+                Logger.LogError($"couldn't import '{File}': {request.HttpResponseMessage?.StatusCode:D} {await request.Take<string>()}");
                 return 1;
             }
 
@@ -63,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Cli
                 if (Console.IsInputRedirected)
                     return GetInputFromStdIn();
 
-                LogError($"no '{nameof(File)}' parameter given, nothing in stdin");
+                Logger.LogError($"no '{nameof(File)}' parameter given, nothing in stdin");
                 return string.Empty;
             }
 
@@ -74,7 +72,7 @@ namespace Bechtle.A365.ConfigService.Cli
         {
             if (!System.IO.File.Exists(file))
             {
-                LogError($"file '{file}' doesn't seem to exist");
+                Logger.LogError($"file '{file}' doesn't seem to exist");
                 return string.Empty;
             }
 
@@ -84,7 +82,7 @@ namespace Bechtle.A365.ConfigService.Cli
             }
             catch (IOException e)
             {
-                LogError($"couldn't read file '{file}': {e}");
+                Logger.LogError($"couldn't read file '{file}': {e}");
                 return string.Empty;
             }
         }
@@ -99,13 +97,13 @@ namespace Bechtle.A365.ConfigService.Cli
             }
             catch (Exception e)
             {
-                LogError($"couldn't read stdin to end: {e}");
+                Logger.LogError($"couldn't read stdin to end: {e}");
                 return string.Empty;
             }
         }
 
         /// <summary>
-        ///     validate the given input against a <see cref="ExportDefinition"/>
+        ///     validate the given input against a <see cref="ExportDefinition" />
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
@@ -113,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Cli
         {
             if (string.IsNullOrWhiteSpace(input))
             {
-                LogError("no input given");
+                Logger.LogError("no input given");
                 return false;
             }
 
@@ -124,7 +122,7 @@ namespace Bechtle.A365.ConfigService.Cli
             }
             catch (JsonException e)
             {
-                LogError($"couldn't deserialize input: {e}");
+                Logger.LogError($"couldn't deserialize input: {e}");
                 return false;
             }
 
