@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Configuration;
@@ -35,14 +36,34 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             {
                 using (var context = new DatabaseCheckContext(configuration.ProjectionStorage.ConnectionString))
                 {
-                    var transactions = await context.Database.GetAppliedMigrationsAsync();
+                    var migrations = (await context.Database.GetAppliedMigrationsAsync())?.ToList() ?? new List<string>();
 
-                    output.Line($"found '{transactions.Count()}' transactions");
+                    output.Line($"Found '{migrations.Count}' Migrations", 1);
+                    foreach (var migration in migrations)
+                        output.Line(migration, 2);
+
+                    var tables = context.MetadataString
+                                        .FromSql("SELECT TABLE_NAME as Result FROM INFORMATION_SCHEMA.TABLES ORDER BY Result")
+                                        .ToList()
+                                        .Select(x => x.Result)
+                                        .ToDictionary(table => table,
+                                                      table => context.MetadataInt
+                                                                      .FromSql($"SELECT COUNT(*) as Result FROM {table}", table)
+                                                                      .First()
+                                                                      .Result);
+
+                    output.Line(1);
+
+                    var longestTableName = tables.Keys.Max(x => x.Length);
+
+                    output.Line($"Found {tables.Count} tables in the Schema", 1);
+                    foreach (var (table, entries) in tables)
+                        output.Line($"{table.PadRight(longestTableName, ' ')}: {entries:###,###,###,###} {(entries == 1 ? "row" : "rows")}", 2);
                 }
             }
             catch (Exception e)
             {
-                output.Line($"Error while querying database: {e.GetType().Name}; {e.Message}");
+                output.Line($"Error while querying database: {e.GetType().Name}; {e.Message}", 1);
                 return new TestResult
                 {
                     Result = false,
@@ -62,6 +83,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
     {
         private readonly string _connectionString;
 
+        public DbQuery<AdHocQuery<string>> MetadataString { get; set; }
+
+        public DbQuery<AdHocQuery<int>> MetadataInt { get; set; }
+
         /// <inheritdoc />
         public DatabaseCheckContext(string connectionString)
         {
@@ -71,9 +96,17 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         /// <inheritdoc />
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            base.OnConfiguring(optionsBuilder);
-
             optionsBuilder.UseSqlServer(_connectionString);
         }
+
+        /// <inheritdoc />
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+        }
+    }
+
+    public class AdHocQuery<T>
+    {
+        public T Result { get; set; }
     }
 }
