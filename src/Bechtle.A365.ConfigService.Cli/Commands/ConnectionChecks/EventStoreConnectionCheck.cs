@@ -164,7 +164,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         private string FormatTime(TimeSpan span)
         {
             if (span.TotalSeconds < 10)
-                return span.TotalSeconds.ToString("#.#");
+                return span.TotalSeconds.ToString("#.#s");
 
             // don't care about sub-second precision
             var totalSeconds = (int) span.TotalSeconds;
