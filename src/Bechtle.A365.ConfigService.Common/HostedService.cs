@@ -4,10 +4,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Bechtle.A365.ConfigService.Projection.Services
+namespace Bechtle.A365.ConfigService.Common
 {
     public abstract class HostedService : IHostedService
     {
+        // by David Fowler: https://gist.github.com/davidfowl/a7dd5064d9dcf35b6eae1a7953d615e3
         private CancellationTokenSource _cancellationTokenSource;
         private Task _executingTask;
         private readonly IServiceProvider _serviceProvider;
@@ -49,6 +50,8 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         }
 
         /// <summary>
+        ///     Derived classes should override this and execute a
+        ///     long running method until cancellation is requested
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>

@@ -25,7 +25,11 @@ Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Bechtle.A365.ConfigService.
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "Bechtle.A365.ConfigService.Projection.Installer", "installers\Bechtle.A365.ConfigService.Projection.Installer\Bechtle.A365.ConfigService.Projection.Installer.wixproj", "{EE694245-406E-4E23-9C89-F619AC284B1F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Cli", "src\Bechtle.A365.ConfigService.Cli\Bechtle.A365.ConfigService.Cli.csproj", "{534CDB40-DF3D-4A11-A0E5-CCB738E5E327}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Cli", "src\Bechtle.A365.ConfigService.Cli\Bechtle.A365.ConfigService.Cli.csproj", "{534CDB40-DF3D-4A11-A0E5-CCB738E5E327}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Migrator", "src\Bechtle.A365.ConfigService.Migrator\Bechtle.A365.ConfigService.Migrator.csproj", "{940BE2ED-1962-4A8A-9197-4D68E01CA726}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Migrations", "src\Bechtle.A365.ConfigService.Migrations\Bechtle.A365.ConfigService.Migrations.csproj", "{8E923882-1B83-4140-A338-7D79C11BE8D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -103,6 +107,22 @@ Global
 		{534CDB40-DF3D-4A11-A0E5-CCB738E5E327}.Release|Any CPU.Build.0 = Release|Any CPU
 		{534CDB40-DF3D-4A11-A0E5-CCB738E5E327}.Release|x86.ActiveCfg = Release|Any CPU
 		{534CDB40-DF3D-4A11-A0E5-CCB738E5E327}.Release|x86.Build.0 = Release|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Debug|x86.Build.0 = Debug|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Release|Any CPU.Build.0 = Release|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Release|x86.ActiveCfg = Release|Any CPU
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726}.Release|x86.Build.0 = Release|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Debug|x86.Build.0 = Debug|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Release|x86.ActiveCfg = Release|Any CPU
+		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +137,8 @@ Global
 		{4BB3D014-C9D6-402B-ADCF-0407B85A7BF7} = {14CB50C7-3090-42D6-9EB6-F2033A65590B}
 		{EE694245-406E-4E23-9C89-F619AC284B1F} = {14CB50C7-3090-42D6-9EB6-F2033A65590B}
 		{534CDB40-DF3D-4A11-A0E5-CCB738E5E327} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
+		{940BE2ED-1962-4A8A-9197-4D68E01CA726} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
+		{8E923882-1B83-4140-A338-7D79C11BE8D2} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1726AC6-C9A5-48E9-AEC6-B29C0E7BDC87}

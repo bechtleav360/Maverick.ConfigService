@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Bechtle.A365.ConfigService.Projection.DataStorage
+namespace Bechtle.A365.ConfigService.Common.DbObjects
 {
     public class ProjectionMetadata
     {

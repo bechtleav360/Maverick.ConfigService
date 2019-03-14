@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
@@ -28,6 +30,7 @@ namespace Bechtle.A365.ConfigService.Projection
                           IEventStoreConnection store,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer)
+            : base(provider)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -104,7 +107,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
             using (var scope = _provider.CreateScope())
             {
-                var context = scope.ServiceProvider.GetService<ProjectionStore>();
+                var context = scope.ServiceProvider.GetService<ProjectionStoreContext>();
                 var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
 
                 using (var transaction = context.Database.BeginTransaction())

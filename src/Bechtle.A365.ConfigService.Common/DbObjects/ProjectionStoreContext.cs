@@ -1,15 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using Bechtle.A365.ConfigService.Common.DbObjects;
+﻿using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
-namespace Bechtle.A365.ConfigService.Projection.DataStorage
+namespace Bechtle.A365.ConfigService.Common.DbObjects
 {
-    // property accessors are actually required for EFCore
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-    public sealed class ProjectionStore : DbContext
+    public sealed class ProjectionStoreContext : DbContext
     {
-        public ProjectionStore(DbContextOptions<ProjectionStore> options)
+        /// <inheritdoc />
+        public ProjectionStoreContext(DbContextOptions<ProjectionStoreContext> options)
             : base(options)
         {
         }
@@ -25,6 +22,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <summary>
         /// </summary>
         public DbSet<ConfigEnvironment> ConfigEnvironments { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public IQueryable<ConfigEnvironmentKeyPath> FullAutoCompletePaths => AutoCompletePaths.Include(p => p.Parent)
+                                                                                              .Include(p => p.Children)
+                                                                                              .Include(p => p.ConfigEnvironment);
 
         /// <summary>
         /// </summary>

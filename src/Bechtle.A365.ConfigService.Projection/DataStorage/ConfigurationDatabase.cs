@@ -13,10 +13,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     public class ConfigurationDatabase : IConfigurationDatabase
     {
-        private readonly ProjectionStore _context;
+        private readonly ProjectionStoreContext _context;
         private readonly ILogger<ConfigurationDatabase> _logger;
 
-        public ConfigurationDatabase(ILogger<ConfigurationDatabase> logger, ProjectionStore context)
+        public ConfigurationDatabase(ILogger<ConfigurationDatabase> logger, ProjectionStoreContext context)
         {
             _logger = logger;
             _context = context;
@@ -216,11 +216,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
-        public async Task<IResult> Connect()
-        {
-            await _context.Database.MigrateAsync();
-            return Result.Success();
-        }
+        public Task<IResult> Connect() => Task.FromResult(Result.Success());
 
         /// <inheritdoc />
         public async Task<IResult> CreateEnvironment(EnvironmentIdentifier identifier, bool defaultEnvironment)

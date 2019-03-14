@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace Bechtle.A365.ConfigService.Projection.Migrations
+namespace Bechtle.A365.ConfigService.Migrations
 {
     public partial class MarkStaleConfiguration : Migration
     {

@@ -3,8 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
+using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Projection.Configuration;
-using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.Extensions;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -29,7 +29,7 @@ namespace Bechtle.A365.ConfigService.Projection
         public static IWebHost BuildWebHost(string[] args)
             => WebHost.CreateDefaultBuilder(args)
                       .Configure(builder => { }) // don't delete, see comment above
-                      .ConfigureAppConfiguration(builder =>
+                      .ConfigureAppConfiguration((context, builder) =>
                       {
                           builder.AddJsonFile("appsettings.json", true, true)
                                  .AddCommandLine(args)
@@ -52,9 +52,10 @@ namespace Bechtle.A365.ConfigService.Projection
 
         private static IHostBuilder BuildHost(string[] args)
             => new HostBuilder()
-               .ConfigureAppConfiguration(builder =>
+               .ConfigureAppConfiguration((context, builder) =>
                {
                    builder.AddJsonFile("appsettings.json", true, true)
+                          .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, true)
                           .AddCommandLine(args)
                           .AddEnvironmentVariables();
                })
@@ -84,8 +85,10 @@ namespace Bechtle.A365.ConfigService.Projection
         }
 
         private static void ConfigureServicesInternal(IServiceCollection services, IConfiguration configuration)
-            => services.AddDbContext<ProjectionStore>((provider, builder) => builder.UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
-                                                                                                          .ConnectionString))
+            => services.AddDbContext<ProjectionStoreContext>(
+                           (provider, builder)
+                               => builder.UseSqlServer(provider.GetService<ProjectionStorageConfiguration>().ConnectionString,
+                                                       options => options.MigrationsAssembly(typeof(ProjectionStoreContext).Assembly.FullName)))
                        .AddCustomLogging()
                        .AddProjectionConfiguration(configuration)
                        .AddProjectionServices()
