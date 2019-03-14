@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Migrator
 {
@@ -23,7 +24,8 @@ namespace Bechtle.A365.ConfigService.Migrator
                                                       (provider, builder) => builder.UseSqlServer(
                                                           context.Configuration["ConnectionString"],
                                                           options => options.MigrationsAssembly(typeof(ProjectionStoreContext).Assembly.FullName)))
-                                                  .AddHostedService<DatabaseMigrationExecutor<ProjectionStoreContext>>());
+                                                  .AddHostedService<DatabaseMigrationExecutor<ProjectionStoreContext>>())
+               .ConfigureLogging(builder => builder.AddConsole(options => { options.DisableColors = false; }));
 
         // actual entry-point for the application
         public static async Task Main(string[] args)
