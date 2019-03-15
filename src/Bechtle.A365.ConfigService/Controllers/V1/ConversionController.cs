@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.Controllers
+namespace Bechtle.A365.ConfigService.Controllers.V1
 {
     /// <summary>
     ///     convert Dictionary{string, string} to and from JSON
