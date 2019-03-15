@@ -6,7 +6,7 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
     ///     search through the projected data
@@ -35,7 +35,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = ApiVersion + "GetKeyAutocomplete")]
+        [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = ApiVersionFormatted + "GetKeyAutocomplete")]
         public async Task<IActionResult> GetKeyAutocompleteList([FromRoute] string category,
                                                                 [FromRoute] string name,
                                                                 [FromQuery] string query = null,

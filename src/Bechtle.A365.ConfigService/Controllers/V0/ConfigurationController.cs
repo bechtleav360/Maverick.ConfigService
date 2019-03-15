@@ -12,7 +12,7 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
     /// </summary>
@@ -44,7 +44,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="environmentName"></param>
         /// <param name="buildOptions"></param>
         /// <returns></returns>
-        [HttpPost("{environmentCategory}/{environmentName}", Name = ApiVersion + "BuildConfigurationsForAllStructures")]
+        [HttpPost("{environmentCategory}/{environmentName}", Name = ApiVersionFormatted + "BuildConfigurationsForAllStructures")]
         public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
                                                             [FromRoute] string environmentName,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
@@ -88,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureName"></param>
         /// <param name="buildOptions"></param>
         /// <returns></returns>
-        [HttpPost("{environmentCategory}/{environmentName}/{structureName}", Name = ApiVersion + "BuildConfigurationsForAllVersionsOfStructure")]
+        [HttpPost("{environmentCategory}/{environmentName}/{structureName}", Name = ApiVersionFormatted + "BuildConfigurationsForAllVersionsOfStructure")]
         public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
                                                             [FromRoute] string environmentName,
                                                             [FromRoute] string structureName,
@@ -143,7 +143,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureVersion"></param>
         /// <param name="buildOptions">times are assumed to be UTC</param>
         /// <returns></returns>
-        [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = ApiVersion + "BuildConfiguration")]
+        [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = ApiVersionFormatted + "BuildConfiguration")]
         public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
                                                             [FromRoute] string environmentName,
                                                             [FromRoute] string structureName,
@@ -202,7 +202,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("available", Name = ApiVersion + "GetAvailableConfigurations")]
+        [HttpGet("available", Name = ApiVersionFormatted + "GetAvailableConfigurations")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
         public async Task<IActionResult> GetAvailableConfigurations([FromQuery] DateTime when,
@@ -226,7 +226,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = ApiVersion + "GetConfigurationKeys")]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = ApiVersionFormatted + "GetConfigurationKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
         public async Task<IActionResult> GetConfiguration([FromRoute] string environmentCategory,
@@ -255,7 +255,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureVersion"></param>
         /// <param name="when"></param>
         /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/json", Name = ApiVersion + "GetConfigurationJson")]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/json", Name = ApiVersionFormatted + "GetConfigurationJson")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
         public async Task<IActionResult> GetConfigurationJson([FromRoute] string environmentCategory,
@@ -302,7 +302,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureVersion"></param>
         /// <returns></returns>
         [Obsolete]
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = ApiVersion + "GetConfigurationObsolete")]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = ApiVersionFormatted + "GetConfigurationObsolete")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
         public async Task<IActionResult> GetConfigurationObsolete([FromRoute] string environmentCategory,
@@ -326,7 +326,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [Obsolete]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/{when}",
-            Name = ApiVersion + "GetConfigurationObsoleteAtPointInTime")]
+            Name = ApiVersionFormatted + "GetConfigurationObsoleteAtPointInTime")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
         public async Task<IActionResult> GetConfigurationObsolete([FromRoute] string environmentCategory,
@@ -346,7 +346,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("stale", Name = ApiVersion + "GetStaleConfigurations")]
+        [HttpGet("stale", Name = ApiVersionFormatted + "GetStaleConfigurations")]
         public async Task<IActionResult> GetStaleConfigurations([FromQuery] int offset = -1,
                                                                 [FromQuery] int length = -1)
         {
@@ -367,7 +367,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = ApiVersion + "GetUsedEnvironmentKeys")]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = ApiVersionFormatted + "GetUsedEnvironmentKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
         public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,

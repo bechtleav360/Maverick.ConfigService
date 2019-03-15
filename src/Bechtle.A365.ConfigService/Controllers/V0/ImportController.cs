@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
     ///     import data from a previous export, <see cref="ExportController"/>
@@ -35,7 +35,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        [HttpPost(Name = ApiVersion + "ImportConfiguration")]
+        [HttpPost(Name = ApiVersionFormatted + "ImportConfiguration")]
         public async Task<IActionResult> Import(IFormFile file)
         {
             if (file is null || file.Length == 0)

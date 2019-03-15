@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
     ///     read existing or create new Config-Structures
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="structure"></param>
         /// <returns></returns>
-        [HttpPost(Name = ApiVersion + "AddStructure")]
+        [HttpPost(Name = ApiVersionFormatted + "AddStructure")]
         public async Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
         {
             if (structure is null)
@@ -99,7 +99,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("available", Name = ApiVersion + "GetAvailableStructures")]
+        [HttpGet("available", Name = ApiVersionFormatted + "GetAvailableStructures")]
         public async Task<IActionResult> GetAvailableStructures([FromQuery] int offset = -1,
                                                                 [FromQuery] int length = -1)
         {
@@ -135,7 +135,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length"></param>
         /// <returns></returns>
         [Obsolete]
-        [HttpGet("{name}/{version}", Name = ApiVersion + "GetStructureObsolete")]
+        [HttpGet("{name}/{version}", Name = ApiVersionFormatted + "GetStructureObsolete")]
         public async Task<IActionResult> GetStructure([FromRoute] string name,
                                                       [FromRoute] int version,
                                                       [FromQuery] int offset = -1,
@@ -174,7 +174,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/json", Name = ApiVersion + "GetStructureAsJson")]
+        [HttpGet("{name}/{version}/json", Name = ApiVersionFormatted + "GetStructureAsJson")]
         public async Task<IActionResult> GetStructureJson([FromRoute] string name,
                                                           [FromRoute] int version)
         {
@@ -215,7 +215,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/keys", Name = ApiVersion + "GetStructureAsKeys")]
+        [HttpGet("{name}/{version}/keys", Name = ApiVersionFormatted + "GetStructureAsKeys")]
         public async Task<IActionResult> GetStructureKeys([FromRoute] string name,
                                                           [FromRoute] int version,
                                                           [FromQuery] int offset = -1,
@@ -245,7 +245,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/variables/keys", Name = ApiVersion + "GetVariablesAsKeys")]
+        [HttpGet("{name}/{version}/variables/keys", Name = ApiVersionFormatted + "GetVariablesAsKeys")]
         public async Task<IActionResult> GetVariables([FromRoute] string name,
                                                       [FromRoute] int version,
                                                       [FromQuery] int offset = -1,
@@ -279,7 +279,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="version"></param>
         /// <returns></returns>
-        [HttpGet("{name}/{version}/variables/json", Name = ApiVersion + "GetVariablesAsJson")]
+        [HttpGet("{name}/{version}/variables/json", Name = ApiVersionFormatted + "GetVariablesAsJson")]
         public async Task<IActionResult> GetVariablesJson([FromRoute] string name,
                                                           [FromRoute] int version)
         {
@@ -316,7 +316,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="version"></param>
         /// <param name="variables"></param>
         /// <returns></returns>
-        [HttpDelete("{name}/{version}/variables/keys", Name = ApiVersion + "DeleteVariablesFromStructure")]
+        [HttpDelete("{name}/{version}/variables/keys", Name = ApiVersionFormatted + "DeleteVariablesFromStructure")]
         public async Task<IActionResult> RemoveVariables([FromRoute] string name,
                                                          [FromRoute] int version,
                                                          [FromBody] string[] variables)
@@ -358,7 +358,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="version"></param>
         /// <param name="changes"></param>
         /// <returns></returns>
-        [HttpPut("{name}/{version}/variables/keys", Name = ApiVersion + "UpdateVariablesInStructure")]
+        [HttpPut("{name}/{version}/variables/keys", Name = ApiVersionFormatted + "UpdateVariablesInStructure")]
         public async Task<IActionResult> UpdateVariables([FromRoute] string name,
                                                          [FromRoute] int version,
                                                          [FromBody] Dictionary<string, string> changes)

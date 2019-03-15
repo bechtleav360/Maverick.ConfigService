@@ -105,13 +105,14 @@ namespace Bechtle.A365.ConfigService
                     }).AddVersionedApiExplorer(options =>
                     {
                         options.AssumeDefaultVersionWhenUnspecified = true;
-                        options.DefaultApiVersion = new ApiVersion(1, 0);
+                        options.DefaultApiVersion = new ApiVersion(4, 0);
                         options.GroupNameFormat = "'v'VVV";
                         options.SubstituteApiVersionInUrl = true;
                     })
                     .AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>()
                     .AddSwaggerGen(options =>
                     {
+                        options.CustomSchemaIds(t => t.FullName);
                         options.OperationFilter<SwaggerDefaultValues>();
                         options.DescribeAllEnumsAsStrings();
                         options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetEntryAssembly().GetName().Name}.xml"));

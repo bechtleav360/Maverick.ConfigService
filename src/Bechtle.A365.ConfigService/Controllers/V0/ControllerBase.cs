@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     // ApiController is used to identify the Controllers for Swagger
     // ApiVersion is used to map the Controllers to a specific version
@@ -20,12 +20,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     {
         /// <summary>
         /// </summary>
-        protected const string ApiBaseRoute = "{v:apiVersion}/";
+        protected const string ApiBaseRoute = "";
 
         /// <summary>
         ///     Api-Version for use in ApiVersionAttribute declarations
         /// </summary>
-        protected const string ApiVersion = "1.0";
+        protected const string ApiVersion = "0.0";
 
         /// <summary>
         ///     Api-Version for use in Route-Names

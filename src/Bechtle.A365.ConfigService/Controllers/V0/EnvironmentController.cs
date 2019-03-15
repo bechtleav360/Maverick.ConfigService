@@ -12,7 +12,7 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
     /// </summary>
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [HttpPost("{category}/{name}", Name = ApiVersion + "AddEnvironment")]
+        [HttpPost("{category}/{name}", Name = ApiVersionFormatted + "AddEnvironment")]
         public async Task<IActionResult> AddEnvironment(string category, string name)
         {
             if (string.IsNullOrWhiteSpace(category))
@@ -100,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [HttpDelete("{category}/{name}/keys", Name = ApiVersion + "DeleteFromEnvironment")]
+        [HttpDelete("{category}/{name}/keys", Name = ApiVersionFormatted + "DeleteFromEnvironment")]
         public async Task<IActionResult> DeleteKeys([FromRoute] string category,
                                                     [FromRoute] string name,
                                                     [FromBody] string[] keys)
@@ -138,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("available", Name = ApiVersion + "GetAvailableEnvironments")]
+        [HttpGet("available", Name = ApiVersionFormatted + "GetAvailableEnvironments")]
         public async Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
                                                                   [FromQuery] int length = -1)
         {
@@ -158,7 +158,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("{category}/{name}/keys", Name = ApiVersion + "GetEnvironmentAsKeys")]
+        [HttpGet("{category}/{name}/keys", Name = ApiVersionFormatted + "GetEnvironmentAsKeys")]
         public async Task<IActionResult> GetKeys([FromRoute] string category,
                                                  [FromRoute] string name,
                                                  [FromQuery] string filter,
@@ -186,7 +186,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        [HttpGet("{category}/{name}/json", Name = ApiVersion + "GetEnvironmentAsJson")]
+        [HttpGet("{category}/{name}/json", Name = ApiVersionFormatted + "GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
                                                        [FromRoute] string name,
                                                        [FromQuery] string filter)
@@ -217,7 +217,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset" />
         /// <param name="length" />
         /// <returns></returns>
-        [HttpGet("{category}/{name}/keys/objects", Name = ApiVersion + "GetEnvironmentAsObjects")]
+        [HttpGet("{category}/{name}/keys/objects", Name = ApiVersionFormatted + "GetEnvironmentAsObjects")]
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
                                                              [FromRoute] string name,
                                                              [FromQuery] string filter,
@@ -256,7 +256,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [HttpPut("{category}/{name}/keys", Name = ApiVersion + "UpdateEnvironment")]
+        [HttpPut("{category}/{name}/keys", Name = ApiVersionFormatted + "UpdateEnvironment")]
         public async Task<IActionResult> UpdateKeys([FromRoute] string category,
                                                     [FromRoute] string name,
                                                     [FromBody] DtoConfigKey[] keys)

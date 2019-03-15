@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
     ///     export data to import it at a later time in a different location
@@ -34,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="definition"></param>
         /// <returns></returns>
-        [HttpPost(Name = ApiVersion + "ExportConfiguration")]
+        [HttpPost(Name = ApiVersionFormatted + "ExportConfiguration")]
         public async Task<IActionResult> Export([FromBody] ExportDefinition definition)
         {
             if (definition is null)

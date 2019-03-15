@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
     ///     preview the Results of Building different Configurations
@@ -50,7 +50,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = ApiVersion + "PreviewConfigurationWithStoredValues")]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = ApiVersionFormatted + "PreviewConfigurationWithStoredValues")]
         public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
                                                               [FromRoute] string structureName,
@@ -101,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="previewOptions"></param>
         /// <returns></returns>
-        [HttpPost(Name = ApiVersion + "PreviewConfigurationWithGivenValues")]
+        [HttpPost(Name = ApiVersionFormatted + "PreviewConfigurationWithGivenValues")]
         public IActionResult PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {
             if (previewOptions is null)
