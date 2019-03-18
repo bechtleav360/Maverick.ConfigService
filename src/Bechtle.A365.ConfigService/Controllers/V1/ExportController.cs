@@ -1,13 +1,7 @@
 ﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Controllers.V1
 {
@@ -16,50 +10,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "export")]
-    public class ExportController : ControllerBase
+    public class ExportController : V0.ExportController
     {
-        private readonly IDataExporter _exporter;
+        private new const string ApiVersion = "1.0";
 
         /// <inheritdoc />
         public ExportController(IServiceProvider provider,
                                 ILogger<ExportController> logger,
                                 IDataExporter exporter)
-            : base(provider, logger)
+            : base(provider, logger, exporter)
         {
-            _exporter = exporter;
-        }
-
-        /// <summary>
-        ///     export one or more items
-        /// </summary>
-        /// <param name="definition"></param>
-        /// <returns></returns>
-        [HttpPost(Name = ApiVersion + "ExportConfiguration")]
-        public async Task<IActionResult> Export([FromBody] ExportDefinition definition)
-        {
-            if (definition is null)
-                return BadRequest("no definition received");
-
-            if (!definition.Environments.Any())
-                return BadRequest("no Environments listed in export-definition");
-
-            var result = await _exporter.Export(definition);
-
-            if (result.IsError)
-                return ProviderError(result);
-
-            var proposedName = "export_"
-                               + (definition.Environments.Length == 1
-                                      ? definition.Environments[0].Category + "-" + definition.Environments[0].Name
-                                      : definition.Environments.Length + "_envs")
-                               + ".json";
-
-            return File(
-                new MemoryStream(
-                    Encoding.UTF8.GetBytes(
-                        JsonConvert.SerializeObject(result.Data, Formatting.Indented))),
-                "application/octet-stream",
-                proposedName);
         }
     }
 }

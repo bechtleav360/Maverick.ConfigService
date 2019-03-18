@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Configuration;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -12,38 +10,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "connections")]
-    public class ConnectionController : ControllerBase
+    public class ConnectionController : V0.ConnectionController
     {
-        private readonly EventBusConnectionConfiguration _config;
+        private new const string ApiVersion = "1.0";
 
         /// <inheritdoc />
         public ConnectionController(IServiceProvider provider,
                                     ILogger<ConnectionController> logger,
                                     EventBusConnectionConfiguration config)
-            : base(provider, logger)
+            : base(provider, logger, config)
         {
-            _config = config;
-        }
-
-        /// <summary>
-        ///     get information on how to Connect to the used EventBus-Server and -Hub
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("events", Name = ApiVersion + "GetEventConnection")]
-        public IActionResult GetEventConnection()
-        {
-            HttpContext.Response.OnStarting(state =>
-            {
-                if (state is HttpContext context)
-                {
-                    context.Response.Headers.Add("X-EventBus-Server", _config.Server);
-                    context.Response.Headers.Add("X-EventBus-Hub", _config.Hub);
-                }
-
-                return Task.CompletedTask;
-            }, HttpContext);
-
-            return NoContent();
         }
     }
 }
