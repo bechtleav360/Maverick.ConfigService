@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Bechtle.A365.ConfigService.Utilities
+namespace Bechtle.A365.ConfigService.Common
 {
     /// <summary>
     ///     utilities to run tasks synchronously
