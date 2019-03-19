@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DbObjects;
