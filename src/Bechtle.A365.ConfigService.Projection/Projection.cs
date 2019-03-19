@@ -16,6 +16,8 @@ using Newtonsoft.Json.Converters;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
+    // Class is Instantiated via DependencyInjection
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class Projection : HostedService
     {
         private readonly ProjectionConfiguration _configuration;
