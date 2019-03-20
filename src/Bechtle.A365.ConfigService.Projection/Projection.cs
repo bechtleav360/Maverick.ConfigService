@@ -47,35 +47,80 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <inheritdoc />
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            // inner function to handle the different ErrorBehaviour
+            void HandleError(ErrorBehaviour errorBehaviour, string message)
+            {
+                switch (errorBehaviour)
+                {
+                    case ErrorBehaviour.Stop:
+                        Program.CancellationTokenSource.Cancel();
+                        break;
+
+                    case ErrorBehaviour.Pause:
+                        _logger.LogError(message);
+                        break;
+
+                    default:
+                        _logger.LogError($"unknown Startup-Error-Behaviour set: {errorBehaviour:G} {errorBehaviour:D}");
+                        break;
+                }
+            }
+
             _logger.LogInformation(FormatConfiguration());
 
             _logger.LogInformation("running projection...");
 
-            long? latestEvent;
+            var behaviour = _configuration.Startup.OnError;
 
-            using (var scope = _provider.CreateScope())
+            long? latestEvent;
+            try
             {
-                var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
-                await database.Connect();
-                latestEvent = await database.GetLatestProjectedEventId();
+                using (var scope = _provider.CreateScope())
+                {
+                    var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
+                    await database.Connect();
+                    latestEvent = await database.GetLatestProjectedEventId();
+                }
+            }
+            catch (Exception e)
+            {
+                HandleError(behaviour, $"couldn't retrieve latest projected event-id, pausing startup due to policy '{behaviour:G}': {e}");
+                throw;
             }
 
-            await _store.ConnectAsync();
+            try
+            {
+                await _store.ConnectAsync();
+            }
+            catch (Exception e)
+            {
+                HandleError(behaviour, $"couldn't connect to EventStore, pausing startup due to policy '{behaviour:G}': {e}");
+                throw;
+            }
 
-            _store.SubscribeToStreamFrom(_configuration.EventStoreConnection.SubscriptionName,
-                                         latestEvent,
-                                         new CatchUpSubscriptionSettings(_configuration.EventStoreConnection.MaxLiveQueueSize,
-                                                                         _configuration.EventStoreConnection.ReadBatchSize,
-                                                                         false,
-                                                                         true,
-                                                                         _configuration.EventStoreConnection.SubscriptionName),
-                                         EventAppeared,
-                                         subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
-                                         (subscription, reason, exception) =>
-                                         {
-                                             _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
-                                                                 $"dropped for reason: {reason}; exception {exception}");
-                                         });
+            try
+            {
+                _store.SubscribeToStreamFrom(_configuration.EventStoreConnection.SubscriptionName,
+                                             latestEvent,
+                                             new CatchUpSubscriptionSettings(_configuration.EventStoreConnection.MaxLiveQueueSize,
+                                                                             _configuration.EventStoreConnection.ReadBatchSize,
+                                                                             false,
+                                                                             true,
+                                                                             _configuration.EventStoreConnection.SubscriptionName),
+                                             EventAppeared,
+                                             subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
+                                             (subscription, reason, exception) =>
+                                             {
+                                                 _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
+                                                                     $"dropped for reason: {reason}; exception {exception}");
+                                             });
+            }
+            catch (Exception e)
+            {
+                HandleError(behaviour, $"couldn't subscribe to stream '{_configuration?.EventStoreConnection?.SubscriptionName}', " +
+                                       $"pausing startup due to policy '{behaviour:G}': {e}");
+                throw;
+            }
 
             while (!cancellationToken.IsCancellationRequested)
                 await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);

@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Bechtle.A365.ConfigService.Common.DbObjects;
@@ -21,6 +23,8 @@ namespace Bechtle.A365.ConfigService.Projection
 {
     public static class Program
     {
+        public static readonly CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
+
         // ReSharper disable once UnusedMember.Global
         //
         // Configure and ConfigureServices are both required, either as Fluent invocations here or as actual methods in this class - even if they're empty.
@@ -46,14 +50,34 @@ namespace Bechtle.A365.ConfigService.Projection
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static async Task Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
-            var host = BuildHost(args);
+            IHostBuilder host;
 
-            if (!(Debugger.IsAttached || args.Any(a => a == "--console")))
-                await host.RunAsServiceAsync();
-            else
-                await host.RunConsoleAsync();
+            try
+            {
+                host = BuildHost(args);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"error while building application-host: {e}");
+                return e.HResult;
+            }
+
+            try
+            {
+                if (!(Debugger.IsAttached || args.Any(a => a == "--console")))
+                    await host.RunAsServiceAsync(CancellationTokenSource.Token);
+                else
+                    await host.RunConsoleAsync(CancellationTokenSource.Token);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"error while running application: {e}");
+                return e.HResult;
+            }
+
+            return 0;
         }
 
         /// <summary>
