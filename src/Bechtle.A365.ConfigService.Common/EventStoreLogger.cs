@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using ESLogger = EventStore.ClientAPI.ILogger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.Common
 {
     /// <summary>
     ///     EventStore.ILogger implementation to forward log-calls to an actual ILogger implementation

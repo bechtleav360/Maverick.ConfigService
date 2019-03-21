@@ -84,43 +84,31 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                               domainEvent.ValidFrom,
                                               domainEvent.ValidTo);
 
-            // await PublishConfigurationChangedEvent(domainEvent);
+            await PublishConfigurationChangedEvent(domainEvent);
         }
 
         private async Task PublishConfigurationChangedEvent(ConfigurationBuilt domainEvent)
         {
             /*
-             * is the new config active right now?
-             * if so, then publish a ConfigurationPublished event
-             *
-             * open ended indefinite
-             * null => null = publish
-             *
-             * from before, indefinite
-             * earlier => null = publish
-             *
-             * in the past
+             * null => null       =    publish
+             * null => earlier    = no publish
+             * null => later      =    publish
+             * earlier => null    =    publish
              * earlier => earlier = no publish
-             *
-             * from before to the future
-             * earlier => later = publish
-             *
-             * in the future, indefinite
-             * later => null = no publish
-             *
-             * in the future, to the past => impossible
-             * later => earlier = no publish
-             *
-             * in the future, to later in the future
-             * later => later = no publish
+             * earlier => later   =    publish
+             * later => null      = no publish
+             * later => earlier   = no publish - invalid range
+             * later => later     = no publish
              */
             var from = domainEvent.ValidFrom;
             var to = domainEvent.ValidTo;
             var now = DateTime.UtcNow;
 
-            if (from is null && to is null ||
-                !(from is null) && from < now && to is null ||
-                !(from is null) && from < now && !(to is null) && to > now)
+            if ((from is null && to is null) ||
+                (from is null && to >= now) ||
+                (from <= now && to is null) ||
+                (from <= now && to >= now))
+            {
                 await _eventBus.Publish(new EventMessage
                 {
                     Event = new OnConfigurationPublished
@@ -131,6 +119,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                         StructureVersion = domainEvent.Identifier.Structure.Version
                     }
                 });
+            }
         }
     }
 }
