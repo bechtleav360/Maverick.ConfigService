@@ -15,9 +15,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using NLog;
 using NLog.Config;
 using NLog.Web;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
@@ -113,12 +115,33 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <param name="configuration"></param>
         private static void ConfigureLoggingInternal(ILoggingBuilder builder, IConfiguration configuration)
         {
-            // set the global NLog configuration
-            using (var stringReader = new StringReader(configuration.Get<ProjectionConfiguration>().LoggingConfiguration))
-            using (var xmlReader = XmlReader.Create(stringReader))
-                LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
+            ConfigureNLog(configuration.Get<ProjectionConfiguration>().LoggingConfiguration);
 
             builder.ClearProviders();
+        }
+
+        public static void ConfigureNLog(string configuration, ILogger logger = null)
+        {
+            try
+            {
+                logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
+
+                if (string.IsNullOrWhiteSpace(configuration))
+                {
+                    logger?.LogWarning("no Logging-Configuration found at 'LoggingConfiguration' - skipping re-configuration");
+                    return;
+                }
+
+                using (var stringReader = new StringReader(configuration))
+                using (var xmlReader = XmlReader.Create(stringReader))
+                    LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
+
+                logger?.LogInformation("new LoggingConfiguration has been applied");
+            }
+            catch (Exception e)
+            {
+                logger?.LogWarning($"new LoggingConfiguration could not be applied: {e}");
+            }
         }
 
         /// <summary>

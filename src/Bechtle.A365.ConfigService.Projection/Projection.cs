@@ -9,8 +9,10 @@ using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using EventStore.ClientAPI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -20,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Projection
     // ReSharper disable once ClassNeverInstantiated.Global
     public class Projection : HostedService
     {
-        private readonly ProjectionConfiguration _configuration;
+        private readonly IConfiguration _configuration;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly ILogger<Projection> _logger;
         private readonly IServiceProvider _provider;
@@ -28,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
         // so many injected things, better not get addicted
         public Projection(ILogger<Projection> logger,
-                          ProjectionConfiguration configuration,
+                          IConfiguration configuration,
                           IEventStoreConnection store,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer)
@@ -42,6 +44,17 @@ namespace Bechtle.A365.ConfigService.Projection
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _eventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
+
+            _logger.LogInformation("registering config-reload hook");
+
+            ChangeToken.OnChange(configuration.GetReloadToken,
+                                 conf =>
+                                 {
+                                     var projectionConfiguration = conf?.Get<ProjectionConfiguration>();
+                                     Program.ConfigureNLog(projectionConfiguration?.LoggingConfiguration);
+                                     _logger.LogInformation(FormatConfiguration(projectionConfiguration));
+                                 },
+                                 _configuration);
         }
 
         /// <inheritdoc />
@@ -66,11 +79,19 @@ namespace Bechtle.A365.ConfigService.Projection
                 }
             }
 
-            _logger.LogInformation(FormatConfiguration());
+            var config = _configuration.Get<ProjectionConfiguration>();
+
+            if (config is null)
+            {
+                HandleError(ErrorBehaviour.Pause, "Projection-Configuration could not be retrieved");
+                throw new Exception("Projection-Configuration could not be retrieved");
+            }
+
+            _logger.LogInformation(FormatConfiguration(config));
 
             _logger.LogInformation("running projection...");
 
-            var behaviour = _configuration.Startup.OnError;
+            var behaviour = config.Startup.OnError;
 
             long? latestEvent;
             try
@@ -100,13 +121,13 @@ namespace Bechtle.A365.ConfigService.Projection
 
             try
             {
-                _store.SubscribeToStreamFrom(_configuration.EventStoreConnection.SubscriptionName,
+                _store.SubscribeToStreamFrom(config.EventStoreConnection.SubscriptionName,
                                              latestEvent,
-                                             new CatchUpSubscriptionSettings(_configuration.EventStoreConnection.MaxLiveQueueSize,
-                                                                             _configuration.EventStoreConnection.ReadBatchSize,
+                                             new CatchUpSubscriptionSettings(config.EventStoreConnection.MaxLiveQueueSize,
+                                                                             config.EventStoreConnection.ReadBatchSize,
                                                                              false,
                                                                              true,
-                                                                             _configuration.EventStoreConnection.SubscriptionName),
+                                                                             config.EventStoreConnection.SubscriptionName),
                                              EventAppeared,
                                              subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
                                              (subscription, reason, exception) =>
@@ -117,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Projection
             }
             catch (Exception e)
             {
-                HandleError(behaviour, $"couldn't subscribe to stream '{_configuration?.EventStoreConnection?.SubscriptionName}', " +
+                HandleError(behaviour, $"couldn't subscribe to stream '{config.EventStoreConnection?.SubscriptionName}', " +
                                        $"pausing startup due to policy '{behaviour:G}': {e}");
                 throw;
             }
@@ -128,13 +149,13 @@ namespace Bechtle.A365.ConfigService.Projection
             _logger.LogInformation("stopping projection...");
         }
 
-        private string FormatConfiguration()
+        private string FormatConfiguration(ProjectionConfiguration config)
         {
             var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
             settings.Converters.Add(new StringEnumConverter());
 
             return $"using configuration (may change during runtime): \r\n" +
-                   $"{JsonConvert.SerializeObject(_configuration, settings)}";
+                   $"{JsonConvert.SerializeObject(config, settings)}";
         }
 
         private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
