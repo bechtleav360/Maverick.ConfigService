@@ -23,7 +23,7 @@ namespace Bechtle.A365.ConfigService.Migrator
                    (context, services) => services.AddDbContext<ProjectionStoreContext>(
                                                       (provider, builder) => builder.UseSqlServer(
                                                           context.Configuration["ConnectionString"],
-                                                          options => options.MigrationsAssembly(typeof(ProjectionStoreContext).Assembly.FullName)))
+                                                          options => options.MigrationsAssembly("Bechtle.A365.ConfigService.Migrations")))
                                                   .AddHostedService<DatabaseMigrationExecutor<ProjectionStoreContext>>())
                .ConfigureLogging(builder => builder.AddConsole(options => { options.DisableColors = false; }));
 
