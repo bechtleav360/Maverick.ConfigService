@@ -94,6 +94,7 @@
 
         <xsl:attribute name="Remove">uninstall</xsl:attribute>
         <xsl:attribute name="Stop">both</xsl:attribute>
+        <xsl:attribute name="Start">install</xsl:attribute>
         <xsl:attribute name="Wait">yes</xsl:attribute>
       </xsl:element>
     </xsl:element>
