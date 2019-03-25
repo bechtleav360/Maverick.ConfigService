@@ -70,11 +70,6 @@
         <xsl:attribute name="ErrorControl">normal</xsl:attribute>
         <xsl:attribute name="Vital">yes</xsl:attribute>
 
-        <!-- Service Dependencies, if required -->
-        <xsl:element name="wix:ServiceDependency">
-          <xsl:attribute name="Id">DEPENDENCY</xsl:attribute>
-        </xsl:element>
-
         <!-- Service Configuration, set as required -->
         <xsl:element name="util:ServiceConfig">
           <xsl:attribute name="FirstFailureActionType">restart</xsl:attribute>

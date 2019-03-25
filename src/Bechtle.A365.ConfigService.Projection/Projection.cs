@@ -60,6 +60,9 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <inheritdoc />
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            //return Context to ApplicationLiveTime.OnStart to prevent Service Start exception (timeout on Service start)
+            await Task.Yield();
+
             // inner function to handle the different ErrorBehaviour
             void HandleError(ErrorBehaviour errorBehaviour, string message)
             {
