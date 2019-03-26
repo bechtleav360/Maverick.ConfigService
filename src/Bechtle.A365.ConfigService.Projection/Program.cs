@@ -15,7 +15,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 using NLog;
 using NLog.Config;
 using NLog.Web;
@@ -46,6 +45,32 @@ namespace Bechtle.A365.ConfigService.Projection
                       .ConfigureLogging((context, builder) => ConfigureLoggingInternal(builder, context.Configuration))
                       .UseNLog()
                       .Build();
+
+        public static void ConfigureNLog(string configuration, ILogger logger = null)
+        {
+            try
+            {
+                logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
+
+                if (string.IsNullOrWhiteSpace(configuration))
+                {
+                    logger?.LogWarning("no Logging-Configuration found at 'LoggingConfiguration' - skipping re-configuration");
+                    return;
+                }
+
+                using (var stringReader = new StringReader(configuration))
+                using (var xmlReader = XmlReader.Create(stringReader))
+                {
+                    LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
+                }
+
+                logger?.LogInformation("new LoggingConfiguration has been applied");
+            }
+            catch (Exception e)
+            {
+                logger?.LogWarning($"new LoggingConfiguration could not be applied: {e}");
+            }
+        }
 
         /// <summary>
         ///     actual entry-point for this Application
@@ -118,30 +143,6 @@ namespace Bechtle.A365.ConfigService.Projection
             ConfigureNLog(configuration.Get<ProjectionConfiguration>().LoggingConfiguration);
 
             builder.ClearProviders();
-        }
-
-        public static void ConfigureNLog(string configuration, ILogger logger = null)
-        {
-            try
-            {
-                logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
-
-                if (string.IsNullOrWhiteSpace(configuration))
-                {
-                    logger?.LogWarning("no Logging-Configuration found at 'LoggingConfiguration' - skipping re-configuration");
-                    return;
-                }
-
-                using (var stringReader = new StringReader(configuration))
-                using (var xmlReader = XmlReader.Create(stringReader))
-                    LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
-
-                logger?.LogInformation("new LoggingConfiguration has been applied");
-            }
-            catch (Exception e)
-            {
-                logger?.LogWarning($"new LoggingConfiguration could not be applied: {e}");
-            }
         }
 
         /// <summary>

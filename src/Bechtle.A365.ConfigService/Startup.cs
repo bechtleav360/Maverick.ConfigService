@@ -80,10 +80,13 @@ namespace Bechtle.A365.ConfigService
                {
                    options.DocExpansion(DocExpansion.None);
                    options.DisplayRequestDuration();
+                   options.EnableDeepLinking();
+                   options.EnableFilter();
+                   options.ShowExtensions();
 
                    foreach (var description in provider.ApiVersionDescriptions)
                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
-                                               description.GroupName.ToUpperInvariant());
+                                               $"ConfigService {description.GroupName.ToUpperInvariant()}");
                })
                .UseMvc();
         }
