@@ -16,8 +16,7 @@ namespace Bechtle.A365.ConfigService.Migrator
                {
                    builder.AddJsonFile("appsettings.json", true, false)
                           .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, false)
-                          .AddCommandLine(args)
-                          .AddEnvironmentVariables();
+                          .AddCommandLine(args);
                })
                .ConfigureServices(
                    (context, services) => services.AddDbContext<ProjectionStoreContext>(
