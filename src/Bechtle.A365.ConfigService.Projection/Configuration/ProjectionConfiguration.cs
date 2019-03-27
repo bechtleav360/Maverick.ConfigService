@@ -18,8 +18,5 @@
 
         /// <inheritdoc cref="ProjectionStorageConfiguration" />
         public ProjectionStorageConfiguration ProjectionStorage { get; set; }
-
-        /// <inheritdoc cref="StartupBehaviour" />
-        public StartupBehaviour Startup { get; set; }
     }
 }

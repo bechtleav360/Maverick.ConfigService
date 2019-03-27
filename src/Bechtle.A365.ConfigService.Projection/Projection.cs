@@ -63,88 +63,36 @@ namespace Bechtle.A365.ConfigService.Projection
             //return Context to ApplicationLiveTime.OnStart to prevent Service Start exception (timeout on Service start)
             await Task.Yield();
 
-            // inner function to handle the different ErrorBehaviour
-            void HandleError(ErrorBehaviour errorBehaviour, string message)
-            {
-                switch (errorBehaviour)
-                {
-                    case ErrorBehaviour.Stop:
-                        Program.CancellationTokenSource.Cancel();
-                        break;
-
-                    case ErrorBehaviour.Pause:
-                        _logger.LogError(message);
-                        break;
-
-                    default:
-                        _logger.LogError($"unknown Startup-Error-Behaviour set: {errorBehaviour:G} {errorBehaviour:D}");
-                        break;
-                }
-            }
-
             var config = _configuration.Get<ProjectionConfiguration>();
-
-            if (config is null)
-            {
-                HandleError(ErrorBehaviour.Pause, "Projection-Configuration could not be retrieved");
-                throw new Exception("Projection-Configuration could not be retrieved");
-            }
 
             _logger.LogInformation(FormatConfiguration(config));
 
             _logger.LogInformation("running projection...");
 
-            var behaviour = config.Startup.OnError;
-
             long? latestEvent;
-            try
+            using (var scope = _provider.CreateScope())
             {
-                using (var scope = _provider.CreateScope())
-                {
-                    var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
-                    await database.Connect();
-                    latestEvent = await database.GetLatestProjectedEventId();
-                }
-            }
-            catch (Exception e)
-            {
-                HandleError(behaviour, $"couldn't retrieve latest projected event-id, pausing startup due to policy '{behaviour:G}': {e}");
-                throw;
+                var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
+                await database.Connect();
+                latestEvent = await database.GetLatestProjectedEventId();
             }
 
-            try
-            {
-                await _store.ConnectAsync();
-            }
-            catch (Exception e)
-            {
-                HandleError(behaviour, $"couldn't connect to EventStore, pausing startup due to policy '{behaviour:G}': {e}");
-                throw;
-            }
+            await _store.ConnectAsync();
 
-            try
-            {
-                _store.SubscribeToStreamFrom(config.EventStoreConnection.SubscriptionName,
-                                             latestEvent,
-                                             new CatchUpSubscriptionSettings(config.EventStoreConnection.MaxLiveQueueSize,
-                                                                             config.EventStoreConnection.ReadBatchSize,
-                                                                             false,
-                                                                             true,
-                                                                             config.EventStoreConnection.SubscriptionName),
-                                             EventAppeared,
-                                             subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
-                                             (subscription, reason, exception) =>
-                                             {
-                                                 _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
-                                                                     $"dropped for reason: {reason}; exception {exception}");
-                                             });
-            }
-            catch (Exception e)
-            {
-                HandleError(behaviour, $"couldn't subscribe to stream '{config.EventStoreConnection?.SubscriptionName}', " +
-                                       $"pausing startup due to policy '{behaviour:G}': {e}");
-                throw;
-            }
+            _store.SubscribeToStreamFrom(config.EventStoreConnection.SubscriptionName,
+                                         latestEvent,
+                                         new CatchUpSubscriptionSettings(config.EventStoreConnection.MaxLiveQueueSize,
+                                                                         config.EventStoreConnection.ReadBatchSize,
+                                                                         false,
+                                                                         true,
+                                                                         config.EventStoreConnection.SubscriptionName),
+                                         EventAppeared,
+                                         subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
+                                         (subscription, reason, exception) =>
+                                         {
+                                             _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
+                                                                 $"dropped for reason: {reason}; exception {exception}");
+                                         });
 
             while (!cancellationToken.IsCancellationRequested)
                 await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);

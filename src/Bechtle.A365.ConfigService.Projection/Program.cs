@@ -79,32 +79,22 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <returns></returns>
         public static async Task<int> Main(string[] args)
         {
-            IHostBuilder host;
-
             try
             {
-                host = BuildHost(args);
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine($"error while building application-host: {e}");
-                return e.HResult;
-            }
+                var host = BuildHost(args);
 
-            try
-            {
                 if (!(Debugger.IsAttached || args.Any(a => a == "--console")))
                     await host.RunAsServiceAsync(CancellationTokenSource.Token);
                 else
                     await host.RunConsoleAsync(CancellationTokenSource.Token);
+
+                return 0;
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"error while running application: {e}");
+                Console.Error.WriteLine($"uncaught error during application-runtime: \r\n{e}");
                 return e.HResult;
             }
-
-            return 0;
         }
 
         /// <summary>
