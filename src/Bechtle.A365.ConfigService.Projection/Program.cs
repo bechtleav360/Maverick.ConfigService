@@ -114,6 +114,7 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <returns></returns>
         private static IHostBuilder BuildHost(string[] args)
             => new HostBuilder()
+               .ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables("ASPNETCORE_"))
                .ConfigureAppConfiguration((context, builder) => ConfigureAppConfigurationInternal(builder,
                                                                                                   context.HostingEnvironment.EnvironmentName,
                                                                                                   args))
