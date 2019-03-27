@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
@@ -13,13 +14,25 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
     [Command("list", Description = "List Migrations in the target DB and which Migrations this version can apply additionally")]
     public class ListMigrationsCommand : SubCommand<MigrateCommand>
     {
-        private readonly ProjectionStoreContext _context;
+        private readonly IServiceProvider _provider;
+        private string _connectionString;
 
         /// <inheritdoc />
-        public ListMigrationsCommand(IConsole console, ProjectionStoreContext context)
+        public ListMigrationsCommand(IConsole console, IServiceProvider provider)
             : base(console)
         {
-            _context = context;
+            _provider = provider;
+        }
+
+        [Option("-c|--connection-string", CommandOptionType.SingleValue, Description = "ConnectionString to use for Connecting to the Database")]
+        public string ConnectionString
+        {
+            get => _connectionString;
+            set
+            {
+                _connectionString = value;
+                _provider.GetService<ApplicationSettings>().ConnectionString = value;
+            }
         }
 
         /// <inheritdoc />
@@ -60,16 +73,18 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
         private async Task<MigrationEntry[]> GetMigrations()
         {
-            var migrations = _context.Database
-                                     .GetMigrations()
-                                     .ToDictionary(m => m, m => new MigrationEntry
-                                     {
-                                         RawName = m,
-                                         State = MigrationState.Unknown,
-                                         Supported = true
-                                     });
+            var context = _provider.GetService<ProjectionStoreContext>();
 
-            foreach (var appliedMigration in await _context.Database.GetAppliedMigrationsAsync())
+            var migrations = context.Database
+                                    .GetMigrations()
+                                    .ToDictionary(m => m, m => new MigrationEntry
+                                    {
+                                        RawName = m,
+                                        State = MigrationState.Unknown,
+                                        Supported = true
+                                    });
+
+            foreach (var appliedMigration in await context.Database.GetAppliedMigrationsAsync())
                 if (migrations.TryGetValue(appliedMigration, out var migration))
                     migration.State = MigrationState.Applied;
                 else
@@ -80,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                         Supported = false
                     });
 
-            foreach (var pendingMigration in await _context.Database.GetPendingMigrationsAsync())
+            foreach (var pendingMigration in await context.Database.GetPendingMigrationsAsync())
                 if (migrations.TryGetValue(pendingMigration, out var migration))
                     migration.State = MigrationState.Pending;
                 else
@@ -113,22 +128,21 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
         private class MigrationEntry
         {
+            public string Name { get; set; }
             public string RawName { get; set; }
 
-            public DateTime Timestamp { get; set; }
-
-            public string Name { get; set; }
+            public MigrationState State { get; set; }
 
             public bool Supported { get; set; }
 
-            public MigrationState State { get; set; }
+            public DateTime Timestamp { get; set; }
         }
 
         private enum MigrationState
         {
             Unknown = 0,
             Pending = 1 << 0,
-            Applied = 1 << 1,
+            Applied = 1 << 1
         }
     }
 }

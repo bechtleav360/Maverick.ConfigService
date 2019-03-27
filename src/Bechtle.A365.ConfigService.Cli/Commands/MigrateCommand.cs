@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
@@ -11,13 +12,25 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
     [Command("migrate", Description = "Migrate the Target Database to the highest supported Version")]
     public class MigrateCommand : SubCommand<Program>
     {
-        private readonly ProjectionStoreContext _context;
+        private readonly IServiceProvider _provider;
+        private string _connectionString;
 
         /// <inheritdoc />
-        public MigrateCommand(IConsole console, ProjectionStoreContext context)
+        public MigrateCommand(IConsole console, IServiceProvider provider)
             : base(console)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _provider = provider;
+        }
+
+        [Option("-c|--connection-string", CommandOptionType.SingleValue, Description = "ConnectionString to use for Connecting to the Database")]
+        public string ConnectionString
+        {
+            get => _connectionString;
+            set
+            {
+                _connectionString = value;
+                _provider.GetService<ApplicationSettings>().ConnectionString = value;
+            }
         }
 
         /// <inheritdoc />
@@ -25,7 +38,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             try
             {
-                await _context.Database.MigrateAsync();
+                var context = _provider.GetService<ProjectionStoreContext>();
+                await context.Database.MigrateAsync();
 
                 return 0;
             }
