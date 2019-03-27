@@ -14,11 +14,11 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         public string Name => "SQL-DB Availability";
 
         /// <inheritdoc />
-        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters)
+        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
         {
             output.Line("Connecting to SQL-DB using Effective Configuration");
 
-            var configuration = ConfigurationCheck.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
+            var configuration = settings.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
 
             if (configuration?.ProjectionStorage is null)
             {

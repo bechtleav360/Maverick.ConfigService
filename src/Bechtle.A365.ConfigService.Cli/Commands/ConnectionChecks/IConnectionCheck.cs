@@ -6,6 +6,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
     {
         string Name { get; }
 
-        Task<TestResult> Execute(FormattedOutput output, TestParameters parameters);
+        Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings);
     }
 }

@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         public string Name => "Swagger.json Availability";
 
         /// <inheritdoc />
-        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters)
+        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
         {
             var swaggerDoc = "swagger/v2/swagger.json";
 

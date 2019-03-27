@@ -11,13 +11,11 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 {
     public class ConfigurationCheck : IConnectionCheck
     {
-        public static IConfiguration EffectiveConfiguration { get; private set; }
-
         /// <inheritdoc />
         public string Name => "Configuration Override";
 
         /// <inheritdoc />
-        public Task<TestResult> Execute(FormattedOutput output, TestParameters parameters)
+        public Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
         {
             output.Line("Showing effective Configuration in ConfigService");
 
@@ -76,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             output.Line("Setting Effective Configuration for later Checks...", 1);
 
-            EffectiveConfiguration = config;
+            settings.EffectiveConfiguration = config;
 
             output.Line(1);
 

@@ -13,10 +13,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         AllowArgumentSeparator = true)]
     public class TestCommand : SubCommand<Program>
     {
+        private readonly ApplicationSettings _settings;
+
         /// <inheritdoc />
-        public TestCommand(IConsole console)
+        public TestCommand(IConsole console, ApplicationSettings settings)
             : base(console)
         {
+            _settings = settings;
         }
 
         [Option("-c|--config", Description = "Config-Source to use, multiple values possible")]
@@ -52,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 output.Line(0);
                 try
                 {
-                    results.Add(test.Name, await test.Execute(output, parameters));
+                    results.Add(test.Name, await test.Execute(output, parameters, _settings));
                 }
                 catch (Exception e)
                 {

@@ -41,9 +41,4 @@ namespace Bechtle.A365.ConfigService.Cli
             return 1;
         }
     }
-
-    public class ApplicationSettings
-    {
-        public string ConnectionString { get; set; }
-    }
 }

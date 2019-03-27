@@ -36,13 +36,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         private bool _subscriptionDropped;
 
         /// <inheritdoc />
-        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters)
+        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
         {
             _output = output;
 
             output.Line("Connecting to EventStore using Effective Configuration");
 
-            var configuration = ConfigurationCheck.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
+            var configuration = settings.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
 
             if (configuration?.EventStoreConnection is null)
             {
