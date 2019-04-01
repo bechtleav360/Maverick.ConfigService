@@ -166,9 +166,7 @@
             <Component Id="cmp3B1025D5DD5A8A9A7B439B0E95ABDD1E" Guid="*">
                 <File Id="fil40A680608C24C9B929265CC4C871D66E" KeyPath="yes" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.dll" />
             </Component>
-            <Component Id="cmpA3201C65017A6F7C737962F52D7FF3EF" Guid="*">
-                <File Id="filD9DE4F91B83B78B36070167B5E6A6A36" KeyPath="yes" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.exe" />
-            </Component>
+            <wix:Component Id="cmpA3201C65017A6F7C737962F52D7FF3EF" Guid="*" xmlns:wix="http://schemas.microsoft.com/wix/2006/wi"><wix:File Id="filD9DE4F91B83B78B36070167B5E6A6A36" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.exe" KeyPath="yes" /><wix:ServiceInstall Id="SERVICEINSTALLER" DisplayName="Maverick Config-Projection" Name="Bechtle.A365.ConfigService.Projection" Description="Project Config-Events for the Maverick Backend" Start="auto" Type="ownProcess" Account="LocalSystem" ErrorControl="normal" Vital="yes"><util:ServiceConfig FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="none" RestartServiceDelayInSeconds="60" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" /></wix:ServiceInstall><wix:ServiceControl Id="SERVICECONTROLLER" Name="Bechtle.A365.ConfigService.Projection" Remove="uninstall" Stop="both" Start="install" Wait="yes" /></wix:Component>
             <Component Id="cmpCEF0546A91DEBC1712DB9DFA102F9F6D" Guid="*">
                 <File Id="fil68C369F2F38C4B546E8A0771244A8FC9" KeyPath="yes" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.pdb" />
             </Component>

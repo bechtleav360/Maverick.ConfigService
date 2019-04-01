@@ -25,7 +25,7 @@
 
   <!-- XSL Template to inject WiX service installation elements to a .wxs generated from Heat Project task -->
   <!-- There may be other ways to look for your file -->
-  <xsl:template match='wix:Wix/wix:Fragment/wix:DirectoryRef/wix:Component[wix:File[@Source="$(var.BasePath)\Bechtle.A365.ConfigService.Projection.exe"]]'>
+  <xsl:template match='wix:Wix/wix:Fragment/wix:DirectoryRef/wix:Component[wix:File[@Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.exe"]]'>
     <xsl:element name="wix:Component">
       <xsl:attribute name="Id">
         <xsl:value-of select="@Id" />
