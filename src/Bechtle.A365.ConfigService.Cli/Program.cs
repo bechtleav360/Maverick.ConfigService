@@ -13,9 +13,6 @@ namespace Bechtle.A365.ConfigService.Cli
         typeof(MigrateCommand))]
     public class Program
     {
-        [Option("-c|--connection-string", CommandOptionType.SingleValue, Description = "ConnectionString to use for Connecting to the Database")]
-        public string ConnectionString { get; set; }
-
         public static int Main(string[] args)
         {
             var services = new ServiceCollection()
