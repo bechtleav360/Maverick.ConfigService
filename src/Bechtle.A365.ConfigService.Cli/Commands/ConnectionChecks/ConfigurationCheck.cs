@@ -58,9 +58,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             output.WriteLine(string.Empty, 1);
 
+            var orderedConfigKeys = config.AsEnumerable()
+                                          .OrderBy(e => e.Key)
+                                          .ToList();
+
+            var longestKey = orderedConfigKeys.Max(e => e.Key.Length);
+
             output.WriteLine("Effective Configuration:", 1);
-            foreach (var (key, value) in config.AsEnumerable().OrderBy(e => e.Key))
-                output.WriteLine($"{key} => {value}", 2);
+            foreach (var (key, value) in orderedConfigKeys)
+                output.WriteLine($"{key.PadRight(longestKey)} => {value}", 2);
 
             output.WriteLine(string.Empty, 1);
 
