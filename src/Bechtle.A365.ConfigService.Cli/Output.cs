@@ -8,8 +8,6 @@ namespace Bechtle.A365.ConfigService.Cli
 {
     public class Output : IOutput
     {
-        public LogLevel LogLevel { get; set; }
-
         private const string Indent = "| ";
 
         private readonly IConsole _console;
@@ -28,68 +26,10 @@ namespace Bechtle.A365.ConfigService.Cli
         }
 
         /// <inheritdoc />
-        public (bool In, bool Out, bool Err) GetRedirections() => (_console.IsInputRedirected,
-                                                                      _console.IsOutputRedirected,
-                                                                      _console.IsErrorRedirected);
+        public IDisposable BeginScope<TState>(TState state) => new DisposableDummy();
 
         /// <inheritdoc />
-        public bool IsStdDInRedirected() => _console.IsInputRedirected;
-
-        /// <inheritdoc />
-        public bool IsStdErrRedirected() => _console.IsErrorRedirected;
-
-        /// <inheritdoc />
-        public bool IsStdOutRedirected() => _console.IsOutputRedirected;
-
-        /// <inheritdoc />
-        public void WriteLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
-            => Write(str + Environment.NewLine, level, color);
-
-        /// <inheritdoc />
-        public void WriteErrorLine(string str, int level = 0, ConsoleColor color = ConsoleColor.Red)
-            => WriteError(str + Environment.NewLine, level, color);
-
-        /// <inheritdoc />
-        public void WriteVerboseLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
-            => WriteVerbose(str + Environment.NewLine, level, color);
-
-        /// <inheritdoc />
-        public void Write(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
-            => WriteInternal(_console.Out, str, level, color, LogLevel.Information);
-
-        /// <inheritdoc />
-        public void WriteError(string str, int level = 0, ConsoleColor color = ConsoleColor.Red)
-            => WriteInternal(_console.Error, str, level, color, LogLevel.Error);
-
-        /// <inheritdoc />
-        public void WriteErrorSeparator()
-            => WriteSeparatorInternal(_console.Error, ConsoleColor.Red);
-
-        /// <inheritdoc />
-        public void WriteSeparator()
-            => WriteSeparatorInternal(_console.Out, ConsoleColor.White);
-
-        /// <inheritdoc />
-        public void WriteVerbose(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
-            => WriteInternal(_console.Out, str, level, color, LogLevel.Debug);
-
-        private string GetIndent(int level)
-        {
-            lock (_indentBuilderLock)
-            {
-                // to be extra safe there is nothing in there...
-                _indentBuilder.Clear();
-
-                for (var i = 0; i < level; ++i)
-                    _indentBuilder.Append(Indent);
-
-                var result = _indentBuilder.ToString();
-
-                _indentBuilder.Clear();
-
-                return result;
-            }
-        }
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel;
 
         /// <inheritdoc />
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
@@ -120,10 +60,69 @@ namespace Bechtle.A365.ConfigService.Cli
         }
 
         /// <inheritdoc />
-        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel;
+        public bool IsErrorRedirected => _console.IsErrorRedirected;
 
         /// <inheritdoc />
-        public IDisposable BeginScope<TState>(TState state) => new DisposableDummy();
+        public bool IsInputRedirected => _console.IsInputRedirected;
+
+        /// <inheritdoc />
+        public bool IsOutputRedirected => _console.IsOutputRedirected;
+
+        /// <inheritdoc />
+        public LogLevel LogLevel { get; set; }
+
+        /// <inheritdoc />
+        public (bool In, bool Out, bool Err) Redirections => (IsInputRedirected, IsOutputRedirected, IsErrorRedirected);
+
+        /// <inheritdoc />
+        public void Write(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
+            => WriteInternal(_console.Out, str, level, color, LogLevel.Information);
+
+        /// <inheritdoc />
+        public void WriteError(string str, int level = 0, ConsoleColor color = ConsoleColor.Red)
+            => WriteInternal(_console.Error, str, level, color, LogLevel.Error);
+
+        /// <inheritdoc />
+        public void WriteErrorLine(string str, int level = 0, ConsoleColor color = ConsoleColor.Red)
+            => WriteError(str + Environment.NewLine, level, color);
+
+        /// <inheritdoc />
+        public void WriteErrorSeparator()
+            => WriteSeparatorInternal(_console.Error, ConsoleColor.Red);
+
+        /// <inheritdoc />
+        public void WriteLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
+            => Write(str + Environment.NewLine, level, color);
+
+        /// <inheritdoc />
+        public void WriteSeparator()
+            => WriteSeparatorInternal(_console.Out, ConsoleColor.White);
+
+        /// <inheritdoc />
+        public void WriteVerbose(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
+            => WriteInternal(_console.Out, str, level, color, LogLevel.Debug);
+
+        /// <inheritdoc />
+        public void WriteVerboseLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
+            => WriteVerbose(str + Environment.NewLine, level, color);
+
+        private string GetIndent(int level)
+        {
+            lock (_indentBuilderLock)
+            {
+                // to be extra safe there is nothing in there...
+                _indentBuilder.Clear();
+
+                for (var i = 0; i < level; ++i)
+                    _indentBuilder.Append(Indent);
+
+                var result = _indentBuilder.ToString();
+
+                _indentBuilder.Clear();
+
+                return result;
+            }
+        }
 
         private void WriteInternal(TextWriter writer, string str, int indentLevel, ConsoleColor color, LogLevel logLevel)
         {

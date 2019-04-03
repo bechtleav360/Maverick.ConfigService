@@ -108,7 +108,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             // if no file is given, redirect to stdout
             if (string.IsNullOrWhiteSpace(OutputFile))
             {
-                await Console.Out.WriteAsync(result);
+                Output.Write(result);
                 return 0;
             }
 

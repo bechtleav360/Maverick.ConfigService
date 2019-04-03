@@ -57,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             if (string.IsNullOrWhiteSpace(File))
             {
-                if (Console.IsInputRedirected)
+                if (Output.IsInputRedirected)
                     return GetInputFromStdIn();
 
                 Output.WriteError($"no '{nameof(File)}' parameter given, nothing in stdin");
@@ -88,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
         private string GetInputFromStdIn()
         {
-            if (!Console.IsInputRedirected)
+            if (!Output.IsInputRedirected)
                 return string.Empty;
             try
             {

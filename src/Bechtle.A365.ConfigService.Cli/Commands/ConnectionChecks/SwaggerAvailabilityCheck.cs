@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.Utilities.Rest;
@@ -14,14 +15,57 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         /// <inheritdoc />
         public async Task<TestResult> Execute(IOutput output, TestParameters parameters, ApplicationSettings settings)
         {
-            var swaggerDoc = "swagger/v2/swagger.json";
-
             var baseUri = new Uri(parameters.ConfigServiceEndpoint);
-            var swaggerUri = new Uri(baseUri, swaggerDoc);
+            var swaggerDocFormat = "swagger/v{0}/swagger.json";
 
             output.WriteLine("Checking OpenAPI");
-            output.WriteLine($"using SwaggerDoc @ '{swaggerDoc}'", 1);
-            output.WriteLine($"using Url = '{swaggerUri}'", 1);
+            output.WriteLine($"Using SwaggerDoc @ '{swaggerDocFormat}'");
+
+            var currentSwaggerVersion = 1;
+            var swaggerVersionsFound = new List<int>();
+
+            do
+            {
+                var result = await CheckSwaggerDoc(output, baseUri, string.Format(swaggerDocFormat, currentSwaggerVersion));
+
+                if (result.Result)
+                {
+                    swaggerVersionsFound.Add(currentSwaggerVersion);
+                    currentSwaggerVersion += 1;
+                }
+                else
+                    break;
+            } while (true);
+
+            if (swaggerVersionsFound.Any())
+            {
+                output.WriteLine("Swagger-Versions identified:", 1);
+                foreach (var v in swaggerVersionsFound.OrderBy(x => x))
+                    output.WriteLine($"V {v}", 2);
+
+                return new TestResult
+                {
+                    Result = true,
+                    Message = string.Empty
+                };
+            }
+
+            output.WriteLine("No Swagger-Version identified", 1);
+
+            return new TestResult
+            {
+                Result = false,
+                Message = ""
+            };
+        }
+
+        private async Task<TestResult> CheckSwaggerDoc(IOutput output, Uri baseUri, string swaggerDoc)
+        {
+            var swaggerUri = new Uri(baseUri, swaggerDoc);
+
+            output.WriteLine(string.Empty, 1);
+            output.WriteLine($"Using SwaggerDoc @ '{swaggerDoc}'", 1);
+            output.WriteLine($"Using Url = '{swaggerUri}'", 1);
             output.WriteLine(string.Empty, 1);
 
             var request = await RestRequest.Make(output)
@@ -50,27 +94,24 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             output.WriteVerboseLine($"Result: {result}", 1);
             output.WriteLine(string.Empty, 1);
 
-            if (request.HttpResponseMessage?.IsSuccessStatusCode == true)
-                return new TestResult
-                {
-                    Result = true,
-                    Message = string.Empty
-                };
-
             if (request.HttpResponseMessage is null)
-            {
                 return new TestResult
                 {
                     Result = false,
                     Message = "no response received"
                 };
-            }
 
-            return new TestResult
-            {
-                Result = false,
-                Message = $"Reason: {request.HttpResponseMessage.ReasonPhrase}; \r\nResponse: {await request.Take<string>()}"
-            };
+            return request.HttpResponseMessage.IsSuccessStatusCode
+                       ? new TestResult
+                       {
+                           Result = true,
+                           Message = string.Empty
+                       }
+                       : new TestResult
+                       {
+                           Result = false,
+                           Message = $"Reason: {request.HttpResponseMessage.ReasonPhrase}; \r\nResponse: {await request.Take<string>()}"
+                       };
         }
     }
 }

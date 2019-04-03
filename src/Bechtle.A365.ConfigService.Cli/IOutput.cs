@@ -7,13 +7,13 @@ namespace Bechtle.A365.ConfigService.Cli
     {
         LogLevel LogLevel { get; set; }
 
-        (bool In, bool Out, bool Err) GetRedirections();
+        (bool In, bool Out, bool Err) Redirections { get; }
 
-        bool IsStdDInRedirected();
+        bool IsInputRedirected { get; }
 
-        bool IsStdErrRedirected();
+        bool IsErrorRedirected { get; }
 
-        bool IsStdOutRedirected();
+        bool IsOutputRedirected { get; }
 
         void WriteLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White);
 
