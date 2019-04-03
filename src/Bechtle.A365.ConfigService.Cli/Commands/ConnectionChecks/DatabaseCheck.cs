@@ -11,9 +11,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
     public class DatabaseCheck : IConnectionCheck
     {
         /// <inheritdoc />
-        public string Name => "SQL-DB Availability";
-
-        /// <inheritdoc />
         public async Task<TestResult> Execute(IOutput output, TestParameters parameters, ApplicationSettings settings)
         {
             output.WriteLine("Connecting to SQL-DB using Effective Configuration");
@@ -54,11 +51,17 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
                     output.WriteLine(string.Empty, 1);
 
-                    var longestTableName = tables.Keys.Max(x => x.Length);
+                    var longestTableName = tables.Keys.Max(x => x.Length) + 1;
 
                     output.WriteLine($"Found {tables.Count} tables in the Schema", 1);
+
+                    var longestDigit = tables.Max(t => CountDigits(t.Value));
+                    longestDigit += longestDigit / 3;
+
                     foreach (var (table, entries) in tables)
-                        output.WriteLine($"{table.PadRight(longestTableName, ' ')}: {entries:###,###,###,###} {(entries == 1 ? "row" : "rows")}", 2);
+                        output.WriteLine($"{table.PadRight(longestTableName, ' ')}: " +
+                                         $"{entries.ToString("###,###,###,###").PadLeft(longestDigit, ' ')} " +
+                                         $"{(entries == 1 ? "row" : "rows")}", 2);
                 }
             }
             catch (Exception e)
@@ -77,21 +80,39 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 Message = string.Empty
             };
         }
+
+        /// <inheritdoc />
+        public string Name => "SQL-DB Availability";
+
+        private static int CountDigits(int number)
+        {
+            if (number == 0)
+                return 1;
+
+            var n = 0;
+            while (number > 0)
+            {
+                number /= 10;
+                ++n;
+            }
+
+            return n;
+        }
     }
 
     public class DatabaseCheckContext : DbContext
     {
         private readonly string _connectionString;
 
-        public DbQuery<AdHocQuery<string>> MetadataString { get; set; }
-
-        public DbQuery<AdHocQuery<int>> MetadataInt { get; set; }
-
         /// <inheritdoc />
         public DatabaseCheckContext(string connectionString)
         {
             _connectionString = connectionString;
         }
+
+        public DbQuery<AdHocQuery<int>> MetadataInt { get; set; }
+
+        public DbQuery<AdHocQuery<string>> MetadataString { get; set; }
 
         /// <inheritdoc />
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
