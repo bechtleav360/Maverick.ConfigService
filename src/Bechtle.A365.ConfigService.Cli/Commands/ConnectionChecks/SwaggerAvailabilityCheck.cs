@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
@@ -36,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 if (result.Result)
                 {
                     swaggerVersionsFound = true;
-                    output.WriteLine($"V{currentSwaggerVersion,2:##}; {swaggerUri}", 2);
+                    output.WriteLine($"V{currentSwaggerVersion,2:#0}; {swaggerUri}", 2);
                     currentSwaggerVersion += 1;
                 }
                 else
