@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
 using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
@@ -15,46 +16,55 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         public string Name => "Configuration Override";
 
         /// <inheritdoc />
-        public Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
+        public Task<TestResult> Execute(IOutput output, TestParameters parameters, ApplicationSettings settings)
         {
-            output.Line("Showing effective Configuration in ConfigService");
+            output.WriteLine("Showing effective Configuration in ConfigService");
 
             IConfigurationRoot config;
 
             if (parameters.Sources.Any())
             {
-                output.Line("Config-Source Hierarchy:", 1);
+                output.WriteLine("Config-Source Hierarchy:", 1);
                 foreach (var source in parameters.Sources)
-                    output.Line(source, 2);
+                    output.WriteLine(source, 2);
 
                 config = EvaluateSources(parameters);
             }
             else if (!string.IsNullOrWhiteSpace(parameters.UseDefaultConfigSources))
             {
-                output.Line("Config-Source Hierarchy (by Convention)", 1);
+                output.WriteLine("Config-Source Hierarchy (by Convention)", 1);
                 config = EvaluateSourcesByConvention(parameters.UseDefaultConfigSources, parameters);
             }
             else
             {
-                output.Line("Config-Source Hierarchy (by Convention)", 1);
+                output.WriteLine("Config-Source Hierarchy (by Convention)", 1);
                 config = EvaluateSourcesByConvention(null, parameters);
             }
 
-            output.Line($"Configuration loaded; '{config.AsEnumerable().Count()}' entries from '{config.Providers.Count()}' providers", 1);
-            output.Line("Providers:", 1);
+            output.WriteLine($"Configuration loaded; '{config.AsEnumerable().Count()}' entries from '{config.Providers.Count()}' providers", 1);
+            output.WriteLine("Providers:", 1);
 
             foreach (var provider in config.Providers)
-                output.Line($"{provider.GetType().Name}", 2);
+            {
+                if (provider is JsonConfigurationProvider json)
+                    output.WriteLine($"[{nameof(JsonConfigurationProvider)}; " +
+                                     $"{json.Source.Path}; " +
+                                     $"{(json.Source.Optional ? "Optional" : "Required")}; " +
+                                     $"{(json.Source.ReloadOnChange ? "Reload" : "Once")}]",
+                                     2);
+                else
+                    output.WriteLine($"[{provider.GetType().Name}]", 2);
+            }
 
-            output.Line(1);
+            output.WriteLine(string.Empty, 1);
 
-            output.Line("Effective Configuration:", 1);
+            output.WriteLine("Effective Configuration:", 1);
             foreach (var (key, value) in config.AsEnumerable().OrderBy(e => e.Key))
-                output.Line($"{key} => {value}", 2);
+                output.WriteLine($"{key} => {value}", 2);
 
-            output.Line(1);
+            output.WriteLine(string.Empty, 1);
 
-            output.Line($"Applying Effective Configuration to {nameof(ConfigServiceConfiguration)}", 1);
+            output.WriteLine($"Applying Effective Configuration to {nameof(ConfigServiceConfiguration)}", 1);
 
             var csConfig = new ConfigServiceConfiguration();
             try
@@ -63,20 +73,20 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             }
             catch (Exception e)
             {
-                output.Line($"Effective Configuration could not be applied to {nameof(ConfigServiceConfiguration)}", 1);
-                output.Line($"Error: {e.GetType().Name}; {e.Message}", 1);
+                output.WriteLine($"Effective Configuration could not be applied to {nameof(ConfigServiceConfiguration)}", 1);
+                output.WriteLine($"Error: {e.GetType().Name}; {e.Message}", 1);
             }
 
             var configJson = JsonConvert.SerializeObject(csConfig, Formatting.Indented);
-            output.Line($"Effective Configuration:\r\n{configJson}", 1);
+            output.WriteLine($"Effective Configuration:{Environment.NewLine}{configJson}", 1);
 
-            output.Line(1);
+            output.WriteLine(string.Empty, 1);
 
-            output.Line("Setting Effective Configuration for later Checks...", 1);
+            output.WriteLine("Setting Effective Configuration for later Checks...", 1);
 
             settings.EffectiveConfiguration = config;
 
-            output.Line(1);
+            output.WriteLine(string.Empty, 1);
 
             return Task.FromResult(new TestResult
             {

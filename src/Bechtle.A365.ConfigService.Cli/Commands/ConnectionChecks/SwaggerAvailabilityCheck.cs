@@ -12,19 +12,19 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         public string Name => "Swagger.json Availability";
 
         /// <inheritdoc />
-        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
+        public async Task<TestResult> Execute(IOutput output, TestParameters parameters, ApplicationSettings settings)
         {
             var swaggerDoc = "swagger/v2/swagger.json";
 
             var baseUri = new Uri(parameters.ConfigServiceEndpoint);
             var swaggerUri = new Uri(baseUri, swaggerDoc);
 
-            output.Line("Checking OpenAPI");
-            output.Line($"using SwaggerDoc @ '{swaggerDoc}'", 1);
-            output.Line($"using Url = '{swaggerUri}'", 1);
-            output.Line(1);
+            output.WriteLine("Checking OpenAPI");
+            output.WriteLine($"using SwaggerDoc @ '{swaggerDoc}'", 1);
+            output.WriteLine($"using Url = '{swaggerUri}'", 1);
+            output.WriteLine(string.Empty, 1);
 
-            var request = await RestRequest.Make(output.Logger)
+            var request = await RestRequest.Make(output)
                                            .Get(swaggerUri)
                                            .ReceiveString();
 
@@ -32,23 +32,23 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             var result = await request.Take<string>();
 
             if (request.HttpResponseMessage?.Headers is null)
-                output.Line("Headers: -null-", 1);
+                output.WriteLine("Headers: -null-", 1);
             else if (!request.HttpResponseMessage.Headers.Any())
-                output.Line("Headers: -empty-", 1);
+                output.WriteLine("Headers: -empty-", 1);
             else
             {
-                output.Line("Headers:", 1);
+                output.WriteLine("Headers:", 1);
 
                 foreach (var (key, values) in request.HttpResponseMessage.Headers)
                 foreach (var value in values)
-                    output.Line($"{key} = {value}", 2);
+                    output.WriteLine($"{key} = {value}", 2);
             }
 
-            output.Line(1);
-            output.Line($"StatusCode: {statusCode:G} {statusCode:D}", 1);
-            output.Line($"Result: {result.Length}", 1);
-            output.Line($"Result: {result}", 1, true);
-            output.Line(1);
+            output.WriteLine(string.Empty, 1);
+            output.WriteLine($"StatusCode: {statusCode:G} {statusCode:D}", 1);
+            output.WriteLine($"Result: {result.Length}", 1);
+            output.WriteVerboseLine($"Result: {result}", 1);
+            output.WriteLine(string.Empty, 1);
 
             if (request.HttpResponseMessage?.IsSuccessStatusCode == true)
                 return new TestResult

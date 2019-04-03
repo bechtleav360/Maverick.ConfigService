@@ -4,7 +4,6 @@ using Bechtle.A365.ConfigService.Common.DbObjects;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
@@ -45,7 +44,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
             catch (Exception e)
             {
-                Logger.LogError($"couldn't execute migrations: {e}");
+                Output.WriteError($"couldn't execute migrations: {e}");
                 return 1;
             }
         }

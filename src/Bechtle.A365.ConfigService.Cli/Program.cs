@@ -18,6 +18,7 @@ namespace Bechtle.A365.ConfigService.Cli
             var services = new ServiceCollection()
                            .AddSingleton(PhysicalConsole.Singleton)
                            .AddSingleton<ApplicationSettings>()
+                           .AddSingleton<IOutput, Output>()
                            .AddDbContext<ProjectionStoreContext>(
                                (provider, builder) => builder.UseSqlServer(provider.GetService<ApplicationSettings>().ConnectionString,
                                                                            o => o.MigrationsAssembly("Bechtle.A365.ConfigService.Migrations")))

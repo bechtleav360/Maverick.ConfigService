@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         /// </summary>
         private bool _liveProcessingEvents;
 
-        private FormattedOutput _output;
+        private IOutput _output;
 
         /// <summary>
         ///     Time at which the event-count was started
@@ -36,17 +36,17 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         private bool _subscriptionDropped;
 
         /// <inheritdoc />
-        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
+        public async Task<TestResult> Execute(IOutput output, TestParameters parameters, ApplicationSettings settings)
         {
             _output = output;
 
-            output.Line("Connecting to EventStore using Effective Configuration");
+            output.WriteLine("Connecting to EventStore using Effective Configuration");
 
             var configuration = settings.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
 
             if (configuration?.EventStoreConnection is null)
             {
-                output.Line("Effective Configuration (EventStoreConnection) is null - see previous checks", 1);
+                output.WriteLine("Effective Configuration (EventStoreConnection) is null - see previous checks", 1);
                 return new TestResult
                 {
                     Result = false,
@@ -54,7 +54,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 };
             }
 
-            output.Line($"Using EventStore @ '{configuration.EventStoreConnection.Stream}' => {configuration.EventStoreConnection.Stream}");
+            output.WriteLine($"Using EventStore @ '{configuration.EventStoreConnection.Stream}' => {configuration.EventStoreConnection.Stream}");
 
             using (var connection = MakeConnection(configuration))
             {
@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 }
                 catch (Exception e)
                 {
-                    output.Line($"Error while Assigning event-handlers: {e.GetType().Name}; {e.Message}", 1);
+                    output.WriteLine($"Error while Assigning event-handlers: {e.GetType().Name}; {e.Message}", 1);
 
                     return new TestResult
                     {
@@ -94,7 +94,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         /// <returns></returns>
         private async Task<TestResult> CountEvents(IEventStoreConnection connection, ConfigServiceConfiguration configuration)
         {
-            _output.Line($"Counting all Events in Stream '{configuration.EventStoreConnection.Stream}'", 1);
+            _output.WriteLine($"Counting all Events in Stream '{configuration.EventStoreConnection.Stream}'", 1);
 
             _startTime = DateTime.Now;
 
@@ -105,13 +105,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                                              (subscription, @event) => { _countedEvents += 1; },
                                              subscription =>
                                              {
-                                                 _output.Line($"Subscription to '{subscription.SubscriptionName}' opened", 1);
+                                                 _output.WriteLine($"Subscription to '{subscription.SubscriptionName}' opened", 1);
                                                  _stopTime = DateTime.Now;
                                                  _liveProcessingEvents = true;
                                              },
                                              (subscription, reason, exception) =>
                                              {
-                                                 _output.Line(
+                                                 _output.WriteLine(
                                                      $"Subscription to '{subscription.SubscriptionName}' dropped: " +
                                                      $"{reason}; {exception.GetType().Name} {exception.Message}", 1);
                                                  _stopTime = DateTime.Now;
@@ -125,7 +125,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             if (_subscriptionDropped)
             {
-                _output.Line($"Counted '{_countedEvents}' events in {FormatTime(_stopTime - _startTime)} before Subscription was dropped", 1);
+                _output.WriteLine($"Counted '{_countedEvents}' events in {FormatTime(_stopTime - _startTime)} before Subscription was dropped", 1);
                 return new TestResult
                 {
                     Result = false,
@@ -133,7 +133,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 };
             }
 
-            _output.Line($"Counted '{_countedEvents}' events in {FormatTime(_stopTime - _startTime)}", 1);
+            _output.WriteLine($"Counted '{_countedEvents}' events in {FormatTime(_stopTime - _startTime)}", 1);
 
             return new TestResult
             {
@@ -195,22 +195,22 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                                            configuration.EventStoreConnection.ConnectionName);
 
         private void OnAuthenticationFailed(object sender, ClientAuthenticationFailedEventArgs args)
-            => _output.Line($"Authentication to EventStore failed: {args.Reason}", 1);
+            => _output.WriteLine($"Authentication to EventStore failed: {args.Reason}", 1);
 
         private void OnClosed(object sender, ClientClosedEventArgs args)
-            => _output.Line($"Connection to EventStore was Closed: {args.Reason}", 1);
+            => _output.WriteLine($"Connection to EventStore was Closed: {args.Reason}", 1);
 
         private void OnConnected(object sender, ClientConnectionEventArgs args)
-            => _output.Line("Connection to EventStore was Opened", 1);
+            => _output.WriteLine("Connection to EventStore was Opened", 1);
 
         private void OnDisconnected(object sender, ClientConnectionEventArgs args)
-            => _output.Line("Connection to EventStore was Disconnected", 1);
+            => _output.WriteLine("Connection to EventStore was Disconnected", 1);
 
         private void OnErrorOccurred(object sender, ClientErrorEventArgs args)
-            => _output.Line($"Error Occured in EventStore Connection: {args.Exception.GetType().Name}; {args.Exception.Message}", 1);
+            => _output.WriteLine($"Error Occured in EventStore Connection: {args.Exception.GetType().Name}; {args.Exception.Message}", 1);
 
         private void OnReconnecting(object sender, ClientReconnectingEventArgs args)
-            => _output.Line("Connection to EventStore is being Re-Established", 1);
+            => _output.WriteLine("Connection to EventStore is being Re-Established", 1);
 
         /// <summary>
         ///     register handlers for all possible events in the given <paramref name="connection"/>

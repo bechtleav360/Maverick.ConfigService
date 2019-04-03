@@ -8,7 +8,6 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
@@ -34,20 +33,20 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             var json = GetInput();
             if (!ValidateInput(json))
             {
-                Logger.LogError("input failed to validate");
+                Output.WriteError("input failed to validate");
                 return 1;
             }
 
             // name / filename must match parameter-name of ImportController.Import
             var formData = new MultipartFormDataContent {{new ByteArrayContent(Encoding.UTF8.GetBytes(json)), "file", "file"}};
 
-            var request = await RestRequest.Make(Logger)
+            var request = await RestRequest.Make(Output)
                                            .Post(new Uri(new Uri(ConfigServiceEndpoint), "import"), formData)
                                            .ReceiveString();
 
             if (request.HttpResponseMessage?.IsSuccessStatusCode != true)
             {
-                Logger.LogError($"couldn't import '{File}': {request.HttpResponseMessage?.StatusCode:D} {await request.Take<string>()}");
+                Output.WriteError($"couldn't import '{File}': {request.HttpResponseMessage?.StatusCode:D} {await request.Take<string>()}");
                 return 1;
             }
 
@@ -61,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 if (Console.IsInputRedirected)
                     return GetInputFromStdIn();
 
-                Logger.LogError($"no '{nameof(File)}' parameter given, nothing in stdin");
+                Output.WriteError($"no '{nameof(File)}' parameter given, nothing in stdin");
                 return string.Empty;
             }
 
@@ -72,7 +71,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             if (!System.IO.File.Exists(file))
             {
-                Logger.LogError($"file '{file}' doesn't seem to exist");
+                Output.WriteError($"file '{file}' doesn't seem to exist");
                 return string.Empty;
             }
 
@@ -82,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
             catch (IOException e)
             {
-                Logger.LogError($"couldn't read file '{file}': {e}");
+                Output.WriteError($"couldn't read file '{file}': {e}");
                 return string.Empty;
             }
         }
@@ -97,7 +96,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
             catch (Exception e)
             {
-                Logger.LogError($"couldn't read stdin to end: {e}");
+                Output.WriteError($"couldn't read stdin to end: {e}");
                 return string.Empty;
             }
         }
@@ -111,7 +110,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             if (string.IsNullOrWhiteSpace(input))
             {
-                Logger.LogError("no input given");
+                Output.WriteError("no input given");
                 return false;
             }
 
@@ -122,7 +121,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
             catch (JsonException e)
             {
-                Logger.LogError($"couldn't deserialize input: {e}");
+                Output.WriteError($"couldn't deserialize input: {e}");
                 return false;
             }
 

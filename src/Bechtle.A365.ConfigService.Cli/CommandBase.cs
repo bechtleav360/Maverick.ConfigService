@@ -10,9 +10,7 @@ namespace Bechtle.A365.ConfigService.Cli
         /// <inheritdoc />
         protected CommandBase(IConsole console)
         {
-            Console = console;
-            LoggerInstance = new ConsoleLogger(Console, LogLevel.Error);
-            Logger = LoggerInstance;
+            Output = new Output(console, LogLevel.Information);
         }
 
         [Option("-s|--service")]
@@ -23,29 +21,34 @@ namespace Bechtle.A365.ConfigService.Cli
         {
             set
             {
-                if (value.Length == 1)
-                    LoggerInstance.LogLevel = LogLevel.Information;
+                if (value.Length <= 1)
+                    Output.LogLevel = LogLevel.Information;
                 else if (value.Length == 2)
-                    LoggerInstance.LogLevel = LogLevel.Debug;
+                    Output.LogLevel = LogLevel.Debug;
                 else if (value.Length >= 3)
-                    LoggerInstance.LogLevel = LogLevel.Trace;
-                else
-                    LoggerInstance.LogLevel = LogLevel.Error;
+                    Output.LogLevel = LogLevel.Trace;
             }
         }
 
-        /// <inheritdoc cref="IConsole" />
-        protected IConsole Console { get; }
+        [Option("-q|--quiet", Description = "Decrease verbosity of logging each time it's supplied")]
+        public bool[] Quiet
+        {
+            set
+            {
+                if (value.Length >= 2)
+                    Output.LogLevel = LogLevel.None;
+                else if (value.Length == 1)
+                    Output.LogLevel = LogLevel.Error;
+            }
+        }
 
-        protected ILogger Logger { get; }
-
-        private ConsoleLogger LoggerInstance { get; }
+        protected IOutput Output { get; set; }
 
         protected virtual bool CheckParameters()
         {
             if (string.IsNullOrWhiteSpace(ConfigServiceEndpoint))
             {
-                Logger.LogError($"no {nameof(ConfigServiceEndpoint)} given -- see help for more information");
+                Output.WriteError($"no {nameof(ConfigServiceEndpoint)} given -- see help for more information");
                 return false;
             }
 

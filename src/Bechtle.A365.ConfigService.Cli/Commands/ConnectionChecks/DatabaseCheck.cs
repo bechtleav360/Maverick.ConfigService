@@ -14,15 +14,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         public string Name => "SQL-DB Availability";
 
         /// <inheritdoc />
-        public async Task<TestResult> Execute(FormattedOutput output, TestParameters parameters, ApplicationSettings settings)
+        public async Task<TestResult> Execute(IOutput output, TestParameters parameters, ApplicationSettings settings)
         {
-            output.Line("Connecting to SQL-DB using Effective Configuration");
+            output.WriteLine("Connecting to SQL-DB using Effective Configuration");
 
             var configuration = settings.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
 
             if (configuration?.ProjectionStorage is null)
             {
-                output.Line("Effective Configuration (ProjectionStorage) is null - see previous checks", 1);
+                output.WriteLine("Effective Configuration (ProjectionStorage) is null - see previous checks", 1);
                 return new TestResult
                 {
                     Result = false,
@@ -30,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 };
             }
 
-            output.Line($"Using ConnectionString '{configuration.ProjectionStorage.ConnectionString}'", 1);
+            output.WriteLine($"Using ConnectionString '{configuration.ProjectionStorage.ConnectionString}'", 1);
 
             try
             {
@@ -38,9 +38,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 {
                     var migrations = (await context.Database.GetAppliedMigrationsAsync())?.ToList() ?? new List<string>();
 
-                    output.Line($"Found '{migrations.Count}' Migrations", 1);
+                    output.WriteLine($"Found '{migrations.Count}' Migrations", 1);
                     foreach (var migration in migrations)
-                        output.Line(migration, 2);
+                        output.WriteLine(migration, 2);
 
                     var tables = context.MetadataString
                                         .FromSql("SELECT TABLE_NAME as Result FROM INFORMATION_SCHEMA.TABLES ORDER BY Result")
@@ -52,18 +52,18 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                                                                       .First()
                                                                       .Result);
 
-                    output.Line(1);
+                    output.WriteLine(string.Empty, 1);
 
                     var longestTableName = tables.Keys.Max(x => x.Length);
 
-                    output.Line($"Found {tables.Count} tables in the Schema", 1);
+                    output.WriteLine($"Found {tables.Count} tables in the Schema", 1);
                     foreach (var (table, entries) in tables)
-                        output.Line($"{table.PadRight(longestTableName, ' ')}: {entries:###,###,###,###} {(entries == 1 ? "row" : "rows")}", 2);
+                        output.WriteLine($"{table.PadRight(longestTableName, ' ')}: {entries:###,###,###,###} {(entries == 1 ? "row" : "rows")}", 2);
                 }
             }
             catch (Exception e)
             {
-                output.Line($"Error while querying database: {e.GetType().Name}; {e.Message}", 1);
+                output.WriteLine($"Error while querying database: {e.GetType().Name}; {e.Message}", 1);
                 return new TestResult
                 {
                     Result = false,

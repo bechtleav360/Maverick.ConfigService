@@ -36,7 +36,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             if (!CheckParameters())
                 return 1;
 
-            var output = new FormattedOutput(Logger);
             var parameters = new TestParameters
             {
                 ConfigServiceEndpoint = ConfigServiceEndpoint,
@@ -45,17 +44,17 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 PassThruArguments = app.RemainingArguments.ToArray()
             };
 
-            output.Line("Checking Connection to ConfigService");
-            output.Separator();
-            output.Line($"using Config-Service = '{ConfigServiceEndpoint}'");
+            Output.WriteLine("Checking Connection to ConfigService");
+            Output.WriteSeparator();
+            Output.WriteLine($"using Config-Service = '{ConfigServiceEndpoint}'");
 
             var results = new Dictionary<string, TestResult>();
             foreach (var test in GetConnectionChecks())
             {
-                output.Line(0);
+                Output.WriteLine(string.Empty);
                 try
                 {
-                    results.Add(test.Name, await test.Execute(output, parameters, _settings));
+                    results.Add(test.Name, await test.Execute(Output, parameters, _settings));
                 }
                 catch (Exception e)
                 {
@@ -67,13 +66,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 }
             }
 
-            output.Separator();
-            output.Line("Results:");
+            Output.WriteSeparator();
+            Output.WriteLine("Results:");
 
             var longestKeyLength = results.Max(r => r.Key.Length);
 
             foreach (var (name, testResult) in results)
-                output.Line($"{name.PadRight(longestKeyLength, ' ')} => {(testResult.Result ? "Pass" : "Fail")}", 1);
+                Output.WriteLine($"{name.PadRight(longestKeyLength, ' ')} => {(testResult.Result ? "Pass" : "Fail")}", 1);
 
             return results.All(r => r.Value.Result) ? 0 : 1;
         }

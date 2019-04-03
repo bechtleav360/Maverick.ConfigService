@@ -10,7 +10,6 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
@@ -48,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             if (Environments is null || !Environments.Any())
             {
-                Logger.LogError($"no {nameof(Environments)} given -- see help for more information");
+                Output.WriteError($"no {nameof(Environments)} given -- see help for more information");
                 return false;
             }
 
@@ -60,7 +59,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             // ... complain about them
             if (errEnvironments.Any())
             {
-                Logger.LogError($"given environments contain errors: {string.Join("; ", errEnvironments)}");
+                Output.WriteError($"given environments contain errors: {string.Join("; ", errEnvironments)}");
                 return false;
             }
 
@@ -88,7 +87,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                            .ToArray()
             };
 
-            var request = await RestRequest.Make(Logger)
+            var request = await RestRequest.Make(Output)
                                            .Post(new Uri(new Uri(ConfigServiceEndpoint), "export"),
                                                  new StringContent(JsonConvert.SerializeObject(exportDefinition, Formatting.None),
                                                                    Encoding.UTF8,
@@ -102,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             if (request.HttpResponseMessage?.IsSuccessStatusCode != true)
             {
-                Logger.LogError($"could not export environments '{string.Join("; ", Environments)}'");
+                Output.WriteError($"could not export environments '{string.Join("; ", Environments)}'");
                 return 1;
             }
 
@@ -121,7 +120,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
             catch (IOException e)
             {
-                Logger.LogError($"could not write to file '{OutputFile}': {e}");
+                Output.WriteError($"could not write to file '{OutputFile}': {e}");
                 return 1;
             }
         }
@@ -141,13 +140,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                         return JsonConvert.SerializeObject(obj, Formatting.Indented);
 
                     default:
-                        Logger.LogError($"unknown format '{format:G}'");
+                        Output.WriteError($"unknown format '{format:G}'");
                         return raw;
                 }
             }
             catch (JsonException e)
             {
-                Logger.LogError($"can't re-interpret result: {e}");
+                Output.WriteError($"can't re-interpret result: {e}");
                 return raw;
             }
         }
