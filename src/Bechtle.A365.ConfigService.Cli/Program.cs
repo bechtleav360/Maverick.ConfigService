@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Bechtle.A365.ConfigService.Cli
 {
     [Subcommand(
+        typeof(BrowseCommand),
         typeof(ExportCommand),
         typeof(ImportCommand),
         typeof(TestCommand),

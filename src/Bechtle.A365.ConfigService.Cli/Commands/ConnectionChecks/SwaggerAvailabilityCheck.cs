@@ -35,7 +35,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 {
                     swaggerVersionsFound = true;
                     output.WriteLine($"V{currentSwaggerVersion,2:#0}; {swaggerUri}", 2);
-                    currentSwaggerVersion += 1;
+                    currentSwaggerVersion++;
                 }
                 else
                     break;

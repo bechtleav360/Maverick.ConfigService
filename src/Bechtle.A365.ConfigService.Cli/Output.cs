@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
@@ -106,6 +108,70 @@ namespace Bechtle.A365.ConfigService.Cli
         public void WriteVerboseLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
             => WriteVerbose(str + Environment.NewLine, level, color);
 
+        /// <inheritdoc />
+        public void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector)
+        {
+            var columns = new List<TableColumn>();
+
+            // create and fill columns with data from items
+            foreach (var item in items)
+            {
+                var properties = propertySelector.Invoke(item);
+                foreach (var prop in properties)
+                {
+                    if (columns.All(c => c.Name != prop.Key))
+                        columns.Add(new TableColumn
+                        {
+                            Name = prop.Key,
+                            Values = new List<string>()
+                        });
+                }
+
+                foreach (var prop in properties)
+                    columns.First(c => c.Name == prop.Key)
+                           .Values
+                           .Add(prop.Value?.ToString() ?? string.Empty);
+            }
+
+            // order the columns by name
+            columns = columns.OrderBy(c => c.Name)
+                             .ToList();
+
+            // write headers
+            foreach (var column in columns)
+                WriteTableCell(column.Name, column.Width);
+
+            WriteTableRowEnd();
+
+            // write header-separator
+            foreach (var column in columns)
+                WriteTableCell(new string('-', column.Width), column.Width);
+
+            WriteTableRowEnd();
+
+            // write actual data
+            var entries = columns.Max(c => c.Values.Count);
+            for (var i = 0; i < entries; ++i)
+            {
+                foreach (var column in columns)
+                    WriteTableCell(column.Values[i], column.Width);
+                WriteTableRowEnd();
+            }
+        }
+
+        private void WriteTableCell(string value, int columnWidth)
+        {
+            Write("|");
+
+            var totalPadding = Math.Max(columnWidth + 2, value.Length + 2) - value.Length;
+            var leftPadding = totalPadding / 2;
+            var rightPadding = leftPadding + totalPadding % 2;
+
+            Write(new string(' ', leftPadding) + value + new string(' ', rightPadding));
+        }
+
+        private void WriteTableRowEnd() => WriteLine("|");
+
         private string GetIndent(int level)
         {
             lock (_indentBuilderLock)
@@ -146,6 +212,32 @@ namespace Bechtle.A365.ConfigService.Cli
             public void Dispose()
             {
             }
+        }
+
+        /// <summary>
+        ///     one column of data within a table
+        /// </summary>
+        private struct TableColumn
+        {
+            /// <summary>
+            ///     column-name / header
+            /// </summary>
+            public string Name { get; set; }
+
+            /// <summary>
+            ///     list of values top-down
+            /// </summary>
+            public List<string> Values { get; set; }
+
+            /// <summary>
+            ///     cache for <see cref="Width"/>
+            /// </summary>
+            private int? _width;
+
+            /// <summary>
+            ///     maximum width of this column
+            /// </summary>
+            public int Width => (int) (_width ?? (_width = Math.Max(Values?.Max(x => x.Length) ?? 0, Name.Length)));
         }
     }
 }
