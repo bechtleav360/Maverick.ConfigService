@@ -12,17 +12,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "structures")]
-    public class StructureController : ControllerBase
+    public class StructureController : VersionedController<V0.StructureController>
     {
-        private readonly V0.StructureController _previousVersion;
-
         /// <inheritdoc />
         public StructureController(IServiceProvider provider,
                                    ILogger<StructureController> logger,
                                    V0.StructureController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -32,7 +29,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [HttpPost(Name = ApiVersionFormatted + "AddStructure")]
         public Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
-            => _previousVersion.AddStructure(structure);
+            => PreviousVersion.AddStructure(structure);
 
         /// <summary>
         ///     get available structures
@@ -43,7 +40,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("available", Name = ApiVersionFormatted + "GetAvailableStructures")]
         public Task<IActionResult> GetAvailableStructures([FromQuery] int offset = -1,
                                                           [FromQuery] int length = -1)
-            => _previousVersion.GetAvailableStructures(offset, length);
+            => PreviousVersion.GetAvailableStructures(offset, length);
 
         /// <summary>
         ///     get the specified config-structure as JSON
@@ -59,7 +56,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                 [FromRoute] int version,
                                                 [FromQuery] int offset = -1,
                                                 [FromQuery] int length = -1)
-            => _previousVersion.GetStructure(name, version, offset, length);
+            => PreviousVersion.GetStructure(name, version, offset, length);
 
         /// <summary>
         ///     get the specified config-structure as json
@@ -70,7 +67,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{name}/{version}/json", Name = ApiVersionFormatted + "GetStructureAsJson")]
         public Task<IActionResult> GetStructureJson([FromRoute] string name,
                                                     [FromRoute] int version)
-            => _previousVersion.GetStructureJson(name, version);
+            => PreviousVersion.GetStructureJson(name, version);
 
         /// <summary>
         ///     get the specified config-structure as list of Key / Value pairs
@@ -85,7 +82,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                     [FromRoute] int version,
                                                     [FromQuery] int offset = -1,
                                                     [FromQuery] int length = -1)
-            => _previousVersion.GetStructureKeys(name, version, offset, length);
+            => PreviousVersion.GetStructureKeys(name, version, offset, length);
 
         /// <summary>
         ///     get all variables for the specified config-structure as key / value pairs
@@ -100,7 +97,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                 [FromRoute] int version,
                                                 [FromQuery] int offset = -1,
                                                 [FromQuery] int length = -1)
-            => _previousVersion.GetVariables(name, version, offset, length);
+            => PreviousVersion.GetVariables(name, version, offset, length);
 
         /// <summary>
         ///     get all variables for the specified config-structure as key / value pairs
@@ -111,7 +108,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{name}/{version}/variables/json", Name = ApiVersionFormatted + "GetVariablesAsJson")]
         public Task<IActionResult> GetVariablesJson([FromRoute] string name,
                                                     [FromRoute] int version)
-            => _previousVersion.GetVariablesJson(name, version);
+            => PreviousVersion.GetVariablesJson(name, version);
 
         /// <summary>
         ///     remove variables from the specified config-structure
@@ -124,7 +121,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> RemoveVariables([FromRoute] string name,
                                                    [FromRoute] int version,
                                                    [FromBody] string[] variables)
-            => _previousVersion.RemoveVariables(name, version, variables);
+            => PreviousVersion.RemoveVariables(name, version, variables);
 
         /// <summary>
         ///     add or update variables for the specified config-structure
@@ -137,6 +134,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> UpdateVariables([FromRoute] string name,
                                                    [FromRoute] int version,
                                                    [FromBody] Dictionary<string, string> changes)
-            => _previousVersion.UpdateVariables(name, version, changes);
+            => PreviousVersion.UpdateVariables(name, version, changes);
     }
 }

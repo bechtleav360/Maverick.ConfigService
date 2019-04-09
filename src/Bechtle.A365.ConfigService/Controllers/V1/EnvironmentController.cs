@@ -11,17 +11,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "environments")]
-    public class EnvironmentController : ControllerBase
+    public class EnvironmentController : VersionedController<V0.EnvironmentController>
     {
-        private readonly V0.EnvironmentController _previousVersion;
-
         /// <inheritdoc />
         public EnvironmentController(IServiceProvider provider,
                                      ILogger<EnvironmentController> logger,
                                      V0.EnvironmentController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -33,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost("{category}/{name}", Name = ApiVersionFormatted + "AddEnvironment")]
         public Task<IActionResult> AddEnvironment([FromRoute] string category,
                                                   [FromRoute] string name)
-            => _previousVersion.AddEnvironment(category, name);
+            => PreviousVersion.AddEnvironment(category, name);
 
         /// <summary>
         ///     delete keys from the environment
@@ -46,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> DeleteKeys([FromRoute] string category,
                                               [FromRoute] string name,
                                               [FromBody] string[] keys)
-            => _previousVersion.DeleteKeys(category, name, keys);
+            => PreviousVersion.DeleteKeys(category, name, keys);
 
         /// <summary>
         ///     get a list of available environments
@@ -57,7 +54,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("available", Name = ApiVersionFormatted + "GetAvailableEnvironments")]
         public Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
                                                             [FromQuery] int length = -1)
-            => _previousVersion.GetAvailableEnvironments(offset, length);
+            => PreviousVersion.GetAvailableEnvironments(offset, length);
 
         /// <summary>
         ///     get the keys contained in an environment
@@ -74,7 +71,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                            [FromQuery] string filter,
                                            [FromQuery] int offset = -1,
                                            [FromQuery] int length = -1)
-            => _previousVersion.GetKeys(category, name, filter, offset, length);
+            => PreviousVersion.GetKeys(category, name, filter, offset, length);
 
         /// <summary>
         ///     get the keys contained in an environment, converted to JSON
@@ -87,7 +84,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> GetKeysAsJson([FromRoute] string category,
                                                  [FromRoute] string name,
                                                  [FromQuery] string filter)
-            => _previousVersion.GetKeysAsJson(category, name, filter);
+            => PreviousVersion.GetKeysAsJson(category, name, filter);
 
         /// <summary>
         ///     get the keys contained in an environment including all their metadata
@@ -104,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                        [FromQuery] string filter,
                                                        [FromQuery] int offset = -1,
                                                        [FromQuery] int length = -1)
-            => _previousVersion.GetKeysWithMetadata(category, name, filter, offset, length);
+            => PreviousVersion.GetKeysWithMetadata(category, name, filter, offset, length);
 
         /// <summary>
         ///     add or update keys in the environment
@@ -117,6 +114,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> UpdateKeys([FromRoute] string category,
                                               [FromRoute] string name,
                                               [FromBody] DtoConfigKey[] keys)
-            => _previousVersion.UpdateKeys(category, name, keys);
+            => PreviousVersion.UpdateKeys(category, name, keys);
     }
 }

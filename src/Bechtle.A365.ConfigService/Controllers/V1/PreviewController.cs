@@ -19,9 +19,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "preview")]
-    public class PreviewController : ControllerBase
+    public class PreviewController : VersionedController<V0.PreviewController>
     {
-        private readonly V0.PreviewController _previousVersion;
         private readonly IConfigurationCompiler _compiler;
         private readonly IConfigurationParser _parser;
         private readonly IProjectionStore _store;
@@ -35,13 +34,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                  IConfigurationParser parser,
                                  IJsonTranslator translator,
                                  V0.PreviewController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
             _compiler = compiler;
             _store = store;
             _parser = parser;
             _translator = translator;
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -57,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                               [FromRoute] string environmentName,
                                                               [FromRoute] string structureName,
                                                               [FromRoute] int structureVersion)
-            => _previousVersion.PreviewConfiguration(environmentCategory, environmentName, structureName, structureVersion);
+            => PreviousVersion.PreviewConfiguration(environmentCategory, environmentName, structureName, structureVersion);
 
         /// <summary>
         ///     preview the Result of building the given Environment and Structure

@@ -11,17 +11,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "convert")]
-    public class ConversionController : ControllerBase
+    public class ConversionController : VersionedController<V0.ConversionController>
     {
-        private readonly V0.ConversionController _previousVersion;
-
         /// <inheritdoc />
         public ConversionController(IServiceProvider provider,
                                     ILogger<ConversionController> logger,
                                     V0.ConversionController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -33,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost("map/json", Name = ApiVersionFormatted + "ConvertDictionaryToJson")]
         public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary,
                                               [FromQuery] string separator = null)
-            => _previousVersion.DictionaryToJson(dictionary, separator);
+            => PreviousVersion.DictionaryToJson(dictionary, separator);
 
         /// <summary>
         ///     convert the given json to map of path => value
@@ -44,6 +41,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost("json/map", Name = ApiVersionFormatted + "ConvertJsonToDictionary")]
         public IActionResult JsonToDictionary([FromBody] JToken json,
                                               [FromQuery] string separator = null)
-            => _previousVersion.JsonToDictionary(json, separator);
+            => PreviousVersion.JsonToDictionary(json, separator);
     }
 }

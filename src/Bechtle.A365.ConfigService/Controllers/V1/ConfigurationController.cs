@@ -14,17 +14,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "configurations")]
-    public class ConfigurationController : ControllerBase
+    public class ConfigurationController : VersionedController<V0.ConfigurationController>
     {
-        private readonly V0.ConfigurationController _previousVersion;
-
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
                                        V0.ConfigurationController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -38,7 +35,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
                                                       [FromRoute] string environmentName,
                                                       [FromBody] ConfigurationBuildOptions buildOptions)
-            => _previousVersion.BuildConfiguration(environmentCategory, environmentName, buildOptions);
+            => PreviousVersion.BuildConfiguration(environmentCategory, environmentName, buildOptions);
 
         /// <summary>
         ///     create a new configuration for each combination of given Environment and all versions of given Structure
@@ -53,7 +50,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                             [FromRoute] string environmentName,
                                                             [FromRoute] string structureName,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
-            => _previousVersion.BuildConfiguration(environmentCategory, environmentName, structureName, buildOptions);
+            => PreviousVersion.BuildConfiguration(environmentCategory, environmentName, structureName, buildOptions);
 
         /// <summary>
         ///     create a new configuration built from a given Environment and Structure
@@ -70,7 +67,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                       [FromRoute] string structureName,
                                                       [FromRoute] int structureVersion,
                                                       [FromBody] ConfigurationBuildOptions buildOptions)
-            => _previousVersion.BuildConfiguration(environmentCategory, environmentName, structureName, structureVersion, buildOptions);
+            => PreviousVersion.BuildConfiguration(environmentCategory, environmentName, structureName, structureVersion, buildOptions);
 
         /// <summary>
         ///     get all available configurations
@@ -85,7 +82,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> GetAvailableConfigurations([FromQuery] DateTime when,
                                                               [FromQuery] int offset = -1,
                                                               [FromQuery] int length = -1)
-            => _previousVersion.GetAvailableConfigurations(when, offset, length);
+            => PreviousVersion.GetAvailableConfigurations(when, offset, length);
 
         /// <summary>
         ///     get the keys of a specific configuration
@@ -108,13 +105,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                     [FromQuery] DateTime when,
                                                     [FromQuery] int offset = -1,
                                                     [FromQuery] int length = -1)
-            => _previousVersion.GetConfiguration(environmentCategory,
-                                                 environmentName,
-                                                 structureName,
-                                                 structureVersion,
-                                                 when,
-                                                 offset,
-                                                 length);
+            => PreviousVersion.GetConfiguration(environmentCategory,
+                                                environmentName,
+                                                structureName,
+                                                structureVersion,
+                                                when,
+                                                offset,
+                                                length);
 
         /// <summary>
         ///     get the keys of a specific configuration
@@ -133,11 +130,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                         [FromRoute] string structureName,
                                                         [FromRoute] int structureVersion,
                                                         [FromQuery] DateTime when)
-            => _previousVersion.GetConfigurationJson(environmentCategory,
-                                                     environmentName,
-                                                     structureName,
-                                                     structureVersion,
-                                                     when);
+            => PreviousVersion.GetConfigurationJson(environmentCategory,
+                                                    environmentName,
+                                                    structureName,
+                                                    structureVersion,
+                                                    when);
 
         /// <summary>
         ///     get configurations whose keys are stale, that should be re-built
@@ -148,7 +145,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("stale", Name = ApiVersionFormatted + "GetStaleConfigurations")]
         public Task<IActionResult> GetStaleConfigurations([FromQuery] int offset = -1,
                                                           [FromQuery] int length = -1)
-            => _previousVersion.GetStaleConfigurations(offset, length);
+            => PreviousVersion.GetStaleConfigurations(offset, length);
 
         /// <summary>
         ///     get the used environment-keys of a specific configuration
@@ -171,12 +168,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                [FromQuery] DateTime when,
                                                [FromQuery] int offset = -1,
                                                [FromQuery] int length = -1)
-            => _previousVersion.GetUsedKeys(environmentCategory,
-                                            environmentName,
-                                            structureName,
-                                            structureVersion,
-                                            when,
-                                            offset,
-                                            length);
+            => PreviousVersion.GetUsedKeys(environmentCategory,
+                                           environmentName,
+                                           structureName,
+                                           structureVersion,
+                                           when,
+                                           offset,
+                                           length);
     }
 }

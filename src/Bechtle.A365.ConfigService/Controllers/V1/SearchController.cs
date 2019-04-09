@@ -10,18 +10,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "search")]
-    public class SearchController : ControllerBase
+    public class SearchController : VersionedController<V0.SearchController>
     {
-        private new const string ApiVersion = "1.0";
-        private readonly V0.SearchController _previousVersion;
-
         /// <inheritdoc />
         public SearchController(IServiceProvider provider,
                                 ILogger<SearchController> logger,
                                 V0.SearchController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -39,6 +35,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                           [FromQuery] string query = null,
                                                           [FromQuery] int offset = -1,
                                                           [FromQuery] int length = -1)
-            => _previousVersion.GetKeyAutocompleteList(category, name, query, offset, length);
+            => PreviousVersion.GetKeyAutocompleteList(category, name, query, offset, length);
     }
 }

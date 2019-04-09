@@ -9,17 +9,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "connections")]
-    public class ConnectionController : ControllerBase
+    public class ConnectionController : VersionedController<V0.ConnectionController>
     {
-        private readonly V0.ConnectionController _previousVersion;
-
         /// <inheritdoc />
         public ConnectionController(IServiceProvider provider,
                                     ILogger<ConnectionController> logger,
                                     V0.ConnectionController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -28,6 +25,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [HttpGet("events", Name = ApiVersionFormatted + "GetEventConnection")]
         public IActionResult GetEventConnection()
-            => _previousVersion.GetEventConnection();
+            => PreviousVersion.GetEventConnection();
     }
 }

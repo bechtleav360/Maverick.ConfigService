@@ -11,18 +11,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "export")]
-    public class ExportController : ControllerBase
+    public class ExportController : VersionedController<V0.ExportController>
     {
-        private new const string ApiVersion = "1.0";
-        private readonly V0.ExportController _previousVersion;
-
         /// <inheritdoc />
         public ExportController(IServiceProvider provider,
                                 ILogger<ExportController> logger,
                                 V0.ExportController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -32,6 +28,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [HttpPost(Name = ApiVersionFormatted + "ExportConfiguration")]
         public Task<IActionResult> Export([FromBody] ExportDefinition definition)
-            => _previousVersion.Export(definition);
+            => PreviousVersion.Export(definition);
     }
 }

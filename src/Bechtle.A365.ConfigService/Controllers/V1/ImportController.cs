@@ -11,17 +11,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "import")]
-    public class ImportController : ControllerBase
+    public class ImportController : VersionedController<V0.ImportController>
     {
-        private readonly V0.ImportController _previousVersion;
-
         /// <inheritdoc />
         public ImportController(IServiceProvider provider,
                                 ILogger<ImportController> logger,
                                 V0.ImportController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -31,6 +28,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [HttpPost(Name = ApiVersionFormatted + "ImportConfiguration")]
         public Task<IActionResult> Import(IFormFile file)
-            => _previousVersion.Import(file);
+            => PreviousVersion.Import(file);
     }
 }

@@ -10,17 +10,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "history")]
-    public class HistoryController : ControllerBase
+    public class HistoryController : VersionedController<V0.HistoryController>
     {
-        private readonly V0.HistoryController _previousVersion;
-
         /// <inheritdoc />
         public HistoryController(IServiceProvider provider,
                                  ILogger<HistoryController> logger,
                                  V0.HistoryController previousVersion)
-            : base(provider, logger)
+            : base(provider, logger, previousVersion)
         {
-            _previousVersion = previousVersion;
         }
 
         /// <summary>
@@ -32,7 +29,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("blame/environment/{category}/{name}", Name = ApiVersionFormatted + "Blame")]
         public Task<IActionResult> BlameEnvironment([FromRoute] string category,
                                                     [FromRoute] string name)
-            => _previousVersion.BlameEnvironment(category, name);
+            => PreviousVersion.BlameEnvironment(category, name);
 
         /// <summary>
         ///     get the complete history and metadata of an environment
@@ -45,6 +42,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public Task<IActionResult> GetEnvironmentHistory([FromRoute] string category,
                                                          [FromRoute] string name,
                                                          [FromQuery] string key = null)
-            => _previousVersion.GetEnvironmentHistory(category, name, key);
+            => PreviousVersion.GetEnvironmentHistory(category, name, key);
     }
 }
