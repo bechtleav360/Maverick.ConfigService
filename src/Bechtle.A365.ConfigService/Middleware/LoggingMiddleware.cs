@@ -13,8 +13,7 @@ namespace Bechtle.A365.ConfigService.Middleware
     {
         private readonly RequestDelegate _next;
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         /// <param name="next"></param>
         public LoggingMiddleware(RequestDelegate next)
         {

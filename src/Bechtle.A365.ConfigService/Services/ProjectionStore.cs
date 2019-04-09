@@ -6,8 +6,7 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc cref="IProjectionStore" />
     public class ProjectionStore : DbContext, IProjectionStore
     {
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         /// <param name="structureStore"></param>
         /// <param name="environmentStore"></param>
         /// <param name="configurationStore"></param>

@@ -1,5 +1,6 @@
 ﻿using System;
-using Bechtle.A365.ConfigService.Services;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -10,16 +11,26 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "import")]
-    public class ImportController : V0.ImportController
+    public class ImportController : ControllerBase
     {
-        private new const string ApiVersion = "1.0";
+        private readonly V0.ImportController _previousVersion;
 
         /// <inheritdoc />
         public ImportController(IServiceProvider provider,
                                 ILogger<ImportController> logger,
-                                IDataImporter importer)
-            : base(provider, logger, importer)
+                                V0.ImportController previousVersion)
+            : base(provider, logger)
         {
+            _previousVersion = previousVersion;
         }
+
+        /// <summary>
+        ///     import a previous exported file
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        [HttpPost(Name = ApiVersionFormatted + "ImportConfiguration")]
+        public Task<IActionResult> Import(IFormFile file)
+            => _previousVersion.Import(file);
     }
 }

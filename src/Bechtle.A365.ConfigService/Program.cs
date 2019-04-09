@@ -18,6 +18,7 @@ using NLog.Web;
 namespace Bechtle.A365.ConfigService
 {
     /// <summary>
+    ///     Main Entry-Point for the Application
     /// </summary>
     public class Program
     {

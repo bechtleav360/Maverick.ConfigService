@@ -1,6 +1,7 @@
 ﻿namespace Bechtle.A365.ConfigService.Configuration
 {
     /// <summary>
+    ///     Main Configuration for this Service
     /// </summary>
     public class ConfigServiceConfiguration
     {
@@ -14,6 +15,7 @@
         public EventStoreConnectionConfiguration EventStoreConnection { get; set; }
 
         /// <summary>
+        ///     NLog Configuration in XML-Format
         /// </summary>
         public string LoggingConfiguration { get; set; }
 

@@ -6,6 +6,7 @@ using EventStore.ClientAPI;
 namespace Bechtle.A365.ConfigService.Services
 {
     /// <summary>
+    ///     internal EventStore interface
     /// </summary>
     public interface IEventStore
     {
@@ -19,6 +20,7 @@ namespace Bechtle.A365.ConfigService.Services
         Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents();
 
         /// <summary>
+        ///     write Event <typeparamref name="T"/> into the store
         /// </summary>
         /// <param name="domainEvent"></param>
         /// <returns></returns>

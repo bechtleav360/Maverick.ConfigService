@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 namespace Bechtle.A365.ConfigService.Controllers.V0
 {
     /// <summary>
+    ///     Query / Build Service-Configurations
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "configurations")]

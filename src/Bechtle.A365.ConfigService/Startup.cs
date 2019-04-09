@@ -19,7 +19,9 @@ using Bechtle.A365.Maverick.Core.Health.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,11 +37,11 @@ using ESLogger = EventStore.ClientAPI.ILogger;
 namespace Bechtle.A365.ConfigService
 {
     /// <summary>
+    ///     Service-Startup behaviour
     /// </summary>
     public class Startup
     {
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         /// <param name="configuration"></param>
         public Startup(IConfiguration configuration)
         {
@@ -47,10 +49,12 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <summary>
+        ///     Application-Configuration as defined in <see cref="Program"/>
         /// </summary>
         public IConfiguration Configuration { get; }
 
         /// <summary>
+        ///     Configures Application-Pipeline
         /// </summary>
         /// <param name="app"></param>
         /// <param name="env"></param>
@@ -84,7 +88,7 @@ namespace Bechtle.A365.ConfigService
                    options.EnableFilter();
                    options.ShowExtensions();
 
-                   foreach (var description in provider.ApiVersionDescriptions)
+                   foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
                                                $"ConfigService {description.GroupName.ToUpperInvariant()}");
                })
@@ -92,6 +96,7 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <summary>
+        ///     Configure DI-Services
         /// </summary>
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
@@ -109,7 +114,7 @@ namespace Bechtle.A365.ConfigService
                     }).AddVersionedApiExplorer(options =>
                     {
                         options.AssumeDefaultVersionWhenUnspecified = true;
-                        options.DefaultApiVersion = new ApiVersion(4, 0);
+                        options.DefaultApiVersion = new ApiVersion(1, 0);
                         options.GroupNameFormat = "'v'VVV";
                         options.SubstituteApiVersionInUrl = true;
                     })
@@ -277,22 +282,22 @@ namespace Bechtle.A365.ConfigService
         {
             var apiDescription = context.ApiDescription;
 
-            operation.Deprecated = apiDescription.IsDeprecated();
+            operation.Deprecated = apiDescription.ActionDescriptor
+                                                 .GetApiVersionModel(ApiVersionMapping.Explicit | ApiVersionMapping.Implicit)
+                                                 .DeprecatedApiVersions
+                                                 .Contains(apiDescription.GetApiVersion());
 
             if (operation.Parameters == null)
                 return;
 
             foreach (var parameter in operation.Parameters.OfType<NonBodyParameter>())
             {
-                var description = apiDescription.ParameterDescriptions.FirstOrDefault(p => p.Name == parameter.Name);
+                var description = apiDescription.ParameterDescriptions.First(p => p.Name == parameter.Name);
 
-                if (description is null)
-                    return;
-
-                if (parameter.Description is null)
+                if (parameter.Description == null)
                     parameter.Description = description.ModelMetadata?.Description;
 
-                if (parameter.Default is null)
+                if (parameter.Default == null)
                     parameter.Default = description.DefaultValue;
 
                 parameter.Required |= description.IsRequired;

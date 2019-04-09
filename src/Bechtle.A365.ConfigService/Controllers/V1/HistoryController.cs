@@ -1,5 +1,5 @@
 ﻿using System;
-using Bechtle.A365.ConfigService.Services;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -10,16 +10,41 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "history")]
-    public class HistoryController : V0.HistoryController
+    public class HistoryController : ControllerBase
     {
-        private new const string ApiVersion = "1.0";
+        private readonly V0.HistoryController _previousVersion;
 
         /// <inheritdoc />
         public HistoryController(IServiceProvider provider,
                                  ILogger<HistoryController> logger,
-                                 IEventStore eventStore)
-            : base(provider, logger, eventStore)
+                                 V0.HistoryController previousVersion)
+            : base(provider, logger)
         {
+            _previousVersion = previousVersion;
         }
+
+        /// <summary>
+        ///     get all keys within the environment and metadata of their last change
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet("blame/environment/{category}/{name}", Name = ApiVersionFormatted + "Blame")]
+        public Task<IActionResult> BlameEnvironment([FromRoute] string category,
+                                                    [FromRoute] string name)
+            => _previousVersion.BlameEnvironment(category, name);
+
+        /// <summary>
+        ///     get the complete history and metadata of an environment
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        [HttpGet("environment/{category}/{name}", Name = ApiVersionFormatted + "GetEnvironmentHistory")]
+        public Task<IActionResult> GetEnvironmentHistory([FromRoute] string category,
+                                                         [FromRoute] string name,
+                                                         [FromQuery] string key = null)
+            => _previousVersion.GetEnvironmentHistory(category, name, key);
     }
 }

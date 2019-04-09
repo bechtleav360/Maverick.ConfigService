@@ -1,5 +1,4 @@
 ﻿using System;
-using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -10,16 +9,25 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "connections")]
-    public class ConnectionController : V0.ConnectionController
+    public class ConnectionController : ControllerBase
     {
-        private new const string ApiVersion = "1.0";
+        private readonly V0.ConnectionController _previousVersion;
 
         /// <inheritdoc />
         public ConnectionController(IServiceProvider provider,
                                     ILogger<ConnectionController> logger,
-                                    EventBusConnectionConfiguration config)
-            : base(provider, logger, config)
+                                    V0.ConnectionController previousVersion)
+            : base(provider, logger)
         {
+            _previousVersion = previousVersion;
         }
+
+        /// <summary>
+        ///     get information on how to Connect to the used EventBus-Server and -Hub
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("events", Name = ApiVersionFormatted + "GetEventConnection")]
+        public IActionResult GetEventConnection()
+            => _previousVersion.GetEventConnection();
     }
 }

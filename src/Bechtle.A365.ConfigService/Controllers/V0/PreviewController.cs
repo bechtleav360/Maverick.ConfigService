@@ -144,35 +144,43 @@ namespace Bechtle.A365.ConfigService.Controllers.V0
     }
 
     /// <summary>
+    ///     Container for all data required to Preview building a Configuration
     /// </summary>
     public class PreviewContainer
     {
         /// <summary>
+        ///     Environment-Keys
         /// </summary>
         public Dictionary<string, string> Environment { get; set; }
 
         /// <summary>
+        ///     Structure-Keys
         /// </summary>
         public Dictionary<string, string> Structure { get; set; }
 
         /// <summary>
+        ///     Variable-Keys
         /// </summary>
         public Dictionary<string, string> Variables { get; set; }
     }
 
     /// <summary>
+    ///     Result of a Preview-Build
     /// </summary>
     public class PreviewResult
     {
         /// <summary>
+        ///     Result as JSON
         /// </summary>
         public JToken Json { get; set; }
 
         /// <summary>
+        ///     Result as Key->Value Map
         /// </summary>
         public IDictionary<string, string> Map { get; set; }
 
         /// <summary>
+        ///     List of Environment-Keys used to build the resulting Configuration
         /// </summary>
         public IEnumerable<string> UsedKeys { get; set; }
     }

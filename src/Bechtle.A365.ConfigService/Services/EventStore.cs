@@ -27,8 +27,7 @@ namespace Bechtle.A365.ConfigService.Services
         private readonly ILogger _logger;
         private readonly IServiceProvider _provider;
 
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         /// <param name="logger"></param>
         /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>

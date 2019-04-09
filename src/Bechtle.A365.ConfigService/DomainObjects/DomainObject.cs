@@ -10,8 +10,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public abstract class DomainObject
     {
-        /// <summary>
-        /// </summary>
+        /// <inheritdoc />
         public DomainObject()
         {
             RecordedEvents = new List<DomainEvent>();
