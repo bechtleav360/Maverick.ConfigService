@@ -4,19 +4,19 @@ using Bechtle.A365.ConfigService.Dto;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     Query / Manage Environment-Data
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "environments")]
-    public class EnvironmentController : VersionedController<V0.EnvironmentController>
+    public class EnvironmentController : VersionedController<V0.Controllers.EnvironmentController>
     {
         /// <inheritdoc />
         public EnvironmentController(IServiceProvider provider,
                                      ILogger<EnvironmentController> logger,
-                                     V0.EnvironmentController previousVersion)
+                                     V0.Controllers.EnvironmentController previousVersion)
             : base(provider, logger, previousVersion)
         {
         }

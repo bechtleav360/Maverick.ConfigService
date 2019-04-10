@@ -3,19 +3,19 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     retrieve the history of various objects
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "history")]
-    public class HistoryController : VersionedController<V0.HistoryController>
+    public class HistoryController : VersionedController<V0.Controllers.HistoryController>
     {
         /// <inheritdoc />
         public HistoryController(IServiceProvider provider,
                                  ILogger<HistoryController> logger,
-                                 V0.HistoryController previousVersion)
+                                 V0.Controllers.HistoryController previousVersion)
             : base(provider, logger, previousVersion)
         {
         }

@@ -4,19 +4,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     convert Dictionary{string, string} to and from JSON
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "convert")]
-    public class ConversionController : VersionedController<V0.ConversionController>
+    public class ConversionController : VersionedController<V0.Controllers.ConversionController>
     {
         /// <inheritdoc />
         public ConversionController(IServiceProvider provider,
                                     ILogger<ConversionController> logger,
-                                    V0.ConversionController previousVersion)
+                                    V0.Controllers.ConversionController previousVersion)
             : base(provider, logger, previousVersion)
         {
         }

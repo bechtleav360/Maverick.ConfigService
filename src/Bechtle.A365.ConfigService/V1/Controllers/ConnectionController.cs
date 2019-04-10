@@ -2,19 +2,19 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     read information on how to connect to this Service
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "connections")]
-    public class ConnectionController : VersionedController<V0.ConnectionController>
+    public class ConnectionController : VersionedController<V0.Controllers.ConnectionController>
     {
         /// <inheritdoc />
         public ConnectionController(IServiceProvider provider,
                                     ILogger<ConnectionController> logger,
-                                    V0.ConnectionController previousVersion)
+                                    V0.Controllers.ConnectionController previousVersion)
             : base(provider, logger, previousVersion)
         {
         }

@@ -8,7 +8,7 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V0
+namespace Bechtle.A365.ConfigService.V0.Controllers
 {
     /// <summary>
     ///     retrieve the history of various objects

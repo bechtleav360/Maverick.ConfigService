@@ -1,12 +1,12 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
-    ///     Base class for Versioned Controllers that inherit functionality from previous versions
+    ///     Base class for Versioned Controllers that inherit functionality from previous versions (V0)
     /// </summary>
-    public abstract class VersionedController<T> : ControllerBase
+    public abstract class VersionedController<T> : ControllerBase where T : V0.Controllers.ControllerBase
     {
         /// <summary>
         ///     instance of this Controllers' previous version

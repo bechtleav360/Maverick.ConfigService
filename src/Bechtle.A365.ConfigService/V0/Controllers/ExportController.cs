@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.Controllers.V0
+namespace Bechtle.A365.ConfigService.V0.Controllers
 {
     /// <summary>
     ///     export data to import it at a later time in a different location

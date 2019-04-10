@@ -5,19 +5,19 @@ using Bechtle.A365.ConfigService.Dto;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     read existing or create new Config-Structures
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "structures")]
-    public class StructureController : VersionedController<V0.StructureController>
+    public class StructureController : VersionedController<V0.Controllers.StructureController>
     {
         /// <inheritdoc />
         public StructureController(IServiceProvider provider,
                                    ILogger<StructureController> logger,
-                                   V0.StructureController previousVersion)
+                                   V0.Controllers.StructureController previousVersion)
             : base(provider, logger, previousVersion)
         {
         }

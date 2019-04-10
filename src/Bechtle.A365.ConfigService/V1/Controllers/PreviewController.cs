@@ -9,17 +9,18 @@ using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.ConfigService.V1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     preview the Results of Building different Configurations
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "preview")]
-    public class PreviewController : VersionedController<V0.PreviewController>
+    public class PreviewController : VersionedController<V0.Controllers.PreviewController>
     {
         private readonly IConfigurationCompiler _compiler;
         private readonly IConfigurationParser _parser;
@@ -33,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                  IProjectionStore store,
                                  IConfigurationParser parser,
                                  IJsonTranslator translator,
-                                 V0.PreviewController previousVersion)
+                                 V0.Controllers.PreviewController previousVersion)
             : base(provider, logger, previousVersion)
         {
             _compiler = compiler;
@@ -94,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var json = _translator.ToJson(compiled.CompiledConfiguration);
 
-            return Ok(new V0.PreviewResult
+            return Ok(new PreviewResult
             {
                 Map = compiled.CompiledConfiguration.ToImmutableSortedDictionary(),
                 Json = json,
@@ -139,65 +140,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             return (Structure: structure.Keys ?? new Dictionary<string, string>(),
                 Variables: structure.Variables ?? new Dictionary<string, string>());
-        }
-
-        /// <summary>
-        ///     Container for data that should be previewed
-        /// </summary>
-        public class PreviewContainer
-        {
-            /// <inheritdoc cref="EnvironmentPreview" />
-            public EnvironmentPreview Environment { get; set; }
-
-            /// <inheritdoc cref="StructurePreview" />
-            public StructurePreview Structure { get; set; }
-        }
-
-        /// <summary>
-        ///     Reference to an existing Environment, or custom Keys
-        /// </summary>
-        public class EnvironmentPreview
-        {
-            /// <summary>
-            ///     Reference to an existing Environment
-            /// </summary>
-            public string Category { get; set; }
-
-            /// <summary>
-            ///     Reference to an existing Environment
-            /// </summary>
-            public string Name { get; set; }
-
-            /// <summary>
-            ///     Custom Keys
-            /// </summary>
-            public Dictionary<string, string> Keys { get; set; }
-        }
-
-        /// <summary>
-        ///     Reference to an existing Structure, or custom Keys
-        /// </summary>
-        public class StructurePreview
-        {
-            /// <summary>
-            ///     Reference to an existing Structure
-            /// </summary>
-            public string Name { get; set; }
-
-            /// <summary>
-            ///     Reference to an existing Structure
-            /// </summary>
-            public string Version { get; set; }
-
-            /// <summary>
-            ///     Custom Keys
-            /// </summary>
-            public Dictionary<string, string> Keys { get; set; }
-
-            /// <summary>
-            ///     Custom Variables
-            /// </summary>
-            public Dictionary<string, string> Variables { get; set; }
         }
     }
 }

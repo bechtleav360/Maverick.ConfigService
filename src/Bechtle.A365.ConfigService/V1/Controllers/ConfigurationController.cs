@@ -7,19 +7,19 @@ using Bechtle.A365.ConfigService.Dto;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     Query / Build Service-Configurations
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "configurations")]
-    public class ConfigurationController : VersionedController<V0.ConfigurationController>
+    public class ConfigurationController : VersionedController<V0.Controllers.ConfigurationController>
     {
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
-                                       V0.ConfigurationController previousVersion)
+                                       V0.Controllers.ConfigurationController previousVersion)
             : base(provider, logger, previousVersion)
         {
         }

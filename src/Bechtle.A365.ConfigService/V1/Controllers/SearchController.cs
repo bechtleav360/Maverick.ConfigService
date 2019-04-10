@@ -3,19 +3,19 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers.V1
+namespace Bechtle.A365.ConfigService.V1.Controllers
 {
     /// <summary>
     ///     search through the projected data
     /// </summary>
     [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "search")]
-    public class SearchController : VersionedController<V0.SearchController>
+    public class SearchController : VersionedController<V0.Controllers.SearchController>
     {
         /// <inheritdoc />
         public SearchController(IServiceProvider provider,
                                 ILogger<SearchController> logger,
-                                V0.SearchController previousVersion)
+                                V0.Controllers.SearchController previousVersion)
             : base(provider, logger, previousVersion)
         {
         }

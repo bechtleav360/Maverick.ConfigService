@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.Controllers.V0
+namespace Bechtle.A365.ConfigService.V0.Controllers
 {
     /// <summary>
     ///     preview the Results of Building different Configurations
