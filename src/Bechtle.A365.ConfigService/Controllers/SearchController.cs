@@ -6,12 +6,11 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.V0.Controllers
+namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     ///     search through the projected data
     /// </summary>
-    [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "search")]
     public class SearchController : ControllerBase
     {
@@ -35,7 +34,9 @@ namespace Bechtle.A365.ConfigService.V0.Controllers
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = ApiVersionFormatted + "GetKeyAutocomplete")]
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = "GetKeyAutocomplete")]
         public async Task<IActionResult> GetKeyAutocompleteList([FromRoute] string category,
                                                                 [FromRoute] string name,
                                                                 [FromQuery] string query = null,

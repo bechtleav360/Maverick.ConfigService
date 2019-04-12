@@ -9,18 +9,16 @@ using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
-using Bechtle.A365.ConfigService.V1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.V1.Controllers
+namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     ///     preview the Results of Building different Configurations
     /// </summary>
-    [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "preview")]
-    public class PreviewController : VersionedController<V0.Controllers.PreviewController>
+    public class PreviewController : ControllerBase
     {
         private readonly IConfigurationCompiler _compiler;
         private readonly IConfigurationParser _parser;
@@ -33,9 +31,8 @@ namespace Bechtle.A365.ConfigService.V1.Controllers
                                  IConfigurationCompiler compiler,
                                  IProjectionStore store,
                                  IConfigurationParser parser,
-                                 IJsonTranslator translator,
-                                 V0.Controllers.PreviewController previousVersion)
-            : base(provider, logger, previousVersion)
+                                 IJsonTranslator translator)
+            : base(provider, logger)
         {
             _compiler = compiler;
             _store = store;
@@ -51,20 +48,109 @@ namespace Bechtle.A365.ConfigService.V1.Controllers
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = ApiVersionFormatted + "PreviewConfigurationWithStoredValues")]
-        public Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "PreviewConfigurationWithStoredValues")]
+        public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
                                                               [FromRoute] string structureName,
                                                               [FromRoute] int structureVersion)
-            => PreviousVersion.PreviewConfiguration(environmentCategory, environmentName, structureName, structureVersion);
+        {
+            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structId = new StructureIdentifier(structureName, structureVersion);
+
+            var structureKeyResult = await _store.Structures.GetKeys(structId, QueryRange.All);
+            if (structureKeyResult.IsError)
+                throw new Exception(structureKeyResult.Message);
+
+            var structureVariableResult = await _store.Structures.GetVariables(structId, QueryRange.All);
+            if (structureVariableResult.IsError)
+                throw new Exception(structureVariableResult.Message);
+
+            var environmentResult = await _store.Environments.GetKeys(envId, QueryRange.All);
+            if (environmentResult.IsError)
+                throw new Exception(environmentResult.Message);
+
+            var structureSnapshot = structureKeyResult.Data;
+            var variableSnapshot = structureVariableResult.Data;
+            var environmentSnapshot = environmentResult.Data;
+
+            var environmentInfo = new EnvironmentCompilationInfo
+            {
+                Name = $"{envId.Category}/{envId.Name}",
+                Keys = environmentSnapshot
+            };
+            var structureInfo = new StructureCompilationInfo
+            {
+                Name = $"{structId.Name}/{structId.Version}",
+                Keys = structureSnapshot,
+                Variables = variableSnapshot
+            };
+
+            var compiled = _compiler.Compile(environmentInfo,
+                                             structureInfo,
+                                             _parser);
+
+            var json = _translator.ToJson(compiled.CompiledConfiguration);
+
+            return Ok(json);
+        }
 
         /// <summary>
         ///     preview the Result of building the given Environment and Structure
         /// </summary>
         /// <param name="previewOptions"></param>
         /// <returns></returns>
-        [HttpPost(Name = ApiVersionFormatted + "PreviewConfigurationWithGivenValues")]
-        public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
+        [ApiVersion(ApiVersions.V0)]
+        [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
+        public IActionResult PreviewConfiguration([FromBody] Models.V0.PreviewContainer previewOptions)
+        {
+            if (previewOptions is null)
+                return BadRequest("no preview-data received");
+
+            if (previewOptions.Structure is null)
+                return BadRequest("no structure-data received");
+
+            if (previewOptions.Variables is null)
+                return BadRequest("no variable-data received");
+
+            if (previewOptions.Environment is null)
+                return BadRequest("no environment-data received");
+
+            var environmentInfo = new EnvironmentCompilationInfo
+            {
+                Name = "Intermediate-Preview-Environment",
+                Keys = previewOptions.Environment
+            };
+            var structureInfo = new StructureCompilationInfo
+            {
+                Name = "Intermediate-Preview-Structure",
+                Keys = previewOptions.Structure,
+                Variables = previewOptions.Variables
+            };
+
+            var compiled = _compiler.Compile(environmentInfo,
+                                             structureInfo,
+                                             _parser);
+
+            var json = _translator.ToJson(compiled.CompiledConfiguration);
+
+            return Ok(new Models.V0.PreviewResult
+            {
+                Map = compiled.CompiledConfiguration.ToImmutableSortedDictionary(),
+                Json = json,
+                UsedKeys = compiled.GetUsedKeys().Where(key => environmentInfo.Keys.ContainsKey(key))
+            });
+        }
+
+        /// <summary>
+        ///     preview the Result of building the given Environment and Structure
+        /// </summary>
+        /// <param name="previewOptions"></param>
+        /// <returns></returns>
+        [ApiVersion(ApiVersions.V1)]
+        [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
+        public async Task<IActionResult> PreviewConfiguration([FromBody] Models.V1.PreviewContainer previewOptions)
         {
             if (previewOptions is null)
                 return BadRequest("no preview-data received");
@@ -95,7 +181,7 @@ namespace Bechtle.A365.ConfigService.V1.Controllers
 
             var json = _translator.ToJson(compiled.CompiledConfiguration);
 
-            return Ok(new PreviewResult
+            return Ok(new Models.V1.PreviewResult
             {
                 Map = compiled.CompiledConfiguration.ToImmutableSortedDictionary(),
                 Json = json,
@@ -103,7 +189,7 @@ namespace Bechtle.A365.ConfigService.V1.Controllers
             });
         }
 
-        private async Task<IDictionary<string, string>> ResolveEnvironmentPreview(EnvironmentPreview environment)
+        private async Task<IDictionary<string, string>> ResolveEnvironmentPreview(Models.V1.EnvironmentPreview environment)
         {
             // if there is a reference to an existing Environment, retrieve its keys
             if (!string.IsNullOrWhiteSpace(environment.Category) && !string.IsNullOrWhiteSpace(environment.Name))
@@ -121,7 +207,7 @@ namespace Bechtle.A365.ConfigService.V1.Controllers
             return environment.Keys ?? new Dictionary<string, string>();
         }
 
-        private async Task<(IDictionary<string, string> Structure, IDictionary<string, string> Variables)> ResolveStructurePreview(StructurePreview structure)
+        private async Task<(IDictionary<string, string> Structure, IDictionary<string, string> Variables)> ResolveStructurePreview(Models.V1.StructurePreview structure)
         {
             if (!string.IsNullOrWhiteSpace(structure.Name) && !string.IsNullOrWhiteSpace(structure.Version))
             {

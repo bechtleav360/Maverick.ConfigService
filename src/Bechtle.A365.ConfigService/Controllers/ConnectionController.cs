@@ -5,12 +5,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.V0.Controllers
+namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     ///     read information on how to connect to this Service
     /// </summary>
-    [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "connections")]
     public class ConnectionController : ControllerBase
     {
@@ -29,7 +28,9 @@ namespace Bechtle.A365.ConfigService.V0.Controllers
         ///     get information on how to Connect to the used EventBus-Server and -Hub
         /// </summary>
         /// <returns></returns>
-        [HttpGet("events", Name = ApiVersionFormatted + "GetEventConnection")]
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet("events", Name = "GetEventConnection")]
         public IActionResult GetEventConnection()
         {
             HttpContext.Response.OnStarting(state =>

@@ -9,12 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Bechtle.A365.ConfigService.V0.Controllers
+namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     ///     export data to import it at a later time in a different location
     /// </summary>
-    [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "export")]
     public class ExportController : ControllerBase
     {
@@ -34,7 +33,9 @@ namespace Bechtle.A365.ConfigService.V0.Controllers
         /// </summary>
         /// <param name="definition"></param>
         /// <returns></returns>
-        [HttpPost(Name = ApiVersionFormatted + "ExportConfiguration")]
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpPost(Name = "ExportConfiguration")]
         public async Task<IActionResult> Export([FromBody] ExportDefinition definition)
         {
             if (definition is null)

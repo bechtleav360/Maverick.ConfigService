@@ -6,12 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.V0.Controllers
+namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     ///     convert Dictionary{string, string} to and from JSON
     /// </summary>
-    [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "convert")]
     public class ConversionController : ControllerBase
     {
@@ -32,7 +31,9 @@ namespace Bechtle.A365.ConfigService.V0.Controllers
         /// <param name="dictionary"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        [HttpPost("map/json", Name = ApiVersionFormatted + "ConvertDictionaryToJson")]
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpPost("map/json", Name = "ConvertDictionaryToJson")]
         public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary,
                                               [FromQuery] string separator = null)
         {
@@ -58,7 +59,9 @@ namespace Bechtle.A365.ConfigService.V0.Controllers
         /// <param name="json"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        [HttpPost("json/map", Name = ApiVersionFormatted + "ConvertJsonToDictionary")]
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
         public IActionResult JsonToDictionary([FromBody] JToken json,
                                               [FromQuery] string separator = null)
         {

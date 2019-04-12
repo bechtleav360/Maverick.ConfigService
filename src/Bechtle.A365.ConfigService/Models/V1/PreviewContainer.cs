@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.V1.Models
+﻿namespace Bechtle.A365.ConfigService.Models.V1
 {
     /// <summary>
     ///     Container for data that should be previewed

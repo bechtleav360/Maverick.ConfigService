@@ -8,12 +8,11 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.V0.Controllers
+namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
     ///     retrieve the history of various objects
     /// </summary>
-    [ApiVersion(ApiVersion)]
     [Route(ApiBaseRoute + "history")]
     public class HistoryController : ControllerBase
     {
@@ -34,7 +33,9 @@ namespace Bechtle.A365.ConfigService.V0.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [HttpGet("blame/environment/{category}/{name}", Name = ApiVersionFormatted + "Blame")]
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet("blame/environment/{category}/{name}", Name = "Blame")]
         public async Task<IActionResult> BlameEnvironment([FromRoute] string category,
                                                           [FromRoute] string name)
         {
@@ -83,7 +84,9 @@ namespace Bechtle.A365.ConfigService.V0.Controllers
         /// <param name="name"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        [HttpGet("environment/{category}/{name}", Name = ApiVersionFormatted + "GetEnvironmentHistory")]
+        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet("environment/{category}/{name}", Name = "GetEnvironmentHistory")]
         public async Task<IActionResult> GetEnvironmentHistory([FromRoute] string category,
                                                                [FromRoute] string name,
                                                                [FromQuery] string key = null)

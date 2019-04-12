@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.V1.Models
+namespace Bechtle.A365.ConfigService.Models.V1
 {
     /// <summary>
     ///     Result of a Preview-Build

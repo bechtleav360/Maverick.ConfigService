@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Bechtle.A365.ConfigService.V1.Models
+namespace Bechtle.A365.ConfigService.Models.V1
 {
     /// <summary>
     ///     Reference to an existing Environment, or custom Keys
