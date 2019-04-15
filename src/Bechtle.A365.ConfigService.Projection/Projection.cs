@@ -153,6 +153,8 @@ namespace Bechtle.A365.ConfigService.Projection
                         _logger.LogInformation($"committing transaction '{transaction.TransactionId}'");
 
                         transaction.Commit();
+
+                        _logger.LogInformation($"transaction '{transaction.TransactionId}' committed");
                     }
                     catch (Exception e)
                     {
