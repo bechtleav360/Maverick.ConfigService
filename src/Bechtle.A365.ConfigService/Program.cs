@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Config;
 using NLog.Web;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -22,6 +24,37 @@ namespace Bechtle.A365.ConfigService
     /// </summary>
     public class Program
     {
+        /// <summary>
+        ///     set the app-global NLog configuration
+        /// </summary>
+        /// <param name="configuration"></param>
+        /// <param name="logger"></param>
+        public static void ConfigureNLog(string configuration, ILogger logger = null)
+        {
+            try
+            {
+                logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
+
+                if (string.IsNullOrWhiteSpace(configuration))
+                {
+                    logger?.LogWarning("no Logging-Configuration found at 'LoggingConfiguration' - skipping re-configuration");
+                    return;
+                }
+
+                using (var stringReader = new StringReader(configuration))
+                using (var xmlReader = XmlReader.Create(stringReader))
+                {
+                    LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
+                }
+
+                logger?.LogInformation("new LoggingConfiguration has been applied");
+            }
+            catch (Exception e)
+            {
+                logger?.LogWarning($"new LoggingConfiguration could not be applied: {e}");
+            }
+        }
+
         /// <summary>
         ///     Build the WebHost that runs this application
         /// </summary>
@@ -109,14 +142,9 @@ namespace Bechtle.A365.ConfigService
                                                        .AddCommandLine(args))
                       .ConfigureLogging((context, builder) =>
                       {
-                          // set the global NLog configuration
-                          using (var stringReader = new StringReader(context.Configuration
-                                                                            .Get<ConfigServiceConfiguration>()
-                                                                            .LoggingConfiguration))
-                          using (var xmlReader = XmlReader.Create(stringReader))
-                          {
-                              LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
-                          }
+                          ConfigureNLog(context.Configuration
+                                               .Get<ConfigServiceConfiguration>()
+                                               .LoggingConfiguration);
 
                           builder.ClearProviders();
                       })

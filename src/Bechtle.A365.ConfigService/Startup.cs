@@ -25,8 +25,12 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NLog.Web;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -49,7 +53,7 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <summary>
-        ///     Application-Configuration as defined in <see cref="Program"/>
+        ///     Application-Configuration as defined in <see cref="Program" />
         /// </summary>
         public IConfiguration Configuration { get; }
 
@@ -59,7 +63,11 @@ namespace Bechtle.A365.ConfigService
         /// <param name="app"></param>
         /// <param name="env"></param>
         /// <param name="provider"></param>
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApiVersionDescriptionProvider provider)
+        /// <param name="logger"></param>
+        public void Configure(IApplicationBuilder app,
+                              IHostingEnvironment env,
+                              IApiVersionDescriptionProvider provider,
+                              ILogger<Startup> logger)
         {
             app.UseAuthentication();
 
@@ -93,6 +101,15 @@ namespace Bechtle.A365.ConfigService
                                                $"ConfigService {description.GroupName.ToUpperInvariant()}");
                })
                .UseMvc();
+
+            ChangeToken.OnChange(Configuration.GetReloadToken,
+                                 conf =>
+                                 {
+                                     var newConfig = conf.Get<ConfigServiceConfiguration>();
+                                     Program.ConfigureNLog(newConfig?.LoggingConfiguration);
+                                     logger.LogInformation(FormatConfiguration(newConfig));
+                                 },
+                                 Configuration);
         }
 
         /// <summary>
@@ -225,22 +242,36 @@ namespace Bechtle.A365.ConfigService
                 });
             });
         }
+
+        private string FormatConfiguration(ConfigServiceConfiguration config)
+        {
+            var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
+            settings.Converters.Add(new StringEnumConverter());
+
+            return "using configuration (may change during runtime): \r\n" +
+                   $"{JsonConvert.SerializeObject(config, settings)}";
+        }
     }
 
     /// <summary>
-    /// Configures the Swagger generation options.
+    ///     Configures the Swagger generation options.
     /// </summary>
-    /// <remarks>This allows API versioning to define a Swagger document per API version after the
-    /// <see cref="IApiVersionDescriptionProvider"/> service has been resolved from the service container.</remarks>
+    /// <remarks>
+    ///     This allows API versioning to define a Swagger document per API version after the
+    ///     <see cref="IApiVersionDescriptionProvider" /> service has been resolved from the service container.
+    /// </remarks>
     public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
     {
         private readonly IApiVersionDescriptionProvider _provider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ConfigureSwaggerOptions"/> class.
+        ///     Initializes a new instance of the <see cref="ConfigureSwaggerOptions" /> class.
         /// </summary>
         /// <param name="provider">The <see cref="IApiVersionDescriptionProvider">provider</see> used to generate Swagger documents.</param>
-        public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider) => _provider = provider;
+        public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
+        {
+            _provider = provider;
+        }
 
         /// <inheritdoc />
         public void Configure(SwaggerGenOptions options)
@@ -268,14 +299,16 @@ namespace Bechtle.A365.ConfigService
     }
 
     /// <summary>
-    /// Represents the Swagger/Swashbuckle operation filter used to document the implicit API version parameter.
+    ///     Represents the Swagger/Swashbuckle operation filter used to document the implicit API version parameter.
     /// </summary>
-    /// <remarks>This <see cref="IOperationFilter"/> is only required due to bugs in the <see cref="SwaggerGenerator"/>.
-    /// Once they are fixed and published, this class can be removed.</remarks>
+    /// <remarks>
+    ///     This <see cref="IOperationFilter" /> is only required due to bugs in the <see cref="SwaggerGenerator" />.
+    ///     Once they are fixed and published, this class can be removed.
+    /// </remarks>
     public class SwaggerDefaultValues : IOperationFilter
     {
         /// <summary>
-        /// Applies the filter to the specified operation using the given context.
+        ///     Applies the filter to the specified operation using the given context.
         /// </summary>
         /// <param name="operation">The operation to apply the filter to.</param>
         /// <param name="context">The current operation filter context.</param>
