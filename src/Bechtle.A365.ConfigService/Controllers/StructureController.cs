@@ -42,7 +42,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="structure"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpPost(Name = "AddStructure")]
         public async Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
@@ -100,7 +99,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("available", Name = "GetAvailableStructures")]
         public async Task<IActionResult> GetAvailableStructures([FromQuery] int offset = -1,
@@ -130,55 +128,11 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
-        ///     get the specified config-structure as JSON
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="structureVersion"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
-        [Obsolete]
-        [HttpGet("{name}/{structureVersion}", Name = "GetStructureObsolete")]
-        public async Task<IActionResult> GetStructure([FromRoute] string name,
-                                                      [FromRoute] int structureVersion,
-                                                      [FromQuery] int offset = -1,
-                                                      [FromQuery] int length = -1)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest();
-
-            if (structureVersion <= 0)
-                return BadRequest($"invalid version provided '{structureVersion}'");
-
-            var range = QueryRange.Make(offset, length);
-            var identifier = new StructureIdentifier(name, structureVersion);
-
-            try
-            {
-                var result = await _store.Structures.GetKeys(identifier, range);
-
-                if (result.Data?.Any() != true)
-                    return Ok(new JObject());
-
-                var json = _translator.ToJson(result.Data);
-
-                return Ok(json);
-            }
-            catch (Exception e)
-            {
-                Logger.LogError($"failed to translate structure ({nameof(name)}: {name}, {nameof(structureVersion)}: {structureVersion}) to JSON: {e}");
-                return StatusCode((int) HttpStatusCode.InternalServerError, "failed to translate structure to JSON");
-            }
-        }
-
-        /// <summary>
         ///     get the specified config-structure as json
         /// </summary>
         /// <param name="name"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("{name}/{structureVersion}/json", Name = "GetStructureAsJson")]
         public async Task<IActionResult> GetStructureJson([FromRoute] string name,
@@ -221,7 +175,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("{name}/{structureVersion}/keys", Name = "GetStructureAsKeys")]
         public async Task<IActionResult> GetStructureKeys([FromRoute] string name,
@@ -253,7 +206,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("{name}/{structureVersion}/variables/keys", Name = "GetVariablesAsKeys")]
         public async Task<IActionResult> GetVariables([FromRoute] string name,
@@ -289,7 +241,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("{name}/{structureVersion}/variables/json", Name = "GetVariablesAsJson")]
         public async Task<IActionResult> GetVariablesJson([FromRoute] string name,
@@ -328,7 +279,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureVersion"></param>
         /// <param name="variables"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpDelete("{name}/{structureVersion}/variables/keys", Name = "DeleteVariablesFromStructure")]
         public async Task<IActionResult> RemoveVariables([FromRoute] string name,
@@ -372,7 +322,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureVersion"></param>
         /// <param name="changes"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpPut("{name}/{structureVersion}/variables/keys", Name = "UpdateVariablesInStructure")]
         public async Task<IActionResult> UpdateVariables([FromRoute] string name,

@@ -33,7 +33,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("blame/environment/{category}/{name}", Name = "Blame")]
         public async Task<IActionResult> BlameEnvironment([FromRoute] string category,
@@ -84,7 +83,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("environment/{category}/{name}", Name = "GetEnvironmentHistory")]
         public async Task<IActionResult> GetEnvironmentHistory([FromRoute] string category,

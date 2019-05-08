@@ -34,7 +34,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpPost(Name = "ImportConfiguration")]
         public async Task<IActionResult> Import(IFormFile file)

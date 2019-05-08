@@ -48,7 +48,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "PreviewConfigurationWithStoredValues")]
         public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
@@ -94,53 +93,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             var json = _translator.ToJson(compiled.CompiledConfiguration);
 
             return Ok(json);
-        }
-
-        /// <summary>
-        ///     preview the Result of building the given Environment and Structure
-        /// </summary>
-        /// <param name="previewOptions"></param>
-        /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
-        [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
-        public IActionResult PreviewConfiguration([FromBody] Models.V0.PreviewContainer previewOptions)
-        {
-            if (previewOptions is null)
-                return BadRequest("no preview-data received");
-
-            if (previewOptions.Structure is null)
-                return BadRequest("no structure-data received");
-
-            if (previewOptions.Variables is null)
-                return BadRequest("no variable-data received");
-
-            if (previewOptions.Environment is null)
-                return BadRequest("no environment-data received");
-
-            var environmentInfo = new EnvironmentCompilationInfo
-            {
-                Name = "Intermediate-Preview-Environment",
-                Keys = previewOptions.Environment
-            };
-            var structureInfo = new StructureCompilationInfo
-            {
-                Name = "Intermediate-Preview-Structure",
-                Keys = previewOptions.Structure,
-                Variables = previewOptions.Variables
-            };
-
-            var compiled = _compiler.Compile(environmentInfo,
-                                             structureInfo,
-                                             _parser);
-
-            var json = _translator.ToJson(compiled.CompiledConfiguration);
-
-            return Ok(new Models.V0.PreviewResult
-            {
-                Map = compiled.CompiledConfiguration.ToImmutableSortedDictionary(),
-                Json = json,
-                UsedKeys = compiled.GetUsedKeys().Where(key => environmentInfo.Keys.ContainsKey(key))
-            });
         }
 
         /// <summary>

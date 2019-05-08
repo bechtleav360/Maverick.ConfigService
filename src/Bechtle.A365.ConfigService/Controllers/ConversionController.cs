@@ -31,7 +31,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="dictionary"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpPost("map/json", Name = "ConvertDictionaryToJson")]
         public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary,
@@ -59,7 +58,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="json"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
         public IActionResult JsonToDictionary([FromBody] JToken json,

@@ -28,7 +28,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         ///     get information on how to Connect to the used EventBus-Server and -Hub
         /// </summary>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("events", Name = "GetEventConnection")]
         public IActionResult GetEventConnection()
