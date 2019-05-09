@@ -25,6 +25,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<IResult> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions)
         {
+            _logger.LogInformation($"applying '{actions.Count}' changes to environment '{identifier}'");
+
             var environment = await GetEnvironmentInternal(identifier);
 
             if (environment is null)
@@ -43,6 +45,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             var changedKeys = new List<ConfigEnvironmentKey>();
 
             foreach (var action in actions)
+            {
+                _logger.LogDebug($"applying '{action.Type:G}' to " +
+                                 $"Key='{action.Key}'; " +
+                                 $"ValueType='{action.ValueType}'; " +
+                                 $"Value='{action.Value}'; " +
+                                 $"Description='{action.Description}'");
+
                 switch (action.Type)
                 {
                     case ConfigKeyActionType.Set:
@@ -95,17 +104,18 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                         _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
                         return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
                 }
+            }
 
             // mark configurations as changed when:
             // UsedKeys contains one of the Changed / Deleted Keys
 
-            foreach (var builtConfiguration in _context.FullProjectedConfigurations
-                                                       .Where(c => c.UpToDate)
-                                                       .ToArray())
+            foreach (var builtConfig in _context.FullProjectedConfigurations
+                                                .Where(c => c.UpToDate)
+                                                .ToArray())
             {
-                var usedKeys = builtConfiguration.UsedConfigurationKeys
-                                                 .OrderBy(k => k.Key)
-                                                 .ToArray();
+                var usedKeys = builtConfig.UsedConfigurationKeys
+                                          .OrderBy(k => k.Key)
+                                          .ToArray();
 
                 // if any of the Changed- or Removed-Keys is found in the Keys used to build this Configuration - mark it as stale
                 if (changedKeys.Select(ck => ck.Key)
@@ -114,16 +124,30 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     removedKeys.Select(ck => ck.Key)
                                .Any(ck => usedKeys.Select(uk => uk.Key)
                                                   .Contains(ck)))
-                    builtConfiguration.UpToDate = false;
+                {
+                    var envId = new EnvironmentIdentifier(builtConfig.ConfigEnvironment);
+                    var structId = new StructureIdentifier(builtConfig.Structure);
+
+                    _logger.LogInformation($"marking Configuration for Environment {envId} and Structure {structId} as Stale");
+                    builtConfig.UpToDate = false;
+                }
             }
 
             try
             {
                 if (removedKeys.Any())
+                {
+                    _logger.LogInformation($"removing '{removedKeys.Count}' entries from environment {identifier}");
                     environment.Keys.RemoveRange(removedKeys);
+                }
 
                 if (addedKeys.Any())
+                {
+                    _logger.LogInformation($"adding '{addedKeys.Count}' entries to environment {identifier}");
                     environment.Keys.AddRange(addedKeys);
+                }
+
+                await _context.SaveChangesAsync();
 
                 return Result.Success();
             }
@@ -205,6 +229,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 if (addedKeys.Any())
                     structure.Variables.AddRange(addedKeys);
 
+                await _context.SaveChangesAsync();
 
                 return Result.Success();
             }
@@ -253,6 +278,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 Keys = new List<ConfigEnvironmentKey>()
             });
 
+            await _context.SaveChangesAsync();
+
             return Result.Success();
         }
 
@@ -290,6 +317,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             try
             {
+                await _context.SaveChangesAsync();
+
                 return Result.Success();
             }
             catch (DbUpdateException e)
@@ -314,6 +343,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             try
             {
+                await _context.SaveChangesAsync();
+
                 return Result.Success();
             }
             catch (DbUpdateException e)
@@ -335,6 +366,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             try
             {
+                await _context.SaveChangesAsync();
+
                 return Result.Success();
             }
             catch (DbUpdateException e)
@@ -418,6 +451,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             try
             {
+                await _context.SaveChangesAsync();
+
                 return Result.Success();
             }
             catch (DbUpdateException e)
@@ -578,6 +613,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                                Type = a.ValueType,
                                                                Value = a.Value
                                                            }));
+            await _context.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -637,6 +673,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
                 _context.ProjectedConfigurations.Add(compiledConfiguration);
 
+                await _context.SaveChangesAsync();
+
                 return Result.Success();
             }
             catch (DbUpdateException e)
@@ -666,6 +704,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                               .FirstOrDefaultAsync();
 
             metadata.LastActiveConfigurationId = configuration;
+
+            await _context.SaveChangesAsync();
         }
 
         /// <inheritdoc />
@@ -680,6 +720,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
 
             metadata.LatestEvent = latestEventId;
+
+            await _context.SaveChangesAsync();
         }
 
         private async Task<ConfigEnvironment> GetEnvironmentInternal(EnvironmentIdentifier identifier)
