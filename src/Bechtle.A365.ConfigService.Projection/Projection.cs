@@ -79,13 +79,13 @@ namespace Bechtle.A365.ConfigService.Projection
 
             await _store.ConnectAsync();
 
-            _store.SubscribeToStreamFrom(config.EventStoreConnection.SubscriptionName,
+            _store.SubscribeToStreamFrom(config.EventStoreConnection.Stream,
                                          latestEvent,
                                          new CatchUpSubscriptionSettings(config.EventStoreConnection.MaxLiveQueueSize,
                                                                          config.EventStoreConnection.ReadBatchSize,
                                                                          false,
                                                                          true,
-                                                                         config.EventStoreConnection.SubscriptionName),
+                                                                         config.EventStoreConnection.Stream),
                                          EventAppeared,
                                          subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
                                          (subscription, reason, exception) =>

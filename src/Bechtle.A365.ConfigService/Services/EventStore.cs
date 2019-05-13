@@ -50,19 +50,37 @@ namespace Bechtle.A365.ConfigService.Services
             _logger.LogInformation($"connecting to '{configuration.EventStoreConnection.Uri}' " +
                                    $"using connectionName: '{configuration.EventStoreConnection.ConnectionName}'");
 
-            _eventStore = EventStoreConnection.Create(ConnectionSettings.Create()
-                                                                        .KeepReconnecting()
-                                                                        .KeepRetrying()
-                                                                        .UseCustomLogger(eventStoreLogger),
-                                                      new Uri(configuration.EventStoreConnection.Uri),
-                                                      configuration.EventStoreConnection.ConnectionName);
+            try
+            {
+                _eventStore = EventStoreConnection.Create($"ConnectTo={configuration.EventStoreConnection.Uri}",
+                                                          ConnectionSettings.Create()
+                                                                            .PerformOnAnyNode()
+                                                                            .PreferRandomNode()
+                                                                            .KeepReconnecting()
+                                                                            .KeepRetrying()
+                                                                            .UseCustomLogger(eventStoreLogger),
+                                                          configuration.EventStoreConnection.ConnectionName);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"error in EventStore Connection-Settings: {e}");
+                throw;
+            }
 
             ConnectionState = ConnectionState.Disconnected;
 
-            _eventStore.ConnectAsync().RunSync();
             _eventStore.Connected += OnEventStoreConnected;
             _eventStore.Disconnected += OnEventStoreDisconnected;
             _eventStore.Reconnecting += OnEventStoreReconnecting;
+
+            try
+            {
+                _eventStore.ConnectAsync().RunSync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"couldn't connect to EventBus: {e}");
+            }
         }
 
         private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args) => ConnectionState = ConnectionState.Reconnecting;

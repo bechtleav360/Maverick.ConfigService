@@ -76,12 +76,15 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                        {
                            var config = provider.GetService<ProjectionConfiguration>()
                                         ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));
+                           var eventStoreLogger = provider.GetService<ESLogger>();
 
-                           return EventStoreConnection.Create(ConnectionSettings.Create()
+                           return EventStoreConnection.Create($"ConnectTo={config.EventStoreConnection.Uri}",
+                                                              ConnectionSettings.Create()
+                                                                                .PerformOnAnyNode()
+                                                                                .PreferRandomNode()
                                                                                 .KeepReconnecting()
                                                                                 .KeepRetrying()
-                                                                                .UseCustomLogger(provider.GetService<ESLogger>()),
-                                                              new Uri(config.EventStoreConnection.Uri),
+                                                                                .UseCustomLogger(eventStoreLogger),
                                                               config.EventStoreConnection.ConnectionName);
                        })
                        .AddSingleton<IEventDeserializer, EventDeserializer>()
