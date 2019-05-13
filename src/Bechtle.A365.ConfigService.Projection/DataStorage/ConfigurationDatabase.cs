@@ -392,6 +392,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             foreach (var environmentKey in environment.Keys.OrderBy(k => k.Key))
             {
+                _logger.LogTrace($"generating autocomplete-data for '{environmentKey.Key}'");
+
                 var parts = environmentKey.Key.Split('/');
 
                 var rootPart = parts.First();
@@ -410,6 +412,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                         Path = rootPart,
                         FullPath = rootPart
                     };
+
+                    _logger.LogTrace($"adding root-key '{rootPart}'");
 
                     roots.Add(root);
                 }
@@ -434,6 +438,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                             FullPath = current.FullPath + '/' + part
                         };
 
+                        _logger.LogTrace($"adding child-key to '{current.FullPath}' => '{next.Path}'");
+
                         current.Children.Add(next);
                     }
 
@@ -445,7 +451,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                               .Where(p => p.ConfigEnvironmentId == environment.Id)
                                               .ToListAsync();
 
+            _logger.LogTrace($"removing existing autocomplete-data for environment '{identifier}'");
+
             _context.AutoCompletePaths.RemoveRange(existingPaths);
+
+            _logger.LogTrace($"adding new autocomplete-data for environment '{identifier}'");
 
             await _context.AutoCompletePaths.AddRangeAsync(roots);
 
