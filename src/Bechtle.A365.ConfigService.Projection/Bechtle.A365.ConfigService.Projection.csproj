@@ -22,6 +22,12 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
     <PackageReference Include="Bechtle.A365.Core.EventBus" Version="2.1.0-featureconfigeve0001" />

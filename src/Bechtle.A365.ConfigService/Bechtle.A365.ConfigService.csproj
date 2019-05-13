@@ -34,6 +34,12 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <ItemGroup>
     <Content Include="ServiceCerts\*">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
