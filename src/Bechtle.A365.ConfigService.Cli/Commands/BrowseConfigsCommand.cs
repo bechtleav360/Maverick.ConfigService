@@ -9,7 +9,6 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
-
     [Command("configs", Description = "browse available configurations in the ConfigService")]
     public class BrowseConfigsCommand : SubCommand<BrowseCommand>
     {
@@ -32,23 +31,23 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 if (environments is null)
                 {
                     Output.WriteErrorLine("couldn't query available environments: " +
-                                      $"{request.HttpResponseMessage?.StatusCode:D} " +
-                                      $"({request.HttpResponseMessage?.StatusCode:G}); " +
-                                      "can't convert response to target type");
+                                          $"{request.HttpResponseMessage?.StatusCode:D} " +
+                                          $"({request.HttpResponseMessage?.StatusCode:G}); " +
+                                          "can't convert response to target type");
 
                     return 1;
                 }
 
-                Output.WriteTable(environments.OrderBy(e=>e.Environment.Category)
-                                              .ThenBy(e=>e.Environment.Name)
-                                              .ThenBy(e=>e.Structure.Name)
-                                              .ThenBy(e=>e.Structure.Version),
+                Output.WriteTable(environments.OrderBy(e => e.Environment.Category)
+                                              .ThenBy(e => e.Environment.Name)
+                                              .ThenBy(e => e.Structure.Name)
+                                              .ThenBy(e => e.Structure.Version),
                                   e => new Dictionary<string, object>
                                   {
-                                      { "Category", e.Environment.Category},
-                                      { "Environment", e.Environment.Name},
-                                      { "Structure", e.Structure.Name},
-                                      { "Version", e.Structure.Version}
+                                      {"Category", e.Environment.Category},
+                                      {"Environment", e.Environment.Name},
+                                      {"Structure", e.Structure.Name},
+                                      {"Version", e.Structure.Version}
                                   });
 
                 return 0;
@@ -63,6 +62,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
         }
 
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
+        // ReSharper disable UnusedAutoPropertyAccessor.Local
         private class Configuration
         {
             public ConfigEnv Environment { get; set; }
@@ -83,5 +84,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             public int Version { get; set; }
         }
+        // ReSharper restore UnusedAutoPropertyAccessor.Local
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
     }
 }

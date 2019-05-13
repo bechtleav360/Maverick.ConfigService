@@ -191,8 +191,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 if (result.Length > 1)
                 {
                     _logger.LogWarning(WithContext(context, $"reference '{path}' pointed towards single value, but was resolved to a region"));
-                    return result.Select(item => (Key: item.Key, Value: item.Value))
-                                 .ToArray();
+                    return result.Select(item => (item.Key, item.Value)).ToArray();
                 }
 
                 // otherwise we can carry on and add the value to our result
@@ -332,8 +331,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
 
             // resultItems should be fully resolved
-            return resultItems.Select(item => (Key: item.Key, Value: item.Value))
-                              .ToArray();
+            return resultItems.Select(item => (item.Key, item.Value)).ToArray();
         }
 
         private class CompilationContext

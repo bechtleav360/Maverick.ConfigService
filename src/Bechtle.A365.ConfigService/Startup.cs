@@ -142,7 +142,10 @@ namespace Bechtle.A365.ConfigService
                         options.CustomSchemaIds(t => t.FullName);
                         options.OperationFilter<SwaggerDefaultValues>();
                         options.DescribeAllEnumsAsStrings();
-                        options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetEntryAssembly().GetName().Name}.xml"));
+
+                        var ass = Assembly.GetEntryAssembly();
+                        if (!(ass is null))
+                            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{ass.GetName().Name}.xml"));
                     });
 
             // Cert-Based Authentication - if enabled
@@ -317,7 +320,7 @@ namespace Bechtle.A365.ConfigService
             var apiDescription = context.ApiDescription;
 
             operation.Deprecated = apiDescription.ActionDescriptor
-                                                 .GetApiVersionModel(ApiVersionMapping.Explicit | ApiVersionMapping.Implicit)
+                                                 .GetApiVersionModel(ApiVersionMapping.Explicit)
                                                  .DeprecatedApiVersions
                                                  .Contains(apiDescription.GetApiVersion());
 
