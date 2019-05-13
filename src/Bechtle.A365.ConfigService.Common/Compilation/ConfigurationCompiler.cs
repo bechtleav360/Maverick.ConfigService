@@ -27,6 +27,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                          StructureCompilationInfo structure,
                                          IConfigurationParser parser)
         {
+            _logger.LogInformation($"compiling environment '{environment.Name}' ({environment.Keys.Count} entries) " +
+                                   $"and structure '{structure.Name}' ({structure.Keys.Count} entries)");
+
             ICompilationTracer compilationTracer = new CompilationTracer();
             var configuration = structure.Keys
                                          .AsParallel()
@@ -99,7 +102,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
         private (string Key, string Value)[] CompileInternal(CompilationContext context, string value)
         {
-            _logger.LogTrace(WithContext(context, $"compiling key, recursion: '{context.RecursionLevel}'"));
+            _logger.LogDebug(WithContext(context, $"compiling key, recursion: '{context.RecursionLevel}'"));
 
             if (string.IsNullOrEmpty(value))
                 return new[] {(context.CurrentKey, string.Empty)};
@@ -111,7 +114,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
 
             _logger.LogTrace(WithContext(context, "parsing value for references"));
+
             var parts = context.Parser.Parse(value);
+
+            _logger.LogDebug(WithContext(context, $"found '{parts.Count}' parts to resolve"));
 
             var plan = AnalyzeCompilation(context, parts);
 
@@ -127,6 +133,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             {
                 if (part is ValuePart valuePart)
                 {
+                    _logger.LogTrace(WithContext(context, $"adding static part '{valuePart.Text}'"));
                     context.Tracer.AddStaticValue(valuePart.Text);
                     valueBuilder.Append(valuePart.Text);
                     continue;
@@ -134,7 +141,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 if (!(part is ReferencePart reference))
                 {
-                    _logger.LogError($"unknown part parsed: '{part.GetType().Name}'");
+                    _logger.LogWarning($"unknown part parsed: '{part.GetType().Name}'");
                     continue;
                 }
 
@@ -159,28 +166,29 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 }
                 else
                 {
+                    _logger.LogWarning($"could not resolve path '{path}'");
+
                     // if 'Fallback' or 'Default' are set in the reference,
                     // we can use the it instead of the value we're searching for
                     if (reference.Commands.ContainsKey(ReferenceCommand.Fallback))
                     {
                         var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
-                        _logger.LogWarning($"could not resolve path '{path}'");
                         _logger.LogInformation($"using fallback '{fallbackValue}' after failing to resolve '{path}'");
                         matchedValue = fallbackValue;
                     }
                     else
-                    {
-                        _logger.LogError($"could not resolve path '{path}'");
                         continue;
-                    }
                 }
 
+                _logger.LogTrace(WithContext(context, "compiling resulting value again"));
+
                 // compile the matched result until it's done
-                var matchTracer = context.Tracer.AddPathResolution(path);
                 var innerContext = new CompilationContext(context)
                 {
                     CurrentKey = path,
-                    Tracer = matchTracer.AddPathResult(matchedValue)
+                    Tracer = context.Tracer
+                                    .AddPathResolution(path)
+                                    .AddPathResult(matchedValue)
                 };
                 innerContext.IncrementRecursionLevel();
 
@@ -210,6 +218,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <returns></returns>
         private void HandleAliasCommands(CompilationContext context, ReferencePart reference)
         {
+            /*
+             * Alias & Using       - Ok
+             * No Alias & No Using - OK
+             * Alias XOR Using     - NOT OK
+             */
+
             var commands = reference.Commands;
             if (commands.ContainsKey(ReferenceCommand.Alias) && commands.ContainsKey(ReferenceCommand.Using))
             {
