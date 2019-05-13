@@ -11,7 +11,6 @@ using Bechtle.A365.ConfigService.Dto;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -73,7 +72,10 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 // structure has already been submitted and can be viewed at the returned location
                 if (existingStructures.Data.Any(v => v == structure.Version))
-                    return RedirectToAction(nameof(GetStructureKeys), new {name = structure.Name, version = structure.Version});
+                    return RedirectToAction(nameof(GetStructureKeys),
+                                            // I WANT MY REFACTORING SAFETY, DAMN IT!
+                                            nameof(StructureController).Replace("Controller", ""),
+                                            new {name = structure.Name, version = structure.Version});
 
                 var keys = _translator.ToDictionary(structure.Structure);
                 var variables = structure.Variables ?? new Dictionary<string, string>();
@@ -305,7 +307,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                                            .ModifyVariables(actions)
                                            .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion });
+                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
             }
             catch (Exception e)
             {
@@ -348,7 +350,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                                            .ModifyVariables(actions)
                                            .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion });
+                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
             }
             catch (Exception e)
             {
