@@ -105,7 +105,7 @@ namespace Bechtle.A365.ConfigService.Projection
             var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
             settings.Converters.Add(new StringEnumConverter());
 
-            return $"using configuration (may change during runtime): \r\n" +
+            return $"using configuration: \r\n" +
                    $"{JsonConvert.SerializeObject(config, settings)}";
         }
 

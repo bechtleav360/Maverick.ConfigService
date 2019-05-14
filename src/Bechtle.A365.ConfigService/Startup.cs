@@ -45,11 +45,18 @@ namespace Bechtle.A365.ConfigService
     /// </summary>
     public class Startup
     {
+        private readonly ILogger<Startup> _logger;
+
         /// <inheritdoc />
         /// <param name="configuration"></param>
-        public Startup(IConfiguration configuration)
+        /// <param name="logger"></param>
+        public Startup(IConfiguration configuration,
+                       ILogger<Startup> logger)
         {
+            _logger = logger;
             Configuration = configuration;
+
+            _logger.LogInformation(FormatConfiguration(configuration.Get<ConfigServiceConfiguration>()));
         }
 
         /// <summary>
@@ -66,28 +73,43 @@ namespace Bechtle.A365.ConfigService
         /// <param name="logger"></param>
         public void Configure(IApplicationBuilder app,
                               IHostingEnvironment env,
-                              IApiVersionDescriptionProvider provider,
-                              ILogger<Startup> logger)
+                              IApiVersionDescriptionProvider provider)
         {
+            _logger.LogInformation("adding authentication-hooks");
+
             app.UseAuthentication();
 
             if (env.IsDevelopment())
             {
+                _logger.LogInformation("adding Development Exception-Handler");
                 app.UseDeveloperExceptionPage();
             }
             else
             {
+                _logger.LogInformation("adding HSTS");
                 app.UseHsts();
+
+                _logger.LogInformation("adding HTTPS-Redirect");
                 app.UseHttpsRedirection();
             }
 
+            _logger.LogInformation("finishing NLog configuration");
+
             app.ApplicationServices.SetupNLogServiceLocator();
 
-            app.UseMiddleware<LoggingMiddleware>()
-               .UseCors(policy => policy.AllowAnyHeader()
+            _logger.LogInformation("adding Correlation-Logging-Middleware");
+
+            app.UseMiddleware<LoggingMiddleware>();
+
+            _logger.LogInformation("adding CORS");
+
+            app.UseCors(policy => policy.AllowAnyHeader()
                                         .AllowAnyMethod()
-                                        .AllowAnyOrigin())
-               .UseSwagger()
+                                        .AllowAnyOrigin());
+
+            _logger.LogInformation("adding Swagger/-UI");
+
+            app.UseSwagger()
                .UseSwaggerUI(options =>
                {
                    options.DocExpansion(DocExpansion.None);
@@ -99,15 +121,20 @@ namespace Bechtle.A365.ConfigService
                    foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
                                                $"ConfigService {description.GroupName.ToUpperInvariant()}");
-               })
-               .UseMvc();
+               });
+
+            _logger.LogInformation("adding MVC-Middleware");
+
+            app.UseMvc();
+
+            _logger.LogInformation("registering config-reload hook");
 
             ChangeToken.OnChange(Configuration.GetReloadToken,
                                  conf =>
                                  {
                                      var newConfig = conf.Get<ConfigServiceConfiguration>();
                                      Program.ConfigureNLog(newConfig?.LoggingConfiguration);
-                                     logger.LogInformation(FormatConfiguration(newConfig));
+                                     _logger.LogInformation(FormatConfiguration(newConfig));
                                  },
                                  Configuration);
         }
@@ -116,11 +143,16 @@ namespace Bechtle.A365.ConfigService
         ///     Configure DI-Services
         /// </summary>
         /// <param name="services"></param>
+        /// <param name="logger"></param>
         public void ConfigureServices(IServiceCollection services)
         {
+            _logger.LogInformation("registering MVC-Middleware");
+
             // setup MVC
             services.AddMvc()
                     .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            _logger.LogInformation("registering API-Version support");
 
             // setup API-Versioning and Swagger
             services.AddApiVersioning(options =>
@@ -135,8 +167,11 @@ namespace Bechtle.A365.ConfigService
                         options.DefaultApiVersion = new ApiVersion(0, 0);
                         options.GroupNameFormat = "'v'VVV";
                         options.SubstituteApiVersionInUrl = true;
-                    })
-                    .AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>()
+                    });
+
+            _logger.LogInformation("registering Swagger");
+
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>()
                     .AddSwaggerGen(options =>
                     {
                         options.CustomSchemaIds(t => t.FullName);
@@ -147,6 +182,8 @@ namespace Bechtle.A365.ConfigService
                         if (!(ass is null))
                             options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{ass.GetName().Name}.xml"));
                     });
+
+            _logger.LogInformation("Registering Authentication-Services");
 
             // Cert-Based Authentication - if enabled
             services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
@@ -164,6 +201,8 @@ namespace Bechtle.A365.ConfigService
                                                                       .Validate(context)
                         };
                     });
+
+            _logger.LogInformation("Registering App-Services");
 
             // setup services for DI
             services.AddMemoryCache()
@@ -193,6 +232,9 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton<IJsonTranslator, JsonTranslator>()
                     .AddSingleton<IEventDeserializer, EventDeserializer>()
                     .AddSingleton(typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>));
+
+            _logger.LogInformation("Registering Health Endpoint");
+            _logger.LogDebug("building intermediate-service-provider");
 
             // build the provider to grab the EventStore instance in the Health-Checks
             // @TODO: inject ServiceProvider into health-checks somehow
@@ -251,7 +293,7 @@ namespace Bechtle.A365.ConfigService
             var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
             settings.Converters.Add(new StringEnumConverter());
 
-            return "using configuration (may change during runtime): \r\n" +
+            return "using configuration: \r\n" +
                    $"{JsonConvert.SerializeObject(config, settings)}";
         }
     }
