@@ -70,7 +70,6 @@ namespace Bechtle.A365.ConfigService
         /// <param name="app"></param>
         /// <param name="env"></param>
         /// <param name="provider"></param>
-        /// <param name="logger"></param>
         public void Configure(IApplicationBuilder app,
                               IHostingEnvironment env,
                               IApiVersionDescriptionProvider provider)
@@ -143,7 +142,6 @@ namespace Bechtle.A365.ConfigService
         ///     Configure DI-Services
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="logger"></param>
         public void ConfigureServices(IServiceCollection services)
         {
             _logger.LogInformation("registering MVC-Middleware");
