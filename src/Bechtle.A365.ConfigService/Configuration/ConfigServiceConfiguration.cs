@@ -14,11 +14,6 @@
         /// <inheritdoc cref="EventStoreConnectionConfiguration" />
         public EventStoreConnectionConfiguration EventStoreConnection { get; set; }
 
-        /// <summary>
-        ///     NLog Configuration in XML-Format
-        /// </summary>
-        public string LoggingConfiguration { get; set; }
-
         /// <inheritdoc cref="ProjectionStorageConfiguration" />
         public ProjectionStorageConfiguration ProjectionStorage { get; set; }
 

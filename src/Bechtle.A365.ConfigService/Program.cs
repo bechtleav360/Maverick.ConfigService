@@ -1,8 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using System.Xml;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.AspNetCore;
@@ -13,9 +11,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog;
-using NLog.Config;
-using NLog.Web;
+using NLog.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -29,23 +27,21 @@ namespace Bechtle.A365.ConfigService
         /// </summary>
         /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public static void ConfigureNLog(string configuration, ILogger logger = null)
+        public static void ConfigureNLog(IConfiguration configuration, ILogger logger = null)
         {
             try
             {
                 logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
 
-                if (string.IsNullOrWhiteSpace(configuration))
+                var nLogSection = configuration.GetSection("LoggingConfiguration")?.GetSection("NLog");
+
+                if (nLogSection is null)
                 {
-                    logger?.LogWarning("no Logging-Configuration found at 'LoggingConfiguration' - skipping re-configuration");
+                    logger?.LogInformation("Section JsonLoggingConfiguration:NLog not found; skipping reconfiguration");
                     return;
                 }
 
-                using (var stringReader = new StringReader(configuration))
-                using (var xmlReader = XmlReader.Create(stringReader))
-                {
-                    LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
-                }
+                LogManager.Configuration = new NLogLoggingConfiguration(nLogSection);
 
                 logger?.LogInformation("new LoggingConfiguration has been applied");
             }
@@ -135,20 +131,23 @@ namespace Bechtle.A365.ConfigService
             => WebHost.CreateDefaultBuilder(args)
                       .UseStartup<Startup>()
                       .ConfigureAppConfiguration(
-                          (context, builder) => builder.AddJsonFile("appsettings.json", true, true)
-                                                       .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, true)
-                                                       .AddEnvironmentVariables()
-                                                       .AddEnvironmentVariables("MAV_CONFIG_")
-                                                       .AddCommandLine(args))
+                          (context, builder) =>
+                          {
+                              builder.Sources.Clear();
+                              builder.AddJsonFile("appsettings.json", true, true)
+                                     .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, true)
+                                     .AddEnvironmentVariables()
+                                     .AddEnvironmentVariables("MAV_CONFIG_")
+                                     .AddCommandLine(args);
+                          })
                       .ConfigureLogging((context, builder) =>
                       {
-                          ConfigureNLog(context.Configuration
-                                               .Get<ConfigServiceConfiguration>()
-                                               .LoggingConfiguration);
+                          ConfigureNLog(context.Configuration);
 
-                          builder.ClearProviders();
+                          builder.ClearProviders()
+                                 .SetMinimumLevel(LogLevel.Trace)
+                                 .AddNLog(context.Configuration.GetSection("LoggingConfiguration"));
                       })
-                      .UseNLog()
                       .UseKestrel(ConfigureKestrelCertAuth);
     }
 }

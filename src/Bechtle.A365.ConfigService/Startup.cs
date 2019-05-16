@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common;
@@ -56,7 +57,7 @@ namespace Bechtle.A365.ConfigService
             _logger = logger;
             Configuration = configuration;
 
-            _logger.LogInformation(FormatConfiguration(configuration.Get<ConfigServiceConfiguration>()));
+            _logger.LogInformation(FormatConfiguration(configuration));
         }
 
         /// <summary>
@@ -131,9 +132,8 @@ namespace Bechtle.A365.ConfigService
             ChangeToken.OnChange(Configuration.GetReloadToken,
                                  conf =>
                                  {
-                                     var newConfig = conf.Get<ConfigServiceConfiguration>();
-                                     Program.ConfigureNLog(newConfig?.LoggingConfiguration);
-                                     _logger.LogInformation(FormatConfiguration(newConfig));
+                                     Program.ConfigureNLog(conf, _logger);
+                                     _logger.LogInformation(FormatConfiguration(conf));
                                  },
                                  Configuration);
         }
@@ -286,13 +286,36 @@ namespace Bechtle.A365.ConfigService
             });
         }
 
-        private string FormatConfiguration(ConfigServiceConfiguration config)
+        private string FormatConfiguration(IConfiguration config)
         {
+            var configObject = config.Get<ConfigServiceConfiguration>();
+
             var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
             settings.Converters.Add(new StringEnumConverter());
 
-            return "using configuration: \r\n" +
-                   $"{JsonConvert.SerializeObject(config, settings)}";
+            return $"Raw Config-Keys:{Environment.NewLine}" +
+                   $"{FormatConfigurationRecursive(config)}" +
+                   $"using Config-Object:{Environment.NewLine}" +
+                   $"{JsonConvert.SerializeObject(configObject, settings)}";
+        }
+
+        private string FormatConfigurationRecursive(IConfiguration config, int indent = 0)
+        {
+            var builder = new StringBuilder();
+            var indentBuilder = new StringBuilder();
+
+            for (var i = 0; i < indent; ++i)
+                indentBuilder.Append("| ");
+
+            var indentString = indentBuilder.ToString();
+
+            foreach (var child in config.GetChildren())
+            {
+                builder.Append($"{indentString}{child.Key}: {child.Value}{Environment.NewLine}");
+                builder.Append(FormatConfigurationRecursive(child, indent + 2));
+            }
+
+            return builder.ToString();
         }
     }
 

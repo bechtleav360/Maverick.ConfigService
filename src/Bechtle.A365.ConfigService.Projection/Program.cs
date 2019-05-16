@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.Extensions;
@@ -16,9 +14,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NLog;
-using NLog.Config;
-using NLog.Web;
+using NLog.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Bechtle.A365.ConfigService.Projection
 {
@@ -43,26 +41,23 @@ namespace Bechtle.A365.ConfigService.Projection
                                                                                                          args))
                       .ConfigureServices((context, services) => ConfigureServicesInternal(services, context.Configuration))
                       .ConfigureLogging((context, builder) => ConfigureLoggingInternal(builder, context.Configuration))
-                      .UseNLog()
                       .Build();
 
-        public static void ConfigureNLog(string configuration, ILogger logger = null)
+        public static void ConfigureNLog(IConfiguration configuration, ILogger logger = null)
         {
             try
             {
                 logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
 
-                if (string.IsNullOrWhiteSpace(configuration))
+                var nLogSection = configuration.GetSection("LoggingConfiguration")?.GetSection("NLog");
+
+                if (nLogSection is null)
                 {
-                    logger?.LogWarning("no Logging-Configuration found at 'LoggingConfiguration' - skipping re-configuration");
+                    logger?.LogInformation("Section JsonLoggingConfiguration:NLog not found; skipping reconfiguration");
                     return;
                 }
 
-                using (var stringReader = new StringReader(configuration))
-                using (var xmlReader = XmlReader.Create(stringReader))
-                {
-                    LogManager.Configuration = new XmlLoggingConfiguration(xmlReader, null);
-                }
+                LogManager.Configuration = new NLogLoggingConfiguration(nLogSection);
 
                 logger?.LogInformation("new LoggingConfiguration has been applied");
             }
@@ -109,8 +104,7 @@ namespace Bechtle.A365.ConfigService.Projection
                                                                                                   context.HostingEnvironment.EnvironmentName,
                                                                                                   args))
                .ConfigureServices((context, services) => ConfigureServicesInternal(services, context.Configuration))
-               .ConfigureLogging((context, builder) => ConfigureLoggingInternal(builder, context.Configuration))
-               .UseNLog();
+               .ConfigureLogging((context, builder) => ConfigureLoggingInternal(builder, context.Configuration));
 
         /// <summary>
         ///     Configure Application-Configuration
@@ -132,9 +126,11 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <param name="configuration"></param>
         private static void ConfigureLoggingInternal(ILoggingBuilder builder, IConfiguration configuration)
         {
-            ConfigureNLog(configuration.Get<ProjectionConfiguration>().LoggingConfiguration);
+            ConfigureNLog(configuration);
 
-            builder.ClearProviders();
+            builder.ClearProviders()
+                   .SetMinimumLevel(LogLevel.Trace)
+                   .AddNLog(configuration.GetSection("LoggingConfiguration"));
         }
 
         /// <summary>
