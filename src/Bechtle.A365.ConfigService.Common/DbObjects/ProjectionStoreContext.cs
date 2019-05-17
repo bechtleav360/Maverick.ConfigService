@@ -36,7 +36,9 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         /// <summary>
         /// </summary>
         public IQueryable<ProjectedConfiguration> FullProjectedConfigurations => ProjectedConfigurations.Include(c => c.Keys)
-                                                                                                        .Include(c => c.UsedConfigurationKeys);
+                                                                                                        .Include(c => c.UsedConfigurationKeys)
+                                                                                                        .Include(c => c.ConfigEnvironment)
+                                                                                                        .Include(c => c.Structure);
 
         /// <summary>
         /// </summary>
