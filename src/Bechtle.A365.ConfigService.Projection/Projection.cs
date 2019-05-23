@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
@@ -52,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Projection
                                  conf =>
                                  {
                                      Program.ConfigureNLog(conf);
-                                     _logger.LogInformation(FormatConfiguration<ProjectionConfiguration>(conf));
+                                     _logger.LogInformation(DebugUtilities.FormatConfiguration<ProjectionConfiguration>(conf));
                                  },
                                  _configuration);
         }
@@ -65,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
             var config = _configuration.Get<ProjectionConfiguration>();
 
-            _logger.LogInformation(FormatConfiguration<ProjectionConfiguration>(_configuration));
+            _logger.LogInformation(DebugUtilities.FormatConfiguration<ProjectionConfiguration>(_configuration));
 
             _logger.LogInformation("running projection...");
 
@@ -161,38 +162,6 @@ namespace Bechtle.A365.ConfigService.Projection
                     }
                 }
             }
-        }
-
-        private string FormatConfiguration<T>(IConfiguration config)
-        {
-            var configObject = config.Get<T>();
-
-            var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
-            settings.Converters.Add(new StringEnumConverter());
-
-            return $"Raw Config-Keys:{Environment.NewLine}" +
-                   $"{FormatConfigurationRecursive(config)}" +
-                   $"using Config-Object:{Environment.NewLine}" +
-                   $"{JsonConvert.SerializeObject(configObject, settings)}";
-        }
-
-        private string FormatConfigurationRecursive(IConfiguration config, int indent = 0)
-        {
-            var builder = new StringBuilder();
-            var indentBuilder = new StringBuilder();
-
-            for (var i = 0; i < indent; ++i)
-                indentBuilder.Append("| ");
-
-            var indentString = indentBuilder.ToString();
-
-            foreach (var child in config.GetChildren())
-            {
-                builder.Append($"{indentString}{child.Key}: {child.Value}{Environment.NewLine}");
-                builder.Append(FormatConfigurationRecursive(child, indent + 2));
-            }
-
-            return builder.ToString();
         }
 
         private async Task Project(DomainEvent domainEvent, IServiceProvider provider)

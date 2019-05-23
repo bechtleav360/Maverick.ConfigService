@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common;
@@ -10,6 +9,7 @@ using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Middleware;
 using Bechtle.A365.ConfigService.Parsing;
@@ -30,8 +30,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using NLog.Web;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -57,7 +55,7 @@ namespace Bechtle.A365.ConfigService
             _logger = logger;
             Configuration = configuration;
 
-            _logger.LogInformation(FormatConfiguration<ConfigServiceConfiguration>(configuration));
+            _logger.LogInformation(DebugUtilities.FormatConfiguration<ConfigServiceConfiguration>(configuration));
         }
 
         /// <summary>
@@ -133,7 +131,7 @@ namespace Bechtle.A365.ConfigService
                                  conf =>
                                  {
                                      Program.ConfigureNLog(conf, _logger);
-                                     _logger.LogInformation(FormatConfiguration<ConfigServiceConfiguration>(conf));
+                                     _logger.LogInformation(DebugUtilities.FormatConfiguration<ConfigServiceConfiguration>(conf));
                                  },
                                  Configuration);
         }
@@ -284,38 +282,6 @@ namespace Bechtle.A365.ConfigService
                     }
                 });
             });
-        }
-
-        private string FormatConfiguration<T>(IConfiguration config)
-        {
-            var configObject = config.Get<T>();
-
-            var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
-            settings.Converters.Add(new StringEnumConverter());
-
-            return $"Raw Config-Keys:{Environment.NewLine}" +
-                   $"{FormatConfigurationRecursive(config)}" +
-                   $"using Config-Object:{Environment.NewLine}" +
-                   $"{JsonConvert.SerializeObject(configObject, settings)}";
-        }
-
-        private string FormatConfigurationRecursive(IConfiguration config, int indent = 0)
-        {
-            var builder = new StringBuilder();
-            var indentBuilder = new StringBuilder();
-
-            for (var i = 0; i < indent; ++i)
-                indentBuilder.Append("| ");
-
-            var indentString = indentBuilder.ToString();
-
-            foreach (var child in config.GetChildren())
-            {
-                builder.Append($"{indentString}{child.Key}: {child.Value}{Environment.NewLine}");
-                builder.Append(FormatConfigurationRecursive(child, indent + 2));
-            }
-
-            return builder.ToString();
         }
     }
 
