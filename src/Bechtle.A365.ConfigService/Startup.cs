@@ -57,7 +57,7 @@ namespace Bechtle.A365.ConfigService
             _logger = logger;
             Configuration = configuration;
 
-            _logger.LogInformation(FormatConfiguration(configuration));
+            _logger.LogInformation(FormatConfiguration<ConfigServiceConfiguration>(configuration));
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Bechtle.A365.ConfigService
                                  conf =>
                                  {
                                      Program.ConfigureNLog(conf, _logger);
-                                     _logger.LogInformation(FormatConfiguration(conf));
+                                     _logger.LogInformation(FormatConfiguration<ConfigServiceConfiguration>(conf));
                                  },
                                  Configuration);
         }
@@ -286,9 +286,9 @@ namespace Bechtle.A365.ConfigService
             });
         }
 
-        private string FormatConfiguration(IConfiguration config)
+        private string FormatConfiguration<T>(IConfiguration config)
         {
-            var configObject = config.Get<ConfigServiceConfiguration>();
+            var configObject = config.Get<T>();
 
             var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
             settings.Converters.Add(new StringEnumConverter());

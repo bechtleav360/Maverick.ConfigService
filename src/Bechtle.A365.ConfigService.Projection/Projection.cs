@@ -48,11 +48,11 @@ namespace Bechtle.A365.ConfigService.Projection
 
             _logger.LogInformation("registering config-reload hook");
 
-            ChangeToken.OnChange(configuration.GetReloadToken,
+            ChangeToken.OnChange(_configuration.GetReloadToken,
                                  conf =>
                                  {
                                      Program.ConfigureNLog(conf);
-                                     _logger.LogInformation(FormatConfiguration(conf));
+                                     _logger.LogInformation(FormatConfiguration<ProjectionConfiguration>(conf));
                                  },
                                  _configuration);
         }
@@ -65,7 +65,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
             var config = _configuration.Get<ProjectionConfiguration>();
 
-            _logger.LogInformation(FormatConfiguration(_configuration));
+            _logger.LogInformation(FormatConfiguration<ProjectionConfiguration>(_configuration));
 
             _logger.LogInformation("running projection...");
 
@@ -163,9 +163,9 @@ namespace Bechtle.A365.ConfigService.Projection
             }
         }
 
-        private string FormatConfiguration(IConfiguration config)
+        private string FormatConfiguration<T>(IConfiguration config)
         {
-            var configObject = config.Get<ProjectionConfiguration>();
+            var configObject = config.Get<T>();
 
             var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
             settings.Converters.Add(new StringEnumConverter());
