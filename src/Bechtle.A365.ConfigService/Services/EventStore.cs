@@ -57,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Services
                                                                             .PerformOnAnyNode()
                                                                             .PreferRandomNode()
                                                                             .KeepReconnecting()
-                                                                            .KeepRetrying()
+                                                                            .LimitRetriesForOperationTo(6)
                                                                             .UseCustomLogger(eventStoreLogger),
                                                           configuration.EventStoreConnection.ConnectionName);
             }
