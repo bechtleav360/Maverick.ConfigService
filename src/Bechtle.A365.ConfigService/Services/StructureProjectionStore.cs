@@ -44,7 +44,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError($"failed to retrieve structures: {e}");
+                _logger.LogError(e, "failed to retrieve structures");
                 return Result.Error<IList<StructureIdentifier>>("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }
@@ -70,7 +70,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError($"failed to retrieve structures: {e}");
+                _logger.LogError(e, "failed to retrieve structures");
                 return Result.Error<IList<int>>("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }

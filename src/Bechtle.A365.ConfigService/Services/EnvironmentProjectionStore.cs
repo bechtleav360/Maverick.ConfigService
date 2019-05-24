@@ -46,7 +46,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError($"failed to retrieve environments: {e}");
+                _logger.LogError(e, "failed to retrieve environments");
                 return Result.Error<IList<EnvironmentIdentifier>>("failed to retrieve environments", ErrorCode.DbQueryError);
             }
         }
@@ -72,7 +72,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError($"failed to retrieve environments: {e}");
+                _logger.LogError(e, "failed to retrieve environments");
                 return Result.Error<IList<EnvironmentIdentifier>>($"failed to retrieve environments in '{category}'", ErrorCode.DbQueryError);
             }
         }

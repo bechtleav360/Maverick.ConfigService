@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to translate dictionary to json: {e}");
+                Logger.LogError(e, "failed to translate dictionary to json");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }
         }
@@ -74,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to translate json to dictionary: {e}");
+                Logger.LogError(e, "failed to translate json to dictionary");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }
         }

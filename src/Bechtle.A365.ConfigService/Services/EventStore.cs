@@ -63,7 +63,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError($"error in EventStore Connection-Settings: {e}");
+                _logger.LogError(e, "error in EventStore Connection-Settings");
                 throw;
             }
 
@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError($"couldn't connect to EventBus: {e}");
+                _logger.LogError(e, "couldn't connect to EventBus");
             }
         }
 

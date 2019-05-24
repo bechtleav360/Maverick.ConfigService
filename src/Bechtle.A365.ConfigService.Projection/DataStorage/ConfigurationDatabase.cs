@@ -153,7 +153,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
             catch (DbUpdateException e)
             {
-                _logger.LogError($"could not apply actions to environment {identifier}: {e}");
+                _logger.LogError(e, $"could not apply actions to environment {identifier}");
                 return Result.Error($"could not apply actions to environment {identifier}: {e}", ErrorCode.DbUpdateError);
             }
         }
@@ -235,7 +235,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
             catch (DbUpdateException e)
             {
-                _logger.LogError($"could not apply actions to structure {identifier}: {e}");
+                _logger.LogError(e, $"could not apply actions to structure {identifier}");
                 return Result.Error($"could not apply actions to structure {identifier}: {e}", ErrorCode.DbUpdateError);
             }
         }
@@ -323,7 +323,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
             catch (DbUpdateException e)
             {
-                _logger.LogError($"could not save new Structure {identifier} to database: {e}");
+                _logger.LogError(e, $"could not save new Structure {identifier} to database");
                 return Result.Error($"could not save new Structure {identifier} to database: {e}", ErrorCode.DbUpdateError);
             }
         }
@@ -349,7 +349,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
             catch (DbUpdateException e)
             {
-                _logger.LogError($"could not delete environment {identifier} from database: {e}");
+                _logger.LogError(e, $"could not delete environment {identifier} from database");
                 return Result.Error($"could not delete environment {identifier} from database: {e}", ErrorCode.DbUpdateError);
             }
         }
@@ -372,7 +372,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
             catch (DbUpdateException e)
             {
-                _logger.LogError($"could not delete Structure {identifier} from database: {e}");
+                _logger.LogError(e, $"could not delete Structure {identifier} from database");
                 return Result.Error($"could not delete Structure {identifier} from database: {e}", ErrorCode.DbUpdateError);
             }
         }
@@ -467,7 +467,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
             catch (DbUpdateException e)
             {
-                _logger.LogError($"could not update auto-completion data for environment '{identifier}': {e}");
+                _logger.LogError(e, $"could not update auto-completion data for environment '{identifier}'");
                 return Result.Error($"could not update auto-completion data for environment '{identifier}'", ErrorCode.DbUpdateError);
             }
         }
@@ -689,7 +689,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
             catch (DbUpdateException e)
             {
-                _logger.LogError($"could not save compiled configuration: {e}");
+                _logger.LogError(e, "could not save compiled configuration");
                 return Result.Error($"could not save compiled configuration: {e}", ErrorCode.DbUpdateError);
             }
         }

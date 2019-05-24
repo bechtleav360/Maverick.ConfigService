@@ -89,7 +89,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to add new environment at ({nameof(category)}: {category}; {nameof(name)}: {name}): {e}");
+                Logger.LogError(e, $"failed to add new environment at ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to add new environment");
             }
         }
@@ -129,7 +129,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to delete keys from Environment ({nameof(category)}: {category}; {nameof(name)}: {name}): {e}");
+                Logger.LogError(e, $"failed to delete keys from Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed delete update keys");
             }
         }
@@ -302,7 +302,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError($"failed to update keys of Environment ({nameof(category)}: {category}; {nameof(name)}: {name}): {e}");
+                Logger.LogError(e, $"failed to update keys of Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
             }
         }

@@ -289,12 +289,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError("failed to retrieve configuration for (" +
-                                $"{nameof(environmentCategory)}: {environmentCategory}, " +
-                                $"{nameof(environmentName)}: {environmentName}, " +
-                                $"{nameof(structureName)}: {structureName}, " +
-                                $"{nameof(structureVersion)}: {structureVersion}, " +
-                                $"{nameof(when)}: {when:O}): {e}");
+                Logger.LogError(e, "failed to retrieve configuration for (" +
+                                   $"{nameof(environmentCategory)}: {environmentCategory}, " +
+                                   $"{nameof(environmentName)}: {environmentName}, " +
+                                   $"{nameof(structureName)}: {structureName}, " +
+                                   $"{nameof(structureVersion)}: {structureVersion}, " +
+                                   $"{nameof(when)}: {when:O})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
         }
