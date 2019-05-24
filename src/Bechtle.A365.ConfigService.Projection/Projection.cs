@@ -108,9 +108,7 @@ namespace Bechtle.A365.ConfigService.Projection
                                    $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
                                    $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
 
-            var domainEvent = _eventDeserializer.ToDomainEvent(resolvedEvent);
-
-            if (domainEvent == null)
+            if (!_eventDeserializer.ToDomainEvent(resolvedEvent, out var domainEvent))
                 return;
 
             using (var scope = _provider.CreateScope())

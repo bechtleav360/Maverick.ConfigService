@@ -34,17 +34,26 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         private IServiceProvider Provider { get; }
 
         /// <inheritdoc />
-        public DomainEvent ToDomainEvent(ResolvedEvent resolvedEvent)
+        public bool ToDomainEvent(ResolvedEvent resolvedEvent, out DomainEvent domainEvent)
         {
             if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
             {
-                var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
+                try
+                {
+                    var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
 
-                return serializer.Deserialize(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
+                    domainEvent = serializer.Deserialize(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Logger.LogWarning($"could not deserialize data in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}': {e}");
+                }
             }
 
             Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
-            return null;
+            domainEvent = null;
+            return false;
         }
     }
 }

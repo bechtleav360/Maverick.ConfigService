@@ -127,7 +127,13 @@ namespace Bechtle.A365.ConfigService.Services
 
                 _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
 
-                allEvents.AddRange(slice.Events.Select(e => (e.Event, _eventDeserializer.ToDomainEvent(e))));
+                allEvents.AddRange(
+                    slice.Events
+                         .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
+                                          ? (RecordedEvent: e.Event, Success: true, DomainEvent: @event)
+                                          : (RecordedEvent: e.Event, Success: false, DomainEvent: null))
+                         .Where(t => t.Success)
+                         .Select(t => (t.RecordedEvent, t.DomainEvent)));
 
                 currentPosition = slice.NextEventNumber;
                 continueReading = !slice.IsEndOfStream;
