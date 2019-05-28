@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.Common.Utilities.Extensions;
@@ -37,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
 
             // 'look-up table' string=>ConfigEnvironmentKey to prevent searching the entire list for each and every key
-            var keyDict = environment.Keys.ToDictionary(k => k.Key, k => k);
+            var lookup = environment.Keys.ToImmutableDictionary(k => k.Key, k => k);
 
             // changes we want to make later on
             // many small changes to EF-List environment.Keys will result in abysmal performance
@@ -46,13 +47,18 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             var changedKeys = new ConcurrentBag<ConfigEnvironmentKey>();
 
             actions.AsParallel()
-                   .ForAll(action => HandleAction(action,
-                                                  identifier,
-                                                  environment,
-                                                  keyDict,
-                                                  addedKeys,
-                                                  removedKeys,
-                                                  changedKeys));
+                   .Select(action => HandleAction(action, identifier, environment, lookup))
+                   .ForAll(tuple =>
+                   {
+                       if (!(tuple.Added is null))
+                           addedKeys.Add(tuple.Added);
+
+                       if (!(tuple.Changed is null))
+                           changedKeys.Add(tuple.Changed);
+
+                       if (!(tuple.Removed is null))
+                           removedKeys.Add(tuple.Removed);
+                   });
 
             // mark configurations as changed when:
             // UsedKeys contains one of the Changed / Deleted Keys
@@ -692,13 +698,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                              .FirstOrDefaultAsync(str => str.Name == identifier.Name &&
                                                          str.Version == identifier.Version);
 
-        private IResult HandleAction(ConfigKeyAction action,
-                                     EnvironmentIdentifier identifier,
-                                     ConfigEnvironment environment,
-                                     IDictionary<string, ConfigEnvironmentKey> keyDict,
-                                     IProducerConsumerCollection<ConfigEnvironmentKey> addedKeys,
-                                     IProducerConsumerCollection<ConfigEnvironmentKey> removedKeys,
-                                     IProducerConsumerCollection<ConfigEnvironmentKey> changedKeys)
+        private (ConfigEnvironmentKey Added,
+            ConfigEnvironmentKey Changed,
+            ConfigEnvironmentKey Removed) HandleAction(ConfigKeyAction action,
+                                                       EnvironmentIdentifier identifier,
+                                                       ConfigEnvironment environment,
+                                                       IReadOnlyDictionary<string, ConfigEnvironmentKey> lookup)
         {
             _logger.LogDebug($"applying '{action.Type:G}' to " +
                              $"Key='{action.Key}'; " +
@@ -711,10 +716,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 switch (action.Type)
                 {
                     case ConfigKeyActionType.Set:
-                        return HandleSet(action, environment, keyDict, addedKeys, changedKeys);
+                    {
+                        var (added, changed) = HandleSet(action, environment, lookup);
+                        return (added, changed, default);
+                    }
 
                     case ConfigKeyActionType.Delete:
-                        return HandleDelete(action, identifier, keyDict, removedKeys);
+                        return (default, HandleDelete(action, identifier, lookup), default);
 
                     default:
                         throw new ArgumentOutOfRangeException(nameof(action.Type), action.Type, $"unsupported {nameof(ConfigKeyActionType)}; '{action.Type}'");
@@ -723,62 +731,50 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             catch (Exception e)
             {
                 _logger.LogError(e, $"error while handling action '{action.Type}'");
-                return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
             }
+
+            return (default, default, default);
         }
 
-        private IResult HandleDelete(ConfigKeyAction action,
-                                     EnvironmentIdentifier identifier,
-                                     IDictionary<string, ConfigEnvironmentKey> keyDict,
-                                     IProducerConsumerCollection<ConfigEnvironmentKey> removedKeys)
+        private ConfigEnvironmentKey HandleDelete(ConfigKeyAction action,
+                                                  EnvironmentIdentifier identifier,
+                                                  IReadOnlyDictionary<string, ConfigEnvironmentKey> lookup)
         {
-            var existingKey = keyDict.ContainsKey(action.Key)
-                                  ? keyDict[action.Key]
+            var existingKey = lookup.ContainsKey(action.Key)
+                                  ? lookup[action.Key]
+                                  : null;
+
+            if (!(existingKey is null))
+                return existingKey;
+
+            _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
+            return default;
+        }
+
+        private (ConfigEnvironmentKey Added, ConfigEnvironmentKey Changed) HandleSet(ConfigKeyAction action,
+                                                                                     ConfigEnvironment environment,
+                                                                                     IReadOnlyDictionary<string, ConfigEnvironmentKey> lookup)
+        {
+            var existingKey = lookup.ContainsKey(action.Key)
+                                  ? lookup[action.Key]
                                   : null;
 
             if (existingKey is null)
-            {
-                _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
-                return Result.Error($"could not remove key '{action.Key}' from environment {identifier}", ErrorCode.NotFound);
-            }
+                return (new ConfigEnvironmentKey
+                           {
+                               Id = Guid.NewGuid(),
+                               ConfigEnvironmentId = environment.Id,
+                               Key = action.Key,
+                               Value = action.Value,
+                               Description = action.Description,
+                               Type = action.ValueType
+                           }, default);
 
-            removedKeys.TryAdd(existingKey);
+            existingKey.Value = action.Value;
+            existingKey.Description = action.Description;
+            existingKey.Type = action.ValueType;
 
-            return Result.Success();
-        }
-
-        private IResult HandleSet(ConfigKeyAction action,
-                                  ConfigEnvironment environment,
-                                  IDictionary<string, ConfigEnvironmentKey> keyDict,
-                                  IProducerConsumerCollection<ConfigEnvironmentKey> addedKeys,
-                                  IProducerConsumerCollection<ConfigEnvironmentKey> changedKeys)
-        {
-            var existingKey = keyDict.ContainsKey(action.Key)
-                                  ? keyDict[action.Key]
-                                  : null;
-
-            if (existingKey is null)
-            {
-                addedKeys.TryAdd(new ConfigEnvironmentKey
-                {
-                    Id = Guid.NewGuid(),
-                    ConfigEnvironmentId = environment.Id,
-                    Key = action.Key,
-                    Value = action.Value,
-                    Description = action.Description,
-                    Type = action.ValueType
-                });
-            }
-            else
-            {
-                existingKey.Value = action.Value;
-                existingKey.Description = action.Description;
-                existingKey.Type = action.ValueType;
-
-                changedKeys.TryAdd(existingKey);
-            }
-
-            return Result.Success();
+            return (default, existingKey);
         }
     }
 }
