@@ -128,52 +128,19 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             // changes we want to make later on
             // many small changes to EF-List environment.Keys will result in abysmal performance
-            var addedKeys = new List<StructureVariable>();
-            var removedKeys = new List<StructureVariable>();
+            var addedKeys = new ConcurrentBag<StructureVariable>();
+            var removedKeys = new ConcurrentBag<StructureVariable>();
 
-            foreach (var action in actions)
-                switch (action.Type)
-                {
-                    case ConfigKeyActionType.Set:
-                    {
-                        var existingKey = keyDict.ContainsKey(action.Key)
-                                              ? keyDict[action.Key]
-                                              : null;
+            actions.AsParallel()
+                   .Select(action => HandleAction(action, identifier, structure, keyDict))
+                   .ForAll(tuple =>
+                   {
+                       if (!(tuple.Added is null))
+                           addedKeys.Add(tuple.Added);
 
-                        if (existingKey is null)
-                            addedKeys.Add(new StructureVariable
-                            {
-                                Id = Guid.NewGuid(),
-                                StructureId = structure.Id,
-                                Key = action.Key,
-                                Value = action.Value
-                            });
-                        else
-                            existingKey.Value = action.Value;
-
-                        break;
-                    }
-
-                    case ConfigKeyActionType.Delete:
-                    {
-                        var existingKey = keyDict.ContainsKey(action.Key)
-                                              ? keyDict[action.Key]
-                                              : null;
-
-                        if (existingKey is null)
-                        {
-                            _logger.LogError($"could not remove variable '{action.Key}' from structure {identifier}: not found");
-                            return Result.Error($"could not remove variable '{action.Key}' from structure {identifier}", ErrorCode.NotFound);
-                        }
-
-                        removedKeys.Add(existingKey);
-                        break;
-                    }
-
-                    default:
-                        _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
-                        return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
-                }
+                       if (!(tuple.Removed is null))
+                           removedKeys.Add(tuple.Removed);
+                   });
 
             try
             {
@@ -698,6 +665,44 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                              .FirstOrDefaultAsync(str => str.Name == identifier.Name &&
                                                          str.Version == identifier.Version);
 
+        private (StructureVariable Added,
+            StructureVariable Changed,
+            StructureVariable Removed) HandleAction(ConfigKeyAction action,
+                                                    StructureIdentifier identifier,
+                                                    Structure structure,
+                                                    IReadOnlyDictionary<string, StructureVariable> lookup)
+        {
+            _logger.LogDebug($"applying '{action.Type:G}' to " +
+                             $"Key='{action.Key}'; " +
+                             $"ValueType='{action.ValueType}'; " +
+                             $"Value='{action.Value}'; " +
+                             $"Description='{action.Description}'");
+
+            try
+            {
+                switch (action.Type)
+                {
+                    case ConfigKeyActionType.Set:
+                    {
+                        var (added, changed) = HandleSet(action, structure, lookup);
+                        return (added, changed, default);
+                    }
+
+                    case ConfigKeyActionType.Delete:
+                        return (default, HandleDelete(action, identifier, lookup), default);
+
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(action.Type), action.Type, $"unsupported {nameof(ConfigKeyActionType)}; '{action.Type}'");
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"error while handling action '{action.Type}'");
+            }
+
+            return (default, default, default);
+        }
+
         private (ConfigEnvironmentKey Added,
             ConfigEnvironmentKey Changed,
             ConfigEnvironmentKey Removed) HandleAction(ConfigKeyAction action,
@@ -736,6 +741,21 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             return (default, default, default);
         }
 
+        private StructureVariable HandleDelete(ConfigKeyAction action,
+                                               StructureIdentifier identifier,
+                                               IReadOnlyDictionary<string, StructureVariable> lookup)
+        {
+            var existingKey = lookup.ContainsKey(action.Key)
+                                  ? lookup[action.Key]
+                                  : null;
+
+            if (!(existingKey is null))
+                return existingKey;
+
+            _logger.LogError($"could not remove variable '{action.Key}' from structure {identifier}: not found");
+            return default;
+        }
+
         private ConfigEnvironmentKey HandleDelete(ConfigKeyAction action,
                                                   EnvironmentIdentifier identifier,
                                                   IReadOnlyDictionary<string, ConfigEnvironmentKey> lookup)
@@ -749,6 +769,28 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
             return default;
+        }
+
+        private (StructureVariable Added, StructureVariable Changed) HandleSet(ConfigKeyAction action,
+                                                                               Structure structure,
+                                                                               IReadOnlyDictionary<string, StructureVariable> lookup)
+        {
+            var existingKey = lookup.ContainsKey(action.Key)
+                                  ? lookup[action.Key]
+                                  : null;
+
+            if (existingKey is null)
+                return (new StructureVariable
+                           {
+                               Id = Guid.NewGuid(),
+                               StructureId = structure.Id,
+                               Key = action.Key,
+                               Value = action.Value
+                           }, default);
+
+            existingKey.Value = action.Value;
+
+            return (default, existingKey);
         }
 
         private (ConfigEnvironmentKey Added, ConfigEnvironmentKey Changed) HandleSet(ConfigKeyAction action,
