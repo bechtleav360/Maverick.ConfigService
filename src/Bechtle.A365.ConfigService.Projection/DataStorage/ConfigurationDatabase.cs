@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -40,71 +41,18 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             // changes we want to make later on
             // many small changes to EF-List environment.Keys will result in abysmal performance
-            var addedKeys = new List<ConfigEnvironmentKey>();
-            var removedKeys = new List<ConfigEnvironmentKey>();
-            var changedKeys = new List<ConfigEnvironmentKey>();
+            var addedKeys = new ConcurrentBag<ConfigEnvironmentKey>();
+            var removedKeys = new ConcurrentBag<ConfigEnvironmentKey>();
+            var changedKeys = new ConcurrentBag<ConfigEnvironmentKey>();
 
-            foreach (var action in actions)
-            {
-                _logger.LogDebug($"applying '{action.Type:G}' to " +
-                                 $"Key='{action.Key}'; " +
-                                 $"ValueType='{action.ValueType}'; " +
-                                 $"Value='{action.Value}'; " +
-                                 $"Description='{action.Description}'");
-
-                switch (action.Type)
-                {
-                    case ConfigKeyActionType.Set:
-                    {
-                        var existingKey = keyDict.ContainsKey(action.Key)
-                                              ? keyDict[action.Key]
-                                              : null;
-
-                        if (existingKey is null)
-                        {
-                            addedKeys.Add(new ConfigEnvironmentKey
-                            {
-                                Id = Guid.NewGuid(),
-                                ConfigEnvironmentId = environment.Id,
-                                Key = action.Key,
-                                Value = action.Value,
-                                Description = action.Description,
-                                Type = action.ValueType
-                            });
-                        }
-                        else
-                        {
-                            existingKey.Value = action.Value;
-                            existingKey.Description = action.Description;
-                            existingKey.Type = action.ValueType;
-
-                            changedKeys.Add(existingKey);
-                        }
-
-                        break;
-                    }
-
-                    case ConfigKeyActionType.Delete:
-                    {
-                        var existingKey = keyDict.ContainsKey(action.Key)
-                                              ? keyDict[action.Key]
-                                              : null;
-
-                        if (existingKey is null)
-                        {
-                            _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
-                            return Result.Error($"could not remove key '{action.Key}' from environment {identifier}", ErrorCode.NotFound);
-                        }
-
-                        removedKeys.Add(existingKey);
-                        break;
-                    }
-
-                    default:
-                        _logger.LogCritical($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'");
-                        return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
-                }
-            }
+            actions.AsParallel()
+                   .ForAll(action => HandleAction(action,
+                                                  identifier,
+                                                  environment,
+                                                  keyDict,
+                                                  addedKeys,
+                                                  removedKeys,
+                                                  changedKeys));
 
             // mark configurations as changed when:
             // UsedKeys contains one of the Changed / Deleted Keys
@@ -743,5 +691,94 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             => await _context.FullStructures
                              .FirstOrDefaultAsync(str => str.Name == identifier.Name &&
                                                          str.Version == identifier.Version);
+
+        private IResult HandleAction(ConfigKeyAction action,
+                                     EnvironmentIdentifier identifier,
+                                     ConfigEnvironment environment,
+                                     IDictionary<string, ConfigEnvironmentKey> keyDict,
+                                     IProducerConsumerCollection<ConfigEnvironmentKey> addedKeys,
+                                     IProducerConsumerCollection<ConfigEnvironmentKey> removedKeys,
+                                     IProducerConsumerCollection<ConfigEnvironmentKey> changedKeys)
+        {
+            _logger.LogDebug($"applying '{action.Type:G}' to " +
+                             $"Key='{action.Key}'; " +
+                             $"ValueType='{action.ValueType}'; " +
+                             $"Value='{action.Value}'; " +
+                             $"Description='{action.Description}'");
+
+            try
+            {
+                switch (action.Type)
+                {
+                    case ConfigKeyActionType.Set:
+                        return HandleSet(action, environment, keyDict, addedKeys, changedKeys);
+
+                    case ConfigKeyActionType.Delete:
+                        return HandleDelete(action, identifier, keyDict, removedKeys);
+
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(action.Type), action.Type, $"unsupported {nameof(ConfigKeyActionType)}; '{action.Type}'");
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"error while handling action '{action.Type}'");
+                return Result.Error($"unsupported {nameof(ConfigKeyActionType)} '{action.Type}'", ErrorCode.InvalidData);
+            }
+        }
+
+        private IResult HandleDelete(ConfigKeyAction action,
+                                     EnvironmentIdentifier identifier,
+                                     IDictionary<string, ConfigEnvironmentKey> keyDict,
+                                     IProducerConsumerCollection<ConfigEnvironmentKey> removedKeys)
+        {
+            var existingKey = keyDict.ContainsKey(action.Key)
+                                  ? keyDict[action.Key]
+                                  : null;
+
+            if (existingKey is null)
+            {
+                _logger.LogError($"could not remove key '{action.Key}' from environment {identifier}: not found");
+                return Result.Error($"could not remove key '{action.Key}' from environment {identifier}", ErrorCode.NotFound);
+            }
+
+            removedKeys.TryAdd(existingKey);
+
+            return Result.Success();
+        }
+
+        private IResult HandleSet(ConfigKeyAction action,
+                                  ConfigEnvironment environment,
+                                  IDictionary<string, ConfigEnvironmentKey> keyDict,
+                                  IProducerConsumerCollection<ConfigEnvironmentKey> addedKeys,
+                                  IProducerConsumerCollection<ConfigEnvironmentKey> changedKeys)
+        {
+            var existingKey = keyDict.ContainsKey(action.Key)
+                                  ? keyDict[action.Key]
+                                  : null;
+
+            if (existingKey is null)
+            {
+                addedKeys.TryAdd(new ConfigEnvironmentKey
+                {
+                    Id = Guid.NewGuid(),
+                    ConfigEnvironmentId = environment.Id,
+                    Key = action.Key,
+                    Value = action.Value,
+                    Description = action.Description,
+                    Type = action.ValueType
+                });
+            }
+            else
+            {
+                existingKey.Value = action.Value;
+                existingKey.Description = action.Description;
+                existingKey.Type = action.ValueType;
+
+                changedKeys.TryAdd(existingKey);
+            }
+
+            return Result.Success();
+        }
     }
 }
