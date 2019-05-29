@@ -368,9 +368,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 }
             }
 
-            var existingPaths = await _context.AutoCompletePaths
-                                              .Where(p => p.ConfigEnvironmentId == environment.Id)
-                                              .ToListAsync();
+            var existingPaths = _context.AutoCompletePaths
+                                        .Where(p => p.ConfigEnvironmentId == environment.Id)
+                                        .ToList();
 
             _logger.LogTrace($"removing existing autocomplete-data for environment '{identifier}'");
 
@@ -378,11 +378,11 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             _logger.LogTrace($"adding new autocomplete-data for environment '{identifier}'");
 
-            await _context.AutoCompletePaths.AddRangeAsync(roots);
+            _context.AutoCompletePaths.AddRange(roots);
 
             try
             {
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
 
                 return Result.Success();
             }
