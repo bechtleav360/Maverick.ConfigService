@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DbObjects;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Projection.Configuration;
 using Bechtle.A365.ConfigService.Projection.Extensions;
 using Microsoft.AspNetCore;
@@ -42,30 +43,6 @@ namespace Bechtle.A365.ConfigService.Projection
                       .ConfigureServices((context, services) => ConfigureServicesInternal(services, context.Configuration))
                       .ConfigureLogging((context, builder) => ConfigureLoggingInternal(builder, context.Configuration))
                       .Build();
-
-        public static void ConfigureNLog(IConfiguration configuration, ILogger logger = null)
-        {
-            try
-            {
-                logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
-
-                var nLogSection = configuration.GetSection("LoggingConfiguration")?.GetSection("NLog");
-
-                if (nLogSection is null)
-                {
-                    logger?.LogInformation("Section JsonLoggingConfiguration:NLog not found; skipping reconfiguration");
-                    return;
-                }
-
-                LogManager.Configuration = new NLogLoggingConfiguration(nLogSection);
-
-                logger?.LogInformation("new LoggingConfiguration has been applied");
-            }
-            catch (Exception e)
-            {
-                logger?.LogWarning($"new LoggingConfiguration could not be applied: {e}");
-            }
-        }
 
         /// <summary>
         ///     actual entry-point for this Application
@@ -126,7 +103,7 @@ namespace Bechtle.A365.ConfigService.Projection
         /// <param name="configuration"></param>
         private static void ConfigureLoggingInternal(ILoggingBuilder builder, IConfiguration configuration)
         {
-            ConfigureNLog(configuration);
+            configuration.ConfigureNLog();
 
             builder.ClearProviders()
                    .SetMinimumLevel(LogLevel.Trace)

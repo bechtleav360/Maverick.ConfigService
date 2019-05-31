@@ -49,7 +49,7 @@ namespace Bechtle.A365.ConfigService.Projection
             ChangeToken.OnChange(_configuration.GetReloadToken,
                                  conf =>
                                  {
-                                     Program.ConfigureNLog(conf);
+                                     conf.ConfigureNLog(_logger);
                                      _logger.LogInformation(DebugUtilities.FormatConfiguration<ProjectionConfiguration>(conf));
                                  },
                                  _configuration);

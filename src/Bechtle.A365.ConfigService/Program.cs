@@ -1,7 +1,7 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -10,9 +10,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NLog;
 using NLog.Extensions.Logging;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Bechtle.A365.ConfigService
@@ -22,35 +20,6 @@ namespace Bechtle.A365.ConfigService
     /// </summary>
     public class Program
     {
-        /// <summary>
-        ///     set the app-global NLog configuration
-        /// </summary>
-        /// <param name="configuration"></param>
-        /// <param name="logger"></param>
-        public static void ConfigureNLog(IConfiguration configuration, ILogger logger = null)
-        {
-            try
-            {
-                logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
-
-                var nLogSection = configuration.GetSection("LoggingConfiguration")?.GetSection("NLog");
-
-                if (nLogSection is null)
-                {
-                    logger?.LogInformation("Section JsonLoggingConfiguration:NLog not found; skipping reconfiguration");
-                    return;
-                }
-
-                LogManager.Configuration = new NLogLoggingConfiguration(nLogSection);
-
-                logger?.LogInformation("new LoggingConfiguration has been applied");
-            }
-            catch (Exception e)
-            {
-                logger?.LogWarning($"new LoggingConfiguration could not be applied: {e}");
-            }
-        }
-
         /// <summary>
         ///     Build the WebHost that runs this application
         /// </summary>
@@ -142,7 +111,7 @@ namespace Bechtle.A365.ConfigService
                           })
                       .ConfigureLogging((context, builder) =>
                       {
-                          ConfigureNLog(context.Configuration);
+                          context.Configuration.ConfigureNLog();
 
                           builder.ClearProviders()
                                  .SetMinimumLevel(LogLevel.Trace)

@@ -130,7 +130,7 @@ namespace Bechtle.A365.ConfigService
             ChangeToken.OnChange(Configuration.GetReloadToken,
                                  conf =>
                                  {
-                                     Program.ConfigureNLog(conf, _logger);
+                                     conf.ConfigureNLog(_logger);
                                      _logger.LogInformation(DebugUtilities.FormatConfiguration<ConfigServiceConfiguration>(conf));
                                  },
                                  Configuration);
