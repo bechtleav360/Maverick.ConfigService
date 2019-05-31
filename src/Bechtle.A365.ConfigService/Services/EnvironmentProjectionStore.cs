@@ -142,8 +142,8 @@ namespace Bechtle.A365.ConfigService.Services
             }
             catch (Exception e)
             {
-                _logger.LogError($"failed to get autocomplete data for '{key}' in " +
-                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
+                _logger.LogError(e, $"failed to get autocomplete data for '{key}' in " +
+                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})");
 
                 return Result.Error<IList<DtoConfigKeyCompletion>>($"failed to get autocomplete data for '{key}' in " +
                                                                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}",
