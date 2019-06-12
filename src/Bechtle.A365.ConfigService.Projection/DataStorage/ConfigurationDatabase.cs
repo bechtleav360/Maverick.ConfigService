@@ -532,18 +532,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 }
             }
 
-            _context.ConfigEnvironmentKeys.RemoveRange(environment.Keys);
-            _context.ConfigEnvironmentKeys.AddRange(actions.Where(a => a.Type == ConfigKeyActionType.Set)
-                                                           .Select(a => new ConfigEnvironmentKey
-                                                           {
-                                                               Key = a.Key,
-                                                               Description = a.Description,
-                                                               ConfigEnvironment = environment,
-                                                               ConfigEnvironmentId = environment.Id,
-                                                               Id = Guid.NewGuid(),
-                                                               Type = a.ValueType,
-                                                               Value = a.Value
-                                                           }));
+            await ApplyChanges(identifier, environment.Keys.Select(k => ConfigKeyAction.Delete(k.Key)).ToList());
+            await ApplyChanges(identifier, actions.Where(a => a.Type == ConfigKeyActionType.Set).ToList());
             await _context.SaveChangesAsync();
 
             return Result.Success();
