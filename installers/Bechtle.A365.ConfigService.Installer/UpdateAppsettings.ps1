@@ -59,9 +59,9 @@ if(Test-Path $FilePath) {
     $a.EventBusConnection.Server = $EventBusConnectionServer
     $a.EventStoreConnection.Uri = $EventStoreConnectionUri
     $a.ProjectionStorage.ConnectionString = $ProjectionStorageConnectionString
-	$a.LoggingConfiguration.NLog.variables.RabbitMqHost = $RabbitMqHost
-	$a.LoggingConfiguration.NLog.variables.RabbitMqUser = $RabbitMqUser
-	$a.LoggingConfiguration.NLog.variables.RabbitMqPassword = $RabbitMqPassword
-	$a.LoggingConfiguration.NLog.variables.RabbitMqPort = $RabbitMqPort
+	$a.LoggingConfiguration.NLog.Variables.RabbitMqHost = $RabbitMqHost
+	$a.LoggingConfiguration.NLog.Variables.RabbitMqUser = $RabbitMqUser
+	$a.LoggingConfiguration.NLog.Variables.RabbitMqPassword = $RabbitMqPassword
+	$a.LoggingConfiguration.NLog.Variables.RabbitMqPort = $RabbitMqPort
     $a | ConvertTo-Json -Depth 100 | Format-Json | set-content $FilePath -Encoding UTF8
 }

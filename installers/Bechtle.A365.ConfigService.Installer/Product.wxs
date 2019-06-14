@@ -1,9 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
-     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension"
-     xmlns:iis="http://schemas.microsoft.com/wix/IIsExtension">
-
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:iis="http://schemas.microsoft.com/wix/IIsExtension">
   <?define ServiceName="ConfigService"?>
   <?define DefaultServiceCertName=" "?>
   <?define DefaultServiceCertThumb=" "?>
@@ -16,71 +13,96 @@
            Version="1.0.0.0"
            Manufacturer="Bechtle"
            UpgradeCode="e76f9278-4faf-4229-8133-1a0b4d8e3f6b">
-
-    <Package InstallerVersion="200"
-             Compressed="yes"
-             InstallScope="perMachine" />
-
+    
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
     <MediaTemplate EmbedCab="yes" />
-
+    
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-
+    
     <!-- initialize property to its default value and make it public to allow for overrides -->
     <Property Id="SERVICECERT" Value="$(var.DefaultServiceCertName)" />
     <Property Id="SERVICECERTTHUMB" Value="$(var.DefaultServiceCertThumb)" />
     <Property Id="SERVICEHOSTNAME" Value="$(var.DefaultServiceHostName)" />
     <Property Id="SERVICEHOSTDOMAIN" Value="$(var.DefaultServiceHostDomain)" />
+    <Property Id="EVENTBUSCONNECTIONSERVER" Value="localhost" />
+    <Property Id="EVENTSTORECONNECTIONURI" Value="tcp://user:passwort@localhost:1113" />
+    <Property Id="PROJECTIONSTORAGECONNECTIONSTRING" Value="Server=localhost; Database=A365ConfigProjection; User Id=; Password=;" />
+    <Property Id="RABBITMQHOST" Value="localhost" />
+    <Property Id="RABBITMQUSER" Value="guest" />
+    <Property Id="RABBITMQPASSWORD" Value="guest" />
+    <Property Id="RABBITMQPORT" Value="5672" />
 
     <Feature Id="ProductFeature" Title="Base Files" Level="1">
       <ComponentGroupRef Id="App_Publish" />
     </Feature>
-
+    
     <Feature Id="IISFeature" Title="IIS-Site registration" Level="1">
       <ComponentRef Id="CreateTemporaryFiles" />
       <ComponentRef Id="IISSiteComponent" />
     </Feature>
-
+    
     <UI>
       <UIRef Id="WixUI_InstallDir" />
       <UIRef Id="WixUI_ErrorProgressText" />
-
+      
       <!-- Skip license dialog -->
-      <Publish Dialog="WelcomeDlg"
-               Control="Next"
-               Event="NewDialog"
-               Value="InpuDlg"
-               Order="2">
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InpuDlg" Order="2">
         1
       </Publish>
 
-      <Dialog Id="InpuDlg" Width="370" Height="270" Title="Anmeldeinformationen">
-        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)">
+      <Dialog Id="InpuDlg" Width="370" Height="300" Title="Anmeldeinformationen">
+        <Control Id="Next" Type="PushButton" X="244" Y="274" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)">
           <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
         </Control>
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)">
+
+        <Control Id="Back" Type="PushButton" X="184" Y="274" Width="56" Height="17" Text="!(loc.WixUIBack)">
           <Publish Event="NewDialog" Value="WelcomeDlg">1</Publish>
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
+
+        <Control Id="Cancel" Type="PushButton" X="304" Y="274" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
           <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
         </Control>
 
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Servicebenutzer" />
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.InstallDirDlgBannerBitmap)" />
-        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
-        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
-
-        <Control Id="CertDis" Type="Text" X="20" Y="80" Width="100" Height="18" NoPrefix="yes" Text="Zertifikatname: " />
-        <Control Id="CertVar" Type="Edit" X="120" Y="80" Width="200" Height="18" Property="SERVICECERT" Indirect="no" />
-
-        <Control Id="CertTDis" Type="Text" X="20" Y="110" Width="100" Height="18" NoPrefix="yes" Text="Zertifikat Fingerabdruck: " />
-        <Control Id="CertTVar" Type="Edit" X="120" Y="110" Width="200" Height="18" Property="SERVICECERTTHUMB" Indirect="no" />
-
-        <Control Id="HostnameDis" Type="Text" X="20" Y="140" Width="100" Height="18" NoPrefix="yes" Text="Hostname: " />
-        <Control Id="HostnameVar" Type="Edit" X="120" Y="140" Width="200" Height="18" Property="SERVICEHOSTNAME" Indirect="no" />
-
-        <Control Id="PasswordDis" Type="Text" X="20" Y="170" Width="100" Height="18" NoPrefix="yes" Text="Domain: " />
-        <Control Id="PasswordVar" Type="Edit" X="120" Y="170" Width="200" Height="18" Property="SERVICEHOSTDOMAIN" Indirect="no" />
+        <Control Id="Description" Type="Text" X="25" Y="8" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Einstellungen" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="30" TabSkip="no" Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="30" Width="370" Height="2" />
+        
+        <Control Id="BottomLine" Type="Line" X="0" Y="266" Width="370" Height="2" />
+        <Control Id="CertDis" Type="Text" X="20" Y="43" Width="100" Height="18" NoPrefix="yes" Text="Zertifikatname: " />
+        <Control Id="CertVar" Type="Edit" X="120" Y="40" Width="200" Height="15" Property="SERVICECERT" Indirect="no" />
+        
+        <Control Id="CertTDis" Type="Text" X="20" Y="63" Width="100" Height="18" NoPrefix="yes" Text="Zertifikat Fingerabdruck: " />
+        <Control Id="CertTVar" Type="Edit" X="120" Y="60" Width="200" Height="15" Property="SERVICECERTTHUMB" Indirect="no" />
+        
+        <Control Id="HostnameDis" Type="Text" X="20" Y="83" Width="100" Height="18" NoPrefix="yes" Text="Hostname: " />
+        <Control Id="HostnameVar" Type="Edit" X="120" Y="80" Width="200" Height="15" Property="SERVICEHOSTNAME" Indirect="no" />
+        
+        <Control Id="PasswordDis" Type="Text" X="20" Y="103" Width="100" Height="18" NoPrefix="yes" Text="Domain: " />
+        <Control Id="PasswordVar" Type="Edit" X="120" Y="100" Width="200" Height="15" Property="SERVICEHOSTDOMAIN" Indirect="no" />
+        
+        <Control Id="EventBusConnectionDis" Type="Text" X="20" Y="123" Width="100" Height="18" NoPrefix="yes" Text="EventBus Server: " />
+        <Control Id="EventBusConnectionVar" Type="Edit" X="120" Y="120" Width="200" Height="15" Property="EVENTBUSCONNECTIONSERVER" Indirect="no" />
+        
+        <Control Id="EventStoreConnectionDis" Type="Text" X="20" Y="143" Width="100" Height="18" NoPrefix="yes" Text="EventStore Server: " />
+        <Control Id="EventStoreConnectionVar" Type="Edit" X="120" Y="140" Width="200" Height="15" Property="EVENTSTORECONNECTIONURI" Indirect="no" />
+        
+        <Control Id="ProjectionStorageDis" Type="Text" X="20" Y="163" Width="100" Height="18" NoPrefix="yes" Text="Projection-DB ConnectionString: " />
+        <Control Id="ProjectionStorageVar" Type="Edit" X="120" Y="160" Width="200" Height="15" Property="PROJECTIONSTORAGECONNECTIONSTRING" Indirect="no" />
+        
+        <Control Id="RabbitMqHostDis" Type="Text" X="20" Y="183" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Host: " />
+        <Control Id="RabbitMqHostVar" Type="Edit" X="120" Y="180" Width="200" Height="15" Property="RABBITMQHOST" Indirect="no" />
+        
+        <Control Id="RabbitMqUserDis" Type="Text" X="20" Y="203" Width="100" Height="18" NoPrefix="yes" Text="RabbitMQ Benutzer: " />
+        <Control Id="RabbitMqUserVar" Type="Edit" X="120" Y="200" Width="200" Height="15" Property="RABBITMQUSER" Indirect="no" />
+        
+        <Control Id="RabbitMqPasswordDis" Type="Text" X="20" Y="223" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Passwort: " />
+        <Control Id="RabbitMqPasswordVar" Type="Edit" X="120" Y="220" Width="200" Height="15" Property="RABBITMQPASSWORD" Indirect="no" />
+        
+        <Control Id="RabbitMqPortDis" Type="Text" X="20" Y="243" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Port: " />
+        <Control Id="RabbitMqPortVar" Type="Edit" X="120" Y="240" Width="200" Height="15" Property="RABBITMQPORT" Indirect="no" />
       </Dialog>
 
       <Publish Dialog="InstallDirDlg"
@@ -96,60 +118,39 @@
       <Directory Id="ProgramFilesFolder">
         <Directory Id="A365ParentFolder" Name="A365">
           <Directory Id="INSTALLFOLDER" Name="$(var.ServiceName)">
-
             <Directory Id="InstallScripts" Name="_install">
               <Component Id="CreateTemporaryFiles" Guid="015056CF-9119-497D-8532-51BE48C3219D">
                 <!-- declare scripts for later reference -->
                 <File Id="SetAppPoolNoManagedCodeScript" Source="SetAppPoolNoManagedCode.ps1" />
                 <File Id="SetBindingCertificateScript" Source="SetBindingCertificate.ps1" />
+                <File Id="UpdateAppsettingsScript" Source="UpdateAppsettings.ps1" />
               </Component>
             </Directory>
 
             <Component Id="IISSiteComponent" Guid="B4AB7953-3167-49DB-8A75-455D2C582B4A">
-
               <!-- actually necessary -->
               <CreateFolder />
-
+              
               <!-- create application-pool for reference later -->
-              <iis:WebAppPool Id="ServiceAppPool"
-                              Name="A365$(var.ServiceName)"
-                              ManagedPipelineMode="Integrated" />
-
+              <iis:WebAppPool Id="ServiceAppPool" Name="A365$(var.ServiceName)" ManagedPipelineMode="Integrated" />
+              
               <!-- create site with reference to app-pool above -->
-              <iis:WebSite Id="ServiceSite"
-                           Description="A365$(var.ServiceName)"
-                           Directory="INSTALLFOLDER"
-                           AutoStart="yes"
-                           ConfigureIfExists="yes">
-
+              <iis:WebSite Id="ServiceSite" Description="A365$(var.ServiceName)" Directory="INSTALLFOLDER" AutoStart="yes" ConfigureIfExists="yes">
                 <!-- ManagedRuntimeVersion=NoManagedCode is handled by a powershell custom-action -->
-                <iis:WebDirProperties Id="ServiceProperties"
-                                      AnonymousAccess="yes"
-                                      BasicAuthentication="no"
-                                      WindowsAuthentication="no" />
-
+                <iis:WebDirProperties Id="ServiceProperties" AnonymousAccess="yes" BasicAuthentication="no" WindowsAuthentication="no" />
                 <!--
                 create the default binding with hostname:80
                 the hostname:443 binding is created via the SetBindingCertificate CustomAction
                 -->
-                <iis:WebAddress Id="ServiceBinding"
-                                IP="*"
-                                Port="80"
-                                Header="[SERVICEHOSTNAME].[SERVICEHOSTDOMAIN]" />
-
-                <iis:WebApplication Id="ServiceWebApplication"
-                                    Name="A365$(var.ServiceName)"
-                                    WebAppPool="ServiceAppPool" />
-
+                <iis:WebAddress Id="ServiceBinding" IP="*" Port="80" Header="[SERVICEHOSTNAME].[SERVICEHOSTDOMAIN]" />
+                <iis:WebApplication Id="ServiceWebApplication" Name="A365$(var.ServiceName)" WebAppPool="ServiceAppPool" />
               </iis:WebSite>
-
             </Component>
-
           </Directory>
         </Directory>
       </Directory>
     </Directory>
-
+    
     <CustomAction Id="SetAppPoolNoManagedCode"
                   Property="InvokeSetAppPoolNoManagedCode"
                   Value="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\SetAppPoolNoManagedCode.ps1&quot; -AppPool A365$(var.ServiceName)"
@@ -159,6 +160,13 @@
                   Property="InvokeSetBindingCertificate"
                   Value="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\SetBindingCertificate.ps1&quot; -CertName [SERVICECERT] -CertThumb [SERVICECERTTHUMB] -CertStore MY -Hostname [SERVICEHOSTNAME].[SERVICEHOSTDOMAIN] -Site A365$(var.ServiceName)"
                   Execute="immediate" />
+
+    <CustomAction Id="UpdateAppsettings"
+                  Directory="TARGETDIR"
+                  ExeCommand="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\UpdateAppsettings.ps1&quot; -FilePath &quot;[INSTALLFOLDER]appsettings.json&quot; -EventBusConnectionServer &quot;[EVENTBUSCONNECTIONSERVER]&quot; -EventStoreConnectionUri &quot;[EVENTSTORECONNECTIONURI]&quot; -ProjectionStorageConnectionString &quot;[PROJECTIONSTORAGECONNECTIONSTRING]&quot; -RabbitMqHost &quot;[RABBITMQHOST]&quot; -RabbitMqUser &quot;[RABBITMQUSER]&quot; -RabbitMqPassword &quot;[RABBITMQPASSWORD]&quot; -RabbitMqPort &quot;[RABBITMQPORT]&quot;"
+                  Execute="deferred"
+                  Return="asyncNoWait"
+                  Impersonate="no" />
 
     <CustomAction Id="InvokeSetAppPoolNoManagedCode"
                   BinaryKey="WixCA"
@@ -182,12 +190,12 @@
                   Impersonate="no" />
 
     <InstallExecuteSequence>
+      <Custom Action="UpdateAppsettings" After="InstallFiles">NOT Installed</Custom>
       <Custom Action="SetAppPoolNoManagedCode" Before="CostFinalize">NOT Installed</Custom>
       <Custom Action="SetBindingCertificate" Before="CostFinalize">NOT Installed</Custom>
       <Custom Action="InvokeSetAppPoolNoManagedCode" Before="InstallFinalize">NOT Installed</Custom>
       <Custom Action="InvokeSetBindingCertificate" Before="InstallFinalize">NOT Installed</Custom>
       <Custom Action="Disable32BitAppPool" Before="InstallFinalize">NOT Installed</Custom>
     </InstallExecuteSequence>
-
   </Product>
 </Wix>
