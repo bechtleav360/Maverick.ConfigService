@@ -158,6 +158,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <param name="filter"></param>
+        /// <param name="preferExactMatch"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
@@ -166,6 +167,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         public async Task<IActionResult> GetKeys([FromRoute] string category,
                                                  [FromRoute] string name,
                                                  [FromQuery] string filter,
+                                                 [FromQuery] string preferExactMatch,
                                                  [FromQuery] int offset = -1,
                                                  [FromQuery] int length = -1)
         {
@@ -173,12 +175,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            IResult<IDictionary<string, string>> result;
-
-            if (string.IsNullOrWhiteSpace(filter))
-                result = await _store.Environments.GetKeys(identifier, range);
-            else
-                result = await _store.Environments.GetKeys(identifier, filter, range);
+            var result = await _store.Environments.GetKeys(identifier, filter, preferExactMatch, range);
 
             return Result(result);
         }
@@ -189,21 +186,18 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <param name="filter"></param>
+        /// <param name="preferExactMatch"></param>
         /// <returns></returns>
         [ApiVersion(ApiVersions.V1)]
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
                                                        [FromRoute] string name,
-                                                       [FromQuery] string filter)
+                                                       [FromQuery] string filter,
+                                                       [FromQuery] string preferExactMatch)
         {
             var identifier = new EnvironmentIdentifier(category, name);
 
-            IResult<IDictionary<string, string>> result;
-
-            if (string.IsNullOrWhiteSpace(filter))
-                result = await _store.Environments.GetKeys(identifier, QueryRange.All);
-            else
-                result = await _store.Environments.GetKeys(identifier, filter, QueryRange.All);
+            var result = await _store.Environments.GetKeys(identifier, filter, preferExactMatch, QueryRange.All);
 
             if (result.IsError)
                 return ProviderError(result);
@@ -219,6 +213,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <param name="filter"></param>
+        /// <param name="preferExactMatch"></param>
         /// <param name="offset" />
         /// <param name="length" />
         /// <returns></returns>
@@ -227,6 +222,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
                                                              [FromRoute] string name,
                                                              [FromQuery] string filter,
+                                                             [FromQuery] string preferExactMatch,
                                                              [FromQuery] int offset = -1,
                                                              [FromQuery] int length = -1)
         {
@@ -234,12 +230,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            IResult<IEnumerable<DtoConfigKey>> result;
-
-            if (string.IsNullOrWhiteSpace(filter))
-                result = await _store.Environments.GetKeyObjects(identifier, range);
-            else
-                result = await _store.Environments.GetKeyObjects(identifier, filter, range);
+            var result = await _store.Environments.GetKeyObjects(identifier, filter, preferExactMatch, range);
 
             if (result.IsError)
                 return ProviderError(result);

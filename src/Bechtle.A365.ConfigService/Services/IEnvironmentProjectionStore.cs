@@ -27,6 +27,15 @@ namespace Bechtle.A365.ConfigService.Services
         Task<IResult<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range);
 
         /// <summary>
+        ///     get a list of possible next terms for the given key
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="key"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
+
+        /// <summary>
         ///     get the keys of an Environment as Objects
         /// </summary>
         /// <param name="identifier"></param>
@@ -42,6 +51,16 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="range"></param>
         /// <returns></returns>
         Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range);
+
+        /// <summary>
+        ///     get the keys of an Environment as Objects
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="filter"></param>
+        /// <param name="preferExactMatch"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, string preferExactMatch, QueryRange range);
 
         /// <summary>
         ///     get the keys of an Environment
@@ -61,12 +80,13 @@ namespace Bechtle.A365.ConfigService.Services
         Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range);
 
         /// <summary>
-        ///     get a list of possible next terms for the given key
+        ///     get the keys of an Environment
         /// </summary>
         /// <param name="identifier"></param>
-        /// <param name="key"></param>
+        /// <param name="filter"></param>
+        /// <param name="preferExactMatch"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
+        Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, string preferExactMatch, QueryRange range);
     }
 }

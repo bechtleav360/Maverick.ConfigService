@@ -78,7 +78,9 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range)
+        public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier,
+                                                                                     string key,
+                                                                                     QueryRange range)
         {
             try
             {
@@ -143,7 +145,7 @@ namespace Bechtle.A365.ConfigService.Services
             catch (Exception e)
             {
                 _logger.LogError(e, $"failed to get autocomplete data for '{key}' in " +
-                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})");
+                                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})");
 
                 return Result.Error<IList<DtoConfigKeyCompletion>>($"failed to get autocomplete data for '{key}' in " +
                                                                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}",
@@ -152,8 +154,10 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range)
+        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier,
+                                                                      QueryRange range)
             => GetKeysInternal(identifier,
+                               null,
                                null,
                                range,
                                item => new DtoConfigKey
@@ -166,9 +170,12 @@ namespace Bechtle.A365.ConfigService.Services
                                items => items);
 
         /// <inheritdoc />
-        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range)
+        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier,
+                                                                      string filter,
+                                                                      QueryRange range)
             => GetKeysInternal(identifier,
                                filter,
+                               null,
                                range,
                                item => new DtoConfigKey
                                {
@@ -180,8 +187,41 @@ namespace Bechtle.A365.ConfigService.Services
                                items => items);
 
         /// <inheritdoc />
+        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier,
+                                                                      string filter,
+                                                                      string preferExactMatch,
+                                                                      QueryRange range)
+            => GetKeysInternal(identifier,
+                               filter,
+                               preferExactMatch,
+                               range,
+                               item => new DtoConfigKey
+                               {
+                                   Key = item.Key,
+                                   Value = item.Value,
+                                   Description = item.Description,
+                                   Type = item.Type
+                               },
+                               items => items);
+
+        /// <inheritdoc />
+        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier,
+                                                                  string filter,
+                                                                  string preferExactMatch,
+                                                                  QueryRange range)
+            => GetKeysInternal(identifier,
+                               filter,
+                               preferExactMatch,
+                               range,
+                               item => item,
+                               keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
+                                                                                                      item => item.Value,
+                                                                                                      StringComparer.OrdinalIgnoreCase));
+
+        /// <inheritdoc />
         public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range)
             => GetKeysInternal(identifier,
+                               null,
                                null,
                                range,
                                item => item,
@@ -190,9 +230,12 @@ namespace Bechtle.A365.ConfigService.Services
                                                                                                       StringComparer.OrdinalIgnoreCase));
 
         /// <inheritdoc />
-        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range)
+        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier,
+                                                                  string filter,
+                                                                  QueryRange range)
             => GetKeysInternal(identifier,
                                filter,
+                               null,
                                range,
                                item => item,
                                keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
@@ -241,69 +284,14 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <summary>
-        ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="filter"></param>
-        /// <param name="range"></param>
-        /// <param name="selector"></param>
-        /// <param name="transform"></param>
-        /// <returns></returns>
-        private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(EnvironmentIdentifier identifier,
-                                                                             string filter,
-                                                                             QueryRange range,
-                                                                             Expression<Func<ConfigEnvironmentKey, TItem>> selector,
-                                                                             Func<IEnumerable<TItem>, TResult> transform)
-        {
-            try
-            {
-                var envId = await _context.FullConfigEnvironments
-                                          .Where(s => s.Category == identifier.Category &&
-                                                      s.Name == identifier.Name)
-                                          .Select(e => e.Id)
-                                          .FirstOrDefaultAsync();
-
-                if (envId == default(Guid))
-                    return Result.Error<TResult>("no environment found with (" +
-                                                 $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                                 $"{nameof(identifier.Name)}: {identifier.Name})",
-                                                 ErrorCode.NotFound);
-
-                var query = _context.ConfigEnvironmentKeys
-                                    .Where(k => k.ConfigEnvironmentId == envId);
-
-                if (!string.IsNullOrWhiteSpace(filter))
-                    query = query.Where(k => k.ConfigEnvironmentId == envId)
-                                 .Where(k => k.Key.StartsWith(filter));
-
-                var keys = await query.OrderBy(k => k.Key)
-                                      .Skip(range.Offset)
-                                      .Take(range.Length)
-                                      .Select(selector)
-                                      .ToListAsync();
-
-                return Result.Success(transform(keys));
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("failed to retrieve keys for environment " +
-                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
-
-                return Result.Error<TResult>(
-                    "failed to retrieve keys for environment " +
-                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
-                    ErrorCode.DbQueryError);
-            }
-        }
-
-        /// <summary>
-        ///     walk the path given in <paramref name="parts"/>, from <paramref name="root"/> and return the next possible values
+        ///     walk the path given in <paramref name="parts" />, from <paramref name="root" /> and return the next possible values
         /// </summary>
         /// <param name="root"></param>
         /// <param name="parts"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        private async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoCompleteInternal(ConfigEnvironmentKeyPath root, IEnumerable<string> parts,
+        private async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoCompleteInternal(ConfigEnvironmentKeyPath root,
+                                                                                              IEnumerable<string> parts,
                                                                                               QueryRange range)
         {
             var current = root;
@@ -368,6 +356,66 @@ namespace Bechtle.A365.ConfigService.Services
             }
 
             return await CreateResult(result, range);
+        }
+
+        /// <summary>
+        ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="filter"></param>
+        /// <param name="preferExactMatch"></param>
+        /// <param name="range"></param>
+        /// <param name="selector"></param>
+        /// <param name="transform"></param>
+        /// <returns></returns>
+        private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(EnvironmentIdentifier identifier,
+                                                                             string filter,
+                                                                             string preferExactMatch,
+                                                                             QueryRange range,
+                                                                             Expression<Func<ConfigEnvironmentKey, TItem>> selector,
+                                                                             Func<IEnumerable<TItem>, TResult> transform)
+        {
+            try
+            {
+                var envId = await _context.FullConfigEnvironments
+                                          .Where(s => s.Category == identifier.Category &&
+                                                      s.Name == identifier.Name)
+                                          .Select(e => e.Id)
+                                          .FirstOrDefaultAsync();
+
+                if (envId == default)
+                    return Result.Error<TResult>("no environment found with (" +
+                                                 $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                                 $"{nameof(identifier.Name)}: {identifier.Name})",
+                                                 ErrorCode.NotFound);
+
+                var query = _context.ConfigEnvironmentKeys
+                                    .Where(k => k.ConfigEnvironmentId == envId);
+
+                if (!string.IsNullOrWhiteSpace(filter))
+                    query = query.Where(k => k.Key.StartsWith(filter));
+
+                if (!string.IsNullOrWhiteSpace(preferExactMatch))
+                    query = query.Where(k => k.Key.Equals(preferExactMatch));
+
+                var keys = await query.OrderBy(k => k.Key)
+                                      .Skip(range.Offset)
+                                      .Take(range.Length)
+                                      .Select(selector)
+                                      .ToListAsync();
+
+                return Result.Success(transform(keys));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("failed to retrieve keys for environment " +
+                                 $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}");
+
+                return Result.Error<TResult>(
+                    "failed to retrieve keys for environment " +
+                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
+                    ErrorCode.DbQueryError);
+            }
         }
     }
 }
