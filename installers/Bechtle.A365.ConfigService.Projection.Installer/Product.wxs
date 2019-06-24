@@ -120,8 +120,16 @@
                   Return="asyncNoWait"
                   Impersonate="no" />
 
+    <CustomAction Id="ExecuteMigration"
+                  Directory="TARGETDIR"
+                  ExeCommand="&quot;dotnet&quot; &quot;[INSTALLFOLDER]Cli\Bechtle.A365.ConfigService.Cli.dll migrate -c [PROJECTIONSTORAGECONNECTIONSTRING]&quot;"
+                  Execute="deferred"
+                  Return="asyncNoWait"
+                  Impersonate="no" />
+
     <InstallExecuteSequence>
       <Custom Action="UpdateAppsettings" After="InstallFiles">NOT Installed</Custom>
+      <Custom Action="ExecuteMigration" After="InstallFiles">NOT Installed</Custom>
     </InstallExecuteSequence>
 
   </Product>
