@@ -167,6 +167,7 @@ namespace Bechtle.A365.ConfigService.Services
                                    Description = item.Description,
                                    Type = item.Type
                                },
+                               item => item.Key,
                                items => items);
 
         /// <inheritdoc />
@@ -184,6 +185,7 @@ namespace Bechtle.A365.ConfigService.Services
                                    Description = item.Description,
                                    Type = item.Type
                                },
+                               item => item.Key,
                                items => items);
 
         /// <inheritdoc />
@@ -202,6 +204,7 @@ namespace Bechtle.A365.ConfigService.Services
                                    Description = item.Description,
                                    Type = item.Type
                                },
+                               item => item.Key,
                                items => items);
 
         /// <inheritdoc />
@@ -214,6 +217,7 @@ namespace Bechtle.A365.ConfigService.Services
                                preferExactMatch,
                                range,
                                item => item,
+                               item => item.Key,
                                keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
                                                                                                       item => item.Value,
                                                                                                       StringComparer.OrdinalIgnoreCase));
@@ -225,6 +229,7 @@ namespace Bechtle.A365.ConfigService.Services
                                null,
                                range,
                                item => item,
+                               item => item.Key,
                                keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
                                                                                                       item => item.Value,
                                                                                                       StringComparer.OrdinalIgnoreCase));
@@ -238,6 +243,7 @@ namespace Bechtle.A365.ConfigService.Services
                                null,
                                range,
                                item => item,
+                               item => item.Key,
                                keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
                                                                                                       item => item.Value,
                                                                                                       StringComparer.OrdinalIgnoreCase));
@@ -361,19 +367,22 @@ namespace Bechtle.A365.ConfigService.Services
         /// <summary>
         ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="range"></param>
-        /// <param name="selector"></param>
-        /// <param name="transform"></param>
+        /// <param name="identifier">ID pointing to an Environment, which is used to retrieve the base-keys</param>
+        /// <param name="filter">optional filter that is applied to the start of all keys</param>
+        /// <param name="preferExactMatch">optional filter that, when matched, only returns the matching item - otherwise all matching items are returned</param>
+        /// <param name="range">offset and amount of items to query</param>
+        /// <param name="selector">internal selector transforming the filtered items to an intermediate representation</param>
+        /// <param name="keySelector">selector pointing to the 'Key' property of the intermediate representation</param>
+        /// <param name="transform">final transformation applied to the result-set</param>
         /// <returns></returns>
         private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(EnvironmentIdentifier identifier,
                                                                              string filter,
                                                                              string preferExactMatch,
                                                                              QueryRange range,
                                                                              Expression<Func<ConfigEnvironmentKey, TItem>> selector,
+                                                                             Func<TItem, string> keySelector,
                                                                              Func<IEnumerable<TItem>, TResult> transform)
+            where TItem : class
         {
             try
             {
@@ -395,16 +404,18 @@ namespace Bechtle.A365.ConfigService.Services
                 if (!string.IsNullOrWhiteSpace(filter))
                     query = query.Where(k => k.Key.StartsWith(filter));
 
-                if (!string.IsNullOrWhiteSpace(preferExactMatch))
-                    query = query.Where(k => k.Key.Equals(preferExactMatch));
-
                 var keys = await query.OrderBy(k => k.Key)
                                       .Skip(range.Offset)
                                       .Take(range.Length)
                                       .Select(selector)
                                       .ToListAsync();
 
-                return Result.Success(transform(keys));
+                if (!string.IsNullOrWhiteSpace(preferExactMatch))
+                    keys = ApplyPreferredExactFilter(keys, keySelector, preferExactMatch).ToList();
+
+                var result = transform(keys);
+
+                return Result.Success(result);
             }
             catch (Exception e)
             {
@@ -416,6 +427,23 @@ namespace Bechtle.A365.ConfigService.Services
                     $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
                     ErrorCode.DbQueryError);
             }
+        }
+
+        private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
+                                                                    Func<TItem, string> keySelector,
+                                                                    string preferredMatch)
+            where TItem : class
+        {
+            var exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
+
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug(exactMatch is null
+                                     ? $"no exact match found in '{items.Count}' items for query '{preferredMatch}'"
+                                     : $"preferred match found in '{items.Count}' items for query '{preferredMatch}'");
+
+            return exactMatch is null
+                       ? items
+                       : new[] {exactMatch};
         }
     }
 }
