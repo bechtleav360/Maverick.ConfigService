@@ -717,7 +717,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     }
 
                     case ConfigKeyActionType.Delete:
-                        return (default, HandleDelete(action, identifier, lookup), default);
+                        return (default, default, HandleDelete(action, identifier, lookup));
 
                     default:
                         throw new ArgumentOutOfRangeException(nameof(action.Type), action.Type, $"unsupported {nameof(ConfigKeyActionType)}; '{action.Type}'");
