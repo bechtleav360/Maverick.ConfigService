@@ -462,9 +462,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             var configuration = await _context.FullProjectedConfigurations
                                               .Where(c => c.Id == configId)
-                                              .Select(c => new ConfigurationIdentifier(
-                                                          new EnvironmentIdentifier(c.ConfigEnvironment.Category, c.ConfigEnvironment.Name),
-                                                          new StructureIdentifier(c.Structure.Name, c.Structure.Version)))
+                                              .Select(c => new ConfigurationIdentifier(c))
                                               .FirstOrDefaultAsync();
 
             return configuration;

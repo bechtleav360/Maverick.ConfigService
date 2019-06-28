@@ -265,7 +265,20 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, range);
+            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier);
+
+            var result = await _store.Configurations.GetKeys(configId, when, range);
+
+            if (result.IsError)
+                return ProviderError(result);
+
+            var version = await _store.Configurations.GetVersion(configId, when);
+
+            if (version.IsError)
+                return ProviderError(version);
+
+            // add version to the response-headers
+            Response.Headers.Add("x-version", version.Data);
 
             return Result(result);
         }
@@ -294,7 +307,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
                 var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-                var result = await _store.Configurations.GetKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, QueryRange.All);
+                var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier);
+
+                var result = await _store.Configurations.GetKeys(configId, when, QueryRange.All);
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -303,6 +318,14 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 if (json is null)
                     return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
+
+                var version = await _store.Configurations.GetVersion(configId, when);
+
+                if (version.IsError)
+                    return ProviderError(version);
+
+                // add version to the response-headers
+                Response.Headers.Add("x-version", version.Data);
 
                 return Ok(json);
             }
@@ -365,6 +388,41 @@ namespace Bechtle.A365.ConfigService.Controllers
             var result = await _store.Configurations.GetUsedConfigurationKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, range);
 
             return Result(result);
+        }
+
+        /// <summary>
+        ///     get the version of the specified configuration
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
+        /// <returns></returns>
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/version", Name = "GetConfigurationVersion")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetVersion([FromRoute] string environmentCategory,
+                                                    [FromRoute] string environmentName,
+                                                    [FromRoute] string structureName,
+                                                    [FromRoute] int structureVersion,
+                                                    [FromQuery] DateTime when)
+        {
+            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+
+            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier);
+
+            var version = await _store.Configurations.GetVersion(configId, when);
+
+            if (version.IsError)
+                return ProviderError(version);
+
+            // add version to the response-headers
+            Response.Headers.Add("x-version", version.Data);
+
+            return Result(version);
         }
 
         /// <summary>
