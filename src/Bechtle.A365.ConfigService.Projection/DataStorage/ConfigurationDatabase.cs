@@ -819,6 +819,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             existingKey.Value = action.Value;
             existingKey.Description = action.Description;
             existingKey.Type = action.ValueType;
+            existingKey.Version = (long) DateTime.UtcNow
+                                                 .Subtract(_unixEpoch)
+                                                 .TotalSeconds;
 
             return (default, existingKey);
         }
