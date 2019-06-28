@@ -122,7 +122,7 @@ namespace Bechtle.A365.ConfigService
                });
 
             _logger.LogInformation("adding MVC-Middleware");
-            
+
             app.UseMvc();
 
             _logger.LogInformation("registering config-reload hook");
@@ -202,32 +202,32 @@ namespace Bechtle.A365.ConfigService
 
             // setup services for DI
             services.AddMemoryCache()
-                    .AddSingleton<ICertificateValidator, CertificateValidator>()
-                    .AddScoped(provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
-                    .AddScoped(provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
-                    .AddScoped(provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
-                    .AddScoped(provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
-                    .AddScoped(provider => provider.GetService<ConfigServiceConfiguration>().Protected)
+                    .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
+                    .AddScoped(_logger, provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
+                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
+                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
+                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
+                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().Protected)
                     .AddDbContext<ProjectionStoreContext>(
+                        _logger,
                         (provider, builder) => builder.UseLoggerFactory(new NullLoggerFactory())
-                                                      .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>()
-                                                                            .ConnectionString))
-                    .AddScoped<IProjectionStore, ProjectionStore>()
-                    .AddScoped<IStructureProjectionStore, StructureProjectionStore>()
-                    .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>()
-                    .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>()
-                    .AddScoped<IConfigurationCompiler, ConfigurationCompiler>()
-                    .AddScoped<IJsonTranslator, JsonTranslator>()
-                    .AddScoped<IConfigurationParser, AntlrConfigurationParser>()
-                    .AddScoped<IConfigProtector, ConfigProtector>()
-                    .AddScoped<IRegionEncryptionCertProvider, RegionEncryptionCertProvider>()
-                    .AddScoped<IEventStore, Services.EventStore>()
-                    .AddScoped<IDataExporter, DataExporter>()
-                    .AddScoped<IDataImporter, DataImporter>()
-                    .AddSingleton<ESLogger, EventStoreLogger>()
-                    .AddSingleton<IJsonTranslator, JsonTranslator>()
-                    .AddSingleton<IEventDeserializer, EventDeserializer>()
-                    .AddSingleton(typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>));
+                                                      .UseSqlServer(provider.GetService<ProjectionStorageConfiguration>().ConnectionString))
+                    .AddScoped<IProjectionStore, ProjectionStore>(_logger)
+                    .AddScoped<IStructureProjectionStore, StructureProjectionStore>(_logger)
+                    .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
+                    .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)
+                    .AddScoped<IConfigurationCompiler, ConfigurationCompiler>(_logger)
+                    .AddScoped<IJsonTranslator, JsonTranslator>(_logger)
+                    .AddScoped<IConfigurationParser, AntlrConfigurationParser>(_logger)
+                    .AddScoped<IConfigProtector, ConfigProtector>(_logger)
+                    .AddScoped<IRegionEncryptionCertProvider, RegionEncryptionCertProvider>(_logger)
+                    .AddScoped<IEventStore, Services.EventStore>(_logger)
+                    .AddScoped<IDataExporter, DataExporter>(_logger)
+                    .AddScoped<IDataImporter, DataImporter>(_logger)
+                    .AddSingleton<ESLogger, EventStoreLogger>(_logger)
+                    .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
+                    .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)
+                    .AddSingleton(_logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>));
 
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");
