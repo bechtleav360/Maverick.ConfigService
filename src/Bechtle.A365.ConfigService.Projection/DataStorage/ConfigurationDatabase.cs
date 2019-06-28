@@ -17,6 +17,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
     {
         private readonly ProjectionStoreContext _context;
         private readonly ILogger<ConfigurationDatabase> _logger;
+        private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
         public ConfigurationDatabase(ILogger<ConfigurationDatabase> logger, ProjectionStoreContext context)
         {
@@ -553,6 +554,15 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             // version is already included in structure.Identifier, as opposed to environment.Identifier
             var foundStructure = await GetStructureInternal(structure.Identifier);
 
+            var usedKeyList = usedKeys.ToList();
+
+            _logger.LogInformation($"determining Configuration.Version through highest Version of used keys");
+            var highestKeyVersion =
+                usedKeyList.Select(k => foundEnvironment.Keys.FirstOrDefault(ek => ek.Key == k))
+                           .Where(k => !(k is null))
+                           .Max(k => k.Version);
+            _logger.LogInformation($"determined Configuration.Version: {highestKeyVersion}");
+
             var compiledConfiguration = new ProjectedConfiguration
             {
                 Id = Guid.NewGuid(),
@@ -563,20 +573,21 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 UpToDate = true,
                 ValidFrom = validFrom,
                 ValidTo = validTo,
-                UsedConfigurationKeys = usedKeys.Where(k => environment.Data.ContainsKey(k))
-                                                .Select(key => new UsedConfigurationKey
-                                                {
-                                                    Id = Guid.NewGuid(),
-                                                    Key = key
-                                                })
-                                                .ToList(),
+                UsedConfigurationKeys = usedKeyList.Where(k => environment.Data.ContainsKey(k))
+                                                   .Select(key => new UsedConfigurationKey
+                                                   {
+                                                       Id = Guid.NewGuid(),
+                                                       Key = key
+                                                   })
+                                                   .ToList(),
                 Keys = configuration.Select(kvp => new ProjectedConfigurationKey
                                     {
                                         Id = Guid.NewGuid(),
                                         Key = kvp.Key,
                                         Value = kvp.Value
                                     })
-                                    .ToList()
+                                    .ToList(),
+                Version = highestKeyVersion
             };
 
             var existingConfiguration = await _context.ProjectedConfigurations
@@ -799,7 +810,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                Key = action.Key,
                                Value = action.Value,
                                Description = action.Description,
-                               Type = action.ValueType
+                               Type = action.ValueType,
+                               Version = (long) DateTime.UtcNow
+                                                        .Subtract(_unixEpoch)
+                                                        .TotalSeconds
                            }, default);
 
             existingKey.Value = action.Value;

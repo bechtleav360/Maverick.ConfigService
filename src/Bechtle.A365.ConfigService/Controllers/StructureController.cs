@@ -102,6 +102,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="length"></param>
         /// <returns></returns>
         [ApiVersion(ApiVersions.V1)]
+        [HttpGet(Name = "GetStructures")]
         [HttpGet("available", Name = "GetAvailableStructures")]
         public async Task<IActionResult> GetAvailableStructures([FromQuery] int offset = -1,
                                                                 [FromQuery] int length = -1)

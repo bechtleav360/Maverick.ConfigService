@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Projection.Configuration
+﻿namespace Bechtle.A365.ConfigService.Configuration
 {
     public class ProjectionEventBusConfiguration
     {

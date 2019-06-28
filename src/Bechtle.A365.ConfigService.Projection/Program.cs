@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.Utilities;
-using Bechtle.A365.ConfigService.Projection.Configuration;
+using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Projection.Extensions;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -14,9 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NLog;
 using NLog.Extensions.Logging;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Bechtle.A365.ConfigService.Projection

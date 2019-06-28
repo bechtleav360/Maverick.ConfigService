@@ -209,9 +209,28 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("available", Name = "GetAvailableConfigurations")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetAvailableConfigurations([FromQuery] DateTime when,
-                                                                    [FromQuery] int offset = -1,
-                                                                    [FromQuery] int length = -1)
+        [Obsolete]
+        public IActionResult GetAvailableConfigurations([FromQuery] DateTime when,
+                                                        [FromQuery] int offset = -1,
+                                                        [FromQuery] int length = -1)
+            => RedirectToActionPermanent(nameof(GetConfigurations),
+                                         "Configuration",
+                                         new {when, offset, length});
+
+        /// <summary>
+        ///     get all available configurations
+        /// </summary>
+        /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet(Name = "GetConfigurations")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetConfigurations([FromQuery] DateTime when,
+                                                           [FromQuery] int offset = -1,
+                                                           [FromQuery] int length = -1)
         {
             var range = QueryRange.Make(offset, length);
             var result = await _store.Configurations.GetAvailable(when, range);

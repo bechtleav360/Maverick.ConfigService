@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -141,6 +140,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="length"></param>
         /// <returns></returns>
         [ApiVersion(ApiVersions.V1)]
+        [HttpGet(Name = "GetEnvironments")]
         [HttpGet("available", Name = "GetAvailableEnvironments")]
         public async Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
                                                                   [FromQuery] int length = -1)

@@ -122,7 +122,7 @@ namespace Bechtle.A365.ConfigService
                });
 
             _logger.LogInformation("adding MVC-Middleware");
-
+            
             app.UseMvc();
 
             _logger.LogInformation("registering config-reload hook");

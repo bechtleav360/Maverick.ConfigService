@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2026
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29020.237
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{991BBA62-8478-471F-960C-4AD6D4E8F637}"
 EndProject
@@ -28,6 +28,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Cli", "src\Bechtle.A365.ConfigService.Cli\Bechtle.A365.ConfigService.Cli.csproj", "{534CDB40-DF3D-4A11-A0E5-CCB738E5E327}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Migrations", "src\Bechtle.A365.ConfigService.Migrations\Bechtle.A365.ConfigService.Migrations.csproj", "{8E923882-1B83-4140-A338-7D79C11BE8D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Configuration", "src\Bechtle.A365.ConfigService.Configuration\Bechtle.A365.ConfigService.Configuration.csproj", "{1D384849-D2C6-4FB5-B7CF-4A66CA847724}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -113,6 +115,14 @@ Global
 		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Release|x86.ActiveCfg = Release|Any CPU
 		{8E923882-1B83-4140-A338-7D79C11BE8D2}.Release|x86.Build.0 = Release|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Debug|x86.Build.0 = Debug|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Release|x86.ActiveCfg = Release|Any CPU
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -128,6 +138,7 @@ Global
 		{EE694245-406E-4E23-9C89-F619AC284B1F} = {14CB50C7-3090-42D6-9EB6-F2033A65590B}
 		{534CDB40-DF3D-4A11-A0E5-CCB738E5E327} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 		{8E923882-1B83-4140-A338-7D79C11BE8D2} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
+		{1D384849-D2C6-4FB5-B7CF-4A66CA847724} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1726AC6-C9A5-48E9-AEC6-B29C0E7BDC87}

@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Bechtle.A365.ConfigService.Projection": {
+      "commandName": "Project",
+      "commandLineArgs": "--console",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

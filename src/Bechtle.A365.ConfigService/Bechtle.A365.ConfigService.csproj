@@ -27,6 +27,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj" />
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Authentication.Certificates\Bechtle.A365.ConfigService.Authentication.Certificates.csproj" />
+    <ProjectReference Include="..\Bechtle.A365.ConfigService.Configuration\Bechtle.A365.ConfigService.Configuration.csproj" />
+    <ProjectReference Include="..\Bechtle.A365.ConfigService.Migrations\Bechtle.A365.ConfigService.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>

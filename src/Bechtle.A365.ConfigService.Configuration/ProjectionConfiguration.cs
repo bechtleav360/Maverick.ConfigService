@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Projection.Configuration
+﻿namespace Bechtle.A365.ConfigService.Configuration
 {
     /// <summary>
     ///     Configures how the Projection should behave, and where to connect to
