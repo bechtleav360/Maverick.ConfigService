@@ -30,5 +30,7 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         public DateTime? ValidFrom { get; set; }
 
         public DateTime? ValidTo { get; set; }
+
+        public long Version { get; set; }
     }
 }

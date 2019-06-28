@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Bechtle.A365.Utilities.Rest" Version="1.5.0-zzdevelop0011" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.2" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.11" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.0" />
@@ -19,6 +20,18 @@
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj" />
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Configuration\Bechtle.A365.ConfigService.Configuration.csproj" />
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Migrations\Bechtle.A365.ConfigService.Migrations.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.AspNetCore">
+      <HintPath>C:\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.aspnetcore\2.1.1\lib\netstandard2.0\Microsoft.AspNetCore.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <None Update="appsettings.migrations.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

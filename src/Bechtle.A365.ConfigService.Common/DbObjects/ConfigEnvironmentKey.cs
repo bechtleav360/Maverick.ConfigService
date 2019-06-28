@@ -19,5 +19,7 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         public string Type { get; set; }
 
         public string Value { get; set; }
+
+        public long Version { get; set; }
     }
 }

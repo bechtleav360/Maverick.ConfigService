@@ -6,6 +6,7 @@
 - Anbindung von Services
 - Technische Details
 - Known Issues
+- DB-Migrations
 
 ## Overview
 
@@ -334,3 +335,20 @@ Alle Pfade sind technisch korrekt, die "Fehlerhafte Darstellung" führt allerdin
 Der ConfigService2.0 verwandelt JSON automatisch in das Korrekte format wenn der Endpunkt `/environments/{category}/{name}/json` genutzt wird.  
 Alternativ steht noch der Endpunkt `/environments/{category}/{name}/keys` zur verfügung, dort wird allerdings davon ausgegangen dass die übertragenen Werte korrekt sind.  
 Über die Endpunkte `/convert/json/map` und `/convert/map/json` können JSON und `Dictionary<string, string>` beliebig umgewandelt werden, falls der client diese aufgabe nicht übernehmen will.
+
+## DB-Migrations
+
+Änderungen an dem DB-Schema werden über migrations versioniert und durchgeführt.
+Das ausführen von migrations ist näher in der ConfigService.Cli-Readme dokumentiert.
+
+Um mit migrations zu arbeiten müssen folgende schritte befolgt werden:
+
+- ins verzeichnis Bechtle.A365.ConfigSerivce/src/Bechtle.A365.ConfigService.Cli springen
+- konsole öffnen
+- dotnet 'ef' befehle mit diesen parametern ausführen '--context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations'
+
+z.B. so, um alle migrations anzuzeigen: 
+
+```
+dotnet ef migrations list --context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations
+```
