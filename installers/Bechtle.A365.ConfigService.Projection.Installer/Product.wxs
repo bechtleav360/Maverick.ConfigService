@@ -122,7 +122,7 @@
 
     <CustomAction Id="ExecuteMigration"
                   Directory="TARGETDIR"
-                  ExeCommand="&quot;dotnet&quot; &quot;[INSTALLFOLDER]Cli\Bechtle.A365.ConfigService.Cli.dll migrate -c [PROJECTIONSTORAGECONNECTIONSTRING]&quot;"
+                  ExeCommand="dotnet &quot;[INSTALLFOLDER]Cli\Bechtle.A365.ConfigService.Cli.dll&quot; migrate -c &quot;[PROJECTIONSTORAGECONNECTIONSTRING]&quot;"
                   Execute="deferred"
                   Return="asyncNoWait"
                   Impersonate="no" />
