@@ -744,9 +744,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                StructureIdentifier identifier,
                                                IReadOnlyDictionary<string, StructureVariable> lookup)
         {
-            var existingKey = lookup.ContainsKey(action.Key)
-                                  ? lookup[action.Key]
-                                  : null;
+            var existingKey = lookup.FirstOrDefault(kvp => kvp.Key.Equals(action.Key, StringComparison.InvariantCultureIgnoreCase))
+                                    .Value;
 
             if (!(existingKey is null))
                 return existingKey;
@@ -759,9 +758,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                   EnvironmentIdentifier identifier,
                                                   IReadOnlyDictionary<string, ConfigEnvironmentKey> lookup)
         {
-            var existingKey = lookup.ContainsKey(action.Key)
-                                  ? lookup[action.Key]
-                                  : null;
+            var existingKey = lookup.FirstOrDefault(kvp => kvp.Key.Equals(action.Key, StringComparison.InvariantCultureIgnoreCase))
+                                    .Value;
 
             if (!(existingKey is null))
                 return existingKey;
@@ -774,9 +772,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                                                Structure structure,
                                                                                IReadOnlyDictionary<string, StructureVariable> lookup)
         {
-            var existingKey = lookup.ContainsKey(action.Key)
-                                  ? lookup[action.Key]
-                                  : null;
+            var existingKey = lookup.FirstOrDefault(kvp => kvp.Key.Equals(action.Key, StringComparison.InvariantCultureIgnoreCase))
+                                    .Value;
 
             if (existingKey is null)
                 return (new StructureVariable
@@ -796,9 +793,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                                                      ConfigEnvironment environment,
                                                                                      IReadOnlyDictionary<string, ConfigEnvironmentKey> lookup)
         {
-            var existingKey = lookup.ContainsKey(action.Key)
-                                  ? lookup[action.Key]
-                                  : null;
+            var existingKey = lookup.FirstOrDefault(kvp => kvp.Key.Equals(action.Key, StringComparison.InvariantCultureIgnoreCase))
+                                    .Value;
 
             if (existingKey is null)
                 return (new ConfigEnvironmentKey
