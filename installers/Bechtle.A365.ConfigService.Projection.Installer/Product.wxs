@@ -128,8 +128,8 @@
                   Impersonate="no" />
 
     <InstallExecuteSequence>
-      <Custom Action="UpdateAppsettings" After="InstallFiles">NOT Installed</Custom>
-      <Custom Action="ExecuteMigration" After="InstallFiles">NOT Installed</Custom>
+      <Custom Action="UpdateAppsettings" After="InstallFiles" />
+      <Custom Action="ExecuteMigration" After="InstallFiles" />
     </InstallExecuteSequence>
 
   </Product>
