@@ -225,6 +225,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IStructureProjectionStore, StructureProjectionStore>(_logger)
                     .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
                     .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)
+                    .AddScoped<ITemporaryKeyStore, TemporaryKeyStore>(_logger)
                     .AddScoped<IConfigurationCompiler, ConfigurationCompiler>(_logger)
                     .AddScoped<IJsonTranslator, JsonTranslator>(_logger)
                     .AddScoped<IConfigurationParser, AntlrConfigurationParser>(_logger)
