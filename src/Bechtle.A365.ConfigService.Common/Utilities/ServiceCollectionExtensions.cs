@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                                 Action<IServiceProvider, DbContextOptionsBuilder> optionsAction)
             where TContext : DbContext
         {
-            logger.LogInformation($"registering DbContext: {typeof(TContext).Name}");
+            logger.LogInformation($"registering DbContext: {typeof(TContext).GetFriendlyName()}");
 
             return services.AddDbContext<TContext>(optionsAction);
         }
@@ -168,14 +168,14 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                                               ServiceLifetime lifetime,
                                                                               bool usingCustomFactory = false)
             => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{typeof(TService).Name} => {typeof(TImplementation).Name}" +
+                                     $"{typeof(TService).GetFriendlyName()} => {typeof(TImplementation).GetFriendlyName()}" +
                                      $"{(usingCustomFactory ? " with custom factory-action" : "")}");
 
         private static void LogServiceRegistration<TImplementation>(this ILogger logger,
                                                                     ServiceLifetime lifetime,
                                                                     bool usingCustomFactory = false)
             => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{typeof(TImplementation).Name}" +
+                                     $"{typeof(TImplementation).GetFriendlyName()}" +
                                      $"{(usingCustomFactory ? " with custom factory-action" : "")}");
 
         private static void LogServiceRegistration(this ILogger logger,
@@ -183,7 +183,7 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                    ServiceLifetime lifetime,
                                                    bool usingCustomFactory = false)
             => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{serviceType.Name}" +
+                                     $"{serviceType.GetFriendlyName()}" +
                                      $"{(usingCustomFactory ? " with custom factory-action" : "")}");
 
         private static void LogServiceRegistration(this ILogger logger,
@@ -192,7 +192,34 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                    ServiceLifetime lifetime,
                                                    bool usingCustomFactory = false)
             => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{serviceType.Name} => {implementationType.Name}" +
+                                     $"{serviceType.GetFriendlyName()} => {implementationType.GetFriendlyName()}" +
                                      $"{(usingCustomFactory ? " with custom factory-action" : "")}");
+
+        private static string GetFriendlyName(this Type type)
+        {
+            var friendlyName = type.Name;
+
+            if (!type.IsGenericType)
+                return friendlyName;
+
+            var backtickIndex = friendlyName.IndexOf('`');
+
+            if (backtickIndex > 0)
+                friendlyName = friendlyName.Remove(backtickIndex);
+
+            friendlyName += "<";
+
+            var typeParameters = type.GetGenericArguments();
+
+            for (var i = 0; i < typeParameters.Length; ++i)
+            {
+                var typeParamName = GetFriendlyName(typeParameters[i]);
+                friendlyName += (i == 0 ? typeParamName : "," + typeParamName);
+            }
+
+            friendlyName += ">";
+
+            return friendlyName;
+        }
     }
 }
