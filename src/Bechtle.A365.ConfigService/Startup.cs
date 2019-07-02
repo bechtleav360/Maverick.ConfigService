@@ -236,7 +236,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IEventStore, Services.EventStore>(_logger)
                     .AddScoped<IDataExporter, DataExporter>(_logger)
                     .AddScoped<IDataImporter, DataImporter>(_logger)
-                    .AddScoped<IEventBus, WebSocketEventBusClient>(provider =>
+                    .AddScoped<IEventBus, WebSocketEventBusClient>(_logger, provider =>
                     {
                         var config = provider.GetService<EventBusConnectionConfiguration>();
                         var loggerFactory = provider.GetService<ILoggerFactory>();
