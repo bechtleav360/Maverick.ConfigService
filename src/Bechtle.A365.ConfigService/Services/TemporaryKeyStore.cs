@@ -17,8 +17,8 @@ namespace Bechtle.A365.ConfigService.Services
     /// </summary>
     public class TemporaryKeyStore : ITemporaryKeyStore
     {
-        private const string CacheKeyJournalName = CacheRegion + "Journal";
-        private const string CacheRegion = "A365.ConfigService.TemporaryStore.";
+        private const string CacheKeyJournalName = CacheRegion + ".Journal";
+        private const string CacheRegion = "A365.ConfigService.TemporaryStore";
         private readonly IDistributedCache _cache;
         private readonly ILogger _logger;
 
@@ -263,7 +263,7 @@ namespace Bechtle.A365.ConfigService.Services
 
             try
             {
-                var currentJournalBytes = await _cache.GetAsync(CacheKeyJournalName);
+                var currentJournalBytes = await _cache.GetAsync(CacheKeyJournalName.ToLowerInvariant());
 
                 if (currentJournalBytes.Any())
                 {
@@ -320,7 +320,8 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
-                await _cache.SetAsync(CacheKeyJournalName, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(journal, Formatting.None)));
+                await _cache.SetAsync(CacheKeyJournalName.ToLowerInvariant(),
+                                      Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(journal, Formatting.None)));
             }
             catch (Exception e)
             {
