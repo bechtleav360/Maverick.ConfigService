@@ -5,11 +5,11 @@
     /// </summary>
     public class ProjectionConfiguration
     {
-        /// <inheritdoc cref="ProjectionEventBusConfiguration" />
-        public ProjectionEventBusConfiguration EventBusConnection { get; set; }
+        /// <inheritdoc cref="EventBusConnectionConfiguration" />
+        public EventBusConnectionConfiguration EventBusConnection { get; set; }
 
-        /// <inheritdoc cref="ProjectionEventStoreConfiguration" />
-        public ProjectionEventStoreConfiguration EventStoreConnection { get; set; }
+        /// <inheritdoc cref="EventStoreConnectionConfiguration" />
+        public EventStoreConnectionConfiguration EventStoreConnection { get; set; }
 
         /// <inheritdoc cref="ProjectionStorageConfiguration" />
         public ProjectionStorageConfiguration ProjectionStorage { get; set; }

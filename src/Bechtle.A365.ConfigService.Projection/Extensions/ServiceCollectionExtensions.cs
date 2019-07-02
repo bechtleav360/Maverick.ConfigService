@@ -90,7 +90,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                        .AddSingleton<IEventDeserializer, EventDeserializer>()
                        .AddSingleton<IEventBus, WebSocketEventBusClient>(provider =>
                        {
-                           var config = provider.GetService<ProjectionEventBusConfiguration>();
+                           var config = provider.GetService<EventBusConnectionConfiguration>();
                            var loggerFactory = provider.GetService<ILoggerFactory>();
 
                            var client = new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
