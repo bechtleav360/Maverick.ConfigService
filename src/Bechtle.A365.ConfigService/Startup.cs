@@ -202,6 +202,15 @@ namespace Bechtle.A365.ConfigService
 
             // setup services for DI
             services.AddMemoryCache()
+                    .AddStackExchangeRedisCache(options =>
+                    {
+                        var connectionString = Configuration.Get<ConfigServiceConfiguration>()?.MemoryCache?.Redis?.ConnectionString ?? string.Empty;
+
+                        if (string.IsNullOrWhiteSpace(connectionString))
+                            throw new ArgumentNullException(nameof(connectionString), "MemoryCache:Redis:ConnectionString is null or empty");
+
+                        options.Configuration = connectionString;
+                    })
                     .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddScoped(_logger, provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)

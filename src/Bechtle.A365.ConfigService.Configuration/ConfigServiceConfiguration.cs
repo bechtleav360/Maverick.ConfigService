@@ -14,6 +14,9 @@
         /// <inheritdoc cref="EventStoreConnectionConfiguration" />
         public EventStoreConnectionConfiguration EventStoreConnection { get; set; }
 
+        /// <inheritdoc cref="MemoryCacheConfiguration" />
+        public MemoryCacheConfiguration MemoryCache { get; set; }
+
         /// <inheritdoc cref="ProjectionStorageConfiguration" />
         public ProjectionStorageConfiguration ProjectionStorage { get; set; }
 
