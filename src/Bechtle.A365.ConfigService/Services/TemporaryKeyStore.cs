@@ -265,7 +265,7 @@ namespace Bechtle.A365.ConfigService.Services
             {
                 var currentJournalBytes = await _cache.GetAsync(CacheKeyJournalName.ToLowerInvariant());
 
-                if (currentJournalBytes.Any())
+                if (currentJournalBytes?.Any() == true)
                 {
                     var currentJournalValue = Encoding.UTF8.GetString(currentJournalBytes);
 
