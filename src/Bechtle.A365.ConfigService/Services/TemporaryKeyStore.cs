@@ -158,12 +158,12 @@ namespace Bechtle.A365.ConfigService.Services
 
             if (!journal.ContainsKey(region))
                 return Result.Error<IDictionary<string, string>>($"no keys for '{region}' in journal - try retrieving keys directly",
-                                                                 ErrorCode.DbQueryError);
+                                                                 ErrorCode.NotFound);
 
             var values = await Get(region, journal[region]);
 
             if (values.IsError)
-                return Result.Error<IDictionary<string, string>>("", ErrorCode.DbQueryError);
+                return Result.Error<IDictionary<string, string>>(values.Message, values.Code);
 
             return Result.Success(values.Data);
         }
