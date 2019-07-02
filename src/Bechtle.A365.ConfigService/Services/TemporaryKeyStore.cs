@@ -205,7 +205,7 @@ namespace Bechtle.A365.ConfigService.Services
         {
             try
             {
-                var byteValues = values.ToDictionary(kvp => kvp.Value,
+                var byteValues = values.ToDictionary(kvp => kvp.Key,
                                                      kvp => Encoding.UTF8.GetBytes(kvp.Value));
 
                 var cacheOptions = new DistributedCacheEntryOptions
