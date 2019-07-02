@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc cref="ITemporaryKeyStore" />
     /// <summary>
     ///     implementation of <see cref="ITemporaryKeyStore"/>, stores keys using a <see cref="IDistributedCache"/>.
-    ///     keeps a journal of stored keys / structure, to make <see cref="GetAll()"/> and overloads possible.
+    ///     keeps a journal of stored keys / region, to make <see cref="GetAll()"/> and overloads possible.
     /// </summary>
     public class TemporaryKeyStore : ITemporaryKeyStore
     {
@@ -30,17 +30,17 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public Task<IResult> Extend(string structure, string key) => Extend(structure, new[] {key});
+        public Task<IResult> Extend(string region, string key) => Extend(region, new[] {key});
 
         /// <inheritdoc />
-        public async Task<IResult> Extend(string structure, IEnumerable<string> keys)
+        public async Task<IResult> Extend(string region, IEnumerable<string> keys)
         {
             var keyList = keys.ToList();
 
             try
             {
                 var tasks = keyList.AsParallel()
-                                   .Select(k => _cache.RefreshAsync(MakeCacheKey(structure, k)))
+                                   .Select(k => _cache.RefreshAsync(MakeCacheKey(region, k)))
                                    .ToList();
 
                 await Task.WhenAll(tasks);
@@ -56,23 +56,23 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public Task<IResult> Extend(string structure, string key, TimeSpan duration) => Extend(structure, new[] {key}, duration);
+        public Task<IResult> Extend(string region, string key, TimeSpan duration) => Extend(region, new[] {key}, duration);
 
         /// <inheritdoc />
-        public async Task<IResult> Extend(string structure, IEnumerable<string> keys, TimeSpan duration)
+        public async Task<IResult> Extend(string region, IEnumerable<string> keys, TimeSpan duration)
         {
             var keyList = keys.ToList();
 
             try
             {
-                var values = await Get(structure, keyList);
+                var values = await Get(region, keyList);
 
                 if (values.IsError)
                     return values;
 
                 var tasks = values.Data
                                   .AsParallel()
-                                  .Select(kvp => Set(structure, kvp.Key, kvp.Value, duration))
+                                  .Select(kvp => Set(region, kvp.Key, kvp.Value, duration))
                                   .ToList();
 
                 await Task.WhenAll(tasks);
@@ -96,14 +96,14 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> Get(string structure, IEnumerable<string> keys)
+        public async Task<IResult<IDictionary<string, string>>> Get(string region, IEnumerable<string> keys)
         {
             var keyList = keys.ToList();
 
             try
             {
                 var tasks = keyList.AsParallel()
-                                   .Select(k => (Key: k, Task: _cache.GetAsync(MakeCacheKey(structure, k))))
+                                   .Select(k => (Key: k, Task: _cache.GetAsync(MakeCacheKey(region, k))))
                                    .ToList();
 
                 await Task.WhenAll(tasks.Select(t => t.Task));
@@ -122,9 +122,9 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public async Task<IResult<string>> Get(string structure, string key)
+        public async Task<IResult<string>> Get(string region, string key)
         {
-            var result = await Get(structure, new[] {key});
+            var result = await Get(region, new[] {key});
 
             return result.IsError
                        ? Result.Error<string>(result.Message, result.Code)
@@ -138,29 +138,29 @@ namespace Bechtle.A365.ConfigService.Services
 
             IDictionary<string, IDictionary<string, string>> result = new Dictionary<string, IDictionary<string, string>>();
 
-            foreach (var (structure, keys) in journal)
+            foreach (var (region, keys) in journal)
             {
-                var values = await Get(structure, keys);
+                var values = await Get(region, keys);
 
                 if (values.IsError)
                     continue;
 
-                result.Add(structure, values.Data);
+                result.Add(region, values.Data);
             }
 
             return Result.Success(result);
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetAll(string structure)
+        public async Task<IResult<IDictionary<string, string>>> GetAll(string region)
         {
             var journal = await GetJournal();
 
-            if (!journal.ContainsKey(structure))
-                return Result.Error<IDictionary<string, string>>($"no keys for '{structure}' in journal - try retrieving keys directly",
+            if (!journal.ContainsKey(region))
+                return Result.Error<IDictionary<string, string>>($"no keys for '{region}' in journal - try retrieving keys directly",
                                                                  ErrorCode.DbQueryError);
 
-            var values = await Get(structure, journal[structure]);
+            var values = await Get(region, journal[region]);
 
             if (values.IsError)
                 return Result.Error<IDictionary<string, string>>("", ErrorCode.DbQueryError);
@@ -169,22 +169,22 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public Task<IResult> Remove(string structure, string key) => Remove(structure, new[] {key});
+        public Task<IResult> Remove(string region, string key) => Remove(region, new[] {key});
 
         /// <inheritdoc />
-        public async Task<IResult> Remove(string structure, IEnumerable<string> keys)
+        public async Task<IResult> Remove(string region, IEnumerable<string> keys)
         {
             var keyList = keys.ToList();
 
             try
             {
                 var tasks = keyList.AsParallel()
-                                   .Select(k => _cache.RemoveAsync(MakeCacheKey(structure, k)))
+                                   .Select(k => _cache.RemoveAsync(MakeCacheKey(region, k)))
                                    .ToList();
 
                 await Task.WhenAll(tasks);
 
-                await RemoveFromJournal(structure, keyList.ToArray());
+                await RemoveFromJournal(region, keyList.ToArray());
 
                 return Result.Success();
             }
@@ -197,11 +197,11 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public Task<IResult> Set(string structure, string key, string value, TimeSpan duration)
-            => Set(structure, new Dictionary<string, string> {{key, value}}, duration);
+        public Task<IResult> Set(string region, string key, string value, TimeSpan duration)
+            => Set(region, new Dictionary<string, string> {{key, value}}, duration);
 
         /// <inheritdoc />
-        public async Task<IResult> Set(string structure, IDictionary<string, string> values, TimeSpan duration)
+        public async Task<IResult> Set(string region, IDictionary<string, string> values, TimeSpan duration)
         {
             try
             {
@@ -214,12 +214,12 @@ namespace Bechtle.A365.ConfigService.Services
                 };
 
                 var tasks = byteValues.AsParallel()
-                                      .Select(kvp => _cache.SetAsync(MakeCacheKey(structure, kvp.Key), kvp.Value, cacheOptions))
+                                      .Select(kvp => _cache.SetAsync(MakeCacheKey(region, kvp.Key), kvp.Value, cacheOptions))
                                       .ToList();
 
                 await Task.WhenAll(tasks);
 
-                await AddToJournal(structure, values.Keys.ToArray());
+                await AddToJournal(region, values.Keys.ToArray());
 
                 return Result.Success();
             }
@@ -234,20 +234,20 @@ namespace Bechtle.A365.ConfigService.Services
         /// <summary>
         ///     add keys to the internal journal
         /// </summary>
-        /// <param name="structure"></param>
+        /// <param name="region"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        private async Task AddToJournal(string structure, params string[] keys)
+        private async Task AddToJournal(string region, params string[] keys)
         {
             var currentJournal = await GetJournal();
 
             foreach (var key in keys)
             {
-                if (!currentJournal.ContainsKey(structure))
-                    currentJournal.Add(structure, new List<string>());
+                if (!currentJournal.ContainsKey(region))
+                    currentJournal.Add(region, new List<string>());
 
-                if (!currentJournal[structure].Contains(key))
-                    currentJournal[structure].Add(key);
+                if (!currentJournal[region].Contains(key))
+                    currentJournal[region].Add(key);
             }
 
             await StoreJournal(currentJournal);
@@ -289,24 +289,24 @@ namespace Bechtle.A365.ConfigService.Services
         /// <summary>
         ///     make a CacheKey taking all necessary information into account
         /// </summary>
-        /// <param name="structure"></param>
+        /// <param name="region"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        private string MakeCacheKey(string structure, string key) => $"{CacheRegion}.{structure}.{key}".ToLowerInvariant();
+        private string MakeCacheKey(string region, string key) => $"{CacheRegion}.{region}.{key}".ToLowerInvariant();
 
         /// <summary>
         ///     remove keys from the internal journal
         /// </summary>
-        /// <param name="structure"></param>
+        /// <param name="region"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        private async Task RemoveFromJournal(string structure, params string[] keys)
+        private async Task RemoveFromJournal(string region, params string[] keys)
         {
             var currentJournal = await GetJournal();
 
             foreach (var key in keys)
-                if (currentJournal.ContainsKey(structure) && currentJournal[structure].Contains(key))
-                    currentJournal[structure].Remove(key);
+                if (currentJournal.ContainsKey(region) && currentJournal[region].Contains(key))
+                    currentJournal[region].Remove(key);
 
             await StoreJournal(currentJournal);
         }
