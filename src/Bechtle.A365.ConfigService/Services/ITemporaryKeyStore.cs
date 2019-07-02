@@ -95,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="region"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string)" /></param>
+        /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string, string)" /></param>
         /// <returns></returns>
         Task<IResult> Set(string region, string key, string value, TimeSpan duration);
 
