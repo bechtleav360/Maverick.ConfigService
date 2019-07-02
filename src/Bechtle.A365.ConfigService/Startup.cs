@@ -14,6 +14,8 @@ using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Middleware;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.Core.EventBus;
+using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Maverick.Core.Health.Builder;
 using Bechtle.A365.Maverick.Core.Health.Extensions;
 using Bechtle.A365.Maverick.Core.Health.Model;
@@ -234,6 +236,18 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IEventStore, Services.EventStore>(_logger)
                     .AddScoped<IDataExporter, DataExporter>(_logger)
                     .AddScoped<IDataImporter, DataImporter>(_logger)
+                    .AddScoped<IEventBus, WebSocketEventBusClient>(provider =>
+                    {
+                        var config = provider.GetService<EventBusConnectionConfiguration>();
+                        var loggerFactory = provider.GetService<ILoggerFactory>();
+
+                        var client = new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
+                                                                 loggerFactory);
+
+                        client.Connect().Wait();
+
+                        return client;
+                    })
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)
