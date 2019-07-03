@@ -58,6 +58,11 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             ConfigExport export;
 
+            // try to strip utf8-byte-order-mark from the incoming text
+            var bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
+            if (json.StartsWith(bom))
+                json = json.TrimStart(bom.ToCharArray());
+
             try
             {
                 export = JsonConvert.DeserializeObject<ConfigExport>(json);
