@@ -70,6 +70,8 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (result.IsError)
                     return ProviderError(result);
 
+                await _eventBus.Connect();
+
                 await _eventBus.Publish(new EventMessage
                 {
                     Event = new TemporaryKeysAdded
@@ -186,6 +188,8 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 if (result.IsError)
                     return ProviderError(result);
+
+                await _eventBus.Connect();
 
                 await _eventBus.Publish(new EventMessage
                 {

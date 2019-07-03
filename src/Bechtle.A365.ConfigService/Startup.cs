@@ -240,12 +240,8 @@ namespace Bechtle.A365.ConfigService
                     {
                         var config = provider.GetService<EventBusConnectionConfiguration>();
 
-                        var client = new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
-                                                                 provider.GetService<ILoggerFactory>());
-
-                        client.Connect().RunSync();
-
-                        return client;
+                        return new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
+                                                           provider.GetService<ILoggerFactory>());
                     })
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
