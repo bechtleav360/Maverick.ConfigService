@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Services
                 try
                 {
                     Logger.LogDebug("cleaning up empty keys from journal");
-                    await ExecuteCleanup();
+                    await ExecuteCleanup(cancellationToken);
                     Logger.LogDebug("cleanup finished");
                 }
                 catch (Exception e)
@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
         }
 
-        private async Task ExecuteCleanup()
+        private async Task ExecuteCleanup(CancellationToken cancellationToken)
         {
             Logger.LogDebug("creating DI-Scope for this run");
 
@@ -56,10 +56,16 @@ namespace Bechtle.A365.ConfigService.Services
             {
                 Logger.LogDebug("requesting services");
 
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
                 var tempStore = scope.ServiceProvider.GetRequiredService<ITemporaryKeyStore>();
                 var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
 
                 var result = await tempStore.GetAll();
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
 
                 if (result.IsError)
                 {
@@ -69,6 +75,9 @@ namespace Bechtle.A365.ConfigService.Services
 
                 foreach (var (region, data) in result.Data)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
                     Logger.LogDebug($"searching through region '{region}' for keys to clean up");
                     var keysToExpire = new List<string>();
 
@@ -87,6 +96,9 @@ namespace Bechtle.A365.ConfigService.Services
 
                     if (keysToExpire.Any() && Logger.IsEnabled(LogLevel.Trace)) 
                         Logger.LogTrace($"expired keys that will be removed from region '{region}': {string.Join("; ", keysToExpire)}");
+
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
 
                     Logger.LogTrace("removing keys from store");
                     await tempStore.Remove(region, keysToExpire);
