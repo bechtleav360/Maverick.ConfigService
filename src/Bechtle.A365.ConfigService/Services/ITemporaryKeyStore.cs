@@ -11,22 +11,6 @@ namespace Bechtle.A365.ConfigService.Services
     public interface ITemporaryKeyStore
     {
         /// <summary>
-        ///     extend the lifespan of a temporary key in the store
-        /// </summary>
-        /// <param name="region"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        Task<IResult> Extend(string region, string key);
-
-        /// <summary>
-        ///     extend the lifespan of multiple keys in the store
-        /// </summary>
-        /// <param name="region"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        Task<IResult> Extend(string region, IEnumerable<string> keys);
-
-        /// <summary>
         ///     extend the lifespan of a temporary key in the store, and setting a new lifespan
         /// </summary>
         /// <param name="region"></param>
@@ -95,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="region"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string, string)" /></param>
+        /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string, string, TimeSpan)" /></param>
         /// <returns></returns>
         Task<IResult> Set(string region, string key, string value, TimeSpan duration);
 
@@ -104,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// </summary>
         /// <param name="region"></param>
         /// <param name="values"></param>
-        /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string, string)" /></param>
+        /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string, IEnumerable{string}, TimeSpan)" /></param>
         /// <returns></returns>
         Task<IResult> Set(string region, IDictionary<string, string> values, TimeSpan duration);
     }

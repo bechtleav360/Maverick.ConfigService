@@ -30,32 +30,6 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public Task<IResult> Extend(string region, string key) => Extend(region, new[] {key});
-
-        /// <inheritdoc />
-        public async Task<IResult> Extend(string region, IEnumerable<string> keys)
-        {
-            var keyList = keys.ToList();
-
-            try
-            {
-                var tasks = keyList.AsParallel()
-                                   .Select(k => _cache.RefreshAsync(MakeCacheKey(region, k)))
-                                   .ToList();
-
-                await Task.WhenAll(tasks);
-
-                return Result.Success();
-            }
-            catch (Exception e)
-            {
-                var message = $"could not extend the lifespan of one of the following keys:\r\n{string.Join("; ", keyList)}";
-                _logger.LogWarning(e, message);
-                return Result.Error(message, ErrorCode.DbUpdateError);
-            }
-        }
-
-        /// <inheritdoc />
         public Task<IResult> Extend(string region, string key, TimeSpan duration) => Extend(region, new[] {key}, duration);
 
         /// <inheritdoc />
