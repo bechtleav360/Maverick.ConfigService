@@ -184,7 +184,7 @@ namespace Bechtle.A365.ConfigService.Services
 
                 var cacheOptions = new DistributedCacheEntryOptions
                 {
-                    SlidingExpiration = duration
+                    AbsoluteExpirationRelativeToNow = duration
                 };
 
                 var tasks = byteValues.AsParallel()
