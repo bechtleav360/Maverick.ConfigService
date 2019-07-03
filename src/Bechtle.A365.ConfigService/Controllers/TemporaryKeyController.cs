@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ConfigService.Services;
@@ -113,6 +115,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                     return BadRequest("structureVersion invalid");
 
                 var result = await _keyStore.GetAll(MakeTemporaryRegion(structure, structureVersion));
+
+                if (result.Code == ErrorCode.NotFound)
+                    return Ok(new Dictionary<string, string>());
 
                 return Result(result);
             }
