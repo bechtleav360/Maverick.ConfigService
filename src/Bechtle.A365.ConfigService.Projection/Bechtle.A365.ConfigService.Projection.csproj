@@ -30,7 +30,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
-    <PackageReference Include="Bechtle.A365.Core.EventBus" Version="2.1.0-featureconfigeve0001" />
     <PackageReference Include="Bechtle.A365.Logging.NLog" Version="1.5.0-zzdevelop0012" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.4" />

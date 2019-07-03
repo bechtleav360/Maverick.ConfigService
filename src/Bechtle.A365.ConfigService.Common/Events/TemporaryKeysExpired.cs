@@ -1,0 +1,29 @@
+﻿using System.Collections.Generic;
+using Bechtle.A365.Core.EventBus.Events.Abstraction;
+
+namespace Bechtle.A365.ConfigService.Common.Events
+{
+    /// <summary>
+    ///     event published when temporary high-priority keys have expired
+    /// </summary>
+    public class TemporaryKeysExpired : IA365Event
+    {
+        /// <summary>
+        ///     name of target structure
+        /// </summary>
+        public string Structure { get; set; }
+
+        /// <summary>
+        ///     version of target-structure
+        /// </summary>
+        public int Version { get;set; }
+
+        /// <summary>
+        ///     list of keys that have expired
+        /// </summary>
+        public List<string> Keys { get; set; }
+
+        /// <inheritdoc />
+        public string EventName => nameof(TemporaryKeysExpired);
+    }
+}

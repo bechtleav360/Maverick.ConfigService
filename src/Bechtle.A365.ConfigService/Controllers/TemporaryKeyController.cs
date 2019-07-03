@@ -2,8 +2,11 @@
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.Core.EventBus.Abstraction;
+using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -16,16 +19,18 @@ namespace Bechtle.A365.ConfigService.Controllers
     [Route(ApiBaseRoute + "temporary")]
     public class TemporaryKeyController : ControllerBase
     {
-        // @TODO: send events out when temporary keys are stored / changed / expired
         private readonly ITemporaryKeyStore _keyStore;
+        private readonly IEventBus _eventBus;
 
         /// <inheritdoc />
         public TemporaryKeyController(IServiceProvider provider,
                                       ILogger<TemporaryKeyController> logger,
-                                      ITemporaryKeyStore keyStore)
+                                      ITemporaryKeyStore keyStore,
+                                      IEventBus eventBus)
             : base(provider, logger)
         {
             _keyStore = keyStore;
+            _eventBus = eventBus;
         }
 
         /// <summary>
@@ -38,14 +43,16 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpPost("{structure}/{structureVersion}")]
         [ApiVersion(ApiVersions.V1)]
         public async Task<IActionResult> Set([FromRoute] string structure,
-                                             [FromRoute] string structureVersion,
+                                             [FromRoute] int structureVersion,
                                              [FromBody] TemporaryKeyList keys)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(structure) ||
-                    string.IsNullOrWhiteSpace(structureVersion))
-                    return BadRequest("structure / version parameters invalid");
+                if (string.IsNullOrWhiteSpace(structure))
+                    return BadRequest("structure invalid");
+
+                if (structureVersion < 0)
+                    return BadRequest("structureVersion invalid");
 
                 if (keys is null)
                     return BadRequest("invalid body-data");
@@ -59,6 +66,20 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var result = await _keyStore.Set(MakeTemporaryRegion(structure, structureVersion),
                                                  keys.Entries.ToDictionary(e => e.Key, e => e.Value),
                                                  keys.Duration);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                await _eventBus.Publish(new EventMessage
+                {
+                    Event = new TemporaryKeysAdded
+                    {
+                        Structure = structure,
+                        Version = structureVersion,
+                        Values = keys.Entries.ToDictionary(e => e.Key, e => e.Value)
+                    },
+                    EventType = nameof(TemporaryKeysAdded)
+                });
 
                 return Result(result);
             }
@@ -79,13 +100,15 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("{structure}/{structureVersion}")]
         [ApiVersion(ApiVersions.V1)]
         public async Task<IActionResult> GetAll([FromRoute] string structure,
-                                                [FromRoute] string structureVersion)
+                                                [FromRoute] int structureVersion)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(structure) ||
-                    string.IsNullOrWhiteSpace(structureVersion))
-                    return BadRequest("structure / version parameters invalid");
+                if (string.IsNullOrWhiteSpace(structure))
+                    return BadRequest("structure invalid");
+
+                if (structureVersion < 0)
+                    return BadRequest("structureVersion invalid");
 
                 var result = await _keyStore.GetAll(MakeTemporaryRegion(structure, structureVersion));
 
@@ -109,15 +132,19 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpGet("{structure}/{structureVersion}/{key}")]
         [ApiVersion(ApiVersions.V1)]
         public async Task<IActionResult> Get([FromRoute] string structure,
-                                             [FromRoute] string structureVersion,
+                                             [FromRoute] int structureVersion,
                                              [FromRoute] string key)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(structure) ||
-                    string.IsNullOrWhiteSpace(structureVersion) ||
-                    string.IsNullOrWhiteSpace(key))
-                    return BadRequest("structure / version parameters invalid");
+                if (string.IsNullOrWhiteSpace(structure))
+                    return BadRequest("structure invalid");
+
+                if (structureVersion < 0)
+                    return BadRequest("structureVersion invalid");
+
+                if (string.IsNullOrWhiteSpace(key))
+                    return BadRequest("key invalid");
 
                 var result = await _keyStore.Get(MakeTemporaryRegion(structure, structureVersion), key);
 
@@ -141,19 +168,35 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpDelete("{structure}/{structureVersion}/{key}")]
         [ApiVersion(ApiVersions.V1)]
         public async Task<IActionResult> Remove([FromRoute] string structure,
-                                                [FromRoute] string structureVersion,
+                                                [FromRoute] int structureVersion,
                                                 [FromBody] string[] keys)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(structure) ||
-                    string.IsNullOrWhiteSpace(structureVersion))
-                    return BadRequest("structure / version parameters invalid");
+                if (string.IsNullOrWhiteSpace(structure))
+                    return BadRequest("structure invalid");
+
+                if (structureVersion < 0)
+                    return BadRequest("structureVersion invalid");
 
                 if (keys is null || !keys.Any())
                     return BadRequest("no or invalid keys");
 
                 var result = await _keyStore.Remove(MakeTemporaryRegion(structure, structureVersion), keys);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                await _eventBus.Publish(new EventMessage
+                {
+                    Event = new TemporaryKeysExpired
+                    {
+                        Structure = structure,
+                        Version = structureVersion,
+                        Keys = keys.ToList()
+                    },
+                    EventType = nameof(TemporaryKeysExpired)
+                });
 
                 return Result(result);
             }
@@ -175,19 +218,29 @@ namespace Bechtle.A365.ConfigService.Controllers
         [HttpPut("{structure}/{structureVersion}")]
         [ApiVersion(ApiVersions.V1)]
         public async Task<IActionResult> Refresh([FromRoute] string structure,
-                                                 [FromRoute] string structureVersion,
-                                                 [FromBody] string[] keys)
+                                                 [FromRoute] int structureVersion,
+                                                 [FromBody] TemporaryKeyList keys)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(structure) ||
-                    string.IsNullOrWhiteSpace(structureVersion))
-                    return BadRequest("structure / version parameters invalid");
+                if (string.IsNullOrWhiteSpace(structure))
+                    return BadRequest("structure invalid");
 
-                if (keys is null || !keys.Any())
-                    return BadRequest("no or invalid keys");
+                if (structureVersion < 0)
+                    return BadRequest("structureVersion invalid");
 
-                var result = await _keyStore.Extend(MakeTemporaryRegion(structure, structureVersion), keys);
+                if (keys is null)
+                    return BadRequest("invalid body-data");
+
+                if (keys.Entries is null || !keys.Entries.Any())
+                    return BadRequest("no or invalid {Body}.Entries");
+
+                if (keys.Duration == default)
+                    return BadRequest("no or invalid {Body}.Duration");
+
+                var result = await _keyStore.Extend(MakeTemporaryRegion(structure, structureVersion),
+                                                    keys.Entries.Select(e => e.Key).ToList(),
+                                                    keys.Duration);
 
                 return Result(result);
             }
@@ -205,6 +258,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structure"></param>
         /// <param name="version"></param>
         /// <returns></returns>
-        private string MakeTemporaryRegion(string structure, string version) => $"{structure}.{version}";
+        private string MakeTemporaryRegion(string structure, int version) => $"{structure}.{version:D}";
     }
 }

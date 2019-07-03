@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Bechtle.A365.Core.EventBus" Version="2.1.0-featureconfigeve0001" />
     <PackageReference Include="EventStore.Client" Version="5.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.1.4" />
