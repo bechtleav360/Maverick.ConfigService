@@ -282,6 +282,11 @@ namespace Bechtle.A365.ConfigService.Services
                 if (currentJournal.ContainsKey(region) && currentJournal[region].Contains(key))
                     currentJournal[region].Remove(key);
 
+            foreach (var emptyRegion in currentJournal.Where(kvp => !kvp.Value.Any())
+                                                      .Select(kvp => kvp.Key)
+                                                      .ToArray())
+                currentJournal.Remove(emptyRegion);
+
             await StoreJournal(currentJournal);
         }
 
