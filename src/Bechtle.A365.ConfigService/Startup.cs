@@ -239,12 +239,11 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IEventBus, WebSocketEventBusClient>(_logger, provider =>
                     {
                         var config = provider.GetService<EventBusConnectionConfiguration>();
-                        var loggerFactory = provider.GetService<ILoggerFactory>();
 
                         var client = new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
-                                                                 loggerFactory);
+                                                                 provider.GetService<ILoggerFactory>());
 
-                        client.Connect().Wait();
+                        client.Connect().RunSync();
 
                         return client;
                     })
