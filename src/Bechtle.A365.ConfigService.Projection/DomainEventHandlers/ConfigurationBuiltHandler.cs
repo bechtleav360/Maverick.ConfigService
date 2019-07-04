@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.Core.EventBus.Abstraction;
-using Bechtle.A365.Core.EventBus.Events.Events;
 using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.Extensions.Logging;
 
