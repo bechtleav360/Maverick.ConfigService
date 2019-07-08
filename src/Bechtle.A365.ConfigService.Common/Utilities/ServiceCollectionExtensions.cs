@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,7 +22,10 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
         public static IServiceCollection AddHostedService<THostedService>(this IServiceCollection services, ILogger logger)
             where THostedService : class, IHostedService
         {
-            logger.LogHostedServiceRegistration<THostedService>();
+            logger.LogServiceRegistration(ServiceLifetime.Singleton,
+                                          typeof(IHostedService).GetFriendlyName(),
+                                          typeof(THostedService).GetFriendlyName());
+
             return services.AddHostedService<THostedService>();
         }
 
@@ -29,7 +33,9 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             where TService : class
             where TImplementation : class, TService
         {
-            logger.LogServiceRegistration<TService, TImplementation>(ServiceLifetime.Scoped);
+            logger.LogServiceRegistration(ServiceLifetime.Scoped,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TImplementation).GetFriendlyName());
 
             return services.AddScoped<TService, TImplementation>();
         }
@@ -40,7 +46,10 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             where TService : class
             where TImplementation : class, TService
         {
-            logger.LogServiceRegistration<TService, TImplementation>(ServiceLifetime.Scoped, true);
+            logger.LogServiceRegistration(ServiceLifetime.Scoped,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TImplementation).GetFriendlyName(),
+                                          true);
 
             return services.AddScoped<TService, TImplementation>(implementationFactory);
         }
@@ -50,7 +59,9 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                                     Func<IServiceProvider, TImplementation> implementationFactory)
             where TImplementation : class
         {
-            logger.LogServiceRegistration<TImplementation>(ServiceLifetime.Scoped);
+            logger.LogServiceRegistration(ServiceLifetime.Scoped,
+                                          typeof(TImplementation).GetFriendlyName(),
+                                          usingCustomFactory: true);
 
             return services.AddScoped(implementationFactory);
         }
@@ -59,7 +70,8 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                    ILogger logger,
                                                    Type serviceType)
         {
-            logger.LogServiceRegistration(serviceType, ServiceLifetime.Scoped);
+            logger.LogServiceRegistration(ServiceLifetime.Scoped,
+                                          serviceType.GetFriendlyName());
 
             return services.AddScoped(serviceType);
         }
@@ -69,16 +81,32 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                    Type serviceType,
                                                    Type implementationType)
         {
-            logger.LogServiceRegistration(serviceType, implementationType, ServiceLifetime.Scoped);
+            logger.LogServiceRegistration(ServiceLifetime.Scoped,
+                                          serviceType.GetFriendlyName(),
+                                          implementationType.GetFriendlyName());
 
             return services.AddScoped(serviceType, implementationType);
+        }
+
+        public static IServiceCollection AddScoped<T>(this IServiceCollection services,
+                                                      ILogger logger,
+                                                      T implementationInstance)
+            where T : class
+        {
+            logger.LogServiceRegistration(ServiceLifetime.Scoped,
+                                          typeof(T).GetFriendlyName(),
+                                          usingCustomInstance: true);
+
+            return services.AddSingleton(implementationInstance);
         }
 
         public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services, ILogger logger)
             where TService : class
             where TImplementation : class, TService
         {
-            logger.LogServiceRegistration<TService, TImplementation>(ServiceLifetime.Singleton);
+            logger.LogServiceRegistration(ServiceLifetime.Singleton,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TImplementation).GetFriendlyName());
 
             return services.AddSingleton<TService, TImplementation>();
         }
@@ -89,7 +117,10 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             where TService : class
             where TImplementation : class, TService
         {
-            logger.LogServiceRegistration<TService, TImplementation>(ServiceLifetime.Singleton, true);
+            logger.LogServiceRegistration(ServiceLifetime.Singleton,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TImplementation).GetFriendlyName(),
+                                          true);
 
             return services.AddSingleton<TService, TImplementation>(implementationFactory);
         }
@@ -99,7 +130,9 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                                        Func<IServiceProvider, TImplementation> implementationFactory)
             where TImplementation : class
         {
-            logger.LogServiceRegistration<TImplementation>(ServiceLifetime.Singleton, true);
+            logger.LogServiceRegistration(ServiceLifetime.Singleton,
+                                          typeof(TImplementation).GetFriendlyName(),
+                                          usingCustomFactory: true);
 
             return services.AddSingleton(implementationFactory);
         }
@@ -108,7 +141,8 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                       ILogger logger,
                                                       Type serviceType)
         {
-            logger.LogServiceRegistration(serviceType, ServiceLifetime.Singleton);
+            logger.LogServiceRegistration(ServiceLifetime.Singleton,
+                                          serviceType.GetFriendlyName());
 
             return services.AddSingleton(serviceType);
         }
@@ -118,16 +152,32 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                       Type serviceType,
                                                       Type implementationType)
         {
-            logger.LogServiceRegistration(serviceType, implementationType, ServiceLifetime.Singleton);
+            logger.LogServiceRegistration(ServiceLifetime.Singleton,
+                                          serviceType.GetFriendlyName(),
+                                          implementationType.GetFriendlyName());
 
             return services.AddSingleton(serviceType, implementationType);
+        }
+
+        public static IServiceCollection AddSingleton<T>(this IServiceCollection services,
+                                                         ILogger logger,
+                                                         T implementationInstance)
+            where T : class
+        {
+            logger.LogServiceRegistration(ServiceLifetime.Singleton,
+                                          typeof(T).GetFriendlyName(),
+                                          usingCustomInstance: true);
+
+            return services.AddSingleton(implementationInstance);
         }
 
         public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services, ILogger logger)
             where TService : class
             where TImplementation : class, TService
         {
-            logger.LogServiceRegistration<TService, TImplementation>(ServiceLifetime.Transient);
+            logger.LogServiceRegistration(ServiceLifetime.Transient,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TImplementation).GetFriendlyName());
 
             return services.AddTransient<TService, TImplementation>();
         }
@@ -138,7 +188,10 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             where TService : class
             where TImplementation : class, TService
         {
-            logger.LogServiceRegistration<TService, TImplementation>(ServiceLifetime.Transient, true);
+            logger.LogServiceRegistration(ServiceLifetime.Transient,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TImplementation).GetFriendlyName(),
+                                          true);
 
             return services.AddTransient<TService, TImplementation>(implementationFactory);
         }
@@ -148,7 +201,9 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                                        Func<IServiceProvider, TImplementation> implementationFactory)
             where TImplementation : class
         {
-            logger.LogServiceRegistration<TImplementation>(ServiceLifetime.Transient);
+            logger.LogServiceRegistration(ServiceLifetime.Transient,
+                                          typeof(TImplementation).GetFriendlyName(),
+                                          usingCustomFactory: true);
 
             return services.AddTransient(implementationFactory);
         }
@@ -157,7 +212,8 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                       ILogger logger,
                                                       Type serviceType)
         {
-            logger.LogServiceRegistration(serviceType, ServiceLifetime.Transient);
+            logger.LogServiceRegistration(ServiceLifetime.Transient,
+                                          serviceType.GetFriendlyName());
 
             return services.AddTransient(serviceType);
         }
@@ -167,7 +223,9 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                                       Type serviceType,
                                                       Type implementationType)
         {
-            logger.LogServiceRegistration(serviceType, implementationType, ServiceLifetime.Transient);
+            logger.LogServiceRegistration(ServiceLifetime.Transient,
+                                          serviceType.GetFriendlyName(),
+                                          implementationType.GetFriendlyName());
 
             return services.AddTransient(serviceType, implementationType);
         }
@@ -199,40 +257,28 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             return friendlyName;
         }
 
-        private static void LogHostedServiceRegistration<T>(this ILogger logger)
-            where T : IHostedService
-            => logger.LogInformation("registering HostedService: " +
-                                     $"{typeof(IHostedService).GetFriendlyName()} => {typeof(T).GetFriendlyName()}");
-
-        private static void LogServiceRegistration<TService, TImplementation>(this ILogger logger,
-                                                                              ServiceLifetime lifetime,
-                                                                              bool usingCustomFactory = false)
-            => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{typeof(TService).GetFriendlyName()} => {typeof(TImplementation).GetFriendlyName()}" +
-                                     $"{(usingCustomFactory ? " with custom factory-action" : "")}");
-
-        private static void LogServiceRegistration<TImplementation>(this ILogger logger,
-                                                                    ServiceLifetime lifetime,
-                                                                    bool usingCustomFactory = false)
-            => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{typeof(TImplementation).GetFriendlyName()}" +
-                                     $"{(usingCustomFactory ? " with custom factory-action" : "")}");
-
         private static void LogServiceRegistration(this ILogger logger,
-                                                   Type serviceType,
                                                    ServiceLifetime lifetime,
-                                                   bool usingCustomFactory = false)
-            => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{serviceType.GetFriendlyName()}" +
-                                     $"{(usingCustomFactory ? " with custom factory-action" : "")}");
+                                                   string serviceName,
+                                                   string implementationName = "",
+                                                   bool usingCustomFactory = false,
+                                                   bool usingCustomInstance = false)
+        {
+            var messageBuilder = new StringBuilder();
 
-        private static void LogServiceRegistration(this ILogger logger,
-                                                   Type serviceType,
-                                                   Type implementationType,
-                                                   ServiceLifetime lifetime,
-                                                   bool usingCustomFactory = false)
-            => logger.LogInformation($"registering {lifetime:G}: " +
-                                     $"{serviceType.GetFriendlyName()} => {implementationType.GetFriendlyName()}" +
-                                     $"{(usingCustomFactory ? " with custom factory-action" : "")}");
+            messageBuilder.Append($"registering {lifetime:G}: ");
+            messageBuilder.Append(serviceName);
+
+            if (!string.IsNullOrWhiteSpace(implementationName))
+                messageBuilder.Append($" => {implementationName}");
+
+            if (usingCustomFactory)
+                messageBuilder.Append(", using a custom factory");
+
+            if (usingCustomInstance)
+                messageBuilder.Append(", using a pre-built instance");
+
+            logger.LogInformation(messageBuilder.ToString());
+        }
     }
 }

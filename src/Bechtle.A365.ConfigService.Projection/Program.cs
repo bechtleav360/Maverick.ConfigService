@@ -54,8 +54,8 @@ namespace Bechtle.A365.ConfigService.Projection
             => new HostBuilder()
                .ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables("ASPNETCORE_"))
                .ConfigureAppConfiguration((context, builder) => ConfigureAppConfigurationInternal(builder, context, args))
-               .ConfigureServices((context, services) => ConfigureServicesInternal(services, context.Configuration))
-               .ConfigureLogging((context, builder) => ConfigureLoggingInternal(builder, context.Configuration));
+               .ConfigureServices((context, services) => ConfigureServicesInternal(services, context))
+               .ConfigureLogging((context, builder) => ConfigureLoggingInternal(builder, context));
 
         /// <summary>
         ///     Configure Application-Configuration
@@ -74,31 +74,37 @@ namespace Bechtle.A365.ConfigService.Projection
         ///     Configure Application-Logging
         /// </summary>
         /// <param name="builder"></param>
-        /// <param name="configuration"></param>
-        private static void ConfigureLoggingInternal(ILoggingBuilder builder, IConfiguration configuration)
+        /// <param name="context"></param>
+        private static void ConfigureLoggingInternal(ILoggingBuilder builder, HostBuilderContext context)
         {
-            configuration.ConfigureNLog();
+            context.Configuration.ConfigureNLog();
 
             builder.ClearProviders()
                    .SetMinimumLevel(LogLevel.Trace)
-                   .AddNLog(configuration.GetSection("LoggingConfiguration"));
+                   .AddNLog(context.Configuration.GetSection("LoggingConfiguration"));
         }
 
         /// <summary>
         ///     Configure DI-Services
         /// </summary>
         /// <param name="services"></param>
-        /// <param name="configuration"></param>
-        private static void ConfigureServicesInternal(IServiceCollection services, IConfiguration configuration)
-            => services.AddDbContext<ProjectionStoreContext>(
-                           (provider, builder)
-                               => builder.UseSqlServer(provider.GetService<ProjectionStorageConfiguration>().ConnectionString,
-                                                       options => options.MigrationsAssembly(typeof(ProjectionStoreContext).Assembly.FullName)))
-                       .AddCustomLogging()
-                       .AddProjectionConfiguration(configuration)
-                       .AddProjectionServices()
-                       .AddDomainEventServices()
-                       // add the service that should be run
-                       .AddHostedService<Projection>();
+        /// <param name="context"></param>
+        private static void ConfigureServicesInternal(IServiceCollection services, HostBuilderContext context)
+        {
+            var logger = services.BuildServiceProvider()
+                                 .GetService<ILoggerFactory>()
+                                 ?.CreateLogger(nameof(Program));
+
+            services.AddDbContext<ProjectionStoreContext>(
+                        logger, (provider, builder)
+                            => builder.UseSqlServer(provider.GetService<ProjectionStorageConfiguration>().ConnectionString,
+                                                    options => options.MigrationsAssembly(typeof(ProjectionStoreContext).Assembly.FullName)))
+                    .AddCustomLogging(logger)
+                    .AddProjectionConfiguration(logger, context.Configuration)
+                    .AddProjectionServices(logger)
+                    .AddDomainEventServices(logger)
+                    // add the service that should be run
+                    .AddHostedService<Projection>(logger);
+        }
     }
 }

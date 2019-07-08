@@ -471,7 +471,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<long?> GetLatestProjectedEventId()
         {
-            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+            var metadata = await _context.Metadata
+                                         .OrderBy(e => e.Id)
+                                         .FirstOrDefaultAsync();
 
             if (metadata is null)
             {
