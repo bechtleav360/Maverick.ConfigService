@@ -13,5 +13,8 @@
 
         /// <inheritdoc cref="ProjectionStorageConfiguration" />
         public ProjectionStorageConfiguration ProjectionStorage { get; set; }
+
+        /// <inheritdoc cref="MemoryCacheConfiguration" />
+        public MemoryCacheConfiguration MemoryCache { get; set; }
     }
 }

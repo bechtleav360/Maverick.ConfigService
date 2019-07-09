@@ -103,6 +103,15 @@ namespace Bechtle.A365.ConfigService.Projection
                     .AddProjectionConfiguration(logger, context.Configuration)
                     .AddProjectionServices(logger)
                     .AddDomainEventServices(logger)
+                    .AddStackExchangeRedisCache(options =>
+                    {
+                        var connectionString = context.Configuration.Get<ProjectionConfiguration>()?.MemoryCache?.Redis?.ConnectionString ?? string.Empty;
+
+                        if (string.IsNullOrWhiteSpace(connectionString))
+                            throw new ArgumentNullException(nameof(connectionString), "MemoryCache:Redis:ConnectionString is null or empty");
+
+                        options.Configuration = connectionString;
+                    })
                     // add the service that should be run
                     .AddHostedService<Projection>(logger);
         }
