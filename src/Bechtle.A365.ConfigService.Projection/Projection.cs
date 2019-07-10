@@ -154,17 +154,28 @@ namespace Bechtle.A365.ConfigService.Projection
                                    $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
                                    $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
 
-            var lockId = AssignEventToThisNode(subscription, resolvedEvent);
+            object lockId = null;
 
-            if (lockId is null)
-                return;
+            try
+            {
+                lockId = AssignEventToThisNode(subscription, resolvedEvent);
 
-            if (!_eventDeserializer.ToDomainEvent(resolvedEvent, out var domainEvent))
-                return;
+                if (lockId is null)
+                    return;
 
-            await Project(domainEvent, resolvedEvent);
+                if (!_eventDeserializer.ToDomainEvent(resolvedEvent, out var domainEvent))
+                    return;
 
-            ReleaseEventFromThisNode(subscription, resolvedEvent, lockId);
+                await Project(domainEvent, resolvedEvent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "error while projecting DomainEvent, for more information see previous messages");
+            }
+            finally
+            {
+                ReleaseEventFromThisNode(subscription, resolvedEvent, lockId);
+            }
         }
 
         private async Task Project(DomainEvent domainEvent, ResolvedEvent resolvedEvent)
