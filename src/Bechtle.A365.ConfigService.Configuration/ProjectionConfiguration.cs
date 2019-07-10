@@ -5,9 +5,6 @@
     /// </summary>
     public class ProjectionConfiguration
     {
-        /// <inheritdoc cref="NodeConfiguration" />
-        public NodeConfiguration Node { get; set; }
-
         /// <inheritdoc cref="EventBusConnectionConfiguration" />
         public EventBusConnectionConfiguration EventBusConnection { get; set; }
 

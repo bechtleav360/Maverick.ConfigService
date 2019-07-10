@@ -7,7 +7,6 @@ using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Projection.Extensions;
-using Bechtle.A365.ConfigService.Projection.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -104,16 +103,6 @@ namespace Bechtle.A365.ConfigService.Projection
                     .AddProjectionConfiguration(logger, context.Configuration)
                     .AddProjectionServices(logger)
                     .AddDomainEventServices(logger)
-                    .AddSingleton<IEventLock, MemoryCacheEventLock>(logger)
-                    .AddStackExchangeRedisCache(options =>
-                    {
-                        var connectionString = context.Configuration.Get<ProjectionConfiguration>()?.MemoryCache?.Redis?.ConnectionString ?? string.Empty;
-
-                        if (string.IsNullOrWhiteSpace(connectionString))
-                            throw new ArgumentNullException(nameof(connectionString), "MemoryCache:Redis:ConnectionString is null or empty");
-
-                        options.Configuration = connectionString;
-                    })
                     // add the service that should be run
                     .AddHostedService<Projection>(logger);
         }

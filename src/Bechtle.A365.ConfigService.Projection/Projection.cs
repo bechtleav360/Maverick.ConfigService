@@ -9,7 +9,6 @@ using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
-using Bechtle.A365.ConfigService.Projection.Services;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +23,6 @@ namespace Bechtle.A365.ConfigService.Projection
     {
         private readonly IConfiguration _configuration;
         private readonly IEventDeserializer _eventDeserializer;
-        private readonly IEventLock _eventLock;
         private readonly ILogger<Projection> _logger;
         private readonly IServiceProvider _provider;
         private readonly IEventStoreConnection _store;
@@ -34,8 +32,7 @@ namespace Bechtle.A365.ConfigService.Projection
                           IConfiguration configuration,
                           IEventStoreConnection store,
                           IServiceProvider provider,
-                          IEventDeserializer eventDeserializer,
-                          IEventLock eventLock)
+                          IEventDeserializer eventDeserializer)
             : base(provider)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -46,7 +43,6 @@ namespace Bechtle.A365.ConfigService.Projection
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _eventDeserializer = eventDeserializer ?? throw new ArgumentNullException(nameof(eventDeserializer));
-            _eventLock = eventLock ?? throw new ArgumentNullException(nameof(eventLock));
 
             _logger.LogInformation("registering config-reload hook");
 
@@ -102,46 +98,6 @@ namespace Bechtle.A365.ConfigService.Projection
             _logger.LogInformation("stopping projection...");
         }
 
-        private object AssignEventToThisNode(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
-        {
-            var config = _configuration.Get<ProjectionConfiguration>();
-
-            var eventId = $"{resolvedEvent.OriginalStreamId}#" +
-                          $"{resolvedEvent.OriginalEvent.EventId}";
-
-            var nodeId = $"{config.Node.Group}";
-
-            var lockId = _eventLock.TryLockEvent(eventId, nodeId, config.Node.LockDuration);
-
-            if (lockId == Guid.Empty)
-            {
-                _logger.LogInformation("could not assign event to this node");
-                return null;
-            }
-
-            return lockId;
-        }
-
-        private void ReleaseEventFromThisNode(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent, object lockId)
-        {
-            var config = _configuration.Get<ProjectionConfiguration>();
-
-            var eventId = $"{resolvedEvent.OriginalStreamId}#" +
-                          $"{resolvedEvent.OriginalEvent.EventId}";
-
-            var nodeId = $"{config.Node.Group}";
-
-            if (lockId is Guid lockGuid)
-            {
-                if (!_eventLock.TryUnlockEvent(eventId, nodeId, lockGuid))
-                    _logger.LogWarning($"could not unlock event '{eventId}' from this node '{nodeId}'; see previous messages for more information");
-                else
-                    _logger.LogInformation($"lock '{eventId}' for node '{nodeId}' removed");
-            }
-            else
-                _logger.LogWarning($"could not unlock event '{eventId}' from this node '{nodeId}'; invalid lockId given");
-        }
-
         private async Task EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
             _logger.LogInformation($"Stream: {resolvedEvent.OriginalStreamId}#{resolvedEvent.OriginalEventNumber}; " +
@@ -152,15 +108,8 @@ namespace Bechtle.A365.ConfigService.Projection
                                    $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
                                    $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
 
-            object lockId = null;
-
             try
             {
-                lockId = AssignEventToThisNode(subscription, resolvedEvent);
-
-                if (lockId is null)
-                    return;
-
                 if (!_eventDeserializer.ToDomainEvent(resolvedEvent, out var domainEvent))
                     return;
 
@@ -169,10 +118,6 @@ namespace Bechtle.A365.ConfigService.Projection
             catch (Exception e)
             {
                 _logger.LogWarning(e, "error while projecting DomainEvent, for more information see previous messages");
-            }
-            finally
-            {
-                ReleaseEventFromThisNode(subscription, resolvedEvent, lockId);
             }
         }
 
