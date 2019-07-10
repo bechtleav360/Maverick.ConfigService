@@ -47,7 +47,10 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                     if (value is null || !value.Any())
                     {
                         var lockId = Guid.NewGuid();
-                        _cache.Set(key, lockId.ToByteArray());
+                        _cache.Set(key, lockId.ToByteArray(), new DistributedCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = duration
+                        });
                         return lockId;
                     }
 
