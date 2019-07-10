@@ -107,7 +107,6 @@ namespace Bechtle.A365.ConfigService.Projection
             var config = _configuration.Get<ProjectionConfiguration>();
 
             var eventId = $"{resolvedEvent.OriginalStreamId}#" +
-                          $"{resolvedEvent.OriginalEvent.EventNumber};" +
                           $"{resolvedEvent.OriginalEvent.EventId}";
 
             var nodeId = $"{config.Node.Group}";
@@ -128,7 +127,6 @@ namespace Bechtle.A365.ConfigService.Projection
             var config = _configuration.Get<ProjectionConfiguration>();
 
             var eventId = $"{resolvedEvent.OriginalStreamId}#" +
-                          $"{resolvedEvent.OriginalEvent.EventNumber};" +
                           $"{resolvedEvent.OriginalEvent.EventId}";
 
             var nodeId = $"{config.Node.Group}";
