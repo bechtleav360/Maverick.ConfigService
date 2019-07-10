@@ -116,7 +116,7 @@ namespace Bechtle.A365.ConfigService.Projection
 
             if (lockId == Guid.Empty)
             {
-                _logger.LogInformation($"could not assign event to this node");
+                _logger.LogInformation("could not assign event to this node");
                 return null;
             }
 
