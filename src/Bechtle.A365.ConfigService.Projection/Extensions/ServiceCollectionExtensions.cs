@@ -78,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                        .AddScoped<IConfigurationCompiler, ConfigurationCompiler>(logger)
                        .AddScoped<IConfigurationDatabase, ConfigurationDatabase>(logger)
                        .AddScoped<IJsonTranslator, JsonTranslator>(logger)
-                       .AddSingleton(logger, provider =>
+                       .AddTransient(logger, provider =>
                        {
                            var config = provider.GetService<ProjectionConfiguration>()
                                         ?? throw new ArgumentNullException(nameof(ProjectionConfiguration));

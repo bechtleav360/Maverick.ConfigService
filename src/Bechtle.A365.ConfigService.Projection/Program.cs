@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Projection.Extensions;
+using Bechtle.A365.ConfigService.Projection.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -104,7 +105,9 @@ namespace Bechtle.A365.ConfigService.Projection
                     .AddProjectionServices(logger)
                     .AddDomainEventServices(logger)
                     // add the service that should be run
-                    .AddHostedService<Projection>(logger);
+                    .AddSingleton<IEventQueue, EventQueue>(logger)
+                    .AddHostedService<EventConverter>(logger)
+                    .AddHostedService<EventProjection>(logger);
         }
     }
 }
