@@ -162,6 +162,13 @@ namespace Bechtle.A365.ConfigService.Projection
             if (!_eventDeserializer.ToDomainEvent(resolvedEvent, out var domainEvent))
                 return;
 
+            await Project(domainEvent, resolvedEvent);
+
+            ReleaseEventFromThisNode(subscription, resolvedEvent, lockId);
+        }
+
+        private async Task Project(DomainEvent domainEvent, ResolvedEvent resolvedEvent)
+        {
             using (var scope = _provider.CreateScope())
             {
                 var context = scope.ServiceProvider.GetService<ProjectionStoreContext>();
@@ -175,7 +182,7 @@ namespace Bechtle.A365.ConfigService.Projection
                     {
                         _logger.LogDebug($"projecting event '{domainEvent.EventType}'");
 
-                        await Project(domainEvent, scope.ServiceProvider);
+                        await ProcessDomainEvent(domainEvent, scope.ServiceProvider);
 
                         _logger.LogDebug($"recording successful projection of event #{resolvedEvent.OriginalEventNumber} to database");
 
@@ -208,11 +215,9 @@ namespace Bechtle.A365.ConfigService.Projection
                     }
                 }
             }
-
-            ReleaseEventFromThisNode(subscription, resolvedEvent, lockId);
         }
 
-        private async Task Project(DomainEvent domainEvent, IServiceProvider provider)
+        private async Task ProcessDomainEvent(DomainEvent domainEvent, IServiceProvider provider)
         {
             // inner function to not clutter this class any more
             Task HandleDomainEvent<T>(T @event) where T : DomainEvent => provider.GetService<IDomainEventHandler<T>>()
