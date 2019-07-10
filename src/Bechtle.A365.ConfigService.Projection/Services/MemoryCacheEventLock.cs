@@ -11,6 +11,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         private readonly IDistributedCache _cache;
         private readonly ILogger _logger;
 
+        private static readonly string LockPrefix = "A365.ConfigService.Projection";
         private static readonly object CachedEventLock = new object();
 
         /// <inheritdoc />
@@ -24,7 +25,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         /// <inheritdoc />
         public Guid TryLockEvent(string eventId, string nodeId, TimeSpan duration)
         {
-            var key = $"{eventId}@{nodeId}";
+            var key = $"{LockPrefix}.{eventId}@{nodeId}";
 
             _logger.LogInformation($"trying to claim lock for '{key}'");
 
@@ -68,7 +69,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         /// <inheritdoc />
         public bool TryUnlockEvent(string eventId, string nodeId, Guid owningLockId)
         {
-            var key = $"{eventId}@{nodeId}";
+            var key = $"{LockPrefix}.{eventId}@{nodeId}";
 
             _logger.LogInformation($"trying to free lock for '{key}'");
 
