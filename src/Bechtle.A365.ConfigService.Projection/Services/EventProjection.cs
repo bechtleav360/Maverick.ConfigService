@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
+using Bechtle.A365.ConfigService.Projection.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -21,15 +22,21 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<EventConverter> _logger;
+        private readonly ProjectionMetricService _metricService;
+        private readonly StatusReporter _statusReporter;
         private readonly IEventQueue _eventQueue;
 
         public EventProjection(IServiceProvider serviceProvider,
                                ILogger<EventConverter> logger,
+                               ProjectionMetricService metricService,
+                               StatusReporter statusReporter,
                                IEventQueue eventQueue)
             : base(serviceProvider)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _metricService = metricService;
+            _statusReporter = statusReporter;
             _eventQueue = eventQueue;
         }
 
@@ -37,6 +44,8 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             await Task.Yield();
+
+            _metricService.SetNodeId($"ConfigService.Projection@{Environment.MachineName}");
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -48,9 +57,20 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                         continue;
                     }
 
-                    await Project(projectedEvent.DomainEvent, 
-                                  projectedEvent.Id, 
-                                  projectedEvent.Index);
+                    _metricService.SetStatus(ProjectionStatus.Projecting);
+
+                    var result = await Project(projectedEvent.DomainEvent,
+                                               projectedEvent.Id,
+                                               projectedEvent.Index);
+
+                    _metricService.SetStatus(ProjectionStatus.Idle)
+                                  .SetLastEvent(projectedEvent.DomainEvent,
+                                                result ? EventProjectionResult.Success : EventProjectionResult.Failure,
+                                                DateTime.Now,
+                                                projectedEvent.Index,
+                                                projectedEvent.Id);
+
+                    await _statusReporter.PublishStatus();
                 }
                 catch (Exception e)
                 {
@@ -59,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             }
         }
 
-        private async Task Project(DomainEvent domainEvent, string id, long index)
+        private async Task<bool> Project(DomainEvent domainEvent, string id, long index)
         {
             _logger.LogInformation($"projecting DomainEvent of type '{domainEvent.EventType}' / '{id}'");
 
@@ -94,12 +114,15 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                         transaction.Commit();
 
                         _logger.LogInformation($"transaction '{transaction.TransactionId}' committed");
+
+                        return true;
                     }
                     catch (Exception e)
                     {
                         transaction.Rollback();
                         _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}', " +
                                             $"rolling back transaction '{transaction.TransactionId}' :{e}");
+                        return false;
                     }
                     finally
                     {
