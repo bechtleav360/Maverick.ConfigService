@@ -10,12 +10,16 @@
 
   <ItemGroup>
     <None Remove="appsettings.Development.json" />
+    <None Remove="appsettings.Docker.json" />
     <None Remove="appsettings.json" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.Development.json">
       <DependentUpon>appsettings.json</DependentUpon>
+    </Content>
+    <Content Include="appsettings.Docker.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -47,6 +51,24 @@
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj" />
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Configuration\Bechtle.A365.ConfigService.Configuration.csproj" />
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="build.cmd">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="devrootca.crt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="docker-compose.yml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="DockerfileGlobal">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Dockerfile">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
