@@ -57,7 +57,13 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                         continue;
                     }
 
-                    _metricService.SetStatus(ProjectionStatus.Projecting);
+                    _metricService.SetStatus(ProjectionStatus.Projecting)
+                                  .SetCurrentEvent(projectedEvent.DomainEvent,
+                                                   EventProjectionResult.Undefined,
+                                                   DateTime.Now,
+                                                   projectedEvent.Index,
+                                                   projectedEvent.Id)
+                                  .Log();
 
                     var result = await Project(projectedEvent.DomainEvent,
                                                projectedEvent.Id,
@@ -68,7 +74,9 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                                                 result ? EventProjectionResult.Success : EventProjectionResult.Failure,
                                                 DateTime.Now,
                                                 projectedEvent.Index,
-                                                projectedEvent.Id);
+                                                projectedEvent.Id)
+                                  .ClearCurrentEvent()
+                                  .Log();
 
                     await _statusReporter.PublishStatus();
                 }

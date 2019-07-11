@@ -3,6 +3,7 @@
     public enum EventProjectionResult
     {
         Success,
-        Failure
+        Failure,
+        Undefined
     }
 }
