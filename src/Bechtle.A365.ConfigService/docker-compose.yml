@@ -1,0 +1,19 @@
+﻿version: "2.0"
+services:
+  configservice:
+    image: localhost:5000/configservice
+    container_name: configservice
+    external_links:
+      - eventstore
+      - websocketservice
+    extra_hosts:
+      - "SQL02:172.16.10.31"
+    network_mode: bridge
+    ports:
+      - "8123:80"
+    volumes: 
+      - C:/docker/logs:/app/logs
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://*:80

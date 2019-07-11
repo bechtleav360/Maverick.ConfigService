@@ -1,0 +1,16 @@
+﻿version: "2.0"
+services:
+  chatservice:
+    image: localhost:5000/configservice_projection
+    container_name: configservice_projection
+    external_links:
+      - eventstore
+      - websocketservice
+    extra_hosts:
+      - "SQL02:172.16.10.31"
+    network_mode: bridge
+    volumes: 
+      - C:/docker/logs:/app/logs
+    restart: always
+    environment:
+     - ASPNETCORE_ENVIRONMENT=Docker
