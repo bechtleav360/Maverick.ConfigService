@@ -12,7 +12,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         private readonly ILogger _logger;
         private ProjectionEventStatus _currentEvent;
         private bool _eventStoreConnected;
-        private ProjectionEventStatus _lastEvent;
         private string _nodeId;
         private ProjectionStatus _nodeStatus;
         private long _queueLength;
@@ -43,7 +42,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             NodeId = _nodeId,
             CurrentStatus = _nodeStatus,
             CurrentEvent = _currentEvent,
-            LastEvent = _lastEvent,
             QueueLength = _queueLength,
             EventStoreConnected = _eventStoreConnected
         };
@@ -71,25 +69,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         public ProjectionMetricService SetEventStoreConnected(bool connected)
         {
             _eventStoreConnected = connected;
-            return this;
-        }
-
-        /// <inheritdoc />
-        public ProjectionMetricService SetLastEvent(DomainEvent domainEvent,
-                                                    EventProjectionResult result,
-                                                    DateTime time,
-                                                    long eventIndex,
-                                                    string eventId)
-        {
-            _lastEvent = new ProjectionEventStatus
-            {
-                At = time,
-                Result = result,
-                Type = domainEvent?.EventType ?? "unknown",
-                Index = eventIndex,
-                Id = eventId,
-                Event = domainEvent
-            };
             return this;
         }
 

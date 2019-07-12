@@ -22,12 +22,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
         ProjectionMetricService SetEventStoreConnected(bool connected);
 
-        ProjectionMetricService SetLastEvent(DomainEvent domainEvent,
-                                             EventProjectionResult result,
-                                             DateTime time,
-                                             long eventIndex,
-                                             string eventId);
-
         ProjectionMetricService SetNodeId(string nodeId);
 
         ProjectionMetricService SetQueueLength(long queueLength);

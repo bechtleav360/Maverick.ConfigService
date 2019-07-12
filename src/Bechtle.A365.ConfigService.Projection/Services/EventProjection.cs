@@ -67,11 +67,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                                                projectedEvent.Index);
 
                     _metricService.SetStatus(ProjectionStatus.Idle)
-                                  .SetLastEvent(projectedEvent.DomainEvent,
-                                                result ? EventProjectionResult.Success : EventProjectionResult.Failure,
-                                                DateTime.Now,
-                                                projectedEvent.Index,
-                                                projectedEvent.Id)
                                   .ClearCurrentEvent()
                                   .Finish();
                 }

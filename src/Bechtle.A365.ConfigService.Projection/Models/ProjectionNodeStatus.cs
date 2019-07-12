@@ -21,11 +21,6 @@
         public bool EventStoreConnected { get; set; }
 
         /// <summary>
-        ///     last event that has been projected
-        /// </summary>
-        public ProjectionEventStatus LastEvent { get; set; }
-
-        /// <summary>
         ///     name of the Node
         /// </summary>
         public string NodeId { get; set; }
