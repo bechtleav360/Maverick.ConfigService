@@ -21,13 +21,4 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         /// <returns></returns>
         bool TryDequeue(out ProjectedEvent projectedEvent);
     }
-
-    public class ProjectedEvent
-    {
-        public DomainEvent DomainEvent { get; set; }
-
-        public string Id { get; set; }
-
-        public long Index { get; set; }
-    }
 }
