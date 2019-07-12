@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-    <version>2.0.0</version>
+    <version>2.2.0</version>
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
