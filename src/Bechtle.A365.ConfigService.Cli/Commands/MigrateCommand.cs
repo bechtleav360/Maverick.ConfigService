@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using McMaster.Extensions.CommandLineUtils;
@@ -13,6 +14,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
     {
         private readonly IServiceProvider _provider;
         private string _connectionString;
+        private DbBackend _dbBackend;
 
         /// <inheritdoc />
         public MigrateCommand(IConsole console, IServiceProvider provider)
@@ -21,6 +23,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             _provider = provider;
         }
 
+        [Required]
         [Option("-c|--connection-string", CommandOptionType.SingleValue, Description = "ConnectionString to use for Connecting to the Database")]
         public string ConnectionString
         {
@@ -29,6 +32,18 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             {
                 _connectionString = value;
                 _provider.GetService<ApplicationSettings>().ConnectionString = value;
+            }
+        }
+
+        [Required]
+        [Option("-b|--db-backend", CommandOptionType.SingleValue, Description = "Database-Backend to configure when creating DbContext")]
+        public DbBackend DatabaseBackend
+        {
+            get => _dbBackend;
+            set
+            {
+                _dbBackend = value;
+                _provider.GetService<ApplicationSettings>().DbType = value;
             }
         }
 
