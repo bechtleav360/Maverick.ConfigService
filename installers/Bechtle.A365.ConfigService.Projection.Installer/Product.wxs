@@ -23,6 +23,7 @@
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Property Id="EVENTBUSCONNECTIONSERVER" Value="localhost" />
     <Property Id="EVENTSTORECONNECTIONURI" Value="tcp://user:passwort@localhost:1113" />
+    <Property Id="PROJECTIONSTORAGEBACKEND" Value="MsSql" />
     <Property Id="PROJECTIONSTORAGECONNECTIONSTRING" Value="Server=localhost; Database=A365ConfigProjection; User Id=; Password=;" />
     <Property Id="RABBITMQHOST" Value="localhost" />
     <Property Id="RABBITMQUSER" Value="guest" />
@@ -70,20 +71,23 @@
         <Control Id="EventStoreConnectionDis" Type="Text" X="20" Y="75" Width="100" Height="18" NoPrefix="yes" Text="EventStore Server: " />
         <Control Id="EventStoreConnectionVar" Type="Edit" X="120" Y="70" Width="200" Height="18" Property="EVENTSTORECONNECTIONURI" Indirect="no" />
 
-        <Control Id="ProjectionStorageDis" Type="Text" X="20" Y="95" Width="100" Height="18" NoPrefix="yes" Text="Projection-DB ConnectionString: " />
-        <Control Id="ProjectionStorageVar" Type="Edit" X="120" Y="90" Width="200" Height="18" Property="PROJECTIONSTORAGECONNECTIONSTRING" Indirect="no" />
+        <Control Id="ProjectionStorageBackendDis" Type="Text" X="20" Y="95" Width="100" Height="18" NoPrefix="yes" Text="Projection-DB Backend: " />
+        <Control Id="ProjectionStorageBackendVar" Type="Edit" X="120" Y="90" Width="200" Height="18" Property="PROJECTIONSTORAGEBACKEND" Indirect="no" />
 
-        <Control Id="RabbitMqHostDis" Type="Text" X="20" Y="115" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Host: " />
-        <Control Id="RabbitMqHostVar" Type="Edit" X="120" Y="110" Width="200" Height="18" Property="RABBITMQHOST" Indirect="no" />
+        <Control Id="ProjectionStorageConnectionStringDis" Type="Text" X="20" Y="115" Width="100" Height="18" NoPrefix="yes" Text="Projection-DB ConnectionString: " />
+        <Control Id="ProjectionStorageConnectionStringVar" Type="Edit" X="120" Y="110" Width="200" Height="18" Property="PROJECTIONSTORAGECONNECTIONSTRING" Indirect="no" />
 
-        <Control Id="RabbitMqUserDis" Type="Text" X="20" Y="135" Width="100" Height="18" NoPrefix="yes" Text="RabbitMQ Benutzer: " />
-        <Control Id="RabbitMqUserVar" Type="Edit" X="120" Y="130" Width="200" Height="18" Property="RABBITMQUSER" Indirect="no" />
+        <Control Id="RabbitMqHostDis" Type="Text" X="20" Y="135" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Host: " />
+        <Control Id="RabbitMqHostVar" Type="Edit" X="120" Y="130" Width="200" Height="18" Property="RABBITMQHOST" Indirect="no" />
 
-        <Control Id="RabbitMqPasswordDis" Type="Text" X="20" Y="155" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Passwort: " />
-        <Control Id="RabbitMqPasswordVar" Type="Edit" X="120" Y="150" Width="200" Height="18" Property="RABBITMQPASSWORD" Indirect="no" />
+        <Control Id="RabbitMqUserDis" Type="Text" X="20" Y="155" Width="100" Height="18" NoPrefix="yes" Text="RabbitMQ Benutzer: " />
+        <Control Id="RabbitMqUserVar" Type="Edit" X="120" Y="150" Width="200" Height="18" Property="RABBITMQUSER" Indirect="no" />
 
-        <Control Id="RabbitMqPortDis" Type="Text" X="20" Y="175" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Port: " />
-        <Control Id="RabbitMqPortVar" Type="Edit" X="120" Y="170" Width="200" Height="18" Property="RABBITMQPORT" Indirect="no" />
+        <Control Id="RabbitMqPasswordDis" Type="Text" X="20" Y="175" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Passwort: " />
+        <Control Id="RabbitMqPasswordVar" Type="Edit" X="120" Y="170" Width="200" Height="18" Property="RABBITMQPASSWORD" Indirect="no" />
+
+        <Control Id="RabbitMqPortDis" Type="Text" X="20" Y="195" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Port: " />
+        <Control Id="RabbitMqPortVar" Type="Edit" X="120" Y="190" Width="200" Height="18" Property="RABBITMQPORT" Indirect="no" />
       </Dialog>
 
       <Publish Dialog="InstallDirDlg"
@@ -115,7 +119,7 @@
 
     <CustomAction Id="UpdateAppsettings"
                   Directory="TARGETDIR"
-                  ExeCommand="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\UpdateAppsettings.ps1&quot; -FilePath &quot;[INSTALLFOLDER]appsettings.json&quot; -EventBusConnectionServer &quot;[EVENTBUSCONNECTIONSERVER]&quot; -EventStoreConnectionUri &quot;[EVENTSTORECONNECTIONURI]&quot; -ProjectionStorageConnectionString &quot;[PROJECTIONSTORAGECONNECTIONSTRING]&quot; -RabbitMqHost &quot;[RABBITMQHOST]&quot; -RabbitMqUser &quot;[RABBITMQUSER]&quot; -RabbitMqPassword &quot;[RABBITMQPASSWORD]&quot; -RabbitMqPort &quot;[RABBITMQPORT]&quot;"
+                  ExeCommand="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\UpdateAppsettings.ps1&quot; -FilePath &quot;[INSTALLFOLDER]appsettings.json&quot; -EventBusConnectionServer &quot;[EVENTBUSCONNECTIONSERVER]&quot; -EventStoreConnectionUri &quot;[EVENTSTORECONNECTIONURI]&quot; -ProjectionStorageConnectionString &quot;[PROJECTIONSTORAGECONNECTIONSTRING]&quot; -ProjectionStorageBackend &quot;[PROJECTIONSTORAGEBACKEND]&quot; -RabbitMqHost &quot;[RABBITMQHOST]&quot; -RabbitMqUser &quot;[RABBITMQUSER]&quot; -RabbitMqPassword &quot;[RABBITMQPASSWORD]&quot; -RabbitMqPort &quot;[RABBITMQPORT]&quot;"
                   Execute="deferred"
                   Return="asyncNoWait"
                   Impersonate="no" />

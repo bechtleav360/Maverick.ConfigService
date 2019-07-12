@@ -59,12 +59,12 @@
     <PropertyGroup>
       <LinkerBaseInputPaths>..\..\src\Bechtle.A365.ConfigService.Projection\bin\$(Configuration)\netcoreapp2.2\win10-x64\publish</LinkerBaseInputPaths>
       <DefineConstants>
-        BasePathCli=..\..\src\Bechtle.A365.ConfigService.Cli\bin\$(Configuration)\netcoreapp2.2\publish;
+        BasePathCli=..\..\src\Bechtle.A365.ConfigService.Cli\bin\$(Configuration)\netcoreapp2.2\win10-x64\publish;
         BasePathProjection=..\..\src\Bechtle.A365.ConfigService.Projection\bin\$(Configuration)\netcoreapp2.2\win10-x64\publish
       </DefineConstants>
     </PropertyGroup>
     <HeatDirectory OutputFile="apppublish.projection.intermediate.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="Projection_Publish" SuppressCom="true" Directory="..\..\src\Bechtle.A365.ConfigService.Projection\bin\$(Configuration)\netcoreapp2.2\win10-x64\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="true" GenerateGuidsNow="false" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePathProjection" />
-    <HeatDirectory OutputFile="apppublish.cli.wxs" DirectoryRefId="INSTALLFOLDER_Cli" ComponentGroupName="Cli_Publish" SuppressCom="true" Directory="..\..\src\Bechtle.A365.ConfigService.Cli\bin\$(Configuration)\netcoreapp2.2\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="true" GenerateGuidsNow="false" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePathCli" />
+    <HeatDirectory OutputFile="apppublish.cli.wxs" DirectoryRefId="INSTALLFOLDER_Cli" ComponentGroupName="Cli_Publish" SuppressCom="true" Directory="..\..\src\Bechtle.A365.ConfigService.Cli\bin\$(Configuration)\netcoreapp2.2\win10-x64\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="true" GenerateGuidsNow="false" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePathCli" />
     <PropertyGroup>
       <WixServiceParams>
         <Parameter Name="InstallFolder" Value="INSTALLFOLDER" />
