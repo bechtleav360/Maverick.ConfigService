@@ -62,9 +62,9 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                                                    projectedEvent.Id)
                                   .Finish();
 
-                    var result = await Project(projectedEvent.DomainEvent,
-                                               projectedEvent.Id,
-                                               projectedEvent.Index);
+                    await Project(projectedEvent.DomainEvent,
+                                  projectedEvent.Id,
+                                  projectedEvent.Index);
 
                     _metricService.SetStatus(ProjectionStatus.Idle)
                                   .ClearCurrentEvent()
@@ -77,7 +77,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             }
         }
 
-        private async Task<bool> Project(DomainEvent domainEvent, string id, long index)
+        private async Task Project(DomainEvent domainEvent, string id, long index)
         {
             _logger.LogInformation($"projecting DomainEvent of type '{domainEvent.EventType}' / '{id}'");
 
@@ -112,15 +112,12 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                         transaction.Commit();
 
                         _logger.LogInformation($"transaction '{transaction.TransactionId}' committed");
-
-                        return true;
                     }
                     catch (Exception e)
                     {
                         transaction.Rollback();
                         _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}', " +
                                             $"rolling back transaction '{transaction.TransactionId}' :{e}");
-                        return false;
                     }
                     finally
                     {
