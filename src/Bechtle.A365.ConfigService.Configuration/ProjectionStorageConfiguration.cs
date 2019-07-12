@@ -9,5 +9,10 @@
         ///     connection-string to projection database
         /// </summary>
         public string ConnectionString { get; set; }
+
+        /// <summary>
+        ///     used DbContext-Backends
+        /// </summary>
+        public DbBackend Backend { get; set; }
     }
 }

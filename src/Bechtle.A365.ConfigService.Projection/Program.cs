@@ -97,9 +97,34 @@ namespace Bechtle.A365.ConfigService.Projection
                                  ?.CreateLogger(nameof(Program));
 
             services.AddDbContext<ProjectionStoreContext>(
-                        logger, (provider, builder)
-                            => builder.UseSqlServer(provider.GetService<ProjectionStorageConfiguration>().ConnectionString,
-                                                    options => options.MigrationsAssembly(typeof(ProjectionStoreContext).Assembly.FullName)))
+                        logger, (provider, builder) =>
+                        {
+                            var settings = provider.GetService<ProjectionStorageConfiguration>();
+
+                            // @IMPORTANT: when handling additional cases here, don't forget to update the error-messages
+                            switch (settings.Backend)
+                            {
+                                case DbBackend.MsSql:
+                                    logger.LogInformation("using MsSql database-backend");
+                                    builder.UseSqlServer(settings.ConnectionString);
+                                    break;
+
+                                case DbBackend.Postgres:
+                                    logger.LogInformation("using PostgreSql database-backend");
+                                    builder.UseNpgsql(settings.ConnectionString);
+                                    break;
+
+                                case DbBackend.None:
+                                default:
+                                    logger.LogError($"Unsupported DbBackend: '{settings.Backend}'; " +
+                                                    $"change ProjectionStorage:Backend; " +
+                                                    $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
+                                    throw new ArgumentOutOfRangeException(nameof(settings.Backend),
+                                                                          $"Unsupported DbBackend: '{settings.Backend}'; " +
+                                                                          $"change ProjectionStorage:Backend; " +
+                                                                          $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
+                            }
+                        })
                     .AddCustomLogging(logger)
                     .AddProjectionConfiguration(logger, context.Configuration)
                     .AddProjectionServices(logger)
