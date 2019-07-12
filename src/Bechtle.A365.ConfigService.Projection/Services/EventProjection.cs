@@ -22,21 +22,18 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<EventConverter> _logger;
-        private readonly ProjectionMetricService _metricService;
-        private readonly StatusReporter _statusReporter;
+        private readonly IMetricService _metricService;
         private readonly IEventQueue _eventQueue;
 
         public EventProjection(IServiceProvider serviceProvider,
                                ILogger<EventConverter> logger,
-                               ProjectionMetricService metricService,
-                               StatusReporter statusReporter,
+                               IMetricService metricService,
                                IEventQueue eventQueue)
             : base(serviceProvider)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _metricService = metricService;
-            _statusReporter = statusReporter;
             _eventQueue = eventQueue;
         }
 
@@ -63,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                                                    DateTime.Now,
                                                    projectedEvent.Index,
                                                    projectedEvent.Id)
-                                  .Log();
+                                  .Finish();
 
                     var result = await Project(projectedEvent.DomainEvent,
                                                projectedEvent.Id,
@@ -76,9 +73,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                                                 projectedEvent.Index,
                                                 projectedEvent.Id)
                                   .ClearCurrentEvent()
-                                  .Log();
-
-                    await _statusReporter.PublishStatus();
+                                  .Finish();
                 }
                 catch (Exception e)
                 {

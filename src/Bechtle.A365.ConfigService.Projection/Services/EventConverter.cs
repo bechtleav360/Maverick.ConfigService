@@ -22,6 +22,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     {
         private readonly IConfiguration _configuration;
         private readonly IEventDeserializer _eventDeserializer;
+        private readonly IMetricService _metricService;
         private readonly IEventQueue _eventQueue;
         private readonly ILogger<EventConverter> _logger;
         private readonly IServiceProvider _serviceProvider;
@@ -34,6 +35,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                               ILogger<EventConverter> logger,
                               IConfiguration configuration,
                               IEventDeserializer eventDeserializer,
+                              IMetricService metricService,
                               IEventQueue eventQueue)
             : base(serviceProvider)
         {
@@ -41,6 +43,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             _logger = logger;
             _configuration = configuration;
             _eventDeserializer = eventDeserializer;
+            _metricService = metricService;
             _eventQueue = eventQueue;
 
             ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
@@ -78,9 +81,14 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                                                                               true,
                                                                               config.EventStoreConnection.Stream),
                                               EventAppeared,
-                                              subscription => { _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened"); },
+                                              subscription =>
+                                              {
+                                                  _metricService.SetEventStoreConnected(true).Finish();
+                                                  _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened");
+                                              },
                                               (subscription, reason, exception) =>
                                               {
+                                                  _metricService.SetEventStoreConnected(false).Finish();
                                                   _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
                                                                       $"dropped for reason: {reason}; exception {exception}");
                                               });

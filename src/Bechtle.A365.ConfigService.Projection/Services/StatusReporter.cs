@@ -5,26 +5,25 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Projection.EventBusMessages;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Core.EventBus.Events.Messages;
-using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.Services
 {
     public class StatusReporter : HostedService
     {
-        private readonly ILogger _logger;
-        private readonly ProjectionMetricService _metricService;
+        private readonly IMetricService _metricService;
         private readonly IEventBus _eventBus;
 
         public StatusReporter(IServiceProvider serviceProvider,
-                              ILogger<StatusReporter> logger,
-                              ProjectionMetricService metricService,
+                              IMetricService metricService,
                               IEventBus eventBus)
             : base(serviceProvider)
         {
-            _logger = logger;
             _metricService = metricService;
             _eventBus = eventBus;
+            _metricService.StatusChanged += OnMetricsChanged;
         }
+
+        private void OnMetricsChanged(object sender, EventArgs e) => PublishStatus().RunSync();
 
         public Task PublishStatus() => _eventBus.Publish(new EventMessage
         {

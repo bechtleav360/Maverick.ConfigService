@@ -104,7 +104,9 @@ namespace Bechtle.A365.ConfigService.Projection
                     .AddProjectionConfiguration(logger, context.Configuration)
                     .AddProjectionServices(logger)
                     .AddDomainEventServices(logger)
+                    .AddSingleton<IMetricService, ProjectionMetricService>(logger)
                     // add the service that should be run
+                    .AddHostedService<StatusReporter>(logger)
                     .AddSingleton<IEventQueue, EventQueue>(logger)
                     .AddHostedService<EventConverter>(logger)
                     .AddHostedService<EventProjection>(logger);
