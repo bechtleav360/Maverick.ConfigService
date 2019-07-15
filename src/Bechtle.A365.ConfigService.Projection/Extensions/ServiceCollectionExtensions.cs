@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
+using Bechtle.A365.ConfigService.Projection.Services;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using EventStore.ClientAPI;
@@ -94,17 +95,13 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                                                               config.EventStoreConnection.ConnectionName);
                        })
                        .AddSingleton<IEventDeserializer, EventDeserializer>(logger)
-                       .AddSingleton<IEventBus, WebSocketEventBusClient>(logger, provider =>
+                       .AddSingleton<IEventBusService, EventBusService>(logger)
+                       .AddTransient<IEventBus, WebSocketEventBusClient>(logger, provider =>
                        {
                            var config = provider.GetService<EventBusConnectionConfiguration>();
-                           var loggerFactory = provider.GetService<ILoggerFactory>();
 
-                           var client = new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
-                                                                    loggerFactory);
-
-                           client.Connect().Wait();
-
-                           return client;
+                           return new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
+                                                              provider.GetService<ILoggerFactory>());
                        });
     }
 }

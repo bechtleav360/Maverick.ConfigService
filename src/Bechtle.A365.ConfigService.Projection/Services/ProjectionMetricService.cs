@@ -39,11 +39,11 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         /// <inheritdoc />
         public ProjectionNodeStatus GetCurrentStatus() => new ProjectionNodeStatus
         {
-            NodeId = _nodeId,
             CurrentStatus = _nodeStatus,
             CurrentEvent = _currentEvent,
-            QueueLength = _queueLength,
-            EventStoreConnected = _eventStoreConnected
+            EventStoreConnected = _eventStoreConnected,
+            NodeId = _nodeId,
+            QueueLength = _queueLength
         };
 
         /// <inheritdoc />
@@ -59,8 +59,8 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                 Result = result,
                 Type = domainEvent?.EventType ?? "unknown",
                 Index = eventIndex,
-                Id = eventId,
-                Event = domainEvent
+                Id = eventId
+                //Event = domainEvent
             };
             return this;
         }

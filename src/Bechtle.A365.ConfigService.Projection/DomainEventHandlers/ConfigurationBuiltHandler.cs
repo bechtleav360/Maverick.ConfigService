@@ -6,7 +6,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
-using Bechtle.A365.Core.EventBus.Abstraction;
+using Bechtle.A365.ConfigService.Projection.Services;
 using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
     {
         private readonly IConfigurationCompiler _compiler;
         private readonly IConfigurationDatabase _database;
-        private readonly IEventBus _eventBus;
+        private readonly IEventBusService _eventBus;
         private readonly ILogger<ConfigurationBuiltHandler> _logger;
         private readonly IConfigurationParser _parser;
         private readonly IJsonTranslator _translator;
@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                          IConfigurationCompiler compiler,
                                          IConfigurationParser parser,
                                          IJsonTranslator translator,
-                                         IEventBus eventBus,
+                                         IEventBusService eventBus,
                                          ILogger<ConfigurationBuiltHandler> logger)
         {
             _database = database;

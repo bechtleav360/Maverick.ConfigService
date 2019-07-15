@@ -6,13 +6,11 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 {
     public interface IMetricService
     {
-        event EventHandler StatusChanged;
-
         ProjectionMetricService ClearCurrentEvent();
 
-        ProjectionNodeStatus GetCurrentStatus();
-
         ProjectionMetricService Finish();
+
+        ProjectionNodeStatus GetCurrentStatus();
 
         ProjectionMetricService SetCurrentEvent(DomainEvent domainEvent,
                                                 EventProjectionResult result,
@@ -27,5 +25,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         ProjectionMetricService SetQueueLength(long queueLength);
 
         ProjectionMetricService SetStatus(ProjectionStatus status);
+
+        event EventHandler StatusChanged;
     }
 }

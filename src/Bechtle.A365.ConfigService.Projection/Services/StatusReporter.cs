@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Projection.EventBusMessages;
-using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Core.EventBus.Events.Messages;
 
 namespace Bechtle.A365.ConfigService.Projection.Services
@@ -11,11 +10,11 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     public class StatusReporter : HostedService
     {
         private readonly IMetricService _metricService;
-        private readonly IEventBus _eventBus;
+        private readonly IEventBusService _eventBus;
 
         public StatusReporter(IServiceProvider serviceProvider,
                               IMetricService metricService,
-                              IEventBus eventBus)
+                              IEventBusService eventBus)
             : base(serviceProvider)
         {
             _metricService = metricService;
@@ -34,8 +33,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             await Task.Yield();
-
-            await _eventBus.Connect();
 
             await _eventBus.Subscribe<ConfigProjectionStatusRequest>(OnStatusRequest);
         }
