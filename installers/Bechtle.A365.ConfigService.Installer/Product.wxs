@@ -50,11 +50,11 @@
       <UIRef Id="WixUI_ErrorProgressText" />
       
       <!-- Skip license dialog -->
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InpuDlg" Order="2">
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InputDlg" Order="2">
         1
       </Publish>
 
-      <Dialog Id="InpuDlg" Width="370" Height="320" Title="Anmeldeinformationen">
+      <Dialog Id="InputDlg" Width="370" Height="320" Title="Anmeldeinformationen">
         <Control Id="Next" Type="PushButton" X="244" Y="294" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)">
           <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
         </Control>
@@ -112,7 +112,7 @@
       <Publish Dialog="InstallDirDlg"
                Control="Back"
                Event="NewDialog"
-               Value="InpuDlg"
+               Value="InputDlg"
                Order="2">
         1
       </Publish>
