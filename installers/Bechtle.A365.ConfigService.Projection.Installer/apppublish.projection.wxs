@@ -178,7 +178,7 @@
             <Component Id="cmp3B1025D5DD5A8A9A7B439B0E95ABDD1E" Guid="*">
                 <File Id="fil40A680608C24C9B929265CC4C871D66E" KeyPath="yes" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.dll" />
             </Component>
-            <wix:Component Id="cmpA3201C65017A6F7C737962F52D7FF3EF" Guid="*" xmlns:wix="http://schemas.microsoft.com/wix/2006/wi"><wix:File Id="filD9DE4F91B83B78B36070167B5E6A6A36" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.exe" KeyPath="yes" /><wix:ServiceInstall Id="SERVICEINSTALLER" DisplayName="Maverick Config-Projection" Name="Bechtle.A365.ConfigService.Projection" Description="Project Config-Events for the Maverick Backend" Start="auto" Type="ownProcess" Account="LocalSystem" ErrorControl="normal" Vital="yes"><util:ServiceConfig FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="none" RestartServiceDelayInSeconds="60" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" /></wix:ServiceInstall><wix:ServiceControl Id="SERVICECONTROLLER" Name="Bechtle.A365.ConfigService.Projection" Remove="uninstall" Stop="both" Start="install" Wait="yes" /></wix:Component>
+            <wix:Component Id="cmpA3201C65017A6F7C737962F52D7FF3EF" Guid="*" xmlns:wix="http://schemas.microsoft.com/wix/2006/wi"><wix:File Id="filD9DE4F91B83B78B36070167B5E6A6A36" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.exe" KeyPath="yes" /><util:User Id="UpdateUserLogonAsService" UpdateIfExists="yes" CreateUser="no" Name="[SERVICECREDENTIALS_USERLOGIN]" LogonAsService="yes" Vital="no" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" /><wix:ServiceInstall Id="SERVICEINSTALLER" DisplayName="Maverick Config-Projection" Name="Bechtle.A365.ConfigService.Projection" Description="Project Config-Events for the Maverick Backend" Start="auto" Type="ownProcess" Account="[SERVICECREDENTIALS_USERLOGIN]" Password="[SERVICECREDENTIALS_PASSWORD]" ErrorControl="normal" Vital="yes" Interactive="no"><util:ServiceConfig FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="restart" RestartServiceDelayInSeconds="60" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension" /></wix:ServiceInstall><wix:ServiceControl Id="SERVICECONTROLLER" Name="Bechtle.A365.ConfigService.Projection" Remove="uninstall" Stop="both" Start="install" Wait="yes" /></wix:Component>
             <Component Id="cmpCEF0546A91DEBC1712DB9DFA102F9F6D" Guid="*">
                 <File Id="fil68C369F2F38C4B546E8A0771244A8FC9" KeyPath="yes" Source="$(var.BasePathProjection)\Bechtle.A365.ConfigService.Projection.pdb" />
             </Component>
@@ -760,6 +760,9 @@
             </Component>
             <Component Id="cmp470704DFDD0C9EEB8B92CA560549946F" Guid="*">
                 <File Id="fil2CF4CE943BD29D9C4AE633252269BB9F" KeyPath="yes" Source="$(var.BasePathProjection)\Npgsql.EntityFrameworkCore.PostgreSQL.dll" />
+            </Component>
+            <Component Id="cmp57D17D6F6AC98A3AD60AE14211A59A0F" Guid="*">
+                <File Id="fil96AB0A2FC278F3594C376F5CE0F64273" KeyPath="yes" Source="$(var.BasePathProjection)\Polly.dll" />
             </Component>
             <Component Id="cmp079F957BF600F15E13C0301641E0D378" Guid="*">
                 <File Id="fil30A671C60B3821827C93BCC0314C707C" KeyPath="yes" Source="$(var.BasePathProjection)\protobuf-net.dll" />
@@ -1547,6 +1550,7 @@
             <ComponentRef Id="cmp020E58F0A6053EAC5916251B0901C4B2" />
             <ComponentRef Id="cmp1D373F2EE04B834A7EA8C62E40373A2B" />
             <ComponentRef Id="cmp470704DFDD0C9EEB8B92CA560549946F" />
+            <ComponentRef Id="cmp57D17D6F6AC98A3AD60AE14211A59A0F" />
             <ComponentRef Id="cmp079F957BF600F15E13C0301641E0D378" />
             <ComponentRef Id="cmp6970801058B55778AFF17B5155D43327" />
             <ComponentRef Id="cmp8D5434D4EDF02E7004A0CEC987C5BC30" />

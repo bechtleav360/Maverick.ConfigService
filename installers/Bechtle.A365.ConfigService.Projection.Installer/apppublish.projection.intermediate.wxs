@@ -764,6 +764,9 @@
             <Component Id="cmp470704DFDD0C9EEB8B92CA560549946F" Guid="*">
                 <File Id="fil2CF4CE943BD29D9C4AE633252269BB9F" KeyPath="yes" Source="$(var.BasePathProjection)\Npgsql.EntityFrameworkCore.PostgreSQL.dll" />
             </Component>
+            <Component Id="cmp57D17D6F6AC98A3AD60AE14211A59A0F" Guid="*">
+                <File Id="fil96AB0A2FC278F3594C376F5CE0F64273" KeyPath="yes" Source="$(var.BasePathProjection)\Polly.dll" />
+            </Component>
             <Component Id="cmp079F957BF600F15E13C0301641E0D378" Guid="*">
                 <File Id="fil30A671C60B3821827C93BCC0314C707C" KeyPath="yes" Source="$(var.BasePathProjection)\protobuf-net.dll" />
             </Component>
@@ -1550,6 +1553,7 @@
             <ComponentRef Id="cmp020E58F0A6053EAC5916251B0901C4B2" />
             <ComponentRef Id="cmp1D373F2EE04B834A7EA8C62E40373A2B" />
             <ComponentRef Id="cmp470704DFDD0C9EEB8B92CA560549946F" />
+            <ComponentRef Id="cmp57D17D6F6AC98A3AD60AE14211A59A0F" />
             <ComponentRef Id="cmp079F957BF600F15E13C0301641E0D378" />
             <ComponentRef Id="cmp6970801058B55778AFF17B5155D43327" />
             <ComponentRef Id="cmp8D5434D4EDF02E7004A0CEC987C5BC30" />

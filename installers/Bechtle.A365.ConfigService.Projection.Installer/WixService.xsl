@@ -47,6 +47,15 @@
         <xsl:attribute name="KeyPath">yes</xsl:attribute>
       </xsl:element>
 
+      <xsl:element name="util:User">
+        <xsl:attribute name="Id">UpdateUserLogonAsService</xsl:attribute>
+        <xsl:attribute name="UpdateIfExists">yes</xsl:attribute>
+        <xsl:attribute name="CreateUser">no</xsl:attribute>
+        <xsl:attribute name="Name">[SERVICECREDENTIALS_USERLOGIN]</xsl:attribute>
+        <xsl:attribute name="LogonAsService">yes</xsl:attribute>
+        <xsl:attribute name="Vital">no</xsl:attribute>
+      </xsl:element>
+
       <xsl:element name="wix:ServiceInstall">
         <!-- Service Install -->
         <xsl:attribute name="Id">SERVICEINSTALLER</xsl:attribute>
@@ -65,16 +74,17 @@
 
         <xsl:attribute name="Start">auto</xsl:attribute>
         <xsl:attribute name="Type">ownProcess</xsl:attribute>
-        <xsl:attribute name="Account">LocalSystem</xsl:attribute>
-        <!--<xsl:attribute name="Password">[PASSWORD]</xsl:attribute>-->
+        <xsl:attribute name="Account">[SERVICECREDENTIALS_USERLOGIN]</xsl:attribute>
+        <xsl:attribute name="Password">[SERVICECREDENTIALS_PASSWORD]</xsl:attribute>
         <xsl:attribute name="ErrorControl">normal</xsl:attribute>
         <xsl:attribute name="Vital">yes</xsl:attribute>
+        <xsl:attribute name="Interactive">no</xsl:attribute>
 
         <!-- Service Configuration, set as required -->
         <xsl:element name="util:ServiceConfig">
           <xsl:attribute name="FirstFailureActionType">restart</xsl:attribute>
           <xsl:attribute name="SecondFailureActionType">restart</xsl:attribute>
-          <xsl:attribute name="ThirdFailureActionType">none</xsl:attribute>
+          <xsl:attribute name="ThirdFailureActionType">restart</xsl:attribute>
           <xsl:attribute name="RestartServiceDelayInSeconds">60</xsl:attribute>
         </xsl:element>
       </xsl:element>
