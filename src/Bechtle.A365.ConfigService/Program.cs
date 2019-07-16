@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System;
+using System.IO;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using App.Metrics;
@@ -62,14 +64,35 @@ namespace Bechtle.A365.ConfigService
                     return;
                 }
 
+                X509Certificate2 certificate = null;
+                if (Path.GetExtension(settings.Certificate) == "pfx")
+                {
+                    certificate = settings.Password is null
+                                            ? new X509Certificate2(settings.Certificate)
+                                            : new X509Certificate2(settings.Certificate, settings.Password);
+                }
+
+                var certpath = Environment.GetEnvironmentVariable("ASPNETCORE_SSLCERT_PATH");
+                if (!string.IsNullOrEmpty(certpath) || Path.GetExtension(settings.Certificate) == "crt")
+                {
+
+                    var port = Environment.GetEnvironmentVariable("ASPNETCORE_SSL_PORT");
+                    certificate = X509CertificateUtility.LoadFromCrt(certpath) ?? X509CertificateUtility.LoadFromCrt(settings.Certificate);
+                    settings.Port = int.Parse(port ?? settings.Port.ToString());
+                }
+
                 var connectionOptions = new HttpsConnectionAdapterOptions
                 {
-                    ServerCertificate = settings.Password is null
-                                            ? new X509Certificate2(settings.Certificate)
-                                            : new X509Certificate2(settings.Certificate, settings.Password),
-                    ClientCertificateMode = ClientCertificateMode.RequireCertificate,
-                    ClientCertificateValidation = CertificateValidator.DisableChannelValidation
+                    ServerCertificate = certificate
                 };
+
+                var inDocker = bool.Parse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "false");
+                if (!inDocker)
+                {
+                    logger.LogInformation("Not running in docker, adding client certificate validation");
+                    connectionOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
+                    connectionOptions.ClientCertificateValidation = CertificateValidator.DisableChannelValidation;
+                }
 
                 logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
 
@@ -85,6 +108,11 @@ namespace Bechtle.A365.ConfigService
                 {
                     logger.LogInformation($"binding to: https://localhost:{settings.Port}");
                     options.ListenLocalhost(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+                }
+                else if (settings.IpAddress == "*")
+                {
+                    logger.LogInformation($"binding to: https://*:{settings.Port}");
+                    options.ListenAnyIP(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
                 }
                 else
                 {
