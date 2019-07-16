@@ -6,14 +6,17 @@ services:
     external_links:
       - eventstore
       - websocketservice
+      - redis
     extra_hosts:
       - "SQL02:172.16.10.31"
     network_mode: bridge
     ports:
-      - "8123:80"
+      - "8456:8456""
     volumes: 
-      - C:/docker/logs:/app/logs
+      - C:/docker/logs/ConfigService:/app/logs
+      - D:/TFS/Certs/w10lcl02/:/root/certs/ssl
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
-      - ASPNETCORE_URLS=http://*:80
+      - ASPNETCORE_SSLCERT_PATH=/root/certs/ssl/w10lcl02.crt
+      - ASPNETCORE_SSL_PORT=8456

@@ -1,27 +1,43 @@
-version: '3.4'
-
+version: "2.0"
 services:
-  eventbus:
-    image: maverick.azurecr.io/signalrservice
-
-  eventstore:
-    image: eventstore/eventstore
-
-  mssql:
-    image: microsoft/mssql-server-linux
+  configservice_migrate:
+    image: localhost:5000/configservice_migrate
+    container_name: configservice_migrate
+    extra_hosts:
+      - "SQL02:172.16.10.31"
+    network_mode: bridge
+  configservice_projection:
+    image: localhost:5000/configservice_projection
+    container_name: configservice_projection
+    external_links:
+      - eventstore
+      - websocketservice
+    extra_hosts:
+      - "SQL02:172.16.10.31"
+    volumes: 
+      - C:/docker/logs/ConfigService/Projection:/app/logs
+    restart: always
+    network_mode: bridge
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_PID=Developer
-
-  maverick.configservice:
-    image: maverick.azurecr.io/configservice
-    build:
-      context: .
-      dockerfile: src/Bechtle.A365.ConfigService/Dockerfile
-      
-  maverick.configservice.projection:
-    image: maverick.azurecr.io/configservice-projection
-    build:
-      context: .
-      dockerfile: src/Bechtle.A365.ConfigService.Projection/Dockerfile
-  
+      - ASPNETCORE_ENVIRONMENT=Docker
+  configservice:
+    image: localhost:5000/configservice
+    container_name: configservice
+    external_links:
+      - eventstore
+      - websocketservice
+      - redis
+    extra_hosts:
+      - "SQL02:172.16.10.31"
+    ports:
+      - "8456:8456"
+    network_mode: bridge
+    volumes: 
+      - C:/docker/logs/ConfigService:/app/logs
+      - D:/TFS/Certs/w10lcl02/:/root/certs/ssl
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_SSLCERT_PATH=/root/certs/ssl/w10lcl02.crt
+      - ASPNETCORE_SSL_PORT=8456
+ 
