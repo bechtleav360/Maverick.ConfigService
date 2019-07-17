@@ -69,6 +69,11 @@ namespace Bechtle.A365.ConfigService.Services
             return Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed);
         }
 
+        /// <summary>
+        ///     validate a single <see cref="ConfigKeyAction"/>
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
         private IResult ValidateConfigKeyAction(ConfigKeyAction action)
         {
             if (action is null)
@@ -93,6 +98,11 @@ namespace Bechtle.A365.ConfigService.Services
             return Result.Success();
         }
 
+        /// <summary>
+        ///     validate multiple <see cref="ConfigKeyAction"/> and aggregate their errors
+        /// </summary>
+        /// <param name="actions"></param>
+        /// <returns></returns>
         private IResult ValidateConfigKeyActions(ConfigKeyAction[] actions)
         {
             if (actions is null || !actions.Any())
@@ -110,6 +120,11 @@ namespace Bechtle.A365.ConfigService.Services
             return Result.Success();
         }
 
+        /// <summary>
+        ///     validate a dictionary of Key=>Value pairs and aggregate their errors
+        /// </summary>
+        /// <param name="dict"></param>
+        /// <returns></returns>
         private IResult ValidateDictionary(IDictionary<string, string> dict)
         {
             var errors = dict.Select(kvp => ValidateStringPair(kvp.Key, kvp.Value))
@@ -273,6 +288,11 @@ namespace Bechtle.A365.ConfigService.Services
             return Result.Success();
         }
 
+        /// <summary>
+        ///     validate a single <see cref="EnvironmentIdentifier"/>
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
         private IResult ValidateIdentifier(EnvironmentIdentifier identifier)
         {
             if (identifier is null)
@@ -287,6 +307,11 @@ namespace Bechtle.A365.ConfigService.Services
             return Result.Success();
         }
 
+        /// <summary>
+        ///     validate a single <see cref="StructureIdentifier"/>
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
         private IResult ValidateIdentifier(StructureIdentifier identifier)
         {
             if (identifier is null)
@@ -301,6 +326,12 @@ namespace Bechtle.A365.ConfigService.Services
             return Result.Success();
         }
 
+        /// <summary>
+        ///     validate a single Key=>Value pair from within a Dictionary; see <see cref="ValidateDictionary"/>
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         private IResult ValidateStringPair(string key, string value)
         {
             if (string.IsNullOrWhiteSpace(key))
