@@ -44,14 +44,15 @@ namespace Bechtle.A365.ConfigService
     public class Startup
     {
         private readonly ILogger<Startup> _logger;
+        private readonly IHostingEnvironment _environment;
 
         /// <inheritdoc />
         /// <param name="configuration"></param>
         /// <param name="logger"></param>
-        public Startup(IConfiguration configuration,
-                       ILogger<Startup> logger)
+        public Startup(IConfiguration configuration, ILogger<Startup> logger, IHostingEnvironment env)
         {
             _logger = logger;
+            _environment = env;
             Configuration = configuration;
 
             _logger.LogInformation(DebugUtilities.FormatConfiguration<ConfigServiceConfiguration>(configuration));
@@ -176,22 +177,26 @@ namespace Bechtle.A365.ConfigService
 
             _logger.LogInformation("Registering Authentication-Services");
 
-            // Cert-Based Authentication - if enabled
-            services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
+
+            if (_environment.EnvironmentName.ToLower() != "docker")
+            {
+                // Cert-Based Authentication - if enabled
+                services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
                     .AddCertificate(options =>
                     {
                         options.Events = new CertificateAuthenticationEvents
                         {
                             OnAuthenticationFailed = context => context.HttpContext
-                                                                       .RequestServices
-                                                                       .GetService<ICertificateValidator>()
-                                                                       .Fail(context),
+                                .RequestServices
+                                .GetService<ICertificateValidator>()
+                                .Fail(context),
                             OnValidateCertificate = context => context.HttpContext
-                                                                      .RequestServices
-                                                                      .GetService<ICertificateValidator>()
-                                                                      .Validate(context)
+                                .RequestServices
+                                .GetService<ICertificateValidator>()
+                                .Validate(context)
                         };
                     });
+            }
 
             _logger.LogInformation("Registering App-Services");
 
