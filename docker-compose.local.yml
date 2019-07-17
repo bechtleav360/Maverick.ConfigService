@@ -34,7 +34,7 @@ services:
     network_mode: bridge
     volumes: 
       - C:/docker/logs/ConfigService:/app/logs
-      - D:/TFS/Certs/wildcard/:/root/certs/ssl
+      - D:/TFS/Certs/w10lcl02/:/root/certs/ssl
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
