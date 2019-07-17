@@ -48,6 +48,11 @@
         /// <summary>
         ///     error while querying database
         /// </summary>
-        DbQueryError = 8
+        DbQueryError = 8,
+
+        /// <summary>
+        ///     DomainEvent contains invalid data and cannot be executed / written
+        /// </summary>
+        ValidationFailed = 9
     }
 }

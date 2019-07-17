@@ -1,0 +1,315 @@
+﻿using System.Collections.Generic;
+using System.Linq;
+using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
+
+namespace Bechtle.A365.ConfigService.Services
+{
+    /// <summary>
+    ///     component that validates DomainEvents for validity.
+    ///     - command contains valid data
+    ///     - command hasn't been issued with same intent (same command at a later date)
+    /// </summary>
+    public interface ICommandValidator
+    {
+        /// <summary>
+        ///     validate the given <see cref="DomainEvent" /> for its validity
+        /// </summary>
+        /// <param name="domainEvent"></param>
+        /// <returns></returns>
+        IResult ValidateDomainEvent(DomainEvent domainEvent);
+    }
+
+    /// <inheritdoc />
+    public class RepeatedCommandValidator : ICommandValidator
+    {
+        /// <inheritdoc />
+        public IResult ValidateDomainEvent(DomainEvent domainEvent) => Result.Success();
+    }
+
+    /// <inheritdoc />
+    public class InternalDataCommandValidator : ICommandValidator
+    {
+        /// <inheritdoc />
+        public IResult ValidateDomainEvent(DomainEvent domainEvent)
+        {
+            if (string.IsNullOrWhiteSpace(domainEvent.EventType))
+                return Result.Error("event does not contain EventType", ErrorCode.ValidationFailed);
+
+            switch (domainEvent)
+            {
+                case ConfigurationBuilt @event:
+                    return ValidateDomainEvent(@event);
+
+                case DefaultEnvironmentCreated @event:
+                    return ValidateDomainEvent(@event);
+
+                case EnvironmentCreated @event:
+                    return ValidateDomainEvent(@event);
+
+                case EnvironmentDeleted @event:
+                    return ValidateDomainEvent(@event);
+
+                case EnvironmentKeysImported @event:
+                    return ValidateDomainEvent(@event);
+
+                case EnvironmentKeysModified @event:
+                    return ValidateDomainEvent(@event);
+
+                case StructureCreated @event:
+                    return ValidateDomainEvent(@event);
+
+                case StructureDeleted @event:
+                    return ValidateDomainEvent(@event);
+
+                case StructureVariablesModified @event:
+                    return ValidateDomainEvent(@event);
+            }
+
+            return Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed);
+        }
+
+        private IResult ValidateConfigKeyAction(ConfigKeyAction action)
+        {
+            if (action is null)
+                return Result.Error("invalid data (action is null)", ErrorCode.ValidationFailed);
+
+            switch (action.Type)
+            {
+                case ConfigKeyActionType.Set:
+                case ConfigKeyActionType.Delete:
+                    break;
+
+                default:
+                    return Result.Error($"invalid data (invalid Type {action.Type:D} / '{action.Type:G}')", ErrorCode.ValidationFailed);
+            }
+
+            if (string.IsNullOrWhiteSpace(action.Key))
+                return Result.Error("invalid data (no key defined)", ErrorCode.ValidationFailed);
+
+            if (action.Value is null)
+                return Result.Error("invalid data (value is null)", ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+
+        private IResult ValidateConfigKeyActions(ConfigKeyAction[] actions)
+        {
+            if (actions is null || !actions.Any())
+                return Result.Error("invalid data (no modified keys)", ErrorCode.ValidationFailed);
+
+            var errors = actions.Select(ValidateConfigKeyAction)
+                                .Where(r => r.IsError)
+                                .ToList();
+
+            if (errors.Any())
+                return Result.Error($"invalid data ({errors.Count} {(errors.Count == 1 ? "action" : "actions")} failed validation);\r\n" +
+                                    string.Join(";\r\n", errors.Select(e => $"{e.Code} - {e.Message}")),
+                                    ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDictionary(IDictionary<string, string> dict)
+        {
+            var errors = dict.Select(kvp => ValidateStringPair(kvp.Key, kvp.Value))
+                             .Where(r => r.IsError)
+                             .ToList();
+
+            if (errors.Any())
+                return Result.Error($"invalid data ({errors.Count} {(errors.Count == 1 ? "key" : "keys")} failed validation);\r\n" +
+                                    string.Join(";\r\n", errors.Select(e => $"{e.Code} - {e.Message}")),
+                                    ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(ConfigurationBuilt @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(DefaultEnvironmentCreated @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentCreated @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentDeleted @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentKeysImported @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            var keyResult = ValidateConfigKeyActions(@event.ModifiedKeys);
+            if (keyResult.IsError)
+                return keyResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentKeysModified @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            var keyResult = ValidateConfigKeyActions(@event.ModifiedKeys);
+            if (keyResult.IsError)
+                return keyResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(StructureCreated @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            var keysResult = ValidateDictionary(@event.Keys);
+            if (keysResult.IsError)
+                return keysResult;
+
+            var variableResult = ValidateDictionary(@event.Variables);
+            if (variableResult.IsError)
+                return variableResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(StructureDeleted @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(StructureVariablesModified @event)
+        {
+            if (@event is null)
+                return Result.Error("invalid data (null event)", ErrorCode.ValidationFailed);
+
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            var keysResult = ValidateConfigKeyActions(@event.ModifiedKeys);
+            if (keysResult.IsError)
+                return keysResult;
+
+            return Result.Success();
+        }
+
+        /// <summary>
+        ///     checks the given <see cref="ConfigurationIdentifier" /> for validity
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        private IResult ValidateIdentifier(ConfigurationIdentifier identifier)
+        {
+            if (identifier is null)
+                return Result.Error("invalid identifier (null)", ErrorCode.ValidationFailed);
+
+            var environmentResult = ValidateIdentifier(identifier.Environment);
+            if (environmentResult.IsError)
+                return environmentResult;
+
+            var structureResult = ValidateIdentifier(identifier.Structure);
+            if (structureResult.IsError)
+                return structureResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateIdentifier(EnvironmentIdentifier identifier)
+        {
+            if (identifier is null)
+                return Result.Error("invalid EnvironmentIdentifier (null)", ErrorCode.ValidationFailed);
+
+            if (string.IsNullOrWhiteSpace(identifier.Category))
+                return Result.Error("invalid EnvironmentIdentifier.Category", ErrorCode.ValidationFailed);
+
+            if (string.IsNullOrWhiteSpace(identifier.Name))
+                return Result.Error("invalid EnvironmentIdentifier.Name (empty / null)", ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+
+        private IResult ValidateIdentifier(StructureIdentifier identifier)
+        {
+            if (identifier is null)
+                return Result.Error("invalid StructureIdentifier (null)", ErrorCode.ValidationFailed);
+
+            if (string.IsNullOrWhiteSpace(identifier.Name))
+                return Result.Error("invalid StructureIdentifier.Name (empty / null)", ErrorCode.ValidationFailed);
+
+            if (identifier.Version <= 0)
+                return Result.Error("invalid StructureIdentifier.Version (x <= 0)", ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+
+        private IResult ValidateStringPair(string key, string value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return Result.Error("invalid data (key is null / empty)", ErrorCode.ValidationFailed);
+
+            if (string.IsNullOrWhiteSpace(value))
+                return Result.Error("invalid data (value is null / empty)", ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+    }
+}
