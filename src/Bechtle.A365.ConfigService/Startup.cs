@@ -269,6 +269,8 @@ namespace Bechtle.A365.ConfigService
                         return new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
                                                            provider.GetService<ILoggerFactory>());
                     })
+                    .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
+                    //.AddScoped<ICommandValidator, RepeatedCommandValidator>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)

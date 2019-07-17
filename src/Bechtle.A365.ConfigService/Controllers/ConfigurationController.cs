@@ -23,18 +23,21 @@ namespace Bechtle.A365.ConfigService.Controllers
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
+        private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
                                        IEventStore eventStore,
                                        IProjectionStore store,
-                                       IJsonTranslator translator)
+                                       IJsonTranslator translator,
+                                       IEnumerable<ICommandValidator> validators)
             : base(provider, logger)
         {
             _eventStore = eventStore;
             _store = store;
             _translator = translator;
+            _validators = validators.ToArray();
         }
 
         /// <summary>
@@ -71,12 +74,22 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var envId = new EnvironmentIdentifier(environment.Category, environment.Name);
 
-            foreach (var structure in availableStructures.Data)
-                await new ConfigSnapshot().IdentifiedBy(structure, envId)
-                                          .ValidFrom(buildOptions?.ValidFrom)
-                                          .ValidTo(buildOptions?.ValidTo)
-                                          .Create()
-                                          .Save(_eventStore);
+            var domainObjects = availableStructures.Data
+                                                   .Select(id => new ConfigSnapshot().IdentifiedBy(id, envId)
+                                                                                     .ValidFrom(buildOptions?.ValidFrom)
+                                                                                     .ValidTo(buildOptions?.ValidTo)
+                                                                                     .Create())
+                                                   .ToList();
+
+            foreach (var domainObj in domainObjects)
+            {
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                    return BadRequest(errors.Values.SelectMany(_ => _));
+            }
+
+            foreach (var domainObj in domainObjects)
+                await domainObj.Save(_eventStore);
 
             return Accepted();
         }
@@ -126,12 +139,21 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (!structures.Any())
                 return NotFound($"no versions of structure '{structureName}' found");
 
-            foreach (var structureId in structures)
-                await new ConfigSnapshot().IdentifiedBy(structureId, envId)
-                                          .ValidFrom(buildOptions?.ValidFrom)
-                                          .ValidTo(buildOptions?.ValidTo)
-                                          .Create()
-                                          .Save(_eventStore);
+            var domainObjects = structures.Select(id => new ConfigSnapshot().IdentifiedBy(id, envId)
+                                                                            .ValidFrom(buildOptions?.ValidFrom)
+                                                                            .ValidTo(buildOptions?.ValidTo)
+                                                                            .Create())
+                                          .ToList();
+
+            foreach (var domainObj in domainObjects)
+            {
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                    return BadRequest(errors.Values.SelectMany(_ => _));
+            }
+
+            foreach (var domainObj in domainObjects)
+                await domainObj.Save(_eventStore);
 
             return Accepted();
         }
@@ -183,11 +205,16 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var structureId = new StructureIdentifier(structure.Name, structure.Version);
 
-            await new ConfigSnapshot().IdentifiedBy(structureId, envId)
-                                      .ValidFrom(buildOptions?.ValidFrom)
-                                      .ValidTo(buildOptions?.ValidTo)
-                                      .Create()
-                                      .Save(_eventStore);
+            var domainObj = new ConfigSnapshot().IdentifiedBy(structureId, envId)
+                                                .ValidFrom(buildOptions?.ValidFrom)
+                                                .ValidTo(buildOptions?.ValidTo)
+                                                .Create();
+
+            var errors = domainObj.Validate(_validators);
+            if (errors.Any())
+                return BadRequest(errors.Values.SelectMany(_ => _));
+
+            await domainObj.Save(_eventStore);
 
             return AcceptedAtAction(nameof(GetConfiguration), new
             {
@@ -216,27 +243,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             => RedirectToActionPermanent(nameof(GetConfigurations),
                                          "Configuration",
                                          new {when, offset, length});
-
-        /// <summary>
-        ///     get all available configurations
-        /// </summary>
-        /// <param name="when"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        [ApiVersion(ApiVersions.V1)]
-        [HttpGet(Name = "GetConfigurations")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetConfigurations([FromQuery] DateTime when,
-                                                           [FromQuery] int offset = -1,
-                                                           [FromQuery] int length = -1)
-        {
-            var range = QueryRange.Make(offset, length);
-            var result = await _store.Configurations.GetAvailable(when, range);
-
-            return Result(result);
-        }
 
         /// <summary>
         ///     get the keys of a specific configuration
@@ -339,6 +345,27 @@ namespace Bechtle.A365.ConfigService.Controllers
                                    $"{nameof(when)}: {when:O})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
             }
+        }
+
+        /// <summary>
+        ///     get all available configurations
+        /// </summary>
+        /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [ApiVersion(ApiVersions.V1)]
+        [HttpGet(Name = "GetConfigurations")]
+        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
+        public async Task<IActionResult> GetConfigurations([FromQuery] DateTime when,
+                                                           [FromQuery] int offset = -1,
+                                                           [FromQuery] int length = -1)
+        {
+            var range = QueryRange.Make(offset, length);
+            var result = await _store.Configurations.GetAvailable(when, range);
+
+            return Result(result);
         }
 
         /// <summary>

@@ -23,17 +23,21 @@ namespace Bechtle.A365.ConfigService.Controllers
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
+        private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
         public StructureController(IServiceProvider provider,
                                    ILogger<StructureController> logger,
                                    IProjectionStore store,
                                    IEventStore eventStore,
-                                   IJsonTranslator translator) : base(provider, logger)
+                                   IJsonTranslator translator,
+                                   IEnumerable<ICommandValidator> validators)
+            : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
+            _validators = validators.ToArray();
         }
 
         /// <summary>
@@ -80,9 +84,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var keys = _translator.ToDictionary(structure.Structure);
                 var variables = structure.Variables ?? new Dictionary<string, string>();
 
-                await new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
-                                           .Create(keys, variables)
-                                           .Save(_eventStore);
+                var domainObj = new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
+                                                     .Create(keys, variables);
+
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                    return BadRequest(errors.Values.SelectMany(_ => _));
+
+                await domainObj.Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetStructureKeys),
                                         new {name = structure.Name, version = structure.Version},
@@ -125,7 +134,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to retrieve available structures");
+                Logger.LogError(e, "failed to retrieve available structures");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve available structures");
             }
         }
@@ -304,9 +313,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var actions = variables.Select(ConfigKeyAction.Delete)
                                        .ToArray();
 
-                await new ConfigStructure().IdentifiedBy(identifier)
-                                           .ModifyVariables(actions)
-                                           .Save(_eventStore);
+                var domainObj = new ConfigStructure().IdentifiedBy(identifier)
+                                                     .ModifyVariables(actions);
+
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                    return BadRequest(errors.Values.SelectMany(_ => _));
+
+                await domainObj.Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
             }
@@ -347,9 +361,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var actions = changes.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
                                      .ToArray();
 
-                await new ConfigStructure().IdentifiedBy(identifier)
-                                           .ModifyVariables(actions)
-                                           .Save(_eventStore);
+                var domainObj = new ConfigStructure().IdentifiedBy(identifier)
+                                                     .ModifyVariables(actions);
+
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                    return BadRequest(errors.Values.SelectMany(_ => _));
+
+                await domainObj.Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
             }

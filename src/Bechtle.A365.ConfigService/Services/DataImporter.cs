@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -12,11 +13,14 @@ namespace Bechtle.A365.ConfigService.Services
     public class DataImporter : IDataImporter
     {
         private readonly IEventStore _store;
+        private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
-        public DataImporter(IEventStore store)
+        public DataImporter(IEventStore store,
+                            IEnumerable<ICommandValidator> validators)
         {
             _store = store;
+            _validators = validators.ToArray();
         }
 
         /// <inheritdoc />
@@ -27,16 +31,28 @@ namespace Bechtle.A365.ConfigService.Services
 
             foreach (var environment in export.Environments)
             {
-                await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(environment.Category, environment.Name))
-                                             .ImportKeys(environment.Keys
-                                                                    .Select(k=>new DtoConfigKey
-                                                                    {
-                                                                        Key = k.Key,
-                                                                        Description = k.Description,
-                                                                        Type = k.Type,
-                                                                        Value = k.Value
-                                                                    }))
-                                             .Save(_store);
+                var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(environment.Category, environment.Name))
+                                                       .ImportKeys(environment.Keys
+                                                                              .Select(k => new DtoConfigKey
+                                                                              {
+                                                                                  Key = k.Key,
+                                                                                  Description = k.Description,
+                                                                                  Type = k.Type,
+                                                                                  Value = k.Value
+                                                                              }));
+
+
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                {
+                    var errorMessages = string.Join("\r\n", errors.Values
+                                                                  .SelectMany(_ => _)
+                                                                  .Select(r => r.Message));
+
+                    return Result.Error($"data-validation failed; {errorMessages}", ErrorCode.ValidationFailed);
+                }
+
+                await domainObj.Save(_store);
             }
 
             return Result.Success();

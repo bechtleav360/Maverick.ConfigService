@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -22,18 +23,21 @@ namespace Bechtle.A365.ConfigService.Controllers
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
+        private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
         public EnvironmentController(IServiceProvider provider,
                                      ILogger<EnvironmentController> logger,
                                      IProjectionStore store,
                                      IEventStore eventStore,
-                                     IJsonTranslator translator)
+                                     IJsonTranslator translator,
+                                     IEnumerable<ICommandValidator> validators)
             : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
+            _validators = validators.ToArray();
         }
 
         /// <summary>
@@ -63,14 +67,24 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (!existingEnvs.Data.Any())
                 {
                     // create DefaultEnvironment
-                    await new ConfigEnvironment().DefaultIdentifiedBy(category)
-                                                 .Create()
-                                                 .Save(_eventStore);
+                    var envObj = new ConfigEnvironment().DefaultIdentifiedBy(category)
+                                                        .Create();
+
+                    var envErrors = envObj.Validate(_validators);
+                    if (envErrors.Any())
+                        return BadRequest(envErrors.Values.SelectMany(_ => _));
+
+                    await envObj.Save(_eventStore);
 
                     // create requested environment
-                    await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                                 .Create()
-                                                 .Save(_eventStore);
+                    var configObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                                           .Create();
+
+                    var configErrors = configObj.Validate(_validators);
+                    if (configErrors.Any())
+                        return BadRequest(configErrors.Values.SelectMany(_ => _));
+
+                    await configObj.Save(_eventStore);
                 }
                 else
                 {
@@ -79,9 +93,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                         return ProviderError(Common.Result.Error($"environment (Category: {category}; Name: {name}) already exists",
                                                                  ErrorCode.EnvironmentAlreadyExists));
 
-                    await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                                 .Create()
-                                                 .Save(_eventStore);
+                    var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                                           .Create();
+
+                    var errors = domainObj.Validate(_validators);
+                    if (errors.Any())
+                        return BadRequest(errors.Values.SelectMany(_ => _));
+
+                    await domainObj.Save(_eventStore);
                 }
 
                 return AcceptedAtAction(nameof(GetKeys), new {category, name});
@@ -120,9 +139,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var actions = keys.Select(ConfigKeyAction.Delete)
                                   .ToArray();
 
-                await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                             .ModifyKeys(actions)
-                                             .Save(_eventStore);
+                var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                                       .ModifyKeys(actions);
+
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                    return BadRequest(errors.Values.SelectMany(_ => _));
+
+                await domainObj.Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetKeys), new {category, name});
             }
@@ -285,9 +309,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                                      key.Type))
                                   .ToArray();
 
-                await new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                             .ModifyKeys(actions)
-                                             .Save(_eventStore);
+                var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                                       .ModifyKeys(actions);
+
+                var errors = domainObj.Validate(_validators);
+                if (errors.Any())
+                    return BadRequest(errors.Values.SelectMany(_ => _));
+
+                await domainObj.Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetKeys), new {category, name});
             }
