@@ -86,13 +86,13 @@ namespace Bechtle.A365.ConfigService
                     ServerCertificate = certificate
                 };
 
-                var inDocker = bool.Parse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "false");
-                if (!inDocker)
-                {
-                    logger.LogInformation("Not running in docker, adding client certificate validation");
-                    connectionOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
-                    connectionOptions.ClientCertificateValidation = CertificateValidator.DisableChannelValidation;
-                }
+                // var inDocker = bool.Parse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "false");
+                // if (!inDocker)
+                // {
+                //     logger.LogInformation("Not running in docker, adding client certificate validation");
+                //     connectionOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
+                //     connectionOptions.ClientCertificateValidation = CertificateValidator.DisableChannelValidation;
+                // }
 
                 logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
 

@@ -8,7 +8,7 @@ services:
       - websocketservice
       - redis
     extra_hosts:
-      - "SQL02:172.16.10.31"
+      - "SQL02:172.16.10.31"      
     network_mode: bridge
     ports:
       - "8456:8456""
