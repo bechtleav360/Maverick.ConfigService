@@ -17,11 +17,4 @@ namespace Bechtle.A365.ConfigService.Services
         /// <returns></returns>
         IResult ValidateDomainEvent(DomainEvent domainEvent);
     }
-
-    /// <inheritdoc />
-    public class RepeatedCommandValidator : ICommandValidator
-    {
-        /// <inheritdoc />
-        public IResult ValidateDomainEvent(DomainEvent domainEvent) => Result.Success();
-    }
 }
