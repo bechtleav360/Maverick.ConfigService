@@ -1,5 +1,4 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -25,7 +24,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             _provider = provider;
         }
 
-        [Required]
         [Option("-c|--connection-string", CommandOptionType.SingleValue, Description = "ConnectionString to use for Connecting to the Database")]
         public string ConnectionString
         {
@@ -37,7 +35,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
         }
 
-        [Required]
         [Option("-b|--db-backend", CommandOptionType.SingleValue, Description = "Database-Backend to configure when creating DbContext")]
         public DbBackend DatabaseBackend
         {
