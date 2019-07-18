@@ -3,15 +3,17 @@ using System;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Bechtle.A365.ConfigService.Migrations
 {
     [DbContext(typeof(ProjectionStoreContext))]
-    partial class ProjectionStoreModelSnapshot : ModelSnapshot
+    [Migration("20190718140113_AddProjectionMetadata")]
+    partial class AddProjectionMetadata
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

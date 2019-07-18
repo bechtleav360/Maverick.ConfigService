@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
@@ -10,6 +11,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
     /// </summary>
     public interface IConfigurationDatabase
     {
+        /// <summary>
+        ///     append a new metadata-object to the list of event-metadata
+        /// </summary>
+        /// <param name="metadata"></param>
+        /// <returns></returns>
+        Task<IResult> AppendProjectedEventMetadata(ProjectedEventMetadata metadata);
+
         /// <summary>
         ///     apply a set of changes to an Environment identified by <paramref name="identifier" />
         /// </summary>
@@ -102,6 +110,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// </summary>
         /// <returns></returns>
         Task<long?> GetLatestProjectedEventId();
+
+        /// <summary>
+        ///     get a list of metadata-objects for all projected events
+        /// </summary>
+        /// <param name="eventMetadata"></param>
+        /// <returns></returns>
+        Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata();
 
         /// <summary>
         ///     get the structure with default-values for the specified Structure

@@ -81,6 +81,13 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         {
             _logger.LogInformation($"projecting DomainEvent of type '{domainEvent.EventType}' / '{id}'");
 
+            var metadata = new ProjectedEventMetadata
+            {
+                Type = domainEvent.EventType,
+                Start = DateTime.UtcNow,
+                Index = index
+            };
+
             using (var scope = _serviceProvider.CreateScope())
             {
                 var context = scope.ServiceProvider.GetService<ProjectionStoreContext>();
@@ -109,23 +116,28 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
                         _logger.LogInformation($"committing transaction '{transaction.TransactionId}'");
 
+                        metadata.Changes = context.ChangeTracker.Entries().Count();
                         transaction.Commit();
+                        metadata.ProjectedSuccessfully = true;
 
                         _logger.LogInformation($"transaction '{transaction.TransactionId}' committed");
                     }
                     catch (Exception e)
                     {
                         transaction.Rollback();
+                        metadata.ProjectedSuccessfully = false;
                         _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}', " +
                                             $"rolling back transaction '{transaction.TransactionId}' :{e}");
                     }
                     finally
                     {
                         _logger.LogTrace("forcing GC.Collect...");
-
+                        metadata.End = DateTime.UtcNow;
                         GC.Collect();
                     }
                 }
+
+                await database.AppendProjectedEventMetadata(metadata);
             }
         }
 

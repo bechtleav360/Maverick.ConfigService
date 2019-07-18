@@ -65,6 +65,10 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         /// </summary>
         public DbSet<Structure> Structures { get; set; }
 
+        /// <summary>
+        /// </summary>
+        public DbSet<ProjectedEventMetadata> ProjectedEventMetadata { get; set; }
+
         /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -94,6 +98,9 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
                         .ToTable(nameof(ProjectedConfigurationKey));
 
             modelBuilder.Entity<ConfigEnvironmentKeyPath>();
+
+            modelBuilder.Entity<ProjectedEventMetadata>()
+                        .ToTable(nameof(ProjectedEventMetadata));
         }
     }
 }

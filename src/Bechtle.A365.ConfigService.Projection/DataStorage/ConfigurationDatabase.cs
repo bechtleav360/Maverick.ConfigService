@@ -26,6 +26,27 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         }
 
         /// <inheritdoc />
+        public async Task<IResult> AppendProjectedEventMetadata(ProjectedEventMetadata metadata)
+        {
+            try
+            {
+                if (metadata is null)
+                    return Result.Error($"{nameof(ProjectedEventMetadata)} is null", ErrorCode.InvalidData);
+
+                await _context.ProjectedEventMetadata.AddAsync(metadata);
+
+                await _context.SaveChangesAsync();
+
+                return Result.Success();
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "could not add event-metadata to list of projected-event metadata");
+                return Result.Error("could not add event-metadata to db", ErrorCode.DbUpdateError);
+            }
+        }
+
+        /// <inheritdoc />
         public async Task<IResult> ApplyChanges(EnvironmentIdentifier identifier, IList<ConfigKeyAction> actions)
         {
             _logger.LogInformation($"applying '{actions.Count}' changes to environment '{identifier}'");
@@ -482,6 +503,25 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
 
             return metadata.LatestEvent;
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata()
+        {
+            try
+            {
+                var items = await _context.ProjectedEventMetadata
+                                          .OrderBy(e => e.Index)
+                                          .ToListAsync();
+
+                return Result.Success((IList<ProjectedEventMetadata>) items ?? new List<ProjectedEventMetadata>());
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "couldn't retrieve list of metadata for projected events");
+                return Result.Error<IList<ProjectedEventMetadata>>("could not retrieve list of metadata for projected events",
+                                                                   ErrorCode.DbQueryError);
+            }
         }
 
         /// <inheritdoc />
