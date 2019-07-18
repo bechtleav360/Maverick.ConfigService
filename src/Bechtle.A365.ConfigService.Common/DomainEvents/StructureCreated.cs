@@ -1,12 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="DomainEvent" />
     /// <summary>
     ///     a Structure has been created with the given <see cref="StructureIdentifier" />
     /// </summary>
-    public class StructureCreated : DomainEvent
+    public class StructureCreated : DomainEvent, IEquatable<StructureCreated>
     {
         /// <inheritdoc />
         public StructureCreated(StructureIdentifier identifier,
@@ -14,8 +15,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                                 IDictionary<string, string> variables)
         {
             Identifier = identifier;
-            Keys = new Dictionary<string, string>(keys);
-            Variables = new Dictionary<string, string>(variables);
+            Keys = new Dictionary<string, string>(keys, StringComparer.OrdinalIgnoreCase);
+            Variables = new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />
@@ -35,5 +36,39 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         ///     variables that may be referenced from Environment or Keys
         /// </summary>
         public Dictionary<string, string> Variables { get; set; }
+
+        public bool Equals(StructureCreated other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Equals(Identifier, other.Identifier)
+                   && Equals(Keys, other.Keys)
+                   && Equals(Variables, other.Variables);
+        }
+
+        public static bool operator ==(StructureCreated left, StructureCreated right) => Equals(left, right);
+
+        public static bool operator !=(StructureCreated left, StructureCreated right) => !Equals(left, right);
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((StructureCreated) obj);
+        }
+
+        public override bool Equals(DomainEvent other) => Equals(other as StructureCreated);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Identifier != null ? Identifier.GetHashCode() : 0;
+                hashCode = (hashCode * 397) ^ (Keys != null ? Keys.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Variables != null ? Variables.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
     }
 }
