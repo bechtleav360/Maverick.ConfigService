@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Bechtle.A365.ConfigService.Common;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Logging;
@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Services
     //        this marker should be in non-volatile storage (configured db? - new migration for new table)
 
     /// <summary>
-    ///     component that stores and retrieves current <see cref="HistoryStatus"/> for any given <see cref="DomainEvent"/>
+    ///     component that stores and retrieves current <see cref="EventStatus"/> for any given <see cref="DomainEvent"/>
     /// </summary>
     public interface IEventHistoryService
     {
@@ -38,13 +38,13 @@ namespace Bechtle.A365.ConfigService.Services
         /// </summary>
         /// <param name="domainEvent"></param>
         /// <returns></returns>
-        HistoryStatus GetEventStatus(DomainEvent domainEvent);
+        Task<EventStatus> GetEventStatus(DomainEvent domainEvent);
     }
 
     /// <summary>
     ///     status of a DomainEvent within the recorded history
     /// </summary>
-    public enum HistoryStatus
+    public enum EventStatus
     {
         /// <summary>
         ///     event has not been recorded in history
@@ -59,7 +59,17 @@ namespace Bechtle.A365.ConfigService.Services
         /// <summary>
         ///     event has been recorded in history
         /// </summary>
-        Recorded
+        Recorded,
+
+        /// <summary>
+        ///     event has been recorded and projected
+        /// </summary>
+        Projected,
+
+        /// <summary>
+        ///     event has been recorded and projected, but newer events overwrite this action
+        /// </summary>
+        Superseded,
     }
 
     /// <inheritdoc />
@@ -68,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Services
         private readonly ILogger _logger;
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _projectionStore;
-        private readonly Dictionary<DomainEvent, HistoryStatus> _eventStatuses;
+        private readonly Dictionary<DomainEvent, EventStatus> _eventStatuses;
 
         /// <inheritdoc />
         public MemoryEventHistoryService(ILogger<MemoryEventHistoryService> logger,
@@ -78,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Services
             _logger = logger;
             _eventStore = eventStore;
             _projectionStore = projectionStore;
-            _eventStatuses = new Dictionary<DomainEvent, HistoryStatus>();
+            _eventStatuses = new Dictionary<DomainEvent, EventStatus>();
         }
 
         /// <inheritdoc />
@@ -88,39 +98,82 @@ namespace Bechtle.A365.ConfigService.Services
         public void RemoveDomainEventMark(DomainEvent domainEvent) => throw new System.NotImplementedException();
 
         /// <inheritdoc />
-        public HistoryStatus GetEventStatus(DomainEvent domainEvent)
+        public async Task<EventStatus> GetEventStatus(DomainEvent domainEvent)
         {
-            if (IsEventAlreadyProjected(domainEvent) || IsEventInEventStore(domainEvent))
-                return HistoryStatus.Recorded;
+            var status = EventStatus.Unknown;
 
-            if (IsEventMarked(domainEvent))
-                return HistoryStatus.Marked;
+            if (await IsEventMarked(domainEvent))
+                status = EventStatus.Marked;
 
-            return HistoryStatus.Unknown;
+            if (await IsEventInEventStore(domainEvent))
+                status = EventStatus.Recorded;
+
+            if (await IsEventAlreadyProjected(domainEvent))
+                status = EventStatus.Projected;
+
+            if (await IsEventSuperseded(domainEvent))
+                status = EventStatus.Superseded;
+
+            return status;
         }
 
-        private bool IsEventAlreadyProjected(DomainEvent domainEvent)
+        private async Task<bool> IsEventAlreadyProjected(DomainEvent domainEvent)
         {
-            // @TODO: holy fuck, this seems like a huge task... @future-sven get fucked
-            return false;
-        }
+            // get the list of events that have already been projected to DB
+            var metadataResult = await _projectionStore.Metadata.GetProjectedEventMetadata();
+            if (metadataResult.IsError)
+                return false;
 
-        private bool IsEventInEventStore(DomainEvent domainEvent)
-        {
-            var events = _eventStore.ReplayEvents()
-                                    .RunSync()
-                                    .ToList();
+            // filter out those that don't have the same Type, they can't be what we search
+            var projectedEvents = metadataResult.Data
+                                                .Where(p => p.Type == domainEvent.EventType)
+                                                .ToDictionary(p => p.Index, p => (DomainEvent) null);
 
-            foreach (var (_, @event) in events)
+            // stream the actual events from EventStore to get the underlying DomainEvents from them
+            await _eventStore.ReplayEventsAsStream(tuple =>
             {
-                if (@event.Equals(domainEvent))
-                    return true;
-            }
+                var (recordedEvent, @event) = tuple;
 
-            return false;
+                // update projectedEvents with the actual DomainEvents
+                if (projectedEvents.ContainsKey(recordedEvent.EventNumber))
+                    projectedEvents[recordedEvent.EventNumber] = @event;
+
+                // if all values have been filled we can stop processing more events
+                return projectedEvents.Values.All(v => v != null);
+            });
+
+            // if any value in projectedEvents is similar to the given domainEvent,
+            // the given domainEvent has been projected
+            // if none match, we can be reasonably sure it hasn't been projected to DB
+            return projectedEvents.Values.Any(e => e.Equals(domainEvent));
         }
+
+        private async Task<bool> IsEventInEventStore(DomainEvent domainEvent)
+        {
+            var result = false;
+
+            // stream all events in EventStore and compare their payload-DomainEvent with what we're given
+            await _eventStore.ReplayEventsAsStream(tuple =>
+            {
+                var (_, @event) = tuple;
+
+                if (@event.Equals(domainEvent))
+                {
+                    // set status and break further stream processing by returning false
+                    result = true;
+                    return false;
+                }
+
+                // continue stream-processing
+                return true;
+            });
+
+            return result;
+        }
+
+        private async Task<bool> IsEventSuperseded(DomainEvent domainEvent) => false;
 
         // @TODO: how do we event mark stuff internally?!
-        private bool IsEventMarked(DomainEvent domainEvent) => false;
+        private async Task<bool> IsEventMarked(DomainEvent domainEvent) => false;
     }
 }
