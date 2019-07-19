@@ -250,6 +250,7 @@ namespace Bechtle.A365.ConfigService
                             }
                         })
                     .AddScoped<IProjectionStore, ProjectionStore>(_logger)
+                    .AddScoped<IMetadataProjectionStore, MetadataProjectionStore>(_logger)
                     .AddScoped<IStructureProjectionStore, StructureProjectionStore>(_logger)
                     .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
                     .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)

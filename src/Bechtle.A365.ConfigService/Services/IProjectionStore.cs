@@ -13,5 +13,8 @@
 
         /// <inheritdoc cref="IStructureProjectionStore" />
         IStructureProjectionStore Structures { get; }
+
+        /// <inheritdoc cref="IMetadataProjectionStore"/>
+        IMetadataProjectionStore Metadata { get; }
     }
 }
