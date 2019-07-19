@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Models.V1;
-using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.ConfigService.Services.Stores;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.AspNetCore.Mvc;

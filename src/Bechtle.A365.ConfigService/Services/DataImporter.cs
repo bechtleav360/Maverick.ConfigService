@@ -6,6 +6,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
+using Bechtle.A365.ConfigService.Services.Stores;
 
 namespace Bechtle.A365.ConfigService.Services
 {

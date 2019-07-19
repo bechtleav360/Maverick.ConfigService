@@ -9,7 +9,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <inheritdoc />
     public class StructureProjectionStore : IStructureProjectionStore

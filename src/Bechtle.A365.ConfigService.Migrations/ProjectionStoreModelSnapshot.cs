@@ -3,7 +3,6 @@ using System;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Bechtle.A365.ConfigService.Migrations

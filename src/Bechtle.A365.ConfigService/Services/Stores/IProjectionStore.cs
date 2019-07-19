@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Services
+﻿namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <summary>
     ///     read projected configurations

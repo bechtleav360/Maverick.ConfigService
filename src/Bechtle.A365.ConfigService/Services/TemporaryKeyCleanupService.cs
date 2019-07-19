@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Events;
+using Bechtle.A365.ConfigService.Services.Stores;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.Extensions.DependencyInjection;

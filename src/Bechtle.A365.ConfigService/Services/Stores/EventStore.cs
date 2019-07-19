@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 using ESLogger = EventStore.ClientAPI.ILogger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <inheritdoc cref="IEventStore" />
     public class EventStore : IEventStore, IDisposable

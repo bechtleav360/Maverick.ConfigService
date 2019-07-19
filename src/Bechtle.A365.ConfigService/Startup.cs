@@ -14,6 +14,7 @@ using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Middleware;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.ConfigService.Services.Stores;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Maverick.Core.Health.Builder;
@@ -29,7 +30,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using NLog.Web;
@@ -260,7 +260,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IConfigurationParser, AntlrConfigurationParser>(_logger)
                     .AddScoped<IConfigProtector, ConfigProtector>(_logger)
                     .AddScoped<IRegionEncryptionCertProvider, RegionEncryptionCertProvider>(_logger)
-                    .AddScoped<IEventStore, Services.EventStore>(_logger)
+                    .AddScoped<IEventStore, Services.Stores.EventStore>(_logger)
                     .AddScoped<IDataExporter, DataExporter>(_logger)
                     .AddScoped<IDataImporter, DataImporter>(_logger)
                     .AddScoped<IEventBus, WebSocketEventBusClient>(_logger, provider =>

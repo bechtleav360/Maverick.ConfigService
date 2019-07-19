@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <inheritdoc />
     public class ConfigurationProjectionStore : IConfigurationProjectionStore

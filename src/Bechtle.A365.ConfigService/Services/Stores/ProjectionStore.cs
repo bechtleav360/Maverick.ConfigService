@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <inheritdoc cref="DbContext" />
     /// <inheritdoc cref="IProjectionStore" />

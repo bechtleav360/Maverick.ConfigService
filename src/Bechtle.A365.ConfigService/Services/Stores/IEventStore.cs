@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using EventStore.ClientAPI;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <summary>
     ///     internal EventStore interface
