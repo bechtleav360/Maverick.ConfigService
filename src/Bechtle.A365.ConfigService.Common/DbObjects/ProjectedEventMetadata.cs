@@ -8,6 +8,16 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
     public class ProjectedEventMetadata
     {
         /// <summary>
+        ///     reported changes that were made in this event
+        /// </summary>
+        public long Changes { get; set; }
+
+        /// <summary>
+        ///     end-time of this event-projection
+        /// </summary>
+        public DateTime End { get; set; }
+
+        /// <summary>
         ///     unique id
         /// </summary>
         public Guid Id { get; set; }
@@ -16,11 +26,6 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         ///     original EventIndex
         /// </summary>
         public long Index { get; set; }
-
-        /// <summary>
-        ///     DomainEvent Type
-        /// </summary>
-        public string Type { get; set; }
 
         /// <summary>
         ///     true if event could be projected successfully
@@ -33,13 +38,8 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         public DateTime Start { get; set; }
 
         /// <summary>
-        ///     end-time of this event-projection
+        ///     DomainEvent Type
         /// </summary>
-        public DateTime End { get; set; }
-
-        /// <summary>
-        ///     reported changes that were made in this event
-        /// </summary>
-        public long Changes { get; set; }
+        public string Type { get; set; }
     }
 }
