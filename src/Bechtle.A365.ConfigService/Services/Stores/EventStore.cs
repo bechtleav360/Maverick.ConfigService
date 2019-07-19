@@ -83,11 +83,18 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             }
         }
 
-        private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args) => ConnectionState = ConnectionState.Reconnecting;
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (!(_eventStore is null))
+            {
+                _eventStore.Connected -= OnEventStoreConnected;
+                _eventStore.Disconnected -= OnEventStoreDisconnected;
+                _eventStore.Reconnecting -= OnEventStoreReconnecting;
+            }
 
-        private void OnEventStoreDisconnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Disconnected;
-
-        private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Connected;
+            _eventStore?.Dispose();
+        }
 
         /// <inheritdoc />
         public ConnectionState ConnectionState { get; private set; }
@@ -149,6 +156,48 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
+        public async Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor, int readSize = 64)
+        {
+            if (streamProcessor is null)
+                return;
+
+            // readSize must be below 4096
+            readSize = Math.Min(readSize, 4096);
+            long currentPosition = 0;
+            var stream = _configuration.EventStoreConnection.Stream;
+            var events = new List<(RecordedEvent, DomainEvent)>(readSize);
+            bool continueReading;
+
+            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
+
+            do
+            {
+                var slice = await _eventStore.ReadStreamEventsForwardAsync(stream,
+                                                                           currentPosition,
+                                                                           readSize,
+                                                                           true);
+
+                _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
+
+                events.Clear();
+                events.AddRange(slice.Events
+                                     .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
+                                                      ? (RecordedEvent: e.Event, Success: true, DomainEvent: @event)
+                                                      : (RecordedEvent: e.Event, Success: false, DomainEvent: null))
+                                     .Where(t => t.Success)
+                                     .Select(t => (t.RecordedEvent, t.DomainEvent)));
+
+                // send events to streamProcessor
+                // return from function if we receive 'false' or if streamProcessor is empty
+                if (events.Any(eventTuple => !streamProcessor.Invoke(eventTuple)))
+                    return;
+
+                currentPosition = slice.NextEventNumber;
+                continueReading = !slice.IsEndOfStream;
+            } while (continueReading);
+        }
+
+        /// <inheritdoc />
         public async Task WriteEvent<T>(T domainEvent) where T : DomainEvent
         {
             _logger.LogDebug($"{nameof(WriteEvent)}('{domainEvent.GetType().Name}')");
@@ -178,21 +227,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
         }
 
+        private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Connected;
+
+        private void OnEventStoreDisconnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Disconnected;
+
+        private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args) => ConnectionState = ConnectionState.Reconnecting;
+
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
             => _provider.GetService<IDomainEventConverter<T>>()
                         .Serialize(domainEvent);
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (!(_eventStore is null))
-            {
-                _eventStore.Connected -= OnEventStoreConnected;
-                _eventStore.Disconnected -= OnEventStoreDisconnected;
-                _eventStore.Reconnecting -= OnEventStoreReconnecting;
-            }
-
-            _eventStore?.Dispose();
-        }
     }
 }

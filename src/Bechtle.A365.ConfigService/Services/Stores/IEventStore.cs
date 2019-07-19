@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using EventStore.ClientAPI;
@@ -10,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     /// </summary>
     public interface IEventStore
     {
-        /// <inheritdoc cref="Services.ConnectionState"/>
+        /// <inheritdoc cref="Services.ConnectionState" />
         ConnectionState ConnectionState { get; }
 
         /// <summary>
@@ -20,7 +21,15 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents();
 
         /// <summary>
-        ///     write Event <typeparamref name="T"/> into the store
+        ///     read the Event-History as a stream and execute an action for each event
+        /// </summary>
+        /// <param name="streamProcessor">action executed for each event until it returns false</param>
+        /// <param name="readSize">number of events read from stream in one go. can't be greater than 4096</param>
+        /// <returns></returns>
+        Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor, int readSize = 64);
+
+        /// <summary>
+        ///     write Event <typeparamref name="T" /> into the store
         /// </summary>
         /// <param name="domainEvent"></param>
         /// <returns></returns>
