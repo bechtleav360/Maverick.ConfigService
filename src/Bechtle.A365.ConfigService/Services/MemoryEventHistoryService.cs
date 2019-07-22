@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services.Stores;
@@ -7,45 +6,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services
 {
-    /// <summary>
-    ///     component that stores and retrieves current <see cref="EventStatus"/> for any given <see cref="DomainEvent"/>
-    /// </summary>
-    public interface IEventHistoryService
-    {
-        /// <summary>
-        ///     get the status for a given DomainEvent.
-        /// </summary>
-        /// <param name="domainEvent"></param>
-        /// <returns></returns>
-        Task<EventStatus> GetEventStatus(DomainEvent domainEvent);
-    }
-
-    /// <summary>
-    ///     status of a DomainEvent within the recorded history
-    /// </summary>
-    public enum EventStatus
-    {
-        /// <summary>
-        ///     event has not been recorded in history
-        /// </summary>
-        Unknown,
-
-        /// <summary>
-        ///     event has been recorded in history
-        /// </summary>
-        Recorded,
-
-        /// <summary>
-        ///     event has been recorded and projected
-        /// </summary>
-        Projected,
-
-        /// <summary>
-        ///     event has been recorded and projected, but newer events overwrite this action
-        /// </summary>
-        Superseded,
-    }
-
     /// <inheritdoc />
     public class MemoryEventHistoryService : IEventHistoryService
     {
