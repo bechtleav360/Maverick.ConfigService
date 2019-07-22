@@ -7,15 +7,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services
 {
-    // @TODO: add method/s that let the user validate a DomainEvent and check if it's already in the DB
-    //        additionally, allow user to see when the original event was written?
-    //        make it possible to still send a 'successful' HttpStatusCode when duplicates have been located
-    //        Config-Client relies on getting a 20x response when uploading / building its own stuff
-    //        duplicates should appear in the logs as warnings!
-
-    // @TODO: add method/s that let user mark the writing of a DomainEvent for future reference (marker)
-    //        this marker should be in non-volatile storage (configured db? - new migration for new table)
-
     /// <summary>
     ///     component that stores and retrieves current <see cref="EventStatus"/> for any given <see cref="DomainEvent"/>
     /// </summary>
