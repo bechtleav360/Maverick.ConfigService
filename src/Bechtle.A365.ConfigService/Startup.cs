@@ -271,7 +271,7 @@ namespace Bechtle.A365.ConfigService
                                                            provider.GetService<ILoggerFactory>());
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
-                    //.AddScoped<ICommandValidator, RepeatedCommandValidator>(_logger)
+                    .AddScoped<IEventHistoryService, MemoryEventHistoryService>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)

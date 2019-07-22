@@ -24,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
+        private readonly IEventHistoryService _eventHistory;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
@@ -32,12 +33,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                                      IProjectionStore store,
                                      IEventStore eventStore,
                                      IJsonTranslator translator,
-                                     IEnumerable<ICommandValidator> validators)
+                                     IEnumerable<ICommandValidator> validators,
+                                     IEventHistoryService eventHistory)
             : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
+            _eventHistory = eventHistory;
             _validators = validators.ToArray();
         }
 
@@ -75,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                     if (envErrors.Any())
                         return BadRequest(envErrors.Values.SelectMany(_ => _));
 
-                    await envObj.Save(_eventStore);
+                    await envObj.Save(_eventStore, _eventHistory, Logger);
 
                     // create requested environment
                     var configObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
@@ -85,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                     if (configErrors.Any())
                         return BadRequest(configErrors.Values.SelectMany(_ => _));
 
-                    await configObj.Save(_eventStore);
+                    await configObj.Save(_eventStore, _eventHistory, Logger);
                 }
                 else
                 {
@@ -101,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                     if (errors.Any())
                         return BadRequest(errors.Values.SelectMany(_ => _));
 
-                    await domainObj.Save(_eventStore);
+                    await domainObj.Save(_eventStore, _eventHistory, Logger);
                 }
 
                 return AcceptedAtAction(nameof(GetKeys), new {category, name});
@@ -147,7 +150,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore);
+                await domainObj.Save(_eventStore, _eventHistory, Logger);
 
                 return AcceptedAtAction(nameof(GetKeys), new {category, name});
             }
@@ -317,7 +320,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore);
+                await domainObj.Save(_eventStore, _eventHistory, Logger);
 
                 return AcceptedAtAction(nameof(GetKeys), new {category, name});
             }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -42,9 +43,15 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
             return Equals(Identifier, other.Identifier)
-                   && Equals(Keys, other.Keys)
-                   && Equals(Variables, other.Variables);
+                   && CompareDictionaries(Keys, other.Keys)
+                   && CompareDictionaries(Variables, other.Variables);
         }
+
+        private bool CompareDictionaries(IDictionary<string, string> left, IDictionary<string, string> right)
+            => Equals(left, right) ||
+               left.Count == right.Count &&
+               left.All(kvp => right.ContainsKey(kvp.Key) &&
+                               right[kvp.Key].Equals(kvp.Value, StringComparison.OrdinalIgnoreCase));
 
         public static bool operator ==(StructureCreated left, StructureCreated right) => Equals(left, right);
 

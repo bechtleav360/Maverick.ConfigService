@@ -22,18 +22,6 @@ namespace Bechtle.A365.ConfigService.Services
     public interface IEventHistoryService
     {
         /// <summary>
-        ///     mark the given domainEvent as written to the EventStore
-        /// </summary>
-        /// <param name="domainEvent"></param>
-        void AddDomainEventMark(DomainEvent domainEvent);
-
-        /// <summary>
-        ///     mark the given domainEvent as stored in history
-        /// </summary>
-        /// <param name="domainEvent"></param>
-        void RemoveDomainEventMark(DomainEvent domainEvent);
-
-        /// <summary>
         ///     get the status for a given DomainEvent.
         /// </summary>
         /// <param name="domainEvent"></param>
@@ -50,11 +38,6 @@ namespace Bechtle.A365.ConfigService.Services
         ///     event has not been recorded in history
         /// </summary>
         Unknown,
-
-        /// <summary>
-        ///     event has been marked to be recorded in history
-        /// </summary>
-        Marked,
 
         /// <summary>
         ///     event has been recorded in history
@@ -92,18 +75,9 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public void AddDomainEventMark(DomainEvent domainEvent) => throw new System.NotImplementedException();
-
-        /// <inheritdoc />
-        public void RemoveDomainEventMark(DomainEvent domainEvent) => throw new System.NotImplementedException();
-
-        /// <inheritdoc />
         public async Task<EventStatus> GetEventStatus(DomainEvent domainEvent)
         {
             var status = EventStatus.Unknown;
-
-            if (await IsEventMarked(domainEvent))
-                status = EventStatus.Marked;
 
             if (await IsEventInEventStore(domainEvent))
                 status = EventStatus.Recorded;
@@ -139,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Services
                     projectedEvents[recordedEvent.EventNumber] = @event;
 
                 // if all values have been filled we can stop processing more events
-                return projectedEvents.Values.All(v => v != null);
+                return projectedEvents.Values.Any(v => v == null);
             });
 
             // if any value in projectedEvents is similar to the given domainEvent,
@@ -171,9 +145,32 @@ namespace Bechtle.A365.ConfigService.Services
             return result;
         }
 
-        private async Task<bool> IsEventSuperseded(DomainEvent domainEvent) => false;
+        private Task<bool> IsEventSuperseded(DomainEvent domainEvent)
+        {
+            switch (domainEvent)
+            {
+                // events that are unique once written
+                case StructureCreated _:
+                case EnvironmentCreated _:
+                case DefaultEnvironmentCreated _:
+                    return Task.FromResult(false);
 
-        // @TODO: how do we event mark stuff internally?!
-        private async Task<bool> IsEventMarked(DomainEvent domainEvent) => false;
+                // @TODO: see if the modifications of domainEvent have been overwritten, which would cause it to be Superseded
+                // events that appear routinely and
+                // even though it's already in EventStore it can be written again
+                case ConfigurationBuilt _:
+                case EnvironmentKeysImported _:
+                case EnvironmentKeysModified _:
+                case StructureVariablesModified _:
+                    return Task.FromResult(true);
+
+                // not implemented
+                case StructureDeleted _:
+                case EnvironmentDeleted _:
+                    return Task.FromResult(true);
+            }
+
+            return Task.FromResult(true);
+        }
     }
 }

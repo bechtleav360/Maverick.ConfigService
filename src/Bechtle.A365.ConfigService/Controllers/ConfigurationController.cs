@@ -24,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
+        private readonly IEventHistoryService _eventHistory;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
@@ -32,12 +33,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                                        IEventStore eventStore,
                                        IProjectionStore store,
                                        IJsonTranslator translator,
-                                       IEnumerable<ICommandValidator> validators)
+                                       IEnumerable<ICommandValidator> validators,
+                                       IEventHistoryService eventHistory)
             : base(provider, logger)
         {
             _eventStore = eventStore;
             _store = store;
             _translator = translator;
+            _eventHistory = eventHistory;
             _validators = validators.ToArray();
         }
 
@@ -90,7 +93,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
 
             foreach (var domainObj in domainObjects)
-                await domainObj.Save(_eventStore);
+                await domainObj.Save(_eventStore, _eventHistory, Logger);
 
             return Accepted();
         }
@@ -154,7 +157,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
 
             foreach (var domainObj in domainObjects)
-                await domainObj.Save(_eventStore);
+                await domainObj.Save(_eventStore, _eventHistory, Logger);
 
             return Accepted();
         }
@@ -215,7 +218,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (errors.Any())
                 return BadRequest(errors.Values.SelectMany(_ => _));
 
-            await domainObj.Save(_eventStore);
+            await domainObj.Save(_eventStore, _eventHistory, Logger);
 
             return AcceptedAtAction(nameof(GetConfiguration), new
             {

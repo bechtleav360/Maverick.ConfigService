@@ -24,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
+        private readonly IEventHistoryService _eventHistory;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
@@ -32,12 +33,14 @@ namespace Bechtle.A365.ConfigService.Controllers
                                    IProjectionStore store,
                                    IEventStore eventStore,
                                    IJsonTranslator translator,
-                                   IEnumerable<ICommandValidator> validators)
+                                   IEnumerable<ICommandValidator> validators,
+                                   IEventHistoryService eventHistory)
             : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
+            _eventHistory = eventHistory;
             _validators = validators.ToArray();
         }
 
@@ -70,18 +73,6 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var existingStructures = await _store.Structures.GetAvailableVersions(structure.Name, QueryRange.All);
-
-                if (existingStructures.IsError)
-                    return ProviderError(existingStructures);
-
-                // structure has already been submitted and can be viewed at the returned location
-                if (existingStructures.Data.Any(v => v == structure.Version))
-                    return RedirectToAction(nameof(GetStructureKeys),
-                                            // I WANT MY REFACTORING SAFETY, DAMN IT!
-                                            nameof(StructureController).Replace("Controller", ""),
-                                            new {name = structure.Name, version = structure.Version});
-
                 var keys = _translator.ToDictionary(structure.Structure);
                 var variables = structure.Variables ?? new Dictionary<string, string>();
 
@@ -92,10 +83,11 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore);
+                await domainObj.Save(_eventStore, _eventHistory, Logger);
 
                 return AcceptedAtAction(nameof(GetStructureKeys),
-                                        new {name = structure.Name, version = structure.Version},
+                                        RouteUtilities.ControllerName<StructureController>(),
+                                        new {version = "1.0", name = structure.Name, structureVersion = structure.Version},
                                         keys);
             }
             catch (Exception e)
@@ -321,7 +313,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore);
+                await domainObj.Save(_eventStore, _eventHistory, Logger);
 
                 return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
             }
@@ -369,7 +361,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore);
+                await domainObj.Save(_eventStore, _eventHistory, Logger);
 
                 return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
             }
