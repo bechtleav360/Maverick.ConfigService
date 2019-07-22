@@ -52,7 +52,6 @@ namespace Bechtle.A365.ConfigService.Services
         private readonly ILogger _logger;
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _projectionStore;
-        private readonly Dictionary<DomainEvent, EventStatus> _eventStatuses;
 
         /// <inheritdoc />
         public MemoryEventHistoryService(ILogger<MemoryEventHistoryService> logger,
@@ -62,7 +61,6 @@ namespace Bechtle.A365.ConfigService.Services
             _logger = logger;
             _eventStore = eventStore;
             _projectionStore = projectionStore;
-            _eventStatuses = new Dictionary<DomainEvent, EventStatus>();
         }
 
         /// <inheritdoc />
@@ -87,13 +85,22 @@ namespace Bechtle.A365.ConfigService.Services
             // get the list of events that have already been projected to DB
             var metadataResult = await _projectionStore.Metadata.GetProjectedEventMetadata();
             if (metadataResult.IsError)
+            {
+                _logger.LogWarning($"could not retrieve metadata for event of type '{domainEvent.EventType}'");
                 return false;
+            }
+
+            _logger.LogDebug($"retrieved '{metadataResult.Data.Count}' metadata-records for projected events");
 
             // filter out those that don't have the same Type, they can't be what we search
             var projectedEvents = metadataResult.Data
                                                 .Where(p => p.Type == domainEvent.EventType)
                                                 .ToDictionary(p => p.Index, p => (DomainEvent) null);
 
+            _logger.LogDebug($"filtered out '{metadataResult.Data.Count - projectedEvents.Count}' metadata-records, " +
+                             $"'{projectedEvents.Count}' items left");
+
+            _logger.LogDebug("streaming events to retrieve data for DomainEvents");
             // stream the actual events from EventStore to get the underlying DomainEvents from them
             await _eventStore.ReplayEventsAsStream(tuple =>
             {
@@ -110,7 +117,18 @@ namespace Bechtle.A365.ConfigService.Services
             // if any value in projectedEvents is similar to the given domainEvent,
             // the given domainEvent has been projected
             // if none match, we can be reasonably sure it hasn't been projected to DB
-            return projectedEvents.Values.Any(e => e.Equals(domainEvent));
+            var entry = projectedEvents.Where(kvp => kvp.Value.Equals(domainEvent))
+                                       .Select(kvp => (Index: kvp.Key, Event: kvp.Value))
+                                       .FirstOrDefault();
+
+            // check if event is null in the tuple, because tuple is struct and never null
+            var result = !(entry.Event is null);
+
+            _logger.LogInformation(result
+                                       ? $"DomainEvent '{domainEvent.EventType}' has been projected at ({entry.Index})"
+                                       : $"DomainEvent '{domainEvent.EventType}' with same data could not be found in ES-Stream");
+
+            return result;
         }
 
         private async Task<bool> IsEventInEventStore(DomainEvent domainEvent)
@@ -133,6 +151,10 @@ namespace Bechtle.A365.ConfigService.Services
                 return true;
             });
 
+            _logger.LogDebug(result
+                                 ? $"DomainEvent '{domainEvent.EventType}' with same data has been found in ES-Stream"
+                                 : $"DomainEvent '{domainEvent.EventType}' with same data could not be found in ES-Stream");
+
             return result;
         }
 
@@ -144,6 +166,7 @@ namespace Bechtle.A365.ConfigService.Services
                 case StructureCreated _:
                 case EnvironmentCreated _:
                 case DefaultEnvironmentCreated _:
+                    _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can't be superseded (fixed)");
                     return Task.FromResult(false);
 
                 // @TODO: see if the modifications of domainEvent have been overwritten, which would cause it to be Superseded
@@ -153,11 +176,13 @@ namespace Bechtle.A365.ConfigService.Services
                 case EnvironmentKeysImported _:
                 case EnvironmentKeysModified _:
                 case StructureVariablesModified _:
+                    _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can be superseded");
                     return Task.FromResult(true);
 
                 // not implemented
                 case StructureDeleted _:
                 case EnvironmentDeleted _:
+                    _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can be superseded (fixed)");
                     return Task.FromResult(true);
             }
 
