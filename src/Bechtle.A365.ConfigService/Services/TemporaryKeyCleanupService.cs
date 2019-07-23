@@ -95,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Services
 
                     Logger.LogDebug($"found '{keysToExpire.Count}' keys in '{region}' that will be removed");
 
-                    if (keysToExpire.Any() && Logger.IsEnabled(LogLevel.Trace)) 
+                    if (keysToExpire.Any() && Logger.IsEnabled(LogLevel.Trace))
                         Logger.LogTrace($"expired keys that will be removed from region '{region}': {string.Join("; ", keysToExpire)}");
 
                     if (cancellationToken.IsCancellationRequested)

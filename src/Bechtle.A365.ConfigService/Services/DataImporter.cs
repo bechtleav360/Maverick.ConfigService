@@ -14,9 +14,9 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc />
     public class DataImporter : IDataImporter
     {
+        private readonly IEventHistoryService _eventHistory;
         private readonly ILogger _logger;
         private readonly IEventStore _store;
-        private readonly IEventHistoryService _eventHistory;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />

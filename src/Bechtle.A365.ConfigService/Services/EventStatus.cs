@@ -23,6 +23,6 @@
         /// <summary>
         ///     event has been recorded and projected, but newer events overwrite this action
         /// </summary>
-        Superseded,
+        Superseded
     }
 }

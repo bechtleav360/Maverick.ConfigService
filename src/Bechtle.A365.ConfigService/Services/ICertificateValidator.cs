@@ -4,9 +4,9 @@ using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 namespace Bechtle.A365.ConfigService.Services
 {
     /// <summary>
-    ///     Custom-Certificate-Validator. 
-    ///     Validate Certificate against Custom-Rules in <see cref="Validate(ValidateCertificateContext)"/>, 
-    ///     and execute <see cref="Fail(CertificateAuthenticationFailedContext)"/> in case it fails to Validate
+    ///     Custom-Certificate-Validator.
+    ///     Validate Certificate against Custom-Rules in <see cref="Validate(ValidateCertificateContext)" />,
+    ///     and execute <see cref="Fail(CertificateAuthenticationFailedContext)" /> in case it fails to Validate
     /// </summary>
     public interface ICertificateValidator
     {

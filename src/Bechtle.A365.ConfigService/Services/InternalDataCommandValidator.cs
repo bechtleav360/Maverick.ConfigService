@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <summary>
-        ///     validate a single <see cref="ConfigKeyAction"/>
+        ///     validate a single <see cref="ConfigKeyAction" />
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
@@ -70,7 +70,6 @@ namespace Bechtle.A365.ConfigService.Services
 
                 default:
                     return Result.Error($"invalid data: invalid Type {action.Type:D} / '{action.Type:G}'; key='{action.Key}'", ErrorCode.ValidationFailed);
-
             }
 
             if (action.Value is null)
@@ -81,7 +80,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <summary>
-        ///     validate multiple <see cref="ConfigKeyAction"/> and aggregate their errors
+        ///     validate multiple <see cref="ConfigKeyAction" /> and aggregate their errors
         /// </summary>
         /// <param name="actions"></param>
         /// <returns></returns>
@@ -97,7 +96,6 @@ namespace Bechtle.A365.ConfigService.Services
 
             if (errors.Any())
                 return Result.Error($"invalid data: {errors.Count} {(errors.Count == 1 ? "action" : "actions")} failed validation);\r\n" +
-
                                     string.Join(";\r\n", errors.Select(e => $"{e.Code} - {e.Message}")),
                                     ErrorCode.ValidationFailed);
 
@@ -117,7 +115,6 @@ namespace Bechtle.A365.ConfigService.Services
 
             if (errors.Any())
                 return Result.Error($"invalid data: {errors.Count} {(errors.Count == 1 ? "key" : "keys")} failed validation);\r\n" +
-
                                     string.Join(";\r\n", errors.Select(e => $"{e.Code} - {e.Message}")),
                                     ErrorCode.ValidationFailed);
 
@@ -283,7 +280,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <summary>
-        ///     validate a single <see cref="EnvironmentIdentifier"/>
+        ///     validate a single <see cref="EnvironmentIdentifier" />
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
@@ -302,7 +299,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <summary>
-        ///     validate a single <see cref="StructureIdentifier"/>
+        ///     validate a single <see cref="StructureIdentifier" />
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
@@ -321,7 +318,7 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <summary>
-        ///     validate a single Key=>Value pair from within a Dictionary; see <see cref="ValidateDictionary"/>
+        ///     validate a single Key=>Value pair from within a Dictionary; see <see cref="ValidateDictionary" />
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>

@@ -29,9 +29,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         public IEnvironmentProjectionStore Environments { get; }
 
         /// <inheritdoc />
-        public IStructureProjectionStore Structures { get; }
+        public IMetadataProjectionStore Metadata { get; }
 
         /// <inheritdoc />
-        public IMetadataProjectionStore Metadata { get; }
+        public IStructureProjectionStore Structures { get; }
     }
 }

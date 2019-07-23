@@ -9,28 +9,28 @@ namespace Bechtle.A365.ConfigService.Services
     public class RegionEncryptionCertProvider : IRegionEncryptionCertProvider
     {
         private readonly ILogger<RegionEncryptionCertProvider> _logger;
-        private ProtectedConfiguration ProtectedConfiguration { get; set; }
+        private readonly ProtectedConfiguration _protectedConfiguration;
 
         /// <inheritdoc />
         public RegionEncryptionCertProvider(ProtectedConfiguration protectedConfiguration,
                                             ILogger<RegionEncryptionCertProvider> logger)
         {
             _logger = logger;
-            ProtectedConfiguration = protectedConfiguration;
+            _protectedConfiguration = protectedConfiguration;
         }
 
         /// <inheritdoc />
         public X509Certificate2 ForRegion(string region)
         {
-            if (ProtectedConfiguration.Regions.ContainsKey(region))
+            if (_protectedConfiguration.Regions.ContainsKey(region))
             {
-                _logger.LogDebug($"using certificate '{"ServiceCerts/" + ProtectedConfiguration.Regions[region]}' for region '{region}'; using '{region}'");
-                return new X509Certificate2("ServiceCerts/" + ProtectedConfiguration.Regions[region]);
+                _logger.LogDebug($"using certificate '{"ServiceCerts/" + _protectedConfiguration.Regions[region]}' for region '{region}'; using '{region}'");
+                return new X509Certificate2("ServiceCerts/" + _protectedConfiguration.Regions[region]);
             }
 
-            if (ProtectedConfiguration.Regions.ContainsKey("*"))
+            if (_protectedConfiguration.Regions.ContainsKey("*"))
             {
-                var autoCert = "ServiceCerts/" + ProtectedConfiguration.Regions["*"].Replace("*", region);
+                var autoCert = "ServiceCerts/" + _protectedConfiguration.Regions["*"].Replace("*", region);
 
                 if (File.Exists(autoCert))
                 {
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Services
 
             _logger.LogWarning($"no certificate found for region '{region}'");
 
-            return default(X509Certificate2);
+            return default;
         }
     }
 }

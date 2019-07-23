@@ -39,13 +39,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
 
         /// <summary>
-        ///     get configurations, that have stale configurations
-        /// </summary>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range);
-
-        /// <summary>
         ///     get the json of a Configuration
         /// </summary>
         /// <param name="identifier"></param>
@@ -61,6 +54,13 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="range"></param>
         /// <returns></returns>
         Task<IResult<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
+
+        /// <summary>
+        ///     get configurations, that have stale configurations
+        /// </summary>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range);
 
         /// <summary>
         ///     get the used environment-keys for a configuration

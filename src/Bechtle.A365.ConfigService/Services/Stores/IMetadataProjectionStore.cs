@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// </summary>
         /// <returns></returns>
         Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata();
-        
+
         /// <summary>
         ///     get a list of metadata objects for the already projected domain-events
         /// </summary>

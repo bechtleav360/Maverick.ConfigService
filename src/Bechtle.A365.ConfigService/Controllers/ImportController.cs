@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 namespace Bechtle.A365.ConfigService.Controllers
 {
     /// <summary>
-    ///     import data from a previous export, <see cref="ExportController"/>
+    ///     import data from a previous export, <see cref="ExportController" />
     /// </summary>
     [Route(ApiBaseRoute + "import")]
     public class ImportController : ControllerBase

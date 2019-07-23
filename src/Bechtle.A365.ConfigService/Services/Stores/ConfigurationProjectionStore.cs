@@ -58,36 +58,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range)
-        {
-            try
-            {
-                var dbResult = await _context.ProjectedConfigurations
-                                             .Include(c => c.ConfigEnvironment)
-                                             .Include(c => c.Structure)
-                                             .Where(p => !p.UpToDate)
-                                             .OrderBy(s => s.ConfigEnvironment.Category)
-                                             .ThenBy(s => s.ConfigEnvironment.Name)
-                                             .ThenBy(s => s.Structure.Name)
-                                             .ThenByDescending(s => s.Structure.Version)
-                                             .Skip(range.Offset)
-                                             .Take(range.Length)
-                                             .ToListAsync();
-
-                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s))
-                                          .ToList()
-                                  ?? new List<ConfigurationIdentifier>();
-
-                return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "failed to retrieve projected configurations");
-                return Result.Error<IList<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
-            }
-        }
-
-        /// <inheritdoc />
         public async Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment,
                                                                                                DateTime when,
                                                                                                QueryRange range)
@@ -234,6 +204,36 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 _logger.LogError(e, $"failed to retrieve projected configuration keys for id: {formattedParams}");
                 return Result.Error<IDictionary<string, string>>($"failed to retrieve projected configuration keys for id: {formattedParams}",
                                                                  ErrorCode.DbQueryError);
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range)
+        {
+            try
+            {
+                var dbResult = await _context.ProjectedConfigurations
+                                             .Include(c => c.ConfigEnvironment)
+                                             .Include(c => c.Structure)
+                                             .Where(p => !p.UpToDate)
+                                             .OrderBy(s => s.ConfigEnvironment.Category)
+                                             .ThenBy(s => s.ConfigEnvironment.Name)
+                                             .ThenBy(s => s.Structure.Name)
+                                             .ThenByDescending(s => s.Structure.Version)
+                                             .Skip(range.Offset)
+                                             .Take(range.Length)
+                                             .ToListAsync();
+
+                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s))
+                                          .ToList()
+                                  ?? new List<ConfigurationIdentifier>();
+
+                return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "failed to retrieve projected configurations");
+                return Result.Error<IList<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
 

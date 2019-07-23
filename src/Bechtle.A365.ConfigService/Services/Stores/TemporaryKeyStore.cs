@@ -12,8 +12,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <inheritdoc cref="ITemporaryKeyStore" />
     /// <summary>
-    ///     implementation of <see cref="ITemporaryKeyStore"/>, stores keys using a <see cref="IDistributedCache"/>.
-    ///     keeps a journal of stored keys / region, to make <see cref="GetAll()"/> and overloads possible.
+    ///     implementation of <see cref="ITemporaryKeyStore" />, stores keys using a <see cref="IDistributedCache" />.
+    ///     keeps a journal of stored keys / region, to make <see cref="GetAll()" /> and overloads possible.
     /// </summary>
     public class TemporaryKeyStore : ITemporaryKeyStore
     {

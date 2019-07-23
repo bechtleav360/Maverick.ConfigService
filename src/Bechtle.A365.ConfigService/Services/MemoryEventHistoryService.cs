@@ -9,8 +9,8 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc />
     public class MemoryEventHistoryService : IEventHistoryService
     {
-        private readonly ILogger _logger;
         private readonly IEventStore _eventStore;
+        private readonly ILogger _logger;
         private readonly IProjectionStore _projectionStore;
 
         /// <inheritdoc />

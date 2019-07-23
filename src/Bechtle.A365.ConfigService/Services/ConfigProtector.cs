@@ -12,35 +12,77 @@ namespace Bechtle.A365.ConfigService.Services
     public class ConfigProtector : IConfigProtector
     {
         /// <inheritdoc />
-        public string EncryptWithPrivateKey(string data, X509Certificate2 cert)
-        {
-            using (var rsa = cert.GetRSAPrivateKey())
-                return EncryptInternal(data, rsa);
-        }
-
-        /// <inheritdoc />
-        public string EncryptWithPublicKey(string data, X509Certificate2 cert)
-        {
-            using (var rsa = cert.GetRSAPublicKey())
-                return EncryptInternal(data, rsa);
-        }
-
-        /// <inheritdoc />
         public string DecryptWithPrivateKey(string data, X509Certificate2 cert)
         {
             using (var rsa = cert.GetRSAPrivateKey())
+            {
                 return DecryptInternal(data, rsa);
+            }
         }
 
         /// <inheritdoc />
         public string DecryptWithPublicKey(string data, X509Certificate2 cert)
         {
             using (var rsa = cert.GetRSAPublicKey())
+            {
                 return DecryptInternal(data, rsa);
+            }
+        }
+
+        /// <inheritdoc />
+        public string EncryptWithPrivateKey(string data, X509Certificate2 cert)
+        {
+            using (var rsa = cert.GetRSAPrivateKey())
+            {
+                return EncryptInternal(data, rsa);
+            }
+        }
+
+        /// <inheritdoc />
+        public string EncryptWithPublicKey(string data, X509Certificate2 cert)
+        {
+            using (var rsa = cert.GetRSAPublicKey())
+            {
+                return EncryptInternal(data, rsa);
+            }
         }
 
         /// <summary>
-        ///     encrypt the given data using 
+        ///     decrypt the given data using the same technique as <see cref="EncryptInternal" />
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="rsa"></param>
+        /// <returns></returns>
+        private string DecryptInternal(string data, RSA rsa)
+        {
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(data));
+
+            var encrypted = JsonConvert.DeserializeObject<EncryptionResult>(json);
+
+            var decryptedMetadata = rsa.Decrypt(Convert.FromBase64String(encrypted.Metadata), RSAEncryptionPadding.OaepSHA512);
+            var metadataJson = Encoding.UTF8.GetString(decryptedMetadata);
+            var metadata = JsonConvert.DeserializeObject<AesEncryptionMetadata>(metadataJson);
+
+            using (var aes = Aes.Create() ?? throw new NotSupportedException("Aes-Encryption not supported on current platform"))
+            {
+                aes.Key = Convert.FromBase64String(metadata.Key);
+                aes.IV = Convert.FromBase64String(metadata.IV);
+
+                using (var memStream = new MemoryStream())
+                {
+                    using (var crypto = new CryptoStream(memStream, aes.CreateDecryptor(), CryptoStreamMode.Write))
+                    {
+                        var raw = Convert.FromBase64String(encrypted.Payload);
+                        crypto.Write(raw, 0, raw.Length);
+                    }
+
+                    return Encoding.UTF8.GetString(memStream.ToArray());
+                }
+            }
+        }
+
+        /// <summary>
+        ///     encrypt the given data using
         /// </summary>
         /// <param name="data"></param>
         /// <param name="rsa"></param>
@@ -82,40 +124,6 @@ namespace Bechtle.A365.ConfigService.Services
             }
         }
 
-        /// <summary>
-        ///     decrypt the given data using the same technique as <see cref="EncryptInternal"/>
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="rsa"></param>
-        /// <returns></returns>
-        private string DecryptInternal(string data, RSA rsa)
-        {
-            var json = Encoding.UTF8.GetString(Convert.FromBase64String(data));
-
-            var encrypted = JsonConvert.DeserializeObject<EncryptionResult>(json);
-
-            var decryptedMetadata = rsa.Decrypt(Convert.FromBase64String(encrypted.Metadata), RSAEncryptionPadding.OaepSHA512);
-            var metadataJson = Encoding.UTF8.GetString(decryptedMetadata);
-            var metadata = JsonConvert.DeserializeObject<AesEncryptionMetadata>(metadataJson);
-
-            using (var aes = Aes.Create() ?? throw new NotSupportedException("Aes-Encryption not supported on current platform"))
-            {
-                aes.Key = Convert.FromBase64String(metadata.Key);
-                aes.IV = Convert.FromBase64String(metadata.IV);
-
-                using (var memStream = new MemoryStream())
-                {
-                    using (var crypto = new CryptoStream(memStream, aes.CreateDecryptor(), CryptoStreamMode.Write))
-                    {
-                        var raw = Convert.FromBase64String(encrypted.Payload);
-                        crypto.Write(raw, 0, raw.Length);
-                    }
-
-                    return Encoding.UTF8.GetString(memStream.ToArray());
-                }
-            }
-        }
-
         private class EncryptionResult
         {
             public string Metadata { get; set; }
@@ -125,12 +133,12 @@ namespace Bechtle.A365.ConfigService.Services
 
         private class AesEncryptionMetadata
         {
-            public string Key { get; set; }
-
             // ReSharper disable once InconsistentNaming
             // Name is not inconsistent, it's widely known to stand for...
             // InitializationVector
             public string IV { get; set; }
+
+            public string Key { get; set; }
         }
     }
 }

@@ -10,8 +10,8 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc />
     public abstract class HostedServiceBase : IHostedService
     {
-        private Task _executingTask;
         private CancellationTokenSource _cts;
+        private Task _executingTask;
 
         /// <summary>
         /// </summary>
@@ -28,11 +28,11 @@ namespace Bechtle.A365.ConfigService.Services
             Logger = factory.CreateLogger(GetType());
         }
 
-        /// <inheritdoc cref="IServiceProvider" />
-        protected IServiceProvider Provider { get; }
-
         /// <inheritdoc cref="ILogger" />
         protected ILogger Logger { get; }
+
+        /// <inheritdoc cref="IServiceProvider" />
+        protected IServiceProvider Provider { get; }
 
         /// <inheritdoc />
         public Task StartAsync(CancellationToken cancellationToken)

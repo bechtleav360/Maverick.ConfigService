@@ -13,8 +13,8 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc />
     public class DataExporter : IDataExporter
     {
-        private readonly IProjectionStore _store;
         private readonly ILogger<DataExporter> _logger;
+        private readonly IProjectionStore _store;
 
         /// <inheritdoc />
         public DataExporter(ILogger<DataExporter> logger,
@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Services
                     Category = id.Category,
                     Name = id.Name,
                     Keys = env.Data
-                              .Select(k=>new EnvironmentKeyExport
+                              .Select(k => new EnvironmentKeyExport
                               {
                                   Key = k.Key,
                                   Description = k.Description,

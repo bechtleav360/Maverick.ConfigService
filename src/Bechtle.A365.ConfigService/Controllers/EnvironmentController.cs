@@ -21,10 +21,10 @@ namespace Bechtle.A365.ConfigService.Controllers
     [Route(ApiBaseRoute + "environments")]
     public class EnvironmentController : ControllerBase
     {
+        private readonly IEventHistoryService _eventHistory;
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
-        private readonly IEventHistoryService _eventHistory;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />

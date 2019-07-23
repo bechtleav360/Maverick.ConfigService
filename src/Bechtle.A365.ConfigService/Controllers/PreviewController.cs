@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.AspNetCore.Mvc;
@@ -102,7 +103,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <returns></returns>
         [ApiVersion(ApiVersions.V1)]
         [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
-        public async Task<IActionResult> PreviewConfiguration([FromBody] Models.V1.PreviewContainer previewOptions)
+        public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {
             if (previewOptions is null)
                 return BadRequest("no preview-data received");
@@ -133,7 +134,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var json = _translator.ToJson(compiled.CompiledConfiguration);
 
-            return Ok(new Models.V1.PreviewResult
+            return Ok(new PreviewResult
             {
                 Map = compiled.CompiledConfiguration.ToImmutableSortedDictionary(),
                 Json = json,
@@ -141,7 +142,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             });
         }
 
-        private async Task<IDictionary<string, string>> ResolveEnvironmentPreview(Models.V1.EnvironmentPreview environment)
+        private async Task<IDictionary<string, string>> ResolveEnvironmentPreview(EnvironmentPreview environment)
         {
             // if there is a reference to an existing Environment, retrieve its keys
             if (!string.IsNullOrWhiteSpace(environment.Category) && !string.IsNullOrWhiteSpace(environment.Name))
@@ -159,7 +160,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             return environment.Keys ?? new Dictionary<string, string>();
         }
 
-        private async Task<(IDictionary<string, string> Structure, IDictionary<string, string> Variables)> ResolveStructurePreview(Models.V1.StructurePreview structure)
+        private async Task<(IDictionary<string, string> Structure, IDictionary<string, string> Variables)> ResolveStructurePreview(StructurePreview structure)
         {
             if (!string.IsNullOrWhiteSpace(structure.Name) && !string.IsNullOrWhiteSpace(structure.Version))
             {
@@ -173,11 +174,11 @@ namespace Bechtle.A365.ConfigService.Controllers
                     return (Structure: structResult.Data, Variables: variableResult.Data);
 
                 Logger.LogWarning($"could not retrieve referenced structure / variabels '{id}' for preview: " +
-                    $"{(structResult.IsError ? structResult.Message : variableResult.Message)}");
+                                  $"{(structResult.IsError ? structResult.Message : variableResult.Message)}");
             }
 
             return (Structure: structure.Keys ?? new Dictionary<string, string>(),
-                Variables: structure.Variables ?? new Dictionary<string, string>());
+                       Variables: structure.Variables ?? new Dictionary<string, string>());
         }
     }
 }

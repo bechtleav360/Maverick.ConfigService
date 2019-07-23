@@ -11,10 +11,10 @@
         /// <inheritdoc cref="IEnvironmentProjectionStore" />
         IEnvironmentProjectionStore Environments { get; }
 
+        /// <inheritdoc cref="IMetadataProjectionStore" />
+        IMetadataProjectionStore Metadata { get; }
+
         /// <inheritdoc cref="IStructureProjectionStore" />
         IStructureProjectionStore Structures { get; }
-
-        /// <inheritdoc cref="IMetadataProjectionStore"/>
-        IMetadataProjectionStore Metadata { get; }
     }
 }

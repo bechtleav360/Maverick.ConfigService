@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
         /// <summary>
         ///     read the Event-History as a stream and execute an action for each event,
-        /// filtering out events that do not match <paramref name="streamFilter"/>
+        ///     filtering out events that do not match <paramref name="streamFilter" />
         /// </summary>
         /// <param name="streamFilter"></param>
         /// <param name="streamProcessor"></param>

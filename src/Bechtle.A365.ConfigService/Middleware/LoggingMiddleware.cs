@@ -11,6 +11,9 @@ namespace Bechtle.A365.ConfigService.Middleware
     /// </summary>
     public class LoggingMiddleware
     {
+        private static readonly string AuthenticationHeader = "Authorization";
+        private static readonly string CorrelationId = "CorrelationId";
+
         private readonly RequestDelegate _next;
 
         /// <inheritdoc />
@@ -19,10 +22,6 @@ namespace Bechtle.A365.ConfigService.Middleware
         {
             _next = next;
         }
-
-        private static readonly string AuthenticationHeader = "Authorization";
-
-        private static readonly string CorrelationId = "CorrelationId";
 
         /// <summary>
         ///     required method that is called by the framework
@@ -40,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Middleware
 
             context.Response.OnStarting(state =>
             {
-                ((HttpContext)state).Response.Headers.Add(CorrelationId, (string)context.Items[CorrelationId]);
+                ((HttpContext) state).Response.Headers.Add(CorrelationId, (string) context.Items[CorrelationId]);
                 return Task.CompletedTask;
             }, context);
 

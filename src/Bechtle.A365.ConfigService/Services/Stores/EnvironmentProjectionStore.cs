@@ -248,6 +248,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                                       item => item.Value,
                                                                                                       StringComparer.OrdinalIgnoreCase));
 
+        private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
+                                                                    Func<TItem, string> keySelector,
+                                                                    string preferredMatch)
+            where TItem : class
+        {
+            var exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
+
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug(exactMatch is null
+                                     ? $"no exact match found in '{items.Count}' items for query '{preferredMatch}'"
+                                     : $"preferred match found in '{items.Count}' items for query '{preferredMatch}'");
+
+            return exactMatch is null
+                       ? items
+                       : new[] {exactMatch};
+        }
+
         /// <summary>
         ///     retrieve all direct children for the given paths
         /// </summary>
@@ -427,23 +444,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                     $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})",
                     ErrorCode.DbQueryError);
             }
-        }
-
-        private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
-                                                                    Func<TItem, string> keySelector,
-                                                                    string preferredMatch)
-            where TItem : class
-        {
-            var exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
-
-            if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug(exactMatch is null
-                                     ? $"no exact match found in '{items.Count}' items for query '{preferredMatch}'"
-                                     : $"preferred match found in '{items.Count}' items for query '{preferredMatch}'");
-
-            return exactMatch is null
-                       ? items
-                       : new[] {exactMatch};
         }
     }
 }
