@@ -62,50 +62,25 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var existingEnvs = await _store.Environments.GetAvailableInCategory(category, QueryRange.All);
+                // create DefaultEnvironment
+                var envObj = new ConfigEnvironment().DefaultIdentifiedBy(category)
+                                                    .Create();
 
-                if (existingEnvs.IsError)
-                    return ProviderError(existingEnvs);
+                var envErrors = envObj.Validate(_validators);
+                if (envErrors.Any())
+                    return BadRequest(envErrors.Values.SelectMany(_ => _));
 
-                // if the category doesn't exist at all, add DefaultEnvironment and the requested one
-                if (!existingEnvs.Data.Any())
-                {
-                    // create DefaultEnvironment
-                    var envObj = new ConfigEnvironment().DefaultIdentifiedBy(category)
-                                                        .Create();
+                await envObj.Save(_eventStore, _eventHistory, Logger);
 
-                    var envErrors = envObj.Validate(_validators);
-                    if (envErrors.Any())
-                        return BadRequest(envErrors.Values.SelectMany(_ => _));
+                // create requested environment
+                var configObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
+                                                       .Create();
 
-                    await envObj.Save(_eventStore, _eventHistory, Logger);
+                var configErrors = configObj.Validate(_validators);
+                if (configErrors.Any())
+                    return BadRequest(configErrors.Values.SelectMany(_ => _));
 
-                    // create requested environment
-                    var configObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                                           .Create();
-
-                    var configErrors = configObj.Validate(_validators);
-                    if (configErrors.Any())
-                        return BadRequest(configErrors.Values.SelectMany(_ => _));
-
-                    await configObj.Save(_eventStore, _eventHistory, Logger);
-                }
-                else
-                {
-                    // if another Env with that ID exists
-                    if (existingEnvs.Data.Any(e => e.Category == category && e.Name == name))
-                        return ProviderError(Common.Result.Error($"environment (Category: {category}; Name: {name}) already exists",
-                                                                 ErrorCode.EnvironmentAlreadyExists));
-
-                    var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                                           .Create();
-
-                    var errors = domainObj.Validate(_validators);
-                    if (errors.Any())
-                        return BadRequest(errors.Values.SelectMany(_ => _));
-
-                    await domainObj.Save(_eventStore, _eventHistory, Logger);
-                }
+                await configObj.Save(_eventStore, _eventHistory, Logger);
 
                 return AcceptedAtAction(nameof(GetKeys), new {category, name});
             }
