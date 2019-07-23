@@ -26,25 +26,18 @@ namespace Bechtle.A365.ConfigService.Services
         /// <inheritdoc />
         public async Task<EventStatus> GetEventStatus(DomainEvent domainEvent)
         {
-            var status = EventStatus.Unknown;
+            var status = await GetProjectedStatus(domainEvent);
 
-            if (await IsEventInEventStore(domainEvent))
-            {
-                status = EventStatus.Recorded;
+            if (status == EventStatus.Unknown)
+                return status;
 
-                if (await IsEventAlreadyProjected(domainEvent))
-                {
-                    status = EventStatus.Projected;
-
-                    if (await IsEventSuperseded(domainEvent))
-                        status = EventStatus.Superseded;
-                }
-            }
+            if (await IsEventSuperseded(domainEvent))
+                return EventStatus.Superseded;
 
             return status;
         }
 
-        private async Task<bool> IsEventAlreadyProjected(DomainEvent domainEvent)
+        private async Task<EventStatus> GetProjectedStatus(DomainEvent domainEvent)
         {
             // get the list of events that have already been projected to DB
             // filter out those that don't have the same Type, they can't be what we search
@@ -52,7 +45,7 @@ namespace Bechtle.A365.ConfigService.Services
             if (metadataResult.IsError)
             {
                 _logger.LogWarning($"could not retrieve metadata for event of type '{domainEvent.EventType}'");
-                return false;
+                return EventStatus.Unknown;
             }
 
             var projectedEventIds = metadataResult.Data
@@ -61,56 +54,38 @@ namespace Bechtle.A365.ConfigService.Services
 
             _logger.LogDebug($"retrieved '{metadataResult.Data.Count}' metadata-records for projected events");
 
-            _logger.LogDebug("streaming events to retrieve data for DomainEvents");
+            var result = EventStatus.Unknown;
 
-            var entry = (Index: (long) 0, Event: (DomainEvent) null);
-
-            // stream the actual events from EventStore to get the underlying DomainEvents from them
             await _eventStore.ReplayEventsAsStream(
-                // filter out anything that doesn't match our event-type, or the projected-event-ids
-                e => e.EventType == domainEvent.EventType && projectedEventIds.Contains(e.EventNumber),
+                e => e.EventType == domainEvent.EventType,
                 tuple =>
                 {
-                    // if anything gets to here, we can assume something like the given event has already been projected
                     var (recordedEvent, @event) = tuple;
 
-                    entry = (recordedEvent.EventNumber, @event);
-                    return false;
+                    if (@event.Equals(domainEvent))
+                    {
+                        // set status and continue processing
+                        // status could get more specific than Recorded
+                        _logger.LogDebug($"DomainEvent '{domainEvent.EventType}' with same data has been found in ES-Stream");
+                        result = EventStatus.Recorded;
+                    }
+
+                    // if projectedEventIds contains the streamed ID, we can assume something
+                    // like the given event has already been projected
+                    if (projectedEventIds.Contains(recordedEvent.EventNumber))
+                    {
+                        // set status and break further stream processing by returning false
+                        // status can't become more specific than Projected
+                        _logger.LogDebug($"DomainEvent '{domainEvent.EventType}' has been projected at '{recordedEvent.EventNumber}'");
+                        result = EventStatus.Projected;
+                        return false;
+                    }
+
+                    // continue stream-processing
+                    return true;
                 }, 128);
 
-            // check if event is null in the tuple, because tuple is struct and never null
-            var result = !(entry.Event is null);
-
-            _logger.LogInformation(result
-                                       ? $"DomainEvent '{domainEvent.EventType}' has been projected at ({entry.Index})"
-                                       : $"DomainEvent '{domainEvent.EventType}' with same data could not be found in ES-Stream");
-
-            return result;
-        }
-
-        private async Task<bool> IsEventInEventStore(DomainEvent domainEvent)
-        {
-            var result = false;
-
-            // stream all events in EventStore and compare their payload-DomainEvent with what we're given
-            await _eventStore.ReplayEventsAsStream(tuple =>
-            {
-                var (_, @event) = tuple;
-
-                if (@event.Equals(domainEvent))
-                {
-                    // set status and break further stream processing by returning false
-                    result = true;
-                    return false;
-                }
-
-                // continue stream-processing
-                return true;
-            }, 128);
-
-            _logger.LogDebug(result
-                                 ? $"DomainEvent '{domainEvent.EventType}' with same data has been found in ES-Stream"
-                                 : $"DomainEvent '{domainEvent.EventType}' with same data could not be found in ES-Stream");
+            _logger.LogInformation($"Status for DomainEvent '{domainEvent.EventType}': {result:G} / {result:D}");
 
             return result;
         }
