@@ -156,7 +156,13 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public async Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor, int readSize = 64)
+        public Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor, int readSize = 64)
+            => ReplayEventsAsStream(_ => true, streamProcessor, readSize);
+
+        /// <inheritdoc />
+        public async Task ReplayEventsAsStream(Func<RecordedEvent, bool> streamFilter,
+                                               Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+                                               int readSize = 64)
         {
             if (streamProcessor is null)
                 return;
@@ -165,7 +171,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             readSize = Math.Min(readSize, 4096);
             long currentPosition = 0;
             var stream = _configuration.EventStoreConnection.Stream;
-            var events = new List<(RecordedEvent, DomainEvent)>(readSize);
             bool continueReading;
 
             _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
@@ -179,17 +184,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                 _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
 
-                events.Clear();
-                events.AddRange(slice.Events
-                                     .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
-                                                      ? (RecordedEvent: e.Event, Success: true, DomainEvent: @event)
-                                                      : (RecordedEvent: e.Event, Success: false, DomainEvent: null))
-                                     .Where(t => t.Success)
-                                     .Select(t => (t.RecordedEvent, t.DomainEvent)));
-
                 // send events to streamProcessor
                 // return from function if we receive 'false' or if streamProcessor is empty
-                if (events.Any(eventTuple => !streamProcessor.Invoke(eventTuple)))
+                if (slice.Events
+                         .Where(e => streamFilter(e.Event))
+                         .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
+                                          ? (RecordedEvent: e.Event, Success: true, DomainEvent: @event)
+                                          : (RecordedEvent: e.Event, Success: false, DomainEvent: null))
+                         .Where(t => t.Success)
+                         .Select(t => (t.RecordedEvent, t.DomainEvent))
+                         .Any(eventTuple => !streamProcessor.Invoke(eventTuple)))
                     return;
 
                 currentPosition = slice.NextEventNumber;

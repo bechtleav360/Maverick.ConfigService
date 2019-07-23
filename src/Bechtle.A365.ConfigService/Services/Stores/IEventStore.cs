@@ -21,6 +21,18 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents();
 
         /// <summary>
+        ///     read the Event-History as a stream and execute an action for each event,
+        /// filtering out events that do not match <paramref name="streamFilter"/>
+        /// </summary>
+        /// <param name="streamFilter"></param>
+        /// <param name="streamProcessor"></param>
+        /// <param name="readSize"></param>
+        /// <returns></returns>
+        Task ReplayEventsAsStream(Func<RecordedEvent, bool> streamFilter,
+                                  Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+                                  int readSize = 64);
+
+        /// <summary>
         ///     read the Event-History as a stream and execute an action for each event
         /// </summary>
         /// <param name="streamProcessor">action executed for each event until it returns false</param>
