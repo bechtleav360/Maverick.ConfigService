@@ -469,7 +469,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task<ConfigurationIdentifier> GetLatestActiveConfiguration()
         {
-            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+            var metadata = await _context.Metadata
+                                         .OrderBy(e => e.Id)
+                                         .FirstOrDefaultAsync();
 
             if (metadata is null)
             {
@@ -608,6 +610,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                                      .Max(k => k.Version)
                                         // fallback to 1 to indicate *something* happened, but nothing correct
                                         : 1;
+
             _logger.LogInformation($"determined Configuration.Version: {highestKeyVersion}");
 
             var compiledConfiguration = new ProjectedConfiguration
@@ -666,7 +669,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task SetLatestActiveConfiguration(ConfigurationIdentifier identifier)
         {
-            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+            var metadata = await _context.Metadata
+                                         .OrderBy(e => e.Id)
+                                         .FirstOrDefaultAsync();
 
             if (metadata is null)
             {
@@ -690,7 +695,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <inheritdoc />
         public async Task SetLatestProjectedEventId(long latestEventId)
         {
-            var metadata = await _context.Metadata.FirstOrDefaultAsync();
+            var metadata = await _context.Metadata
+                                         .OrderBy(e => e.Id)
+                                         .FirstOrDefaultAsync();
 
             if (metadata is null)
             {
