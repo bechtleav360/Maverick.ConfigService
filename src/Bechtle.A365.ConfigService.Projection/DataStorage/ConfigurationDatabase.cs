@@ -596,11 +596,18 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             var usedKeyList = usedKeys.ToList();
 
-            _logger.LogInformation($"determining Configuration.Version through highest Version of used keys");
-            var highestKeyVersion =
-                usedKeyList.Select(k => foundEnvironment.Keys.FirstOrDefault(ek => ek.Key == k))
-                           .Where(k => !(k is null))
-                           .Max(k => k.Version);
+            _logger.LogInformation("determining Configuration.Version through highest Version of used keys");
+
+            if (!foundEnvironment.Keys.Any())
+                _logger.LogWarning($"environment '{environment.Identifier}' does not contain any keys - " +
+                                   "either the command issued referenced a wrong environment, or the environment has not been setup yet");
+
+            var highestKeyVersion = foundEnvironment.Keys.Any()
+                                        ? usedKeyList.Select(k => foundEnvironment.Keys.FirstOrDefault(ek => ek.Key == k))
+                                                     .Where(k => !(k is null))
+                                                     .Max(k => k.Version)
+                                        // fallback to 1 to indicate *something* happened, but nothing correct
+                                        : 1;
             _logger.LogInformation($"determined Configuration.Version: {highestKeyVersion}");
 
             var compiledConfiguration = new ProjectedConfiguration
