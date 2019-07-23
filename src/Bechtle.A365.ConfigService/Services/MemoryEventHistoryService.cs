@@ -29,13 +29,17 @@ namespace Bechtle.A365.ConfigService.Services
             var status = EventStatus.Unknown;
 
             if (await IsEventInEventStore(domainEvent))
+            {
                 status = EventStatus.Recorded;
 
-            if (await IsEventAlreadyProjected(domainEvent))
-                status = EventStatus.Projected;
+                if (await IsEventAlreadyProjected(domainEvent))
+                {
+                    status = EventStatus.Projected;
 
-            if (await IsEventSuperseded(domainEvent))
-                status = EventStatus.Superseded;
+                    if (await IsEventSuperseded(domainEvent))
+                        status = EventStatus.Superseded;
+                }
+            }
 
             return status;
         }
@@ -122,10 +126,12 @@ namespace Bechtle.A365.ConfigService.Services
                     _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can't be superseded (fixed)");
                     return Task.FromResult(false);
 
-                // @TODO: see if the modifications of domainEvent have been overwritten, which would cause it to be Superseded
+                // @TODO: find out if any of these events (EnvKeysImported, EnvKeysModified, StructVarModified) modified the used data in this Event
+                //        additional challenge, THIS DomainEvent can happen multiple times and only the last one counts
+                case ConfigurationBuilt _:
+
                 // events that appear routinely and
                 // even though it's already in EventStore it can be written again
-                case ConfigurationBuilt _:
                 case EnvironmentKeysImported _:
                 case EnvironmentKeysModified _:
                 case StructureVariablesModified _:
