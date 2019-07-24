@@ -4,6 +4,7 @@ using System.Security.Cryptography.X509Certificates;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -50,8 +51,14 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             Provider = provider;
             Logger = logger;
-            ConfigProtector = Provider.GetRequiredService<IConfigProtector>();
-            EncryptionCertProvider = Provider.GetRequiredService<IRegionEncryptionCertProvider>();
+
+            if (provider.GetRequiredService<IConfiguration>()
+                        .GetSection("Protection:Enabled")
+                        .Get<bool>())
+            {
+                ConfigProtector = Provider.GetRequiredService<IConfigProtector>();
+                EncryptionCertProvider = Provider.GetRequiredService<IRegionEncryptionCertProvider>();
+            }
         }
 
         /// <summary>
