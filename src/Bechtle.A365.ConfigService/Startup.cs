@@ -23,9 +23,7 @@ using Bechtle.A365.Maverick.Core.Health.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +31,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using NLog.Web;
-using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using CertificateValidator = Bechtle.A365.ConfigService.Services.CertificateValidator;
@@ -331,92 +328,6 @@ namespace Bechtle.A365.ConfigService
                     }
                 });
             });
-        }
-    }
-
-    /// <summary>
-    ///     Configures the Swagger generation options.
-    /// </summary>
-    /// <remarks>
-    ///     This allows API versioning to define a Swagger document per API version after the
-    ///     <see cref="IApiVersionDescriptionProvider" /> service has been resolved from the service container.
-    /// </remarks>
-    public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
-    {
-        private readonly IApiVersionDescriptionProvider _provider;
-
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="ConfigureSwaggerOptions" /> class.
-        /// </summary>
-        /// <param name="provider">The <see cref="IApiVersionDescriptionProvider">provider</see> used to generate Swagger documents.</param>
-        public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
-        {
-            _provider = provider;
-        }
-
-        /// <inheritdoc />
-        public void Configure(SwaggerGenOptions options)
-        {
-            // add a swagger document for each discovered API version
-            // note: you might choose to skip or document deprecated API versions differently
-            foreach (var description in _provider.ApiVersionDescriptions)
-                options.SwaggerDoc(description.GroupName, CreateInfoForApiVersion(description));
-        }
-
-        private static Info CreateInfoForApiVersion(ApiVersionDescription description)
-        {
-            var info = new Info
-            {
-                Title = "Bechtle.A365.ConfigService",
-                Version = description.ApiVersion.ToString(),
-                Description = "Central Store for Application-Configurations in Maverick"
-            };
-
-            if (description.IsDeprecated)
-                info.Description += " This API version has been deprecated.";
-
-            return info;
-        }
-    }
-
-    /// <summary>
-    ///     Represents the Swagger/Swashbuckle operation filter used to document the implicit API version parameter.
-    /// </summary>
-    /// <remarks>
-    ///     This <see cref="IOperationFilter" /> is only required due to bugs in the <see cref="SwaggerGenerator" />.
-    ///     Once they are fixed and published, this class can be removed.
-    /// </remarks>
-    public class SwaggerDefaultValues : IOperationFilter
-    {
-        /// <summary>
-        ///     Applies the filter to the specified operation using the given context.
-        /// </summary>
-        /// <param name="operation">The operation to apply the filter to.</param>
-        /// <param name="context">The current operation filter context.</param>
-        public void Apply(Operation operation, OperationFilterContext context)
-        {
-            var apiDescription = context.ApiDescription;
-
-            operation.Deprecated = apiDescription.ActionDescriptor
-                                                 .GetApiVersionModel(ApiVersionMapping.Explicit)
-                                                 .DeprecatedApiVersions
-                                                 .Contains(apiDescription.GetApiVersion());
-
-            if (operation.Parameters == null)
-                return;
-
-            foreach (var parameter in operation.Parameters.OfType<NonBodyParameter>())
-            {
-                var description = apiDescription.ParameterDescriptions.First(p => p.Name == parameter.Name);
-
-                if (parameter.Description == null)
-                    parameter.Description = description.ModelMetadata?.Description;
-
-                if (parameter.Default == null)
-                    parameter.Default = description.DefaultValue;
-
-                parameter.Required |= description.IsRequired;
-            }
         }
     }
 }
