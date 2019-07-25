@@ -260,7 +260,6 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IConfigurationParser, AntlrConfigurationParser>(_logger)
                     .AddScoped<IConfigProtector, ConfigProtector>(_logger)
                     .AddScoped<IRegionEncryptionCertProvider, RegionEncryptionCertProvider>(_logger)
-                    .AddScoped<IEventStore, Services.Stores.EventStore>(_logger)
                     .AddScoped<IDataExporter, DataExporter>(_logger)
                     .AddScoped<IDataImporter, DataImporter>(_logger)
                     .AddScoped<IEventBus, WebSocketEventBusClient>(_logger, provider =>
@@ -272,6 +271,7 @@ namespace Bechtle.A365.ConfigService
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
                     .AddScoped<IEventHistoryService, MemoryEventHistoryService>(_logger)
+                    .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)

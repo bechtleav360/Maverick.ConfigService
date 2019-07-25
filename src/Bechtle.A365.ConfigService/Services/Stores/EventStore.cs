@@ -8,8 +8,10 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 // god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is essentially a core component of the eco-system
 using ESLogger = EventStore.ClientAPI.ILogger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -17,15 +19,19 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <inheritdoc cref="IEventStore" />
-    public class EventStore : IEventStore, IDisposable
+    public class EventStore : IEventStore
     {
         private const string CacheKeyReplayedEvents = nameof(CacheKeyReplayedEvents);
         private readonly IMemoryCache _cache;
-        private readonly ConfigServiceConfiguration _configuration;
+        private readonly IConfiguration _configuration;
+        private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
-        private readonly IEventStoreConnection _eventStore;
+        private readonly ESLogger _eventStoreLogger;
         private readonly ILogger _logger;
         private readonly IServiceProvider _provider;
+
+        private IEventStoreConnection _eventStore;
+        private EventStoreConnectionConfiguration _eventStoreConfiguration;
 
         /// <inheritdoc />
         /// <param name="logger"></param>
@@ -39,61 +45,17 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer,
                           IMemoryCache cache,
-                          ConfigServiceConfiguration configuration)
+                          IConfiguration configuration)
         {
+            _connectionLock = new object();
             _logger = logger;
+            _eventStoreLogger = eventStoreLogger;
             _provider = provider;
             _eventDeserializer = eventDeserializer;
             _cache = cache;
             _configuration = configuration;
 
-            _logger.LogInformation($"connecting to '{configuration.EventStoreConnection.Uri}' " +
-                                   $"using connectionName: '{configuration.EventStoreConnection.ConnectionName}'");
-
-            try
-            {
-                _eventStore = EventStoreConnection.Create($"ConnectTo={configuration.EventStoreConnection.Uri}",
-                                                          ConnectionSettings.Create()
-                                                                            .PerformOnAnyNode()
-                                                                            .PreferRandomNode()
-                                                                            .KeepReconnecting()
-                                                                            .LimitRetriesForOperationTo(6)
-                                                                            .UseCustomLogger(eventStoreLogger),
-                                                          configuration.EventStoreConnection.ConnectionName);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "error in EventStore Connection-Settings");
-                throw;
-            }
-
-            ConnectionState = ConnectionState.Disconnected;
-
-            _eventStore.Connected += OnEventStoreConnected;
-            _eventStore.Disconnected += OnEventStoreDisconnected;
-            _eventStore.Reconnecting += OnEventStoreReconnecting;
-
-            try
-            {
-                _eventStore.ConnectAsync().RunSync();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "couldn't connect to EventStore");
-            }
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (!(_eventStore is null))
-            {
-                _eventStore.Connected -= OnEventStoreConnected;
-                _eventStore.Disconnected -= OnEventStoreDisconnected;
-                _eventStore.Reconnecting -= OnEventStoreReconnecting;
-            }
-
-            _eventStore?.Dispose();
+            ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
         }
 
         /// <inheritdoc />
@@ -102,6 +64,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents()
         {
+            // connect if we're not already connected
+            Connect();
+
             try
             {
                 if (_cache.TryGetValue(CacheKeyReplayedEvents, out var cachedEvents))
@@ -119,7 +84,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             // readSize must be below 4096
             var readSize = 512;
             long currentPosition = 0;
-            var stream = _configuration.EventStoreConnection.Stream;
+            var stream = _eventStoreConfiguration.Stream;
             var allEvents = new List<(RecordedEvent, DomainEvent)>();
             bool continueReading;
 
@@ -164,13 +129,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
                                                int readSize = 64)
         {
+            // connect if we're not already connected
+            Connect();
+
             if (streamProcessor is null)
                 return;
 
             // readSize must be below 4096
             readSize = Math.Min(readSize, 4096);
             long currentPosition = 0;
-            var stream = _configuration.EventStoreConnection.Stream;
+            var stream = _eventStoreConfiguration.Stream;
             bool continueReading;
 
             _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
@@ -204,6 +172,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public async Task WriteEvent<T>(T domainEvent) where T : DomainEvent
         {
+            // connect if we're not already connected
+            Connect();
+
             _logger.LogDebug($"{nameof(WriteEvent)}('{domainEvent.GetType().Name}')");
 
             var (data, metadata) = SerializeDomainEvent(domainEvent);
@@ -221,7 +192,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                    $"Data: {eventData.Data.Length} bytes; " +
                                    $"Metadata: {eventData.Metadata.Length} bytes;");
 
-            var result = await _eventStore.AppendToStreamAsync(_configuration.EventStoreConnection.Stream,
+            var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.Stream,
                                                                ExpectedVersion.Any,
                                                                eventData);
 
@@ -230,6 +201,78 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                              $"CommitPosition: {result.LogPosition.CommitPosition}; " +
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
         }
+
+        private void Connect(bool reconnect = false)
+        {
+            // use lock to prevent multiple simultaneous calls to Connect causing multiple connections
+            lock (_connectionLock)
+            {
+                // only continue if either reconnect or _eventStore is null
+                if (!reconnect && !(_eventStore is null)) 
+                    return;
+
+                try
+                {
+                    _logger.LogDebug("disposing of last EventStore-Connection");
+
+                    if (!(_eventStore is null))
+                    {
+                        _eventStore.Connected -= OnEventStoreConnected;
+                        _eventStore.Disconnected -= OnEventStoreDisconnected;
+                        _eventStore.Reconnecting -= OnEventStoreReconnecting;
+                    }
+
+                    _eventStore?.Dispose();
+                    _eventStore = null;
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "could not cleanly dispose of last EventStore-Connection - this will likely cause problems in the future");
+                }
+
+                _logger.LogDebug("using current config to connect to EventStore");
+
+                var configuration = _configuration.Get<ConfigServiceConfiguration>();
+                _eventStoreConfiguration = configuration.EventStoreConnection;
+
+                _logger.LogInformation($"connecting to '{configuration.EventStoreConnection.Uri}' " +
+                                       $"using connectionName: '{configuration.EventStoreConnection.ConnectionName}'");
+
+                try
+                {
+                    _eventStore = EventStoreConnection.Create($"ConnectTo={configuration.EventStoreConnection.Uri}",
+                                                              ConnectionSettings.Create()
+                                                                                .PerformOnAnyNode()
+                                                                                .PreferRandomNode()
+                                                                                .KeepReconnecting()
+                                                                                .LimitRetriesForOperationTo(6)
+                                                                                .UseCustomLogger(_eventStoreLogger),
+                                                              configuration.EventStoreConnection.ConnectionName);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "error in EventStore Connection-Settings");
+                    throw;
+                }
+
+                ConnectionState = ConnectionState.Disconnected;
+
+                _eventStore.Connected += OnEventStoreConnected;
+                _eventStore.Disconnected += OnEventStoreDisconnected;
+                _eventStore.Reconnecting += OnEventStoreReconnecting;
+
+                try
+                {
+                    _eventStore.ConnectAsync().RunSync();
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "couldn't connect to EventStore");
+                }
+            }
+        }
+
+        private void OnConfigurationChanged() => Connect(true);
 
         private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Connected;
 
