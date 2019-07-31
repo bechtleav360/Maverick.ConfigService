@@ -73,7 +73,7 @@ namespace Bechtle.A365.ConfigService.Services
             }
 
             if (action.Value is null)
-                return Result.Error("invalid data: value is null; key='{action.Key}'", ErrorCode.ValidationFailed);
+                return Result.Error($"invalid data: value is null; key='{action.Key}'", ErrorCode.ValidationFailed);
 
 
             return Result.Success();
