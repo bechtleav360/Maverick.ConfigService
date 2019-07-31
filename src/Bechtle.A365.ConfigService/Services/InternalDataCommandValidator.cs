@@ -287,13 +287,13 @@ namespace Bechtle.A365.ConfigService.Services
         private IResult ValidateIdentifier(EnvironmentIdentifier identifier)
         {
             if (identifier is null)
-                return Result.Error("invalid EnvironmentIdentifier (null", ErrorCode.ValidationFailed);
+                return Result.Error("invalid EnvironmentIdentifier (null)", ErrorCode.ValidationFailed);
 
             if (string.IsNullOrWhiteSpace(identifier.Category))
-                return Result.Error("invalid EnvironmentIdentifier.Category", ErrorCode.ValidationFailed);
+                return Result.Error("invalid EnvironmentIdentifier.Category (empty / null)", ErrorCode.ValidationFailed);
 
             if (string.IsNullOrWhiteSpace(identifier.Name))
-                return Result.Error("invalid EnvironmentIdentifier.Name (empty / null", ErrorCode.ValidationFailed);
+                return Result.Error("invalid EnvironmentIdentifier.Name (empty / null)", ErrorCode.ValidationFailed);
 
             return Result.Success();
         }
@@ -306,13 +306,13 @@ namespace Bechtle.A365.ConfigService.Services
         private IResult ValidateIdentifier(StructureIdentifier identifier)
         {
             if (identifier is null)
-                return Result.Error("invalid StructureIdentifier (null", ErrorCode.ValidationFailed);
+                return Result.Error("invalid StructureIdentifier (null)", ErrorCode.ValidationFailed);
 
             if (string.IsNullOrWhiteSpace(identifier.Name))
-                return Result.Error("invalid StructureIdentifier.Name (empty / null", ErrorCode.ValidationFailed);
+                return Result.Error("invalid StructureIdentifier.Name (empty / null)", ErrorCode.ValidationFailed);
 
             if (identifier.Version <= 0)
-                return Result.Error("invalid StructureIdentifier.Version (x <= 0", ErrorCode.ValidationFailed);
+                return Result.Error("invalid StructureIdentifier.Version (x <= 0)", ErrorCode.ValidationFailed);
 
             return Result.Success();
         }
