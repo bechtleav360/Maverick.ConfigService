@@ -145,7 +145,7 @@ namespace Bechtle.A365.ConfigService
 
             // setup MVC
             services.AddMvc()
-                    .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+                    .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             _logger.LogInformation("registering API-Version support");
 
