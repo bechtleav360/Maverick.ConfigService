@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("blame/environment/{category}/{name}", Name = "Deprecated_Fallback_Blame")]
         public async Task<IActionResult> BlameEnvironment([FromRoute] string category,
                                                           [FromRoute] string name)
@@ -83,7 +83,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="name"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("environment/{category}/{name}", Name = "Deprecated_Fallback_GetEnvironmentHistory")]
         public async Task<IActionResult> GetEnvironmentHistory([FromRoute] string category,
                                                                [FromRoute] string name,

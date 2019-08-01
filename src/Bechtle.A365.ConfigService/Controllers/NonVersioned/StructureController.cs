@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// </summary>
         /// <param name="structure"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost(Name = "Deprecated_Fallback_AddStructure")]
         public async Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
         {
@@ -102,7 +102,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("available", Name = "Deprecated_Fallback_GetAvailableStructures")]
         public async Task<IActionResult> GetAvailableStructures([FromQuery] int offset = -1,
                                                                 [FromQuery] int length = -1)
@@ -138,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [Obsolete]
         [HttpGet("{name}/{structureVersion}", Name = "Deprecated_Fallback_GetStructureObsolete")]
         public async Task<IActionResult> GetStructure([FromRoute] string name,
@@ -179,7 +179,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="name"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{name}/{structureVersion}/json", Name = "Deprecated_Fallback_GetStructureAsJson")]
         public async Task<IActionResult> GetStructureJson([FromRoute] string name,
                                                           [FromRoute] int structureVersion)
@@ -221,7 +221,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{name}/{structureVersion}/keys", Name = "Deprecated_Fallback_GetStructureAsKeys")]
         public async Task<IActionResult> GetStructureKeys([FromRoute] string name,
                                                           [FromRoute] int structureVersion,
@@ -252,7 +252,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{name}/{structureVersion}/variables/keys", Name = "Deprecated_Fallback_GetVariablesAsKeys")]
         public async Task<IActionResult> GetVariables([FromRoute] string name,
                                                       [FromRoute] int structureVersion,
@@ -287,7 +287,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="name"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{name}/{structureVersion}/variables/json", Name = "Deprecated_Fallback_GetVariablesAsJson")]
         public async Task<IActionResult> GetVariablesJson([FromRoute] string name,
                                                           [FromRoute] int structureVersion)
@@ -325,7 +325,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureVersion"></param>
         /// <param name="variables"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpDelete("{name}/{structureVersion}/variables/keys", Name = "Deprecated_Fallback_DeleteVariablesFromStructure")]
         public async Task<IActionResult> RemoveVariables([FromRoute] string name,
                                                          [FromRoute] int structureVersion,
@@ -368,7 +368,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureVersion"></param>
         /// <param name="changes"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPut("{name}/{structureVersion}/variables/keys", Name = "Deprecated_Fallback_UpdateVariablesInStructure")]
         public async Task<IActionResult> UpdateVariables([FromRoute] string name,
                                                          [FromRoute] int structureVersion,

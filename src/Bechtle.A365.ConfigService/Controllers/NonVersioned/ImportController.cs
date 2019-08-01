@@ -34,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost(Name = "Deprecated_Fallback_ImportConfiguration")]
         public async Task<IActionResult> Import(IFormFile file)
         {

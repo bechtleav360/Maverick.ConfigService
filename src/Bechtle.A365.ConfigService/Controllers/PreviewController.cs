@@ -49,7 +49,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "PreviewConfigurationWithStoredValues")]
         public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
@@ -101,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="previewOptions"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
         public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {

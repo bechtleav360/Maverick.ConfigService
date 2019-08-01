@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="key"></param>
         /// <returns></returns>
         [HttpGet("{structure}/{structureVersion}/{key}")]
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> Get([FromRoute] string structure,
                                              [FromRoute] int structureVersion,
                                              [FromRoute] string key)
@@ -78,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="structureVersion"></param>
         /// <returns></returns>
         [HttpGet("{structure}/{structureVersion}")]
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetAll([FromRoute] string structure,
                                                 [FromRoute] int structureVersion)
         {
@@ -113,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="keys"></param>
         /// <returns></returns>
         [HttpPut("{structure}/{structureVersion}")]
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> Refresh([FromRoute] string structure,
                                                  [FromRoute] int structureVersion,
                                                  [FromBody] TemporaryKeyList keys)
@@ -157,7 +157,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="keys"></param>
         /// <returns></returns>
         [HttpDelete("{structure}/{structureVersion}/{key}")]
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> Remove([FromRoute] string structure,
                                                 [FromRoute] int structureVersion,
                                                 [FromBody] string[] keys)
@@ -209,7 +209,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="keys"></param>
         /// <returns></returns>
         [HttpPost("{structure}/{structureVersion}")]
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> Set([FromRoute] string structure,
                                              [FromRoute] int structureVersion,
                                              [FromBody] TemporaryKeyList keys)

@@ -28,7 +28,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         ///     get information on how to Connect to the used EventBus-Server and -Hub
         /// </summary>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("events", Name = "Deprecated_Fallback_GetEventConnection")]
         public IActionResult GetEventConnection()
         {

@@ -44,7 +44,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="environmentName"></param>
         /// <param name="buildOptions"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost("{environmentCategory}/{environmentName}", Name = "Deprecated_Fallback_BuildConfigurationsForAllStructures")]
         public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
                                                             [FromRoute] string environmentName,
@@ -89,7 +89,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureName"></param>
         /// <param name="buildOptions"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost("{environmentCategory}/{environmentName}/{structureName}", Name = "Deprecated_Fallback_BuildConfigurationsForAllVersionsOfStructure")]
         public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
                                                             [FromRoute] string environmentName,
@@ -145,7 +145,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureVersion"></param>
         /// <param name="buildOptions">times are assumed to be UTC</param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "Deprecated_Fallback_BuildConfiguration")]
         public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
                                                             [FromRoute] string environmentName,
@@ -205,7 +205,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("available", Name = "Deprecated_Fallback_GetAvailableConfigurations")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
@@ -230,7 +230,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = "Deprecated_Fallback_GetConfigurationKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
@@ -260,7 +260,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureVersion"></param>
         /// <param name="when"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/json", Name = "Deprecated_Fallback_GetConfigurationJson")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
@@ -307,7 +307,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [Obsolete]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "Deprecated_Fallback_GetConfigurationObsolete")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
@@ -331,7 +331,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureVersion"></param>
         /// <param name="when"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [Obsolete]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/{when}",
             Name = "Deprecated_Fallback_GetConfigurationObsoleteAtPointInTime")]
@@ -354,7 +354,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("stale", Name = "Deprecated_Fallback_GetStaleConfigurations")]
         public async Task<IActionResult> GetStaleConfigurations([FromQuery] int offset = -1,
                                                                 [FromQuery] int length = -1)
@@ -376,7 +376,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "Deprecated_Fallback_GetUsedEnvironmentKeys")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]

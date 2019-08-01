@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="definition"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V1)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [HttpPost(Name = "ExportConfiguration")]
         public async Task<IActionResult> Export([FromBody] ExportDefinition definition)
         {

@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "Deprecated_Fallback_PreviewConfigurationWithStoredValues")]
         public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
@@ -100,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// </summary>
         /// <param name="previewOptions"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost(Name = "Deprecated_Fallback_PreviewConfigurationWithGivenValues")]
         public IActionResult PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {

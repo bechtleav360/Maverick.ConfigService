@@ -31,7 +31,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="dictionary"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost("map/json", Name = "Deprecated_Fallback_ConvertDictionaryToJson")]
         public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary,
                                               [FromQuery] string separator = null)
@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="json"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost("json/map", Name = "Deprecated_Fallback_ConvertJsonToDictionary")]
         public IActionResult JsonToDictionary([FromBody] JToken json,
                                               [FromQuery] string separator = null)

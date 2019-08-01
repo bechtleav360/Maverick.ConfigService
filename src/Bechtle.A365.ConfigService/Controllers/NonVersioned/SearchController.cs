@@ -34,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = "Deprecated_Fallback_GetKeyAutocomplete")]
         public async Task<IActionResult> GetKeyAutocompleteList([FromRoute] string category,
                                                                 [FromRoute] string name,

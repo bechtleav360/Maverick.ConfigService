@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="category"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPost("{category}/{name}", Name = "Deprecated_Fallback_AddEnvironment")]
         public async Task<IActionResult> AddEnvironment(string category, string name)
         {
@@ -101,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpDelete("{category}/{name}/keys", Name = "Deprecated_Fallback_DeleteFromEnvironment")]
         public async Task<IActionResult> DeleteKeys([FromRoute] string category,
                                                     [FromRoute] string name,
@@ -140,7 +140,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("available", Name = "Deprecated_Fallback_GetAvailableEnvironments")]
         public async Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
                                                                   [FromQuery] int length = -1)
@@ -161,7 +161,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{category}/{name}/keys", Name = "Deprecated_Fallback_GetEnvironmentAsKeys")]
         public async Task<IActionResult> GetKeys([FromRoute] string category,
                                                  [FromRoute] string name,
@@ -190,7 +190,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="name"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{category}/{name}/json", Name = "Deprecated_Fallback_GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
                                                        [FromRoute] string name,
@@ -222,7 +222,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="offset" />
         /// <param name="length" />
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpGet("{category}/{name}/keys/objects", Name = "Deprecated_Fallback_GetEnvironmentAsObjects")]
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
                                                              [FromRoute] string name,
@@ -262,7 +262,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
         /// <param name="name"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V0)]
+        [ApiVersion(ApiVersions.V0, Deprecated = ApiDeprecation.V0)]
         [HttpPut("{category}/{name}/keys", Name = "Deprecated_Fallback_UpdateEnvironment")]
         public async Task<IActionResult> UpdateKeys([FromRoute] string category,
                                                     [FromRoute] string name,
