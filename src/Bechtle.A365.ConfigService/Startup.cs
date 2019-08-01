@@ -120,6 +120,10 @@ namespace Bechtle.A365.ConfigService
                                                $"ConfigService {description.GroupName.ToUpperInvariant()}");
                });
 
+            _logger.LogInformation("adding Health-Middleware");
+
+            app.UseHealth();
+
             _logger.LogInformation("adding MVC-Middleware");
 
             app.UseMvc();
