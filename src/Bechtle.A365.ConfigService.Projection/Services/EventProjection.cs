@@ -20,12 +20,12 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     public class EventProjection : HostedService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<EventConverter> _logger;
+        private readonly ILogger _logger;
         private readonly IMetricService _metricService;
         private readonly IEventQueue _eventQueue;
 
         public EventProjection(IServiceProvider serviceProvider,
-                               ILogger<EventConverter> logger,
+                               ILogger<EventProjection> logger,
                                IMetricService metricService,
                                IEventQueue eventQueue)
             : base(serviceProvider)
