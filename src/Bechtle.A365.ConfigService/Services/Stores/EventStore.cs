@@ -62,7 +62,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         public ConnectionState ConnectionState { get; private set; }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents()
+        public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents(StreamDirection direction = StreamDirection.Forwards)
         {
             // connect if we're not already connected
             Connect();
@@ -88,14 +88,20 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             var allEvents = new List<(RecordedEvent, DomainEvent)>();
             bool continueReading;
 
-            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
+            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read, " +
+                             (direction == StreamDirection.Forwards ? "forwards from the start" : "backwards from the end"));
 
             do
             {
-                var slice = await _eventStore.ReadStreamEventsForwardAsync(stream,
-                                                                           currentPosition,
-                                                                           readSize,
-                                                                           true);
+                var slice = await (direction == StreamDirection.Forwards
+                                       ? _eventStore.ReadStreamEventsForwardAsync(stream,
+                                                                                  currentPosition,
+                                                                                  readSize,
+                                                                                  true)
+                                       : _eventStore.ReadStreamEventsBackwardAsync(stream,
+                                                                                   currentPosition,
+                                                                                   readSize,
+                                                                                   true));
 
                 _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
 
@@ -121,13 +127,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor, int readSize = 64)
-            => ReplayEventsAsStream(_ => true, streamProcessor, readSize);
+        public Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+                                         int readSize = 64,
+                                         StreamDirection direction = StreamDirection.Forwards)
+            => ReplayEventsAsStream(_ => true, streamProcessor, readSize, direction);
 
         /// <inheritdoc />
         public async Task ReplayEventsAsStream(Func<RecordedEvent, bool> streamFilter,
                                                Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
-                                               int readSize = 64)
+                                               int readSize = 64,
+                                               StreamDirection direction = StreamDirection.Forwards)
         {
             // connect if we're not already connected
             Connect();
@@ -141,16 +150,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             var stream = _eventStoreConfiguration.Stream;
             bool continueReading;
 
-            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read");
+            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read, " +
+                             (direction == StreamDirection.Forwards ? "forwards from the start" : "backwards from the end"));
 
             do
             {
-                var slice = await _eventStore.ReadStreamEventsForwardAsync(stream,
-                                                                           currentPosition,
-                                                                           readSize,
-                                                                           true);
+                var slice = await (direction == StreamDirection.Forwards
+                                       ? _eventStore.ReadStreamEventsForwardAsync(stream,
+                                                                                  currentPosition,
+                                                                                  readSize,
+                                                                                  true)
+                                       : _eventStore.ReadStreamEventsBackwardAsync(stream,
+                                                                                   currentPosition,
+                                                                                   readSize,
+                                                                                   true));
 
-                _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
+                _logger.LogDebug($"read '{slice.Events.Length}' events " +
+                                 $"{slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber} {direction}");
 
                 // send events to streamProcessor
                 // return from function if we receive 'false' or if streamProcessor is empty
@@ -208,7 +224,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             lock (_connectionLock)
             {
                 // only continue if either reconnect or _eventStore is null
-                if (!reconnect && !(_eventStore is null)) 
+                if (!reconnect && !(_eventStore is null))
                     return;
 
                 try

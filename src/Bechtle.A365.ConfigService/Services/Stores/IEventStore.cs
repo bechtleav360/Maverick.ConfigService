@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         ///     replay all events and get the written DomainEvents
         /// </summary>
         /// <returns></returns>
-        Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents();
+        Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents(StreamDirection direction = StreamDirection.Forwards);
 
         /// <summary>
         ///     read the Event-History as a stream and execute an action for each event,
@@ -27,18 +27,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="streamFilter"></param>
         /// <param name="streamProcessor"></param>
         /// <param name="readSize"></param>
+        /// <param name="direction"></param>
         /// <returns></returns>
         Task ReplayEventsAsStream(Func<RecordedEvent, bool> streamFilter,
                                   Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
-                                  int readSize = 64);
+                                  int readSize = 64,
+                                  StreamDirection direction = StreamDirection.Forwards);
 
         /// <summary>
         ///     read the Event-History as a stream and execute an action for each event
         /// </summary>
         /// <param name="streamProcessor">action executed for each event until it returns false</param>
         /// <param name="readSize">number of events read from stream in one go. can't be greater than 4096</param>
+        /// <param name="direction"></param>
         /// <returns></returns>
-        Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor, int readSize = 64);
+        Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+                                  int readSize = 64,
+                                  StreamDirection direction = StreamDirection.Forwards);
 
         /// <summary>
         ///     write Event <typeparamref name="T" /> into the store
