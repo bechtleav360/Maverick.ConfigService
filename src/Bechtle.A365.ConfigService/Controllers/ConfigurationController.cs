@@ -245,8 +245,8 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                         [FromQuery] int offset = -1,
                                                         [FromQuery] int length = -1)
             => RedirectToActionPermanent(nameof(GetConfigurations),
-                                         "Configuration",
-                                         new {when, offset, length});
+                                         RouteUtilities.ControllerName<ConfigurationController>(),
+                                         new {when, offset, length, version = ApiVersions.V1});
 
         /// <summary>
         ///     get the keys of a specific configuration
