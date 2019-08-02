@@ -83,7 +83,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             // readSize must be below 4096
             var readSize = 512;
-            long currentPosition = 0;
+            long currentPosition = direction == StreamDirection.Forwards
+                                       ? StreamPosition.Start
+                                       : StreamPosition.End;
             var stream = _eventStoreConfiguration.Stream;
             var allEvents = new List<(RecordedEvent, DomainEvent)>();
             bool continueReading;
@@ -94,14 +96,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             do
             {
                 var slice = await (direction == StreamDirection.Forwards
-                                       ? _eventStore.ReadStreamEventsForwardAsync(stream,
-                                                                                  currentPosition,
-                                                                                  readSize,
-                                                                                  true)
-                                       : _eventStore.ReadStreamEventsBackwardAsync(stream,
-                                                                                   currentPosition,
-                                                                                   readSize,
-                                                                                   true));
+                                       ? _eventStore.ReadStreamEventsForwardAsync(stream, currentPosition, readSize, true)
+                                       : _eventStore.ReadStreamEventsBackwardAsync(stream, currentPosition, readSize, true));
 
                 _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
 
@@ -146,7 +142,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             // readSize must be below 4096
             readSize = Math.Min(readSize, 4096);
-            long currentPosition = 0;
+            long currentPosition = direction == StreamDirection.Forwards
+                                       ? StreamPosition.Start
+                                       : StreamPosition.End;
             var stream = _eventStoreConfiguration.Stream;
             bool continueReading;
 
@@ -156,14 +154,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             do
             {
                 var slice = await (direction == StreamDirection.Forwards
-                                       ? _eventStore.ReadStreamEventsForwardAsync(stream,
-                                                                                  currentPosition,
-                                                                                  readSize,
-                                                                                  true)
-                                       : _eventStore.ReadStreamEventsBackwardAsync(stream,
-                                                                                   currentPosition,
-                                                                                   readSize,
-                                                                                   true));
+                                       ? _eventStore.ReadStreamEventsForwardAsync(stream, currentPosition, readSize, true)
+                                       : _eventStore.ReadStreamEventsBackwardAsync(stream, currentPosition, readSize, true));
 
                 _logger.LogDebug($"read '{slice.Events.Length}' events " +
                                  $"{slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber} {direction}");
