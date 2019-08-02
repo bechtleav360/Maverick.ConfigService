@@ -16,6 +16,7 @@ namespace Bechtle.A365.ConfigService.Controllers
     ///     import data from a previous export, <see cref="ExportController" />
     /// </summary>
     [Route(ApiBaseRoute + "import")]
+    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class ImportController : ControllerBase
     {
         private readonly IDataImporter _importer;
@@ -34,7 +35,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        
         [HttpPost(Name = "ImportConfiguration")]
         public async Task<IActionResult> Import(IFormFile file)
         {

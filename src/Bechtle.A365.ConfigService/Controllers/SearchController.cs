@@ -12,6 +12,7 @@ namespace Bechtle.A365.ConfigService.Controllers
     ///     search through the projected data
     /// </summary>
     [Route(ApiBaseRoute + "search")]
+    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class SearchController : ControllerBase
     {
         private readonly IProjectionStore _store;
@@ -34,7 +35,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = "GetKeyAutocomplete")]
         public async Task<IActionResult> GetKeyAutocompleteList([FromRoute] string category,
                                                                 [FromRoute] string name,
