@@ -218,13 +218,20 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             await domainObj.Save(_eventStore, _eventHistory, Logger);
 
-            return AcceptedAtAction(nameof(GetConfiguration), new
-            {
-                EnvironmentName = environment.Category,
-                EnvironmentCategory = environment.Name,
-                StructureName = structure.Name,
-                StructureVersion = structure.Version
-            });
+            return AcceptedAtAction(
+                nameof(GetConfiguration),
+                RouteUtilities.ControllerName<ConfigurationController>(),
+                new
+                {
+                    version = ApiVersions.V1,
+                    environmentCategory = environment.Category,
+                    environmentName = environment.Name,
+                    structureName = structure.Name,
+                    structureVersion = structure.Version,
+                    when = DateTime.MinValue,
+                    offset = -1,
+                    length = -1
+                });
         }
 
         /// <summary>

@@ -191,6 +191,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
 
             return AcceptedAtAction(nameof(GetConfiguration), new
             {
+                Version = ApiVersions.V0,
                 EnvironmentName = environment.Category,
                 EnvironmentCategory = environment.Name,
                 StructureName = structure.Name,

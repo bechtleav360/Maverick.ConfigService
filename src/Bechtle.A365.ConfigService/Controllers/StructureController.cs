@@ -87,7 +87,14 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 return AcceptedAtAction(nameof(GetStructureKeys),
                                         RouteUtilities.ControllerName<StructureController>(),
-                                        new {version = "1.0", name = structure.Name, structureVersion = structure.Version},
+                                        new
+                                        {
+                                            version = ApiVersions.V1,
+                                            name = structure.Name,
+                                            structureVersion = structure.Version,
+                                            offset = -1,
+                                            length = -1
+                                        },
                                         keys);
             }
             catch (Exception e)
@@ -309,7 +316,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 await domainObj.Save(_eventStore, _eventHistory, Logger);
 
-                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
+                return AcceptedAtAction(nameof(GetVariables), new {version = ApiVersions.V1, name, structureVersion});
             }
             catch (Exception e)
             {
@@ -356,7 +363,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 await domainObj.Save(_eventStore, _eventHistory, Logger);
 
-                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
+                return AcceptedAtAction(nameof(GetVariables), new {version = ApiVersions.V1, name, structureVersion});
             }
             catch (Exception e)
             {

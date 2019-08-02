@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
                                                  .Save(_eventStore);
                 }
 
-                return AcceptedAtAction(nameof(GetKeys), new {category, name});
+                return AcceptedAtAction(nameof(GetKeys), new {version = ApiVersions.V0, category, name});
             }
             catch (Exception e)
             {
@@ -125,7 +125,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
                                              .ModifyKeys(actions)
                                              .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetKeys), new {category, name});
+                return AcceptedAtAction(nameof(GetKeys), new {version = ApiVersions.V0, category, name});
             }
             catch (Exception e)
             {
@@ -298,7 +298,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
                                              .ModifyKeys(actions)
                                              .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetKeys), new {category, name});
+                return AcceptedAtAction(nameof(GetKeys), new {version = ApiVersions.V0, category, name});
             }
             catch (Exception e)
             {

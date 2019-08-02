@@ -76,7 +76,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
                     return RedirectToAction(nameof(GetStructureKeys),
                                             // I WANT MY REFACTORING SAFETY, DAMN IT!
                                             nameof(StructureController).Replace("Controller", ""),
-                                            new {name = structure.Name, version = structure.Version});
+                                            new {version = ApiVersions.V0, name = structure.Name, structureVersion = structure.Version});
 
                 var keys = _translator.ToDictionary(structure.Structure);
                 var variables = structure.Variables ?? new Dictionary<string, string>();
@@ -86,7 +86,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
                                            .Save(_eventStore);
 
                 return AcceptedAtAction(nameof(GetStructureKeys),
-                                        new {name = structure.Name, version = structure.Version},
+                                        new {version = ApiVersions.V0, name = structure.Name, structureVersion = structure.Version},
                                         keys);
             }
             catch (Exception e)
@@ -351,7 +351,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
                                            .ModifyVariables(actions)
                                            .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
+                return AcceptedAtAction(nameof(GetVariables), new {version = ApiVersions.V0, name, structureVersion});
             }
             catch (Exception e)
             {
@@ -394,7 +394,7 @@ namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
                                            .ModifyVariables(actions)
                                            .Save(_eventStore);
 
-                return AcceptedAtAction(nameof(GetVariables), new {name, structureVersion});
+                return AcceptedAtAction(nameof(GetVariables), new {version = ApiVersions.V0, name, structureVersion});
             }
             catch (Exception e)
             {
