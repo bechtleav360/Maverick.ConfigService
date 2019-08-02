@@ -72,61 +72,40 @@ namespace Bechtle.A365.ConfigService
                               IHostingEnvironment env,
                               IApiVersionDescriptionProvider provider)
         {
-            _logger.LogInformation("adding authentication-hooks");
-
-            app.UseAuthentication();
+            app.Configure(a => a.UseAuthentication(), _ => _logger.LogInformation("adding authentication-hooks"));
 
             if (env.IsDevelopment())
             {
-                _logger.LogInformation("adding Development Exception-Handler");
-                app.UseDeveloperExceptionPage();
+                app.Configure(a => a.UseDeveloperExceptionPage(), _ => _logger.LogInformation("adding Development Exception-Handler"));
             }
             else
             {
-                _logger.LogInformation("adding HSTS");
-                app.UseHsts();
-
-                _logger.LogInformation("adding HTTPS-Redirect");
-                app.UseHttpsRedirection();
+                app.Configure(a => a.UseHsts(), _ => _logger.LogInformation("adding HSTS"))
+                   .Configure(a => a.UseHttpsRedirection(), _ => _logger.LogInformation("adding HTTPS-Redirect"));
             }
 
-            _logger.LogInformation("finishing NLog configuration");
+            app.Configure(a => a.ApplicationServices.SetupNLogServiceLocator(), _ => _logger.LogInformation("finishing NLog configuration"))
+               .Configure(a => a.UseMiddleware<LoggingMiddleware>(), _ => _logger.LogInformation("adding Correlation-Logging-Middleware"))
+               .Configure(a => a.UseCors(policy => policy.AllowAnyHeader()
+                                                         .AllowAnyMethod()
+                                                         .AllowAnyOrigin()),
+                          _ => _logger.LogInformation("adding CORS"))
+               .Configure(a => a.UseSwagger()
+                                .UseSwaggerUI(options =>
+                                {
+                                    options.DocExpansion(DocExpansion.None);
+                                    options.DisplayRequestDuration();
+                                    options.EnableDeepLinking();
+                                    options.EnableFilter();
+                                    options.ShowExtensions();
 
-            app.ApplicationServices.SetupNLogServiceLocator();
-
-            _logger.LogInformation("adding Correlation-Logging-Middleware");
-
-            app.UseMiddleware<LoggingMiddleware>();
-
-            _logger.LogInformation("adding CORS");
-
-            app.UseCors(policy => policy.AllowAnyHeader()
-                                        .AllowAnyMethod()
-                                        .AllowAnyOrigin());
-
-            _logger.LogInformation("adding Swagger/-UI");
-
-            app.UseSwagger()
-               .UseSwaggerUI(options =>
-               {
-                   options.DocExpansion(DocExpansion.None);
-                   options.DisplayRequestDuration();
-                   options.EnableDeepLinking();
-                   options.EnableFilter();
-                   options.ShowExtensions();
-
-                   foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
-                       options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
-                                               $"ConfigService {description.GroupName.ToUpperInvariant()}");
-               });
-
-            _logger.LogInformation("adding Health-Middleware");
-
-            app.UseHealth();
-
-            _logger.LogInformation("adding MVC-Middleware");
-
-            app.UseMvc();
+                                    foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
+                                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                                                                $"ConfigService {description.GroupName.ToUpperInvariant()}");
+                                }),
+                          _ => _logger.LogInformation("adding Swagger/-UI"))
+               .Configure(a => a.UseHealth(), _ => _logger.LogInformation("adding Health-Middleware"))
+               .Configure(a => a.UseMvc(), _ => _logger.LogInformation("adding MVC-Middleware"));
 
             _logger.LogInformation("registering config-reload hook");
 
