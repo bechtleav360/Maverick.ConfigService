@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services.Stores;
@@ -90,7 +91,7 @@ namespace Bechtle.A365.ConfigService.Services
             return result;
         }
 
-        private Task<bool> IsEventSuperseded(DomainEvent domainEvent)
+        private async Task<bool> IsEventSuperseded(DomainEvent domainEvent)
         {
             switch (domainEvent)
             {
@@ -99,11 +100,12 @@ namespace Bechtle.A365.ConfigService.Services
                 case EnvironmentCreated _:
                 case DefaultEnvironmentCreated _:
                     _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can't be superseded (fixed)");
-                    return Task.FromResult(false);
+                    return false;
 
                 // @TODO: find out if any of these events (EnvKeysImported, EnvKeysModified, StructVarModified) modified the used data in this Event
                 //        additional challenge, THIS DomainEvent can happen multiple times and only the last one counts
-                case ConfigurationBuilt _:
+                case ConfigurationBuilt @event:
+                    return await IsConfigBuiltEventSuperseded(@event);
 
                 // events that appear routinely and
                 // even though it's already in EventStore it can be written again
@@ -111,16 +113,74 @@ namespace Bechtle.A365.ConfigService.Services
                 case EnvironmentKeysModified _:
                 case StructureVariablesModified _:
                     _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can be superseded");
-                    return Task.FromResult(true);
+                    return true;
 
                 // not implemented
                 case StructureDeleted _:
                 case EnvironmentDeleted _:
                     _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can be superseded (fixed)");
-                    return Task.FromResult(true);
+                    return true;
             }
 
-            return Task.FromResult(true);
+            return true;
+        }
+
+        /// <summary>
+        ///     read the stream backwards and search for events that modify
+        ///     the data used to build the given Configuration
+        /// </summary>
+        /// <param name="event"></param>
+        /// <returns></returns>
+        private async Task<bool> IsConfigBuiltEventSuperseded(ConfigurationBuilt @event)
+        {
+            // if any of these events touch change the used structure or environment
+            // we can be reasonably sure that this event should be superseded
+            // although additional checks are required - see below
+            var allowedEventTypes = new[]
+            {
+                nameof(ConfigurationBuilt),
+                nameof(StructureCreated),
+                nameof(StructureVariablesModified),
+                nameof(DefaultEnvironmentCreated),
+                nameof(EnvironmentKeysImported),
+                nameof(EnvironmentKeysModified),
+                nameof(EnvironmentCreated)
+            };
+
+            var result = false;
+
+            await _eventStore.ReplayEventsAsStream(
+                e => allowedEventTypes.Contains(e.EventType, StringComparer.OrdinalIgnoreCase),
+
+                // if any of the above events change relevant data after the
+                // last equal ConfigurationBuilt, we can be reasonably sure this event should be superseded
+                tuple =>
+                {
+                    var (_, domainEvent) = tuple;
+
+                    // if we're back to the last recorded equal event
+                    // break the stream processing and return whatever lies in result
+                    if (domainEvent is ConfigurationBuilt configurationBuilt &&
+                        configurationBuilt.Equals(@event))
+                        return false;
+
+                    // if we find an event that creates or modifies the Environment or Structure we
+                    // used to build our config then this event should be superseded
+                    if (domainEvent is DefaultEnvironmentCreated defEnvCreated && defEnvCreated.Identifier == @event.Identifier.Environment ||
+                        domainEvent is EnvironmentCreated envCreated && envCreated.Identifier == @event.Identifier.Environment ||
+                        domainEvent is EnvironmentKeysImported envImported && envImported.Identifier == @event.Identifier.Environment ||
+                        domainEvent is EnvironmentKeysModified keysModified && keysModified.Identifier == @event.Identifier.Environment ||
+                        domainEvent is StructureCreated created && created.Identifier == @event.Identifier.Structure ||
+                        domainEvent is StructureVariablesModified modified && modified.Identifier == @event.Identifier.Structure)
+                    {
+                        result = true;
+                        return false;
+                    }
+
+                    return true;
+                }, direction: StreamDirection.Backwards);
+
+            return result;
         }
     }
 }
