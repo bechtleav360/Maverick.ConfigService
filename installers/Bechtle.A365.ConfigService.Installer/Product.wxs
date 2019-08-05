@@ -15,13 +15,13 @@
            UpgradeCode="e76f9278-4faf-4229-8133-1a0b4d8e3f6b">
     
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-    
+
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-    
+
     <MediaTemplate EmbedCab="yes" />
-    
+
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-    
+
     <!-- initialize property to its default value and make it public to allow for overrides -->
     <Property Id="SERVICECERT" Value="$(var.DefaultServiceCertName)" />
     <Property Id="SERVICECERTTHUMB" Value="$(var.DefaultServiceCertThumb)" />
@@ -35,20 +35,21 @@
     <Property Id="RABBITMQUSER" Value="guest" />
     <Property Id="RABBITMQPASSWORD" Value="guest" />
     <Property Id="RABBITMQPORT" Value="5672" />
+    <Property Id="REDISCONNECTIONSTRING" />
 
     <Feature Id="ProductFeature" Title="Base Files" Level="1">
       <ComponentGroupRef Id="App_Publish" />
     </Feature>
-    
+
     <Feature Id="IISFeature" Title="IIS-Site registration" Level="1">
       <ComponentRef Id="CreateTemporaryFiles" />
       <ComponentRef Id="IISSiteComponent" />
     </Feature>
-    
+
     <UI>
       <UIRef Id="WixUI_InstallDir" />
       <UIRef Id="WixUI_ErrorProgressText" />
-      
+
       <!-- Skip license dialog -->
       <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InputDlg" Order="2">
         1
@@ -74,39 +75,42 @@
 
         <Control Id="CertDis" Type="Text" X="20" Y="43" Width="100" Height="18" NoPrefix="yes" Text="Zertifikatname: " />
         <Control Id="CertVar" Type="Edit" X="120" Y="40" Width="200" Height="15" Property="SERVICECERT" Indirect="no" />
-        
+
         <Control Id="CertTDis" Type="Text" X="20" Y="63" Width="100" Height="18" NoPrefix="yes" Text="Zertifikat Fingerabdruck: " />
         <Control Id="CertTVar" Type="Edit" X="120" Y="60" Width="200" Height="15" Property="SERVICECERTTHUMB" Indirect="no" />
-        
+
         <Control Id="HostnameDis" Type="Text" X="20" Y="83" Width="100" Height="18" NoPrefix="yes" Text="Hostname: " />
         <Control Id="HostnameVar" Type="Edit" X="120" Y="80" Width="200" Height="15" Property="SERVICEHOSTNAME" Indirect="no" />
-        
+
         <Control Id="PasswordDis" Type="Text" X="20" Y="103" Width="100" Height="18" NoPrefix="yes" Text="Domain: " />
         <Control Id="PasswordVar" Type="Edit" X="120" Y="100" Width="200" Height="15" Property="SERVICEHOSTDOMAIN" Indirect="no" />
-        
+
         <Control Id="EventBusConnectionDis" Type="Text" X="20" Y="123" Width="100" Height="18" NoPrefix="yes" Text="EventBus Server: " />
         <Control Id="EventBusConnectionVar" Type="Edit" X="120" Y="120" Width="200" Height="15" Property="EVENTBUSCONNECTIONSERVER" Indirect="no" />
-        
+
         <Control Id="EventStoreConnectionDis" Type="Text" X="20" Y="143" Width="100" Height="18" NoPrefix="yes" Text="EventStore Server: " />
         <Control Id="EventStoreConnectionVar" Type="Edit" X="120" Y="140" Width="200" Height="15" Property="EVENTSTORECONNECTIONURI" Indirect="no" />
-        
+
         <Control Id="ProjectionStorageBackendDis" Type="Text" X="20" Y="163" Width="100" Height="18" NoPrefix="yes" Text="Projection-DB Backend: " />
         <Control Id="ProjectionStorageBackendVar" Type="Edit" X="120" Y="160" Width="200" Height="15" Property="PROJECTIONSTORAGEBACKEND" Indirect="no" />
-        
+
         <Control Id="ProjectionStorageConnectionStringDis" Type="Text" X="20" Y="183" Width="100" Height="18" NoPrefix="yes" Text="Projection-DB ConnectionString: " />
         <Control Id="ProjectionStorageConnectionStringVar" Type="Edit" X="120" Y="180" Width="200" Height="15" Property="PROJECTIONSTORAGECONNECTIONSTRING" Indirect="no" />
-        
+
         <Control Id="RabbitMqHostDis" Type="Text" X="20" Y="203" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Host: " />
         <Control Id="RabbitMqHostVar" Type="Edit" X="120" Y="200" Width="200" Height="15" Property="RABBITMQHOST" Indirect="no" />
         
         <Control Id="RabbitMqUserDis" Type="Text" X="20" Y="223" Width="100" Height="18" NoPrefix="yes" Text="RabbitMQ Benutzer: " />
         <Control Id="RabbitMqUserVar" Type="Edit" X="120" Y="220" Width="200" Height="15" Property="RABBITMQUSER" Indirect="no" />
-        
+
         <Control Id="RabbitMqPasswordDis" Type="Text" X="20" Y="243" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Passwort: " />
         <Control Id="RabbitMqPasswordVar" Type="Edit" X="120" Y="240" Width="200" Height="15" Property="RABBITMQPASSWORD" Indirect="no" />
         
         <Control Id="RabbitMqPortDis" Type="Text" X="20" Y="263" Width="100" Height="18" NoPrefix="yes" Text="RabbitMq Port: " />
         <Control Id="RabbitMqPortVar" Type="Edit" X="120" Y="260" Width="200" Height="15" Property="RABBITMQPORT" Indirect="no" />
+
+        <Control Id="RedisConnectionStringDis" Type="Text" X="20" Y="283" Width="100" Height="18" NoPrefix="yes" Text="Redis Connectionstring: " />
+        <Control Id="RedisConnectionStringVar" Type="Edit" X="120" Y="280" Width="200" Height="15" Property="REDISCONNECTIONSTRING" Indirect="no" />
       </Dialog>
 
       <Publish Dialog="InstallDirDlg"
@@ -134,10 +138,10 @@
             <Component Id="IISSiteComponent" Guid="B4AB7953-3167-49DB-8A75-455D2C582B4A">
               <!-- actually necessary -->
               <CreateFolder />
-              
+
               <!-- create application-pool for reference later -->
               <iis:WebAppPool Id="ServiceAppPool" Name="A365$(var.ServiceName)" ManagedPipelineMode="Integrated" />
-              
+
               <!-- create site with reference to app-pool above -->
               <iis:WebSite Id="ServiceSite" Description="A365$(var.ServiceName)" Directory="INSTALLFOLDER" AutoStart="yes" ConfigureIfExists="yes">
                 <!-- ManagedRuntimeVersion=NoManagedCode is handled by a powershell custom-action -->
@@ -154,7 +158,7 @@
         </Directory>
       </Directory>
     </Directory>
-    
+
     <CustomAction Id="SetAppPoolNoManagedCode"
                   Property="InvokeSetAppPoolNoManagedCode"
                   Value="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\SetAppPoolNoManagedCode.ps1&quot; -AppPool A365$(var.ServiceName)"
@@ -167,7 +171,7 @@
 
     <CustomAction Id="UpdateAppsettings"
                   Directory="TARGETDIR"
-                  ExeCommand="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\UpdateAppsettings.ps1&quot; -FilePath &quot;[INSTALLFOLDER]appsettings.json&quot; -EventBusConnectionServer &quot;[EVENTBUSCONNECTIONSERVER]&quot; -EventStoreConnectionUri &quot;[EVENTSTORECONNECTIONURI]&quot; -ProjectionStorageConnectionString &quot;[PROJECTIONSTORAGECONNECTIONSTRING]&quot; -ProjectionStorageBackend &quot;[PROJECTIONSTORAGEBACKEND]&quot; -RabbitMqHost &quot;[RABBITMQHOST]&quot; -RabbitMqUser &quot;[RABBITMQUSER]&quot; -RabbitMqPassword &quot;[RABBITMQPASSWORD]&quot; -RabbitMqPort &quot;[RABBITMQPORT]&quot;"
+                  ExeCommand="&quot;powershell.exe&quot; -ExecutionPolicy Unrestricted -NoLogo -NonInteractive -InputFormat None -NoProfile -File &quot;[INSTALLFOLDER]_install\UpdateAppsettings.ps1&quot; -FilePath &quot;[INSTALLFOLDER]appsettings.json&quot; -EventBusConnectionServer &quot;[EVENTBUSCONNECTIONSERVER]&quot; -EventStoreConnectionUri &quot;[EVENTSTORECONNECTIONURI]&quot; -ProjectionStorageConnectionString &quot;[PROJECTIONSTORAGECONNECTIONSTRING]&quot; -ProjectionStorageBackend &quot;[PROJECTIONSTORAGEBACKEND]&quot; -RabbitMqHost &quot;[RABBITMQHOST]&quot; -RabbitMqUser &quot;[RABBITMQUSER]&quot; -RabbitMqPassword &quot;[RABBITMQPASSWORD]&quot; -RabbitMqPort &quot;[RABBITMQPORT]&quot; -RedisConnectionString &quot;[REDISCONNECTIONSTRING]&quot;"
                   Execute="deferred"
                   Return="asyncNoWait"
                   Impersonate="no" />

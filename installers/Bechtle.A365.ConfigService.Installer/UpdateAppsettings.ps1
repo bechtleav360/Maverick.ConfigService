@@ -33,7 +33,11 @@
 
     [Parameter(mandatory=$true)]
     [String]
-    $RabbitMqPort
+    $RabbitMqPort,
+
+    [Parameter(mandatory=$true)]
+    [String]
+    RedisConnectionString
 )
 
 # Formats JSON in a nicer format than the built-in ConvertTo-Json does.
@@ -68,5 +72,6 @@ if(Test-Path $FilePath) {
     $a.LoggingConfiguration.NLog.Variables.RabbitMqUser = $RabbitMqUser
     $a.LoggingConfiguration.NLog.Variables.RabbitMqPassword = $RabbitMqPassword
     $a.LoggingConfiguration.NLog.Variables.RabbitMqPort = $RabbitMqPort
+    $a.MemoryCache.Redis.ConnectionString = $RedisConnectionString
     $a | ConvertTo-Json -Depth 100 | Format-Json | set-content $FilePath -Encoding UTF8
 }
