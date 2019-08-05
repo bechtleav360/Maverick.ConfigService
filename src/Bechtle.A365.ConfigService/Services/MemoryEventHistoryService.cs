@@ -84,7 +84,7 @@ namespace Bechtle.A365.ConfigService.Services
 
                     // continue stream-processing
                     return true;
-                }, 128);
+                }, 128, StreamDirection.Backwards);
 
             _logger.LogInformation($"Status for DomainEvent '{domainEvent.EventType}': {result:G} / {result:D}");
 
