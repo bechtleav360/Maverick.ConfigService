@@ -102,8 +102,6 @@ namespace Bechtle.A365.ConfigService.Services
                     _logger.LogInformation($"DomainEvent '{domainEvent.EventType}' with same data can't be superseded (fixed)");
                     return false;
 
-                // @TODO: find out if any of these events (EnvKeysImported, EnvKeysModified, StructVarModified) modified the used data in this Event
-                //        additional challenge, THIS DomainEvent can happen multiple times and only the last one counts
                 case ConfigurationBuilt @event:
                     return await IsConfigBuiltEventSuperseded(@event);
 
