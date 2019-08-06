@@ -11,11 +11,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\netcoreapp2.1\Bechtle.A365.ConfigService.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\netcoreapp2.2\Bechtle.A365.ConfigService.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\netcoreapp2.1\Bechtle.A365.ConfigService.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netcoreapp2.2\Bechtle.A365.ConfigService.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -66,9 +66,6 @@
 
   <ItemGroup>
     <None Update="build.cmd">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="devrootca.crt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="DockerfileGlobal">

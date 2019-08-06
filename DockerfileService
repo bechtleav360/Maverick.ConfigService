@@ -1,0 +1,13 @@
+ARG servicename=Bechtle.A365.ConfigService
+FROM mcr.microsoft.com/dotnet/core/runtime:2.2 AS base
+FROM localhost:5000/configservice_base AS configservice_build
+ARG servicename
+RUN dotnet restore src/${servicename}/${servicename}.csproj --packages /src/packages
+RUN dotnet build src/${servicename}/${servicename}.csproj -c Release -o /app/configservice_build --no-restore
+RUN dotnet publish src/${servicename}/${servicename}.csproj -c Release -o /app/configservice_build --no-restore
+FROM base AS configservice
+WORKDIR /app/configservice
+COPY --from=configservice_build /app/configservice_build /app/configservice
+EXPOSE 8082
+RUN sed -i 's/\r$//' startup.sh && chmod +x startup.sh
+ENTRYPOINT sh startup.sh
