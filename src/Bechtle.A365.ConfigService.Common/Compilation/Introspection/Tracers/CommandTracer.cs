@@ -20,6 +20,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public override TraceResult GetResult() => new CommandTraceResult
         {
+            Errors = Errors.ToArray(),
+            Warnings = Warnings.ToArray(),
             Command = Command,
             Value = Value,
             Children = Children.Select(c => c.GetResult())

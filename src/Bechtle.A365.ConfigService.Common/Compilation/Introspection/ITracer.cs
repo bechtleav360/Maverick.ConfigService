@@ -32,6 +32,18 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection
         void AddStaticValue(string value);
 
         /// <summary>
+        ///     add a warning-message to the current tracer
+        /// </summary>
+        /// <param name="warning"></param>
+        void AddWarning(string warning);
+
+        /// <summary>
+        ///     add a error-message to the current tracer
+        /// </summary>
+        /// <param name="error"></param>
+        void AddError(string error);
+
+        /// <summary>
         ///     get the display-result of this trace until now
         /// </summary>
         /// <returns></returns>

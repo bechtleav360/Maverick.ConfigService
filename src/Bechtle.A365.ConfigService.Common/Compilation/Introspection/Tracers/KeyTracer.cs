@@ -19,6 +19,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public override TraceResult GetResult() => new KeyTraceResult
         {
+            Errors = Errors.ToArray(),
+            Warnings = Warnings.ToArray(),
             Key = Key,
             OriginalValue = OriginalValue,
             Children = Children.Select(c => c.GetResult())

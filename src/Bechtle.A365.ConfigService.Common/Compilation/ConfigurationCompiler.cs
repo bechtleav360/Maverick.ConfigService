@@ -109,6 +109,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             if (context.RecursionLevel > KeyRecursionLimit)
             {
+                context.Tracer.AddError("recursion too deep, aborting compilation");
                 _logger.LogWarning(WithContext(context, "recursion too deep, aborting compilation"));
                 return new (string Key, string Value)[0];
             }
@@ -123,6 +124,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             if (!plan.CompilationPossible)
             {
+                context.Tracer.AddError(plan.Reason);
                 _logger.LogWarning(WithContext(context, $"can't compile key: {plan.Reason}"));
                 return new[] {(Key: context.CurrentKey, Value: value)};
             }
@@ -141,6 +143,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 if (!(part is ReferencePart reference))
                 {
+                    context.Tracer.AddError($"unknown part parsed: '{part.GetType().Name}'");
                     _logger.LogWarning($"unknown part parsed: '{part.GetType().Name}'");
                     continue;
                 }
@@ -166,6 +169,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 }
                 else
                 {
+                    context.Tracer.AddError($"could not resolve path '{path}'");
                     _logger.LogWarning($"could not resolve path '{path}'");
 
                     // if 'Fallback' or 'Default' are set in the reference,
@@ -173,6 +177,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     if (reference.Commands.ContainsKey(ReferenceCommand.Fallback))
                     {
                         var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
+                        context.Tracer.AddWarning($"using fallback '{fallbackValue}' after failing to resolve '{path}'");
                         _logger.LogInformation($"using fallback '{fallbackValue}' after failing to resolve '{path}'");
                         matchedValue = fallbackValue;
                     }
@@ -198,6 +203,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 // if it turns out the compiled reference does actually point to a region we need to handle it as such and return immediately
                 if (result.Length > 1)
                 {
+                    context.Tracer.AddWarning($"reference '{path}' pointed towards single value, but was resolved to a region");
                     _logger.LogWarning(WithContext(context, $"reference '{path}' pointed towards single value, but was resolved to a region"));
                     return result.Select(item => (item.Key, item.Value)).ToArray();
                 }
@@ -242,9 +248,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
             else
             {
-                _logger.LogError(WithContext(context,
-                                             $"either '{nameof(ReferenceCommand.Alias)}' or '{nameof(ReferenceCommand.Using)}' command is set, " +
-                                             "but not both - they are only usable together"));
+                var msg = $"either '{nameof(ReferenceCommand.Alias)}' or '{nameof(ReferenceCommand.Using)}' command is used without the other";
+                context.Tracer.AddError(msg);
+                _logger.LogError(WithContext(context, msg));
             }
         }
 
@@ -295,6 +301,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 }
                 else
                 {
+                    context.Tracer.AddError($"could not resolve alias '{alias}'");
                     _logger.LogError($"could not resolve alias '{alias}'");
                 }
             }

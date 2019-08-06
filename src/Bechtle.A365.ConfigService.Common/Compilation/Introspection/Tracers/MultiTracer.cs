@@ -34,6 +34,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public override TraceResult GetResult() => new MultiTraceResult
         {
+            Errors = Errors.ToArray(),
+            Warnings = Warnings.ToArray(),
             Path = Path,
             Children = Children.Select(c => c.GetResult())
                                .ToArray()

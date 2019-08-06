@@ -3,5 +3,9 @@
     public abstract class TraceResult
     {
         public TraceResult[] Children { get; set; }
+
+        public string[] Errors { get; set; }
+
+        public string[] Warnings { get; set; }
     }
 }
