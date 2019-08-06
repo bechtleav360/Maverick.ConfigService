@@ -173,7 +173,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     _logger.LogWarning($"could not resolve path '{path}'");
 
                     // if 'Fallback' or 'Default' are set in the reference,
-                    // we can use the it instead of the value we're searching for
+                    // we can use it instead of the value we're searching for
                     if (reference.Commands.ContainsKey(ReferenceCommand.Fallback))
                     {
                         var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
