@@ -104,6 +104,16 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         {
             _logger.LogDebug(WithContext(context, $"compiling key, recursion: '{context.RecursionLevel}'"));
 
+            // see if CurrentKey was already used to compile the value - recursive loop (a - b - c - a)
+            // skip the check if no Recursion has happened yet
+            if (context.RecursionPath.Any() &&
+                context.RecursionPath.Count(s => s.Equals(context.CurrentKey, StringComparison.OrdinalIgnoreCase)) > 1)
+            {
+                context.Tracer.AddError($"recursive loop detected: {string.Join(" -> ", context.RecursionPath)}");
+                _logger.LogWarning(WithContext(context, $"recursive loop detected: {string.Join(" -> ", context.RecursionPath)}"));
+                return new (string Key, string Value)[0];
+            }
+
             if (string.IsNullOrEmpty(value))
                 return new[] {(context.CurrentKey, string.Empty)};
 
@@ -196,6 +206,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                     .AddPathResult(matchedValue)
                 };
                 innerContext.IncrementRecursionLevel();
+                innerContext.RecursionPath.Add(path);
 
                 var result = CompileInternal(innerContext, matchedValue);
 
@@ -337,6 +348,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     Tracer = regionTracer.AddPathResult(itemKey, itemValue)
                 };
                 regionContext.IncrementRecursionLevel();
+                regionContext.RecursionPath.Add(itemKey);
 
                 var regionResult = CompileInternal(regionContext, itemValue);
 
@@ -368,6 +380,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 EnvironmentInfo = context.EnvironmentInfo;
                 StructureInfo = context.StructureInfo;
                 RecursionLevel = context.RecursionLevel;
+                RecursionPath = new List<string>(context.RecursionPath);
                 CurrentKey = context.CurrentKey;
                 Parser = context.Parser;
             }
@@ -387,6 +400,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             public ITracer Tracer { get; set; }
 
             public void IncrementRecursionLevel() => RecursionLevel += 1;
+
+            public List<string> RecursionPath { get; set; } = new List<string>();
         }
     }
 }
