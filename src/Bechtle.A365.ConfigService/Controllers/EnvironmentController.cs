@@ -82,7 +82,9 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 await configObj.Save(_eventStore, _eventHistory, Logger);
 
-                return AcceptedAtAction(nameof(GetKeys), new {version = ApiVersions.V1, category, name});
+                return AcceptedAtAction(nameof(GetKeys),
+                                        RouteUtilities.ControllerName<EnvironmentController>(),
+                                        new {version = ApiVersions.V1, category, name});
             }
             catch (Exception e)
             {
@@ -126,7 +128,9 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 await domainObj.Save(_eventStore, _eventHistory, Logger);
 
-                return AcceptedAtAction(nameof(GetKeys), new {version = ApiVersions.V1, category, name});
+                return AcceptedAtAction(nameof(GetKeys),
+                                        RouteUtilities.ControllerName<EnvironmentController>(),
+                                        new {version = ApiVersions.V1, category, name});
             }
             catch (Exception e)
             {
@@ -291,7 +295,9 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 await domainObj.Save(_eventStore, _eventHistory, Logger);
 
-                return AcceptedAtAction(nameof(GetKeys), new {version = ApiVersions.V1, category, name});
+                return AcceptedAtAction(nameof(GetKeys),
+                                        RouteUtilities.ControllerName<EnvironmentController>(),
+                                        new {version = ApiVersions.V1, category, name});
             }
             catch (Exception e)
             {
