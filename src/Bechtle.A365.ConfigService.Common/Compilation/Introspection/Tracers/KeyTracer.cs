@@ -6,7 +6,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
     public class KeyTracer : TracerBase
     {
         /// <inheritdoc />
-        public KeyTracer(string key, string originalValue)
+        public KeyTracer(ITracer parent,
+                         string key,
+                         string originalValue)
+            : base(parent)
         {
             Key = key;
             OriginalValue = originalValue;

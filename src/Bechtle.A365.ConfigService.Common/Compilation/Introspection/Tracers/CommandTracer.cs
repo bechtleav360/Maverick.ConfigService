@@ -7,7 +7,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
     public class CommandTracer : TracerBase
     {
         /// <inheritdoc />
-        public CommandTracer(ReferenceCommand command, string value)
+        public CommandTracer(ITracer parent,
+                             ReferenceCommand command,
+                             string value)
+            : base(parent)
         {
             Command = command;
             Value = value;

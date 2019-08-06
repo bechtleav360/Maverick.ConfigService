@@ -7,8 +7,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
     public abstract class TracerBase : ITracer
     {
         /// <inheritdoc />
-        protected TracerBase()
+        protected TracerBase(ITracer parent)
         {
+            Parent = parent;
             Children = new List<ITracer>();
             Warnings = new List<string>();
             Errors = new List<string>();
@@ -25,7 +26,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         public IList<string> Warnings { get; }
 
         /// <inheritdoc />
-        public void AddCommand(ReferenceCommand command, string value) => Children.Add(new CommandTracer(command, value));
+        public ITracer Parent { get; }
+
+        /// <inheritdoc />
+        public void AddCommand(ReferenceCommand command, string value) => Children.Add(new CommandTracer(this, command, value));
 
         /// <inheritdoc />
         public void AddError(string error) => Errors.Add(error);
@@ -33,14 +37,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public IMultiTracer AddPathResolution(string path)
         {
-            var tracer = new MultiTracer(path);
+            var tracer = new MultiTracer(this, path);
             Children.Add(tracer);
 
             return tracer;
         }
 
         /// <inheritdoc />
-        public void AddStaticValue(string value) => Children.Add(new ValueTracer(value));
+        public void AddStaticValue(string value) => Children.Add(new ValueTracer(this, value));
 
         /// <inheritdoc />
         public void AddWarning(string warning) => Warnings.Add(warning);

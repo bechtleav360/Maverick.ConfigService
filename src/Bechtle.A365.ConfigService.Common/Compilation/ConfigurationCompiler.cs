@@ -104,13 +104,22 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         {
             _logger.LogDebug(WithContext(context, $"compiling key, recursion: '{context.RecursionLevel}'"));
 
-            // see if CurrentKey was already used to compile the value - recursive loop (a - b - c - a)
+            // see if CurrentKey was already used to compile the value - recursive loop (a - b - c - b)
             // skip the check if no Recursion has happened yet
             if (context.RecursionPath.Any() &&
-                context.RecursionPath.Count(s => s.Equals(context.CurrentKey, StringComparison.OrdinalIgnoreCase)) > 1)
+                context.RecursionPath.Count(t => t.Path.Equals(context.CurrentKey, StringComparison.OrdinalIgnoreCase)) > 1)
             {
-                context.Tracer.AddError($"recursive loop detected: {string.Join(" -> ", context.RecursionPath)}");
-                _logger.LogWarning(WithContext(context, $"recursive loop detected: {string.Join(" -> ", context.RecursionPath)}"));
+                var paths = context.RecursionPath.Select(t => t.Path).ToList();
+
+                var recursionLoopIndex = paths.IndexOf(context.CurrentKey);
+                var beforeLoop = string.Join(" -> ", paths.Take(recursionLoopIndex));
+                var loop = string.Join(" => ", paths.Skip(recursionLoopIndex));
+
+                var msg = $"recursion-loop detected at {beforeLoop} -> {loop}";
+
+                context.RecursionPath.First().Tracer.AddError(msg);
+                _logger.LogWarning(WithContext(context, msg));
+
                 return new (string Key, string Value)[0];
             }
 
@@ -206,7 +215,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                     .AddPathResult(matchedValue)
                 };
                 innerContext.IncrementRecursionLevel();
-                innerContext.RecursionPath.Add(path);
+                innerContext.RecursionPath.Add((path, context.Tracer));
 
                 var result = CompileInternal(innerContext, matchedValue);
 
@@ -348,7 +357,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     Tracer = regionTracer.AddPathResult(itemKey, itemValue)
                 };
                 regionContext.IncrementRecursionLevel();
-                regionContext.RecursionPath.Add(itemKey);
+                regionContext.RecursionPath.Add((itemKey, context.Tracer));
 
                 var regionResult = CompileInternal(regionContext, itemValue);
 
@@ -380,7 +389,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 EnvironmentInfo = context.EnvironmentInfo;
                 StructureInfo = context.StructureInfo;
                 RecursionLevel = context.RecursionLevel;
-                RecursionPath = new List<string>(context.RecursionPath);
+                RecursionPath = new List<(string, ITracer)>(context.RecursionPath);
                 CurrentKey = context.CurrentKey;
                 Parser = context.Parser;
             }
@@ -401,7 +410,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             public void IncrementRecursionLevel() => RecursionLevel += 1;
 
-            public List<string> RecursionPath { get; set; } = new List<string>();
+            public List<(string Path, ITracer Tracer)> RecursionPath { get; private set; } = new List<(string, ITracer)>();
         }
     }
 }

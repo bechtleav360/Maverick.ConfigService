@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public ITracer AddKey(string key, string originalValue)
         {
-            var tracer = new KeyTracer(key, originalValue);
+            var tracer = new KeyTracer(null, key, originalValue);
             Tracers.Add(tracer);
 
             return tracer;

@@ -6,7 +6,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
     public class ValueTracer : TracerBase
     {
         /// <inheritdoc />
-        public ValueTracer(string staticValue)
+        public ValueTracer(ITracer parent, string staticValue)
+            : base(parent)
         {
             StaticValue = staticValue;
         }

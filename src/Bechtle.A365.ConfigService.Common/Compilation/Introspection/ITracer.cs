@@ -12,6 +12,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection
         IList<ITracer> Children { get; }
 
         /// <summary>
+        ///     reference to the Parent-Tracer
+        /// </summary>
+        ITracer Parent { get; }
+
+        /// <summary>
         ///     add a command to the current tracer
         /// </summary>
         /// <param name="command"></param>

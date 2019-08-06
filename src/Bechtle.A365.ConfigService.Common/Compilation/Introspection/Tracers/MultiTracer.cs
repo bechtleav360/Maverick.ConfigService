@@ -6,7 +6,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
     public class MultiTracer : TracerBase, IMultiTracer
     {
         /// <inheritdoc />
-        public MultiTracer(string path)
+        public MultiTracer(ITracer parent, string path)
+            : base(parent)
         {
             Path = path;
         }
@@ -16,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public ITracer AddPathResult(string value)
         {
-            var tracer = new KeyTracer(Path, value);
+            var tracer = new KeyTracer(this, Path, value);
             Children.Add(tracer);
 
             return tracer;
@@ -25,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public ITracer AddPathResult(string path, string value)
         {
-            var tracer = new KeyTracer(path, value);
+            var tracer = new KeyTracer(this, path, value);
             Children.Add(tracer);
 
             return tracer;
