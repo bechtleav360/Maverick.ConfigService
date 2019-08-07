@@ -43,7 +43,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             _store = store;
         }
 
-        // TODO: find a better name, this one is horrible
         /// <summary>
         ///     annotate each key in the current Environment with the structures that used each key to build.
         ///     basically this show which keys are used in which version, and which aren't used at all
