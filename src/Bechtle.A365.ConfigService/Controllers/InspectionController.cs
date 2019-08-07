@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Dto;
+using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.AspNetCore.Mvc;
@@ -42,15 +43,15 @@ namespace Bechtle.A365.ConfigService.Controllers
             _store = store;
         }
 
+        // TODO: find a better name, this one is horrible
         /// <summary>
-        ///     use the most up-to-date structures to find unused keys in an environment
+        ///     annotate each key in the current Environment with the structures that used each key to build.
+        ///     basically this show which keys are used in which version, and which aren't used at all
         /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
         /// <returns></returns>
-        [HttpPost("environment/{environmentCategory}/{environmentName}/structures/latest")]
-        public async Task<IActionResult> FindUnusedEnvironmentKeys([FromRoute] string environmentCategory,
-                                                                   [FromRoute] string environmentName)
+        [HttpPost("environment/{environmentCategory}/{environmentName}/structures/all")]
+        public async Task<IActionResult> GetUsedKeysPerStructureAll([FromRoute] string environmentCategory,
+                                                                    [FromRoute] string environmentName)
         {
             if (string.IsNullOrWhiteSpace(environmentCategory))
                 return BadRequest("no environment-category given");
@@ -72,39 +73,43 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (configResult.IsError)
                 return ProviderError(configResult);
 
-            var configIds = configResult.Data
-                                        .GroupBy(c => c.Structure.Name)
-                                        .Select(g => g.OrderByDescending(c => c.Structure.Version).First())
-                                        .ToList();
+            return Result(await AnnotateEnvironmentKeys(envKeys, configResult.Data));
+        }
 
-            var tasks = configIds.AsParallel()
-                                 .Select(cid => _store.Configurations.GetUsedConfigurationKeys(cid, DateTime.MinValue, QueryRange.All))
-                                 .ToList();
+        /// <summary>
+        ///     use the most up-to-date structures to find unused keys in an environment
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <returns></returns>
+        [HttpPost("environment/{environmentCategory}/{environmentName}/structures/latest")]
+        public async Task<IActionResult> GetUsedKeysPerStructureLatest([FromRoute] string environmentCategory,
+                                                                       [FromRoute] string environmentName)
+        {
+            if (string.IsNullOrWhiteSpace(environmentCategory))
+                return BadRequest("no environment-category given");
 
-            await Task.WhenAll(tasks);
+            if (string.IsNullOrWhiteSpace(environmentName))
+                return BadRequest("no environment-name given");
 
-            var results = tasks.Select(t => t.Result).ToList();
-            var errors = results.Where(r => r.IsError).ToList();
+            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            if (errors.Any(r => r.IsError))
-                return ProviderError(errors.First());
+            var envKeyResult = await _store.Environments.GetKeys(envId, QueryRange.All);
 
-            // select all used keys from all queried configurations into a flat list
-            var usedKeys = results.SelectMany(r => r.Data)
-                                  .GroupBy(p => p)
-                                  .Select(g => g.Key)
-                                  .ToList();
+            if (envKeyResult.IsError)
+                return ProviderError(envKeyResult);
 
-            var unusedKeys = new Dictionary<string, string>();
-            foreach (var (key, value) in envKeys)
-            {
-                if (usedKeys.Any(k => k.Equals(key, StringComparison.OrdinalIgnoreCase)))
-                    continue;
+            var envKeys = envKeyResult.Data;
 
-                unusedKeys.Add(key, value);
-            }
+            var configResult = await _store.Configurations.GetAvailableWithEnvironment(envId, DateTime.MinValue, QueryRange.All);
 
-            return Ok(_translator.ToJson(unusedKeys));
+            if (configResult.IsError)
+                return ProviderError(configResult);
+
+            return Result(await AnnotateEnvironmentKeys(envKeys,
+                                                        configResult.Data
+                                                                    .GroupBy(c => c.Structure.Name)
+                                                                    .Select(g => g.OrderByDescending(c => c.Structure.Version).First())));
         }
 
         /// <summary>
@@ -229,50 +234,42 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             return result;
         }
-    }
 
-    /// <summary>
-    ///     Details about the Compilation of a Structure with an Environment
-    /// </summary>
-    public class StructureInspectionResult
-    {
-        /// <summary>
-        ///     flag indicating if the compilation was successful or not
-        /// </summary>
-        public bool CompilationSuccessful { get; set; }
+        private async Task<IResult<List<AnnotatedEnvironmentKey>>> AnnotateEnvironmentKeys(IDictionary<string, string> environment,
+                                                                                           IEnumerable<ConfigurationIdentifier> structures)
+        {
+            var tasks = structures.AsParallel()
+                                  .Select(cid => (ConfigId: cid, Task: _store.Configurations
+                                                                             .GetUsedConfigurationKeys(cid,
+                                                                                                       DateTime.MinValue,
+                                                                                                       QueryRange.All)))
+                                  .ToList();
 
-        /// <summary>
-        ///     resulting compiled configuration
-        /// </summary>
-        public IDictionary<string, string> CompiledConfiguration { get; set; } = new Dictionary<string, string>();
+            await Task.WhenAll(tasks.Select(t => t.Task));
 
-        /// <summary>
-        ///     Path => Error dictionary
-        /// </summary>
-        public Dictionary<string, List<string>> Errors { get; set; }
+            var results = tasks.Select(t => (t.ConfigId, t.Task.Result)).ToList();
+            var errors = results.Where(r => r.Result.IsError).ToList();
 
-        /// <inheritdoc cref="CompilationStats" />
-        public CompilationStats Stats { get; set; } = new CompilationStats();
+            if (errors.Any(r => r.Result.IsError))
+                return Common.Result.Error<List<AnnotatedEnvironmentKey>>(errors.First().Result.Message, errors.First().Result.Code);
 
-        /// <summary>
-        ///     Path => Warning dictionary
-        /// </summary>
-        public Dictionary<string, List<string>> Warnings { get; set; }
-    }
+            var annotatedEnv = new List<AnnotatedEnvironmentKey>(environment.Select(kvp => new AnnotatedEnvironmentKey
+            {
+                Key = kvp.Key,
+                Value = kvp.Value
+            }));
 
-    /// <summary>
-    ///     stats about the compilation (ref-counts, hits / misses, etc)
-    /// </summary>
-    public class CompilationStats
-    {
-        /// <summary>
-        ///     number of used References
-        /// </summary>
-        public int ReferencesUsed { get; set; }
+            // go through each built configuration, and annotate the used Environment-Keys with their Structure-Id
+            // at the end we have a list of Keys and Values, each with a list of structures that used this key
+            results.AsParallel()
+                   .ForAll(t => t.Result
+                                 .Data
+                                 .AsParallel()
+                                 .ForAll(key => annotatedEnv.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
+                                                            ?.Structures
+                                                            .Add(t.ConfigId.Structure)));
 
-        /// <summary>
-        ///     number of used Static values
-        /// </summary>
-        public int StaticValuesUsed { get; set; }
+            return Common.Result.Success(annotatedEnv);
+        }
     }
 }
