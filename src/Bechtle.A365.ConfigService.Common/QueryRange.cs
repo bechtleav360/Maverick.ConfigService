@@ -1,9 +1,11 @@
-﻿namespace Bechtle.A365.ConfigService.Common
+﻿using System;
+
+namespace Bechtle.A365.ConfigService.Common
 {
     /// <summary>
     ///     range of items to query from the database
     /// </summary>
-    public struct QueryRange
+    public struct QueryRange : IEquatable<QueryRange>
     {
         /// <summary>
         ///     select items after this offset using the current ordering
@@ -38,5 +40,23 @@
         /// <returns></returns>
         public static QueryRange Make(int offset, int length) => new QueryRange(offset < 0 ? 0 : offset,
                                                                                 length <= 0 ? int.MaxValue : length);
+
+        public bool Equals(QueryRange other) => Offset == other.Offset && Length == other.Length;
+
+        public override bool Equals(object obj) => obj is QueryRange other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (Offset * 397) ^ Length;
+            }
+        }
+
+        public static bool operator ==(QueryRange left, QueryRange right) => left.Equals(right);
+
+        public static bool operator !=(QueryRange left, QueryRange right) => !left.Equals(right);
+
+        public override string ToString() => $"[{nameof(QueryRange)}; {nameof(Offset)}: {Offset}; {nameof(Length)}: {Length}]";
     }
 }

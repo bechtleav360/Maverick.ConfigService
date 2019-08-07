@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Dto;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
@@ -18,12 +20,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     {
         private readonly ProjectionStoreContext _context;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
+        private readonly IMemoryCache _cache;
 
         /// <inheritdoc />
-        public EnvironmentProjectionStore(ProjectionStoreContext context, ILogger<EnvironmentProjectionStore> logger)
+        public EnvironmentProjectionStore(ProjectionStoreContext context,
+                                          ILogger<EnvironmentProjectionStore> logger,
+                                          IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
+            _cache = cache;
         }
 
         /// <inheritdoc />
@@ -31,18 +37,25 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var dbResult = await _context.FullConfigEnvironments
-                                             .OrderBy(s => s.Category)
-                                             .ThenBy(s => s.Name)
-                                             .Skip(range.Offset)
-                                             .Take(range.Length)
-                                             .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
-                                             .ToListAsync();
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore), nameof(GetAvailable), range),
+                           async entry =>
+                           {
+                               var dbResult = await _context.FullConfigEnvironments
+                                                            .OrderBy(s => s.Category)
+                                                            .ThenBy(s => s.Name)
+                                                            .Skip(range.Offset)
+                                                            .Take(range.Length)
+                                                            .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
+                                                            .ToListAsync();
 
-                var result = dbResult?.ToList()
-                             ?? new List<EnvironmentIdentifier>();
+                               if (dbResult is null)
+                                   return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
 
-                return Result.Success<IList<EnvironmentIdentifier>>(result);
+                               entry.SetDuration(CacheDuration.Medium);
+
+                               return Result.Success<IList<EnvironmentIdentifier>>(dbResult.ToList());
+                           });
             }
             catch (Exception e)
             {
@@ -56,19 +69,25 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var dbResult = await _context.FullConfigEnvironments
-                                             .Where(s => s.Category == category)
-                                             .OrderBy(s => s.Category)
-                                             .ThenBy(s => s.Name)
-                                             .Skip(range.Offset)
-                                             .Take(range.Length)
-                                             .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
-                                             .ToListAsync();
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore), nameof(GetAvailable), category, range),
+                           async entry =>
+                           {
+                               var dbResult = await _context.FullConfigEnvironments
+                                                            .Where(s => s.Category == category)
+                                                            .OrderBy(s => s.Category)
+                                                            .ThenBy(s => s.Name)
+                                                            .Skip(range.Offset)
+                                                            .Take(range.Length)
+                                                            .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
+                                                            .ToListAsync();
 
-                var result = dbResult?.ToList()
-                             ?? new List<EnvironmentIdentifier>();
+                               if (dbResult is null)
+                                   return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
 
-                return Result.Success<IList<EnvironmentIdentifier>>(result);
+                               entry.SetDuration(CacheDuration.Medium);
+                               return Result.Success<IList<EnvironmentIdentifier>>(dbResult.ToList());
+                           });
             }
             catch (Exception e)
             {
@@ -84,63 +103,77 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                key = Uri.UnescapeDataString(key ?? string.Empty);
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
+                                                       nameof(GetKeyAutoComplete),
+                                                       identifier,
+                                                       key,
+                                                       range),
+                           async entry =>
+                           {
+                               key = Uri.UnescapeDataString(key ?? string.Empty);
 
-                var environmentKey = await _context.ConfigEnvironments
-                                                   .Where(s => s.Category == identifier.Category &&
-                                                               s.Name == identifier.Name)
-                                                   .Select(env => env.Id)
-                                                   .FirstOrDefaultAsync();
+                               var environmentKey = await _context.ConfigEnvironments
+                                                                  .Where(s => s.Category == identifier.Category &&
+                                                                              s.Name == identifier.Name)
+                                                                  .Select(env => env.Id)
+                                                                  .FirstOrDefaultAsync();
 
-                if (environmentKey == Guid.Empty)
-                    return Result.Error<IList<DtoConfigKeyCompletion>>("no environment found with (" +
-                                                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                                                       $"{nameof(identifier.Name)}: {identifier.Name})",
-                                                                       ErrorCode.NotFound);
+                               if (environmentKey == Guid.Empty)
+                                   return Result.Error<IList<DtoConfigKeyCompletion>>("no environment found with (" +
+                                                                                      $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                                                                      $"{nameof(identifier.Name)}: {identifier.Name})",
+                                                                                      ErrorCode.NotFound);
 
-                // send auto-completion data for all roots
-                if (string.IsNullOrWhiteSpace(key))
-                    return await CreateResult(await _context.FullAutoCompletePaths
-                                                            .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                                        p.ParentId == null)
-                                                            .ToListAsync(),
-                                              range);
+                               // send auto-completion data for all roots
+                               if (string.IsNullOrWhiteSpace(key))
+                                   return await CreateResult(await _context.FullAutoCompletePaths
+                                                                           .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                                                       p.ParentId == null)
+                                                                           .ToListAsync(),
+                                                             range);
 
-                var parts = new Queue<string>(key.Contains('/')
-                                                  ? key.Split('/')
-                                                  : new[] {key});
+                               var parts = new Queue<string>(key.Contains('/')
+                                                                 ? key.Split('/')
+                                                                 : new[] {key});
 
-                var rootPart = parts.Dequeue();
+                               var rootPart = parts.Dequeue();
 
-                // if the user is searching within the roots
-                if (!parts.Any())
-                {
-                    var possibleRoots = await _context.FullAutoCompletePaths
-                                                      .Include(c => c.Children)
-                                                      .ThenInclude(c => c.Children)
-                                                      .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                                  p.ParentId == null &&
-                                                                  p.Path.Contains(rootPart))
-                                                      .ToListAsync();
+                               // if the user is searching within the roots
+                               if (!parts.Any())
+                               {
+                                   var possibleRoots = await _context.FullAutoCompletePaths
+                                                                     .Include(c => c.Children)
+                                                                     .ThenInclude(c => c.Children)
+                                                                     .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                                                 p.ParentId == null &&
+                                                                                 p.Path.Contains(rootPart))
+                                                                     .ToListAsync();
 
-                    return await (possibleRoots.Count == 1 && possibleRoots.First()
-                                                                           .Path
-                                                                           .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
-                                      ? CreateResult(possibleRoots.First().Children, range)
-                                      : CreateResult(possibleRoots, range));
-                }
+                                   return await (possibleRoots.Count == 1 && possibleRoots.First()
+                                                                                          .Path
+                                                                                          .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
+                                                     ? CreateResult(possibleRoots.First().Children, range)
+                                                     : CreateResult(possibleRoots, range));
+                               }
 
-                var root = await _context.FullAutoCompletePaths
-                                         .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                     p.ParentId == null &&
-                                                     p.Path == rootPart)
-                                         .FirstOrDefaultAsync();
+                               var root = await _context.FullAutoCompletePaths
+                                                        .Where(p => p.ConfigEnvironmentId == environmentKey &&
+                                                                    p.ParentId == null &&
+                                                                    p.Path == rootPart)
+                                                        .FirstOrDefaultAsync();
 
-                if (root is null)
-                    return Result.Error<IList<DtoConfigKeyCompletion>>($"key '{key}' is ambiguous, root does not match anything",
-                                                                       ErrorCode.NotFound);
+                               if (root is null)
+                                   return Result.Error<IList<DtoConfigKeyCompletion>>($"key '{key}' is ambiguous, root does not match anything",
+                                                                                      ErrorCode.NotFound);
 
-                return await GetKeyAutoCompleteInternal(root, parts, range);
+                               var result = await GetKeyAutoCompleteInternal(root, parts, range);
+
+                               if (!result.IsError)
+                                   entry.SetDuration(CacheDuration.Medium);
+
+                               return result;
+                           });
             }
             catch (Exception e)
             {
@@ -268,17 +301,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <summary>
         ///     retrieve all direct children for the given paths
         /// </summary>
-        /// <param name="paths"></param>
+        /// <param name="path"></param>
         /// <returns></returns>
-        private async Task CollectChildren(params ConfigEnvironmentKeyPath[] paths)
+        private async Task CollectChildren(ConfigEnvironmentKeyPath path)
         {
-            foreach (var path in paths)
-                path.Children = await _context.AutoCompletePaths
-                                              .Include(p => p.Parent)
-                                              .Include(p => p.ConfigEnvironment)
-                                              .Where(p => p.ParentId == path.Id)
-                                              .OrderBy(p => p.Path)
-                                              .ToListAsync();
+            path.Children = await _context.AutoCompletePaths
+                                          .Include(p => p.Parent)
+                                          .Include(p => p.ConfigEnvironment)
+                                          .Where(p => p.ParentId == path.Id)
+                                          .OrderBy(p => p.Path)
+                                          .ToListAsync();
         }
 
         /// <summary>
@@ -317,6 +349,12 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                               IEnumerable<string> parts,
                                                                                               QueryRange range)
         {
+            var cacheKey = CacheUtilities.MakeCacheKey();
+
+            if (_cache.TryGetValue(cacheKey, out var cachedResult) &&
+                cachedResult is IResult<IList<DtoConfigKeyCompletion>> cachedTypedResult)
+                return cachedTypedResult;
+
             var current = root;
             var result = new List<ConfigEnvironmentKeyPath>();
             var queue = new Queue<string>(parts);
@@ -378,7 +416,13 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 return Result.Error<IList<DtoConfigKeyCompletion>>(logMsg, ErrorCode.NotFound);
             }
 
-            return await CreateResult(result, range);
+            var actualResult = await CreateResult(result, range);
+
+            var entry = _cache.CreateEntry(cacheKey);
+            entry.Value = actualResult;
+            entry.SetDuration(CacheDuration.Medium);
+
+            return actualResult;
         }
 
         /// <summary>
@@ -415,17 +459,27 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                  $"{nameof(identifier.Name)}: {identifier.Name})",
                                                  ErrorCode.NotFound);
 
-                var query = _context.ConfigEnvironmentKeys
-                                    .Where(k => k.ConfigEnvironmentId == envId);
+                var keys = await _cache.GetOrCreateAsync(
+                               CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
+                                                           nameof(GetKeysInternal),
+                                                           identifier,
+                                                           preferExactMatch,
+                                                           range),
+                               async entry =>
+                               {
+                                   var query = _context.ConfigEnvironmentKeys
+                                                       .Where(k => k.ConfigEnvironmentId == envId);
 
-                if (!string.IsNullOrWhiteSpace(filter))
-                    query = query.Where(k => k.Key.StartsWith(filter));
+                                   if (!string.IsNullOrWhiteSpace(filter))
+                                       query = query.Where(k => k.Key.StartsWith(filter));
 
-                var keys = await query.OrderBy(k => k.Key)
-                                      .Skip(range.Offset)
-                                      .Take(range.Length)
-                                      .Select(selector)
-                                      .ToListAsync();
+                                   entry.SetDuration(CacheDuration.Medium);
+                                   return await query.OrderBy(k => k.Key)
+                                                     .Skip(range.Offset)
+                                                     .Take(range.Length)
+                                                     .Select(selector)
+                                                     .ToListAsync();
+                               });
 
                 if (!string.IsNullOrWhiteSpace(preferExactMatch))
                     keys = ApplyPreferredExactFilter(keys, keySelector, preferExactMatch).ToList();
