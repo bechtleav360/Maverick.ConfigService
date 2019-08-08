@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             return entry;
         }
 
-        public static string MakeCacheKey(params object[] items) => $"Mav.CS:{string.Join("", items.Select(i => i.ToString()))}";
+        public static string MakeCacheKey(params object[] items) => $"Mav.CS:{string.Join("", items.Select(i => i?.ToString() ?? string.Empty))}";
     }
 
     /// <summary>
