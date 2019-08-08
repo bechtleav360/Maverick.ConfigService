@@ -462,7 +462,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 var keys = await _cache.GetOrCreateAsync(
                                CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
                                                            nameof(GetKeysInternal),
+                                                           typeof(TItem).FullName,
+                                                           typeof(TResult).FullName,
                                                            identifier,
+                                                           filter,
                                                            preferExactMatch,
                                                            range),
                                async entry =>
