@@ -37,7 +37,7 @@
 
     [Parameter(mandatory=$true)]
     [String]
-    RedisConnectionString
+    $RedisConnectionString
 )
 
 # Formats JSON in a nicer format than the built-in ConvertTo-Json does.
