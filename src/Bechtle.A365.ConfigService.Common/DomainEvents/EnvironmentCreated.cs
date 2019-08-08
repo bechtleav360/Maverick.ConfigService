@@ -22,16 +22,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <inheritdoc cref="EnvironmentIdentifier" />
         public EnvironmentIdentifier Identifier { get; set; }
 
-        public bool Equals(EnvironmentCreated other)
+        public bool Equals(EnvironmentCreated other) => Equals(other, false);
+
+        public static bool operator ==(EnvironmentCreated left, EnvironmentCreated right) => Equals(left, right);
+
+        public static bool operator !=(EnvironmentCreated left, EnvironmentCreated right) => !Equals(left, right);
+
+        public bool Equals(EnvironmentCreated other, bool _)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
             return Equals(Identifier, other.Identifier);
         }
-
-        public static bool operator ==(EnvironmentCreated left, EnvironmentCreated right) => Equals(left, right);
-
-        public static bool operator !=(EnvironmentCreated left, EnvironmentCreated right) => !Equals(left, right);
 
         public override bool Equals(object obj)
         {
@@ -41,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((EnvironmentCreated) obj);
         }
 
-        public override bool Equals(DomainEvent other) => Equals(other as EnvironmentCreated);
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentCreated, strict);
 
         public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;
     }

@@ -64,23 +64,23 @@ namespace Bechtle.A365.ConfigService.Services
                 {
                     var (recordedEvent, @event) = tuple;
 
-                    if (@event.Equals(domainEvent))
+                    if (@event.Equals(domainEvent, false))
                     {
                         // set status and continue processing
                         // status could get more specific than Recorded
                         _logger.LogDebug($"DomainEvent '{domainEvent.EventType}' with same data has been found in ES-Stream");
                         result = EventStatus.Recorded;
-                    }
 
-                    // if projectedEventIds contains the streamed ID, we can assume something
-                    // like the given event has already been projected
-                    if (projectedEventIds.Contains(recordedEvent.EventNumber))
-                    {
-                        // set status and break further stream processing by returning false
-                        // status can't become more specific than Projected
-                        _logger.LogDebug($"DomainEvent '{domainEvent.EventType}' has been projected at '{recordedEvent.EventNumber}'");
-                        result = EventStatus.Projected;
-                        return false;
+                        // if projectedEventIds contains the streamed ID, we can assume something
+                        // like the given event has already been projected
+                        if (projectedEventIds.Contains(recordedEvent.EventNumber))
+                        {
+                            // set status and break further stream processing by returning false
+                            // status can't become more specific than Projected
+                            _logger.LogDebug($"DomainEvent '{domainEvent.EventType}' has been projected at '{recordedEvent.EventNumber}'");
+                            result = EventStatus.Projected;
+                            return false;
+                        }
                     }
 
                     // continue stream-processing

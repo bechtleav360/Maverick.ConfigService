@@ -37,16 +37,22 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public DateTime? ValidTo { get; set; }
 
-        public bool Equals(ConfigurationBuilt other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Equals(Identifier, other.Identifier) && ValidFrom.Equals(other.ValidFrom) && ValidTo.Equals(other.ValidTo);
-        }
+        public bool Equals(ConfigurationBuilt other) => Equals(other, false);
 
         public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
 
         public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
+
+        public bool Equals(ConfigurationBuilt other, bool strict)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return strict
+                       ? Equals(Identifier, other.Identifier)
+                         && ValidFrom.Equals(other.ValidFrom)
+                         && ValidTo.Equals(other.ValidTo)
+                       : Equals(Identifier, other.Identifier);
+        }
 
         public override bool Equals(object obj)
         {
@@ -56,7 +62,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((ConfigurationBuilt) obj);
         }
 
-        public override bool Equals(DomainEvent other) => Equals(other as ConfigurationBuilt);
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other as ConfigurationBuilt, strict);
 
         public override int GetHashCode()
         {

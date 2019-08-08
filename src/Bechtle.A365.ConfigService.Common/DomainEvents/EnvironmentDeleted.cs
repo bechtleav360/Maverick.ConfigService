@@ -22,16 +22,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <inheritdoc cref="EnvironmentIdentifier" />
         public EnvironmentIdentifier Identifier { get; set; }
 
-        public bool Equals(EnvironmentDeleted other)
+        public bool Equals(EnvironmentDeleted other) => Equals(other, false);
+
+        public static bool operator ==(EnvironmentDeleted left, EnvironmentDeleted right) => Equals(left, right);
+
+        public static bool operator !=(EnvironmentDeleted left, EnvironmentDeleted right) => !Equals(left, right);
+
+        public bool Equals(EnvironmentDeleted other, bool _)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
             return Equals(Identifier, other.Identifier);
         }
-
-        public static bool operator ==(EnvironmentDeleted left, EnvironmentDeleted right) => Equals(left, right);
-
-        public static bool operator !=(EnvironmentDeleted left, EnvironmentDeleted right) => !Equals(left, right);
 
         public override bool Equals(object obj)
         {
@@ -41,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((EnvironmentDeleted) obj);
         }
 
-        public override bool Equals(DomainEvent other) => Equals(other as EnvironmentDeleted);
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentDeleted, strict);
 
         public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;
     }
