@@ -7,7 +7,6 @@ using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using EventStore.ClientAPI;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -21,8 +20,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     /// <inheritdoc cref="IEventStore" />
     public class EventStore : IEventStore
     {
-        private const string CacheKeyReplayedEvents = nameof(CacheKeyReplayedEvents);
-        private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
@@ -44,7 +41,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                           ESLogger eventStoreLogger,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer,
-                          IMemoryCache cache,
                           IConfiguration configuration)
         {
             _connectionLock = new object();
@@ -52,7 +48,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             _eventStoreLogger = eventStoreLogger;
             _provider = provider;
             _eventDeserializer = eventDeserializer;
-            _cache = cache;
             _configuration = configuration;
 
             ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
@@ -66,20 +61,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             // connect if we're not already connected
             Connect();
-
-            try
-            {
-                if (_cache.TryGetValue(CacheKeyReplayedEvents, out var cachedEvents))
-                {
-                    _logger.LogDebug("grabbing replayed events from cache");
-                    return (IEnumerable<(RecordedEvent, DomainEvent)>) cachedEvents;
-                }
-            }
-            catch (InvalidCastException)
-            {
-                // if the cached item is somehow not what we expect,
-                // continue as usual and overwrite the cached item
-            }
 
             // readSize must be below 4096
             var readSize = 512;
@@ -112,12 +93,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 currentPosition = slice.NextEventNumber;
                 continueReading = !slice.IsEndOfStream;
             } while (continueReading);
-
-            _cache.Set(CacheKeyReplayedEvents, allEvents, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10.0d),
-                SlidingExpiration = TimeSpan.FromMinutes(1)
-            });
 
             return allEvents;
         }
