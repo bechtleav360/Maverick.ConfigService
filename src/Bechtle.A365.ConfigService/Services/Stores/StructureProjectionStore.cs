@@ -16,9 +16,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     /// <inheritdoc />
     public class StructureProjectionStore : IStructureProjectionStore
     {
+        private readonly IMemoryCache _cache;
         private readonly ProjectionStoreContext _context;
         private readonly ILogger<StructureProjectionStore> _logger;
-        private readonly IMemoryCache _cache;
 
         /// <inheritdoc />
         public StructureProjectionStore(ProjectionStoreContext context,

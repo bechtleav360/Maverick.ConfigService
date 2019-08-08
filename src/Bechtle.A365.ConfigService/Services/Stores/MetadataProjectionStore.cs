@@ -15,8 +15,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     /// <inheritdoc />
     public class MetadataProjectionStore : IMetadataProjectionStore
     {
-        private readonly ProjectionStoreContext _context;
         private readonly IMemoryCache _cache;
+        private readonly ProjectionStoreContext _context;
         private readonly ILogger _logger;
 
         /// <inheritdoc />
