@@ -5,7 +5,9 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
@@ -14,14 +16,17 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     public class MetadataProjectionStore : IMetadataProjectionStore
     {
         private readonly ProjectionStoreContext _context;
+        private readonly IMemoryCache _cache;
         private readonly ILogger _logger;
 
         /// <inheritdoc />
         public MetadataProjectionStore(ILogger<MetadataProjectionStore> logger,
-                                       ProjectionStoreContext context)
+                                       ProjectionStoreContext context,
+                                       IMemoryCache cache)
         {
             _logger = logger;
             _context = context;
+            _cache = cache;
         }
 
         /// <inheritdoc />
@@ -29,12 +34,20 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var items = await _context.ProjectedEventMetadata
-                                          .OrderBy(m => m.Index)
-                                          .ToListAsync()
-                            ?? new List<ProjectedEventMetadata>();
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(MetadataProjectionStore),
+                                                       nameof(GetProjectedEventMetadata)),
+                           async entry =>
+                           {
+                               var items = await _context.ProjectedEventMetadata
+                                                         .OrderBy(m => m.Index)
+                                                         .ToListAsync();
 
-                return Result.Success((IList<ProjectedEventMetadata>) items);
+                               if (!(items is null))
+                                   entry.SetDuration(CacheDuration.Tiny);
+
+                               return Result.Success((IList<ProjectedEventMetadata>) items ?? new List<ProjectedEventMetadata>());
+                           });
             }
             catch (Exception e)
             {
@@ -44,17 +57,27 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata(Expression<Func<ProjectedEventMetadata, bool>> filter)
+        public async Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata(Expression<Func<ProjectedEventMetadata, bool>> filter,
+                                                                                            string filterName)
         {
             try
             {
-                var items = await _context.ProjectedEventMetadata
-                                          .Where(filter)
-                                          .OrderBy(m => m.Index)
-                                          .ToListAsync()
-                            ?? new List<ProjectedEventMetadata>();
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(IMetadataProjectionStore),
+                                                       nameof(GetProjectedEventMetadata),
+                                                       filterName),
+                           async entry =>
+                           {
+                               var items = await _context.ProjectedEventMetadata
+                                                         .Where(filter)
+                                                         .OrderBy(m => m.Index)
+                                                         .ToListAsync();
 
-                return Result.Success((IList<ProjectedEventMetadata>) items);
+                               if (!(items is null))
+                                   entry.SetDuration(CacheDuration.Tiny);
+
+                               return Result.Success((IList<ProjectedEventMetadata>) items ?? new List<ProjectedEventMetadata>());
+                           });
             }
             catch (Exception e)
             {

@@ -42,7 +42,8 @@ namespace Bechtle.A365.ConfigService.Services
         {
             // get the list of events that have already been projected to DB
             // filter out those that don't have the same Type, they can't be what we search
-            var metadataResult = await _projectionStore.Metadata.GetProjectedEventMetadata(p => p.Type == domainEvent.EventType);
+            var metadataResult = await _projectionStore.Metadata.GetProjectedEventMetadata(p => p.Type == domainEvent.EventType,
+                                                                                           "Event=" + domainEvent.EventType);
             if (metadataResult.IsError)
             {
                 _logger.LogWarning($"could not retrieve metadata for event of type '{domainEvent.EventType}'");

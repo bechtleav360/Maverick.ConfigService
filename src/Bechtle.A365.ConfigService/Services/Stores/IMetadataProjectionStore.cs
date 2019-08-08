@@ -22,7 +22,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         ///     get a list of metadata objects for the already projected domain-events
         /// </summary>
         /// <param name="filter">filter applied to all items</param>
+        /// <param name="filterName">unique filter-name, used to cache the results</param>
         /// <returns></returns>
-        Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata(Expression<Func<ProjectedEventMetadata, bool>> filter);
+        Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata(Expression<Func<ProjectedEventMetadata, bool>> filter, string filterName);
     }
 }
