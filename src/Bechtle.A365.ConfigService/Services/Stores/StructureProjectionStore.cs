@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
@@ -16,12 +18,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     {
         private readonly ProjectionStoreContext _context;
         private readonly ILogger<StructureProjectionStore> _logger;
+        private readonly IMemoryCache _cache;
 
         /// <inheritdoc />
-        public StructureProjectionStore(ProjectionStoreContext context, ILogger<StructureProjectionStore> logger)
+        public StructureProjectionStore(ProjectionStoreContext context,
+                                        ILogger<StructureProjectionStore> logger,
+                                        IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
+            _cache = cache;
         }
 
         /// <inheritdoc />
@@ -29,18 +35,27 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var dbResult = await _context.Structures
-                                             .OrderBy(s => s.Name)
-                                             .ThenByDescending(s => s.Version)
-                                             .Skip(range.Offset)
-                                             .Take(range.Length)
-                                             .Select(s => new StructureIdentifier(s.Name, s.Version))
-                                             .ToListAsync();
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(StructureProjectionStore),
+                                                       nameof(GetAvailable),
+                                                       range),
+                           async entry =>
+                           {
+                               var dbResult = await _context.Structures
+                                                            .OrderBy(s => s.Name)
+                                                            .ThenByDescending(s => s.Version)
+                                                            .Skip(range.Offset)
+                                                            .Take(range.Length)
+                                                            .Select(s => new StructureIdentifier(s.Name, s.Version))
+                                                            .ToListAsync();
 
-                var result = dbResult?.ToList()
-                             ?? new List<StructureIdentifier>();
+                               if (dbResult is null)
+                                   return Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier>());
 
-                return Result.Success<IList<StructureIdentifier>>(result);
+                               entry.SetDuration(CacheDuration.Medium);
+
+                               return Result.Success<IList<StructureIdentifier>>(dbResult.ToList());
+                           });
             }
             catch (Exception e)
             {
@@ -54,19 +69,27 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var dbResult = await _context.Structures
-                                             .Where(s => s.Name == name)
-                                             .OrderBy(s => s.Name)
-                                             .ThenByDescending(s => s.Version)
-                                             .Skip(range.Offset)
-                                             .Take(range.Length)
-                                             .ToListAsync();
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(StructureProjectionStore),
+                                                       nameof(GetAvailableVersions),
+                                                       name,
+                                                       range),
+                           async entry =>
+                           {
+                               var dbResult = await _context.Structures
+                                                            .Where(s => s.Name == name)
+                                                            .OrderBy(s => s.Name)
+                                                            .ThenByDescending(s => s.Version)
+                                                            .Skip(range.Offset)
+                                                            .Take(range.Length)
+                                                            .ToListAsync();
 
-                var result = dbResult?.Select(s => s.Version)
-                                     .ToList()
-                             ?? new List<int>();
+                               if (dbResult is null)
+                                   return Result.Success<IList<int>>(new List<int>());
 
-                return Result.Success<IList<int>>(result);
+                               entry.SetDuration(CacheDuration.Medium);
+                               return Result.Success<IList<int>>(dbResult.Select(s => s.Version).ToList());
+                           });
             }
             catch (Exception e)
             {
@@ -80,26 +103,36 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var dbResult = await _context.FullStructures
-                                             .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
-                                                                       s.Version == identifier.Version);
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(
+                               nameof(StructureProjectionStore),
+                               nameof(GetKeys),
+                               identifier,
+                               range),
+                           async entry =>
+                           {
+                               var dbResult = await _context.FullStructures
+                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
+                                                                                      s.Version == identifier.Version);
 
-                if (dbResult is null)
-                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
-                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
-                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
-                                                                     ")",
-                                                                     ErrorCode.NotFound);
+                               if (dbResult is null)
+                                   return Result.Error<IDictionary<string, string>>("no structure found with (" +
+                                                                                    $"{nameof(identifier.Name)}: {identifier.Name}; " +
+                                                                                    $"{nameof(identifier.Version)}: {identifier.Version}" +
+                                                                                    ")",
+                                                                                    ErrorCode.NotFound);
 
-                var result = dbResult.Keys
-                                     .OrderBy(k => k.Key)
-                                     .Skip(range.Offset)
-                                     .Take(range.Length)
-                                     .ToImmutableSortedDictionary(k => k.Key,
-                                                                  k => k.Value,
-                                                                  StringComparer.OrdinalIgnoreCase);
+                               var result = dbResult.Keys
+                                                    .OrderBy(k => k.Key)
+                                                    .Skip(range.Offset)
+                                                    .Take(range.Length)
+                                                    .ToImmutableSortedDictionary(k => k.Key,
+                                                                                 k => k.Value,
+                                                                                 StringComparer.OrdinalIgnoreCase);
 
-                return Result.Success<IDictionary<string, string>>(result);
+                               entry.SetDuration(CacheDuration.Medium);
+                               return Result.Success<IDictionary<string, string>>(result);
+                           });
             }
             catch (Exception e)
             {
@@ -118,26 +151,35 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var dbResult = await _context.FullStructures
-                                             .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
-                                                                       s.Version == identifier.Version);
+                return await _cache.GetOrCreateAsync(
+                           CacheUtilities.MakeCacheKey(nameof(StructureProjectionStore),
+                                                       nameof(GetVariables),
+                                                       identifier,
+                                                       range),
+                           async entry =>
+                           {
+                               var dbResult = await _context.FullStructures
+                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
+                                                                                      s.Version == identifier.Version);
 
-                if (dbResult is null)
-                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
-                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
-                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
-                                                                     ")",
-                                                                     ErrorCode.NotFound);
+                               if (dbResult is null)
+                                   return Result.Error<IDictionary<string, string>>("no structure found with (" +
+                                                                                    $"{nameof(identifier.Name)}: {identifier.Name}; " +
+                                                                                    $"{nameof(identifier.Version)}: {identifier.Version}" +
+                                                                                    ")",
+                                                                                    ErrorCode.NotFound);
 
-                var result = dbResult.Variables
-                                     .OrderBy(v => v.Key)
-                                     .Skip(range.Offset)
-                                     .Take(range.Length)
-                                     .ToImmutableSortedDictionary(k => k.Key,
-                                                                  k => k.Value,
-                                                                  StringComparer.OrdinalIgnoreCase);
+                               var result = dbResult.Variables
+                                                    .OrderBy(v => v.Key)
+                                                    .Skip(range.Offset)
+                                                    .Take(range.Length)
+                                                    .ToImmutableSortedDictionary(k => k.Key,
+                                                                                 k => k.Value,
+                                                                                 StringComparer.OrdinalIgnoreCase);
 
-                return Result.Success<IDictionary<string, string>>(result);
+                               entry.SetDuration(CacheDuration.Short);
+                               return Result.Success<IDictionary<string, string>>(result);
+                           });
             }
             catch (Exception e)
             {
