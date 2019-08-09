@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             switch (duration)
             {
                 case CacheDuration.None:
-                    return entry.SetDuration(TimeSpan.Zero, TimeSpan.Zero);
+                    return entry.SetDuration(null, null);
 
                 case CacheDuration.Tiny:
                     return entry.SetDuration(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1));
@@ -28,11 +28,13 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                     return entry.SetDuration(TimeSpan.FromSeconds(240), TimeSpan.FromSeconds(60));
 
                 default:
-                    return entry.SetDuration(TimeSpan.Zero, TimeSpan.Zero);
+                    return entry.SetDuration(null, null);
             }
         }
 
-        private static ICacheEntry SetDuration(this ICacheEntry entry, TimeSpan absoluteRelativeToNow, TimeSpan sliding)
+        private static ICacheEntry SetDuration(this ICacheEntry entry,
+                                               TimeSpan? absoluteRelativeToNow,
+                                               TimeSpan? sliding)
         {
             entry.AbsoluteExpirationRelativeToNow = absoluteRelativeToNow;
             entry.SlidingExpiration = sliding;
