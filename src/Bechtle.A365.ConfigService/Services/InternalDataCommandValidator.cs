@@ -313,8 +313,8 @@ namespace Bechtle.A365.ConfigService.Services
             if (string.IsNullOrWhiteSpace(key))
                 return Result.Error("invalid data: key is null / empty", ErrorCode.ValidationFailed);
 
-            if (string.IsNullOrWhiteSpace(value))
-                return Result.Error("invalid data: value is null / empty", ErrorCode.ValidationFailed);
+            if (value is null)
+                return Result.Error($"invalid data: value of '{key}' is null", ErrorCode.ValidationFailed);
 
             return Result.Success();
         }
