@@ -57,10 +57,8 @@ namespace Bechtle.A365.ConfigService.Services
             if (action is null)
                 return Result.Error("invalid data: action is null", ErrorCode.ValidationFailed);
 
-
             if (string.IsNullOrWhiteSpace(action.Key))
                 return Result.Error("invalid data: no key defined", ErrorCode.ValidationFailed);
-
 
             switch (action.Type)
             {
@@ -71,10 +69,6 @@ namespace Bechtle.A365.ConfigService.Services
                 default:
                     return Result.Error($"invalid data: invalid Type {action.Type:D} / '{action.Type:G}'; key='{action.Key}'", ErrorCode.ValidationFailed);
             }
-
-            if (action.Value is null)
-                return Result.Error($"invalid data: value is null; key='{action.Key}'", ErrorCode.ValidationFailed);
-
 
             return Result.Success();
         }
@@ -126,7 +120,6 @@ namespace Bechtle.A365.ConfigService.Services
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
 
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -138,7 +131,6 @@ namespace Bechtle.A365.ConfigService.Services
         {
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
 
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -152,7 +144,6 @@ namespace Bechtle.A365.ConfigService.Services
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
 
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -165,7 +156,6 @@ namespace Bechtle.A365.ConfigService.Services
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
 
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -177,7 +167,6 @@ namespace Bechtle.A365.ConfigService.Services
         {
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
 
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -195,7 +184,6 @@ namespace Bechtle.A365.ConfigService.Services
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
 
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -211,7 +199,6 @@ namespace Bechtle.A365.ConfigService.Services
         {
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
 
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -233,7 +220,6 @@ namespace Bechtle.A365.ConfigService.Services
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
 
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -245,7 +231,6 @@ namespace Bechtle.A365.ConfigService.Services
         {
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
 
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -328,10 +313,8 @@ namespace Bechtle.A365.ConfigService.Services
             if (string.IsNullOrWhiteSpace(key))
                 return Result.Error("invalid data: key is null / empty", ErrorCode.ValidationFailed);
 
-
             if (string.IsNullOrWhiteSpace(value))
                 return Result.Error("invalid data: value is null / empty", ErrorCode.ValidationFailed);
-
 
             return Result.Success();
         }
