@@ -6,6 +6,8 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
 {
     public static class CacheUtilities
     {
+        public static string MakeCacheKey(params object[] items) => $"Mav.CS:{string.Join("", items.Select(i => i?.ToString() ?? string.Empty))}";
+
         public static ICacheEntry SetDuration(this ICacheEntry entry, CacheDuration duration)
         {
             if (entry is null)
@@ -13,25 +15,28 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
 
             switch (duration)
             {
+                case CacheDuration.None:
+                    return entry.SetDuration(TimeSpan.Zero, TimeSpan.Zero);
+
                 case CacheDuration.Tiny:
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(5);
-                    entry.SlidingExpiration = TimeSpan.FromSeconds(1);
-                    break;
+                    return entry.SetDuration(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1));
 
                 case CacheDuration.Short:
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
-                    entry.SlidingExpiration = TimeSpan.FromSeconds(10);
-                    break;
+                    return entry.SetDuration(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(10));
 
                 case CacheDuration.Medium:
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(240);
-                    entry.SlidingExpiration = TimeSpan.FromSeconds(60);
-                    break;
-            }
+                    return entry.SetDuration(TimeSpan.FromSeconds(240), TimeSpan.FromSeconds(60));
 
-            return entry;
+                default:
+                    return entry.SetDuration(TimeSpan.Zero, TimeSpan.Zero);
+            }
         }
 
-        public static string MakeCacheKey(params object[] items) => $"Mav.CS:{string.Join("", items.Select(i => i?.ToString() ?? string.Empty))}";
+        private static ICacheEntry SetDuration(this ICacheEntry entry, TimeSpan absoluteRelativeToNow, TimeSpan sliding)
+        {
+            entry.AbsoluteExpirationRelativeToNow = absoluteRelativeToNow;
+            entry.SlidingExpiration = sliding;
+            return entry;
+        }
     }
 }

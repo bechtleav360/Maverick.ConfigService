@@ -6,6 +6,11 @@
     public enum CacheDuration
     {
         /// <summary>
+        ///     item should not be cached at all (for failed actions)
+        /// </summary>
+        None,
+
+        /// <summary>
         ///     item should be cached for a few subsequent requests (up to 5s)
         /// </summary>
         Tiny,

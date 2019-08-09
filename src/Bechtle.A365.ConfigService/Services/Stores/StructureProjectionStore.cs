@@ -50,7 +50,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                             .ToListAsync();
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier>());
+                               }
 
                                entry.SetDuration(CacheDuration.Medium);
 
@@ -85,7 +88,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                             .ToListAsync();
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Success<IList<int>>(new List<int>());
+                               }
 
                                entry.SetDuration(CacheDuration.Medium);
                                return Result.Success<IList<int>>(dbResult.Select(s => s.Version).ToList());
@@ -116,11 +122,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                       s.Version == identifier.Version);
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
                                                                                     ")",
                                                                                     ErrorCode.NotFound);
+                               }
 
                                var result = dbResult.Keys
                                                     .OrderBy(k => k.Key)
@@ -163,11 +172,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                       s.Version == identifier.Version);
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
                                                                                     ")",
                                                                                     ErrorCode.NotFound);
+                               }
 
                                var result = dbResult.Variables
                                                     .OrderBy(v => v.Key)

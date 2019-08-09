@@ -60,8 +60,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
 
-                               if (!(identifiers is null))
-                                   entry.SetDuration(CacheDuration.Medium);
+                               entry.SetDuration(identifiers is null
+                                                     ? CacheDuration.None
+                                                     : CacheDuration.Medium);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
                            });
@@ -102,8 +103,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                var result = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
 
-                               if (!(result is null))
-                                   entry.SetDuration(CacheDuration.Medium);
+                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(result ?? new List<ConfigurationIdentifier>());
                            });
@@ -144,8 +144,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                var result = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
 
-                               if (!(result is null))
-                                   entry.SetDuration(CacheDuration.Medium);
+                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(result ?? new List<ConfigurationIdentifier>());
                            });
@@ -186,7 +185,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                             .FirstOrDefaultAsync();
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<JToken>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                               }
 
                                try
                                {
@@ -241,7 +243,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                       c.Structure.Version == identifier.Structure.Version);
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<IDictionary<string, string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                               }
 
                                var result = dbResult.Keys
                                                     .OrderBy(k => k.Key)
@@ -289,8 +294,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
 
-                               if (!(identifiers is null))
-                                   entry.SetDuration(CacheDuration.Medium);
+                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
                            });
@@ -332,7 +336,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                       c.Structure.Version == identifier.Structure.Version);
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                               }
 
                                var result = dbResult.UsedConfigurationKeys
                                                     .OrderBy(k => k.Key)
@@ -381,7 +388,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                       c.Structure.Version == identifier.Structure.Version);
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                               }
 
                                var result = dbResult.Version.ToString();
 

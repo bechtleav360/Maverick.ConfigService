@@ -50,7 +50,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                             .ToListAsync();
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
+                               }
 
                                entry.SetDuration(CacheDuration.Medium);
 
@@ -83,7 +86,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                             .ToListAsync();
 
                                if (dbResult is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
+                               }
 
                                entry.SetDuration(CacheDuration.Medium);
                                return Result.Success<IList<EnvironmentIdentifier>>(dbResult.ToList());
@@ -120,18 +126,24 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                   .FirstOrDefaultAsync();
 
                                if (environmentKey == Guid.Empty)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<IList<DtoConfigKeyCompletion>>("no environment found with (" +
                                                                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
                                                                                       $"{nameof(identifier.Name)}: {identifier.Name})",
                                                                                       ErrorCode.NotFound);
+                               }
 
                                // send auto-completion data for all roots
                                if (string.IsNullOrWhiteSpace(key))
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return await CreateResult(await _context.FullAutoCompletePaths
                                                                            .Where(p => p.ConfigEnvironmentId == environmentKey &&
                                                                                        p.ParentId == null)
                                                                            .ToListAsync(),
                                                              range);
+                               }
 
                                var parts = new Queue<string>(key.Contains('/')
                                                                  ? key.Split('/')
@@ -150,6 +162,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                  p.Path.Contains(rootPart))
                                                                      .ToListAsync();
 
+                                   entry.SetDuration(CacheDuration.Medium);
+
                                    return await (possibleRoots.Count == 1 && possibleRoots.First()
                                                                                           .Path
                                                                                           .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
@@ -164,8 +178,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                         .FirstOrDefaultAsync();
 
                                if (root is null)
+                               {
+                                   entry.SetDuration(CacheDuration.None);
                                    return Result.Error<IList<DtoConfigKeyCompletion>>($"key '{key}' is ambiguous, root does not match anything",
                                                                                       ErrorCode.NotFound);
+                               }
 
                                var result = await GetKeyAutoCompleteInternal(root, parts, range);
 
