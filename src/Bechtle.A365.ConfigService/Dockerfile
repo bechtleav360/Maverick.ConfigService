@@ -4,7 +4,10 @@ COPY devrootca.crt /usr/local/share/ca-certificates
 RUN update-ca-certificates
 WORKDIR /app
 EXPOSE 8456
-CMD dotnet Bechtle.A365.ConfigService.dll
+RUN apt-get update && apt-get -y install curl && apt-get -y install jq
+RUN sed -i 's/\r$//' startup.sh && chmod +x startup.sh
+
+ENTRYPOINT sh startup.sh
 
 
 
