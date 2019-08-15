@@ -57,10 +57,10 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
 
             entry.AbsoluteExpirationRelativeToNow = absoluteRelativeToNow < MinimumAbsoluteTimeSpan
                                                         ? MinimumAbsoluteTimeSpan
-                                                        : absoluteRelativeToNow;
+                                                        : absoluteRelativeToNow ?? MinimumAbsoluteTimeSpan;
             entry.SlidingExpiration = sliding < MinimumAbsoluteTimeSpan
                                           ? MinimumAbsoluteTimeSpan
-                                          : sliding;
+                                          : sliding ?? MinimumAbsoluteTimeSpan;
 
             return entry;
         }
