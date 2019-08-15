@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
@@ -17,17 +18,20 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     public class StructureProjectionStore : IStructureProjectionStore
     {
         private readonly IMemoryCache _cache;
+        private readonly IConfiguration _configuration;
         private readonly ProjectionStoreContext _context;
         private readonly ILogger<StructureProjectionStore> _logger;
 
         /// <inheritdoc />
         public StructureProjectionStore(ProjectionStoreContext context,
                                         ILogger<StructureProjectionStore> logger,
-                                        IMemoryCache cache)
+                                        IMemoryCache cache,
+                                        IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
             _cache = cache;
+            _configuration = configuration;
         }
 
         /// <inheritdoc />
@@ -51,11 +55,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None);
+                                   entry.SetDuration(CacheDuration.None, _configuration);
                                    return Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier>());
                                }
 
-                               entry.SetDuration(CacheDuration.Medium);
+                               entry.SetDuration(CacheDuration.Medium, _configuration);
 
                                return Result.Success<IList<StructureIdentifier>>(dbResult.ToList());
                            });
@@ -89,11 +93,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None);
+                                   entry.SetDuration(CacheDuration.None, _configuration);
                                    return Result.Success<IList<int>>(new List<int>());
                                }
 
-                               entry.SetDuration(CacheDuration.Medium);
+                               entry.SetDuration(CacheDuration.Medium, _configuration);
                                return Result.Success<IList<int>>(dbResult.Select(s => s.Version).ToList());
                            });
             }
@@ -123,7 +127,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None);
+                                   entry.SetDuration(CacheDuration.None, _configuration);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
@@ -139,7 +143,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                  k => k.Value,
                                                                                  StringComparer.OrdinalIgnoreCase);
 
-                               entry.SetDuration(CacheDuration.Medium);
+                               entry.SetDuration(CacheDuration.Medium, _configuration);
                                return Result.Success<IDictionary<string, string>>(result);
                            });
             }
@@ -173,7 +177,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None);
+                                   entry.SetDuration(CacheDuration.None, _configuration);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
@@ -189,7 +193,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                  k => k.Value,
                                                                                  StringComparer.OrdinalIgnoreCase);
 
-                               entry.SetDuration(CacheDuration.Short);
+                               entry.SetDuration(CacheDuration.Short, _configuration);
                                return Result.Success<IDictionary<string, string>>(result);
                            });
             }

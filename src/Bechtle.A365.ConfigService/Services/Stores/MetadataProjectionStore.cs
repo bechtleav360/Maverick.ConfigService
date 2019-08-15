@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
@@ -16,17 +17,20 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     public class MetadataProjectionStore : IMetadataProjectionStore
     {
         private readonly IMemoryCache _cache;
+        private readonly IConfiguration _configuration;
         private readonly ProjectionStoreContext _context;
         private readonly ILogger _logger;
 
         /// <inheritdoc />
         public MetadataProjectionStore(ILogger<MetadataProjectionStore> logger,
                                        ProjectionStoreContext context,
-                                       IMemoryCache cache)
+                                       IMemoryCache cache,
+                                       IConfiguration configuration)
         {
             _logger = logger;
             _context = context;
             _cache = cache;
+            _configuration = configuration;
         }
 
         /// <inheritdoc />
@@ -44,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                          .ToListAsync();
 
                                if (!(items is null))
-                                   entry.SetDuration(CacheDuration.Tiny);
+                                   entry.SetDuration(CacheDuration.Tiny, _configuration);
 
                                return Result.Success((IList<ProjectedEventMetadata>) items ?? new List<ProjectedEventMetadata>());
                            });
@@ -74,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                          .ToListAsync();
 
                                if (!(items is null))
-                                   entry.SetDuration(CacheDuration.Tiny);
+                                   entry.SetDuration(CacheDuration.Tiny, _configuration);
 
                                return Result.Success((IList<ProjectedEventMetadata>) items ?? new List<ProjectedEventMetadata>());
                            });
