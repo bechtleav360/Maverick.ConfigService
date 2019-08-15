@@ -20,12 +20,12 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             var factor = configuration?.GetSection("MemoryCache:Local:Factor").Get<double>() ?? 0;
 
             if (!useCache)
-                return entry.SetDuration(null, null, factor);
+                return entry.SetDuration(null, null);
 
             switch (duration)
             {
                 case CacheDuration.None:
-                    return entry.SetDuration(null, null, factor);
+                    return entry.SetDuration(null, null);
 
                 case CacheDuration.Tiny:
                     return entry.SetDuration(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), factor);
@@ -37,14 +37,14 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                     return entry.SetDuration(TimeSpan.FromSeconds(240), TimeSpan.FromSeconds(60), factor);
 
                 default:
-                    return entry.SetDuration(null, null, factor);
+                    return entry.SetDuration(null, null);
             }
         }
 
         private static ICacheEntry SetDuration(this ICacheEntry entry,
                                                TimeSpan? absoluteRelativeToNow,
                                                TimeSpan? sliding,
-                                               double factor)
+                                               double factor = 1.0d)
         {
             if (factor < 0)
             {
