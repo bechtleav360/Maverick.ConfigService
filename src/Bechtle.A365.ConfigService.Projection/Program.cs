@@ -105,12 +105,12 @@ namespace Bechtle.A365.ConfigService.Projection
                             switch (settings.Backend)
                             {
                                 case DbBackend.MsSql:
-                                    logger.LogInformation("using MsSql database-backend");
+                                    logger.LogDebug("using MsSql database-backend");
                                     builder.UseSqlServer(settings.ConnectionString);
                                     break;
 
                                 case DbBackend.Postgres:
-                                    logger.LogInformation("using PostgreSql database-backend");
+                                    logger.LogDebug("using PostgreSql database-backend");
                                     builder.UseNpgsql(settings.ConnectionString);
                                     break;
 
