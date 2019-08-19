@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -23,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class EnvironmentController : ControllerBase
     {
         private readonly IEventHistoryService _eventHistory;
+        private readonly IMetrics _metrics;
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
@@ -35,13 +37,15 @@ namespace Bechtle.A365.ConfigService.Controllers
                                      IEventStore eventStore,
                                      IJsonTranslator translator,
                                      IEnumerable<ICommandValidator> validators,
-                                     IEventHistoryService eventHistory)
+                                     IEventHistoryService eventHistory,
+                                     IMetrics metrics)
             : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
             _eventHistory = eventHistory;
+            _metrics = metrics;
             _validators = validators.ToArray();
         }
 
@@ -70,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (envErrors.Any())
                     return BadRequest(envErrors.Values.SelectMany(_ => _));
 
-                await envObj.Save(_eventStore, _eventHistory, Logger);
+                await envObj.Save(_eventStore, _eventHistory, Logger, _metrics);
 
                 // create requested environment
                 var configObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
@@ -80,7 +84,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (configErrors.Any())
                     return BadRequest(configErrors.Values.SelectMany(_ => _));
 
-                await configObj.Save(_eventStore, _eventHistory, Logger);
+                await configObj.Save(_eventStore, _eventHistory, Logger, _metrics);
 
                 return AcceptedAtAction(nameof(GetKeys),
                                         RouteUtilities.ControllerName<EnvironmentController>(),
@@ -88,6 +92,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
+                _metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
                 Logger.LogError(e, $"failed to add new environment at ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to add new environment");
             }
@@ -126,7 +131,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore, _eventHistory, Logger);
+                await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
 
                 return AcceptedAtAction(nameof(GetKeys),
                                         RouteUtilities.ControllerName<EnvironmentController>(),
@@ -134,6 +139,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
             catch (Exception e)
             {
+                _metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
                 Logger.LogError(e, $"failed to delete keys from Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed delete update keys");
             }
@@ -293,7 +299,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore, _eventHistory, Logger);
+                await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
 
                 return AcceptedAtAction(nameof(GetKeys),
                                         RouteUtilities.ControllerName<EnvironmentController>(),

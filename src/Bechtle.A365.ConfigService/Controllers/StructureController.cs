@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -23,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class StructureController : ControllerBase
     {
         private readonly IEventHistoryService _eventHistory;
+        private readonly IMetrics _metrics;
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
@@ -35,13 +37,15 @@ namespace Bechtle.A365.ConfigService.Controllers
                                    IEventStore eventStore,
                                    IJsonTranslator translator,
                                    IEnumerable<ICommandValidator> validators,
-                                   IEventHistoryService eventHistory)
+                                   IEventHistoryService eventHistory,
+                                   IMetrics metrics)
             : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
             _eventHistory = eventHistory;
+            _metrics = metrics;
             _validators = validators.ToArray();
         }
 
@@ -83,7 +87,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore, _eventHistory, Logger);
+                await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
 
                 return AcceptedAtAction(nameof(GetStructureKeys),
                                         RouteUtilities.ControllerName<StructureController>(),
@@ -314,7 +318,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore, _eventHistory, Logger);
+                await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
 
                 return AcceptedAtAction(nameof(GetVariables),
                                         RouteUtilities.ControllerName<StructureController>(),
@@ -363,7 +367,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (errors.Any())
                     return BadRequest(errors.Values.SelectMany(_ => _));
 
-                await domainObj.Save(_eventStore, _eventHistory, Logger);
+                await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
 
                 return AcceptedAtAction(nameof(GetVariables),
                                         RouteUtilities.ControllerName<StructureController>(),

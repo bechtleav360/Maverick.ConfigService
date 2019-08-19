@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
@@ -15,6 +16,7 @@ namespace Bechtle.A365.ConfigService.Services
     public class DataImporter : IDataImporter
     {
         private readonly IEventHistoryService _eventHistory;
+        private readonly IMetrics _metrics;
         private readonly ILogger _logger;
         private readonly IEventStore _store;
         private readonly ICommandValidator[] _validators;
@@ -23,11 +25,13 @@ namespace Bechtle.A365.ConfigService.Services
         public DataImporter(ILogger<DataImporter> logger,
                             IEventStore store,
                             IEnumerable<ICommandValidator> validators,
-                            IEventHistoryService eventHistory)
+                            IEventHistoryService eventHistory,
+                            IMetrics metrics)
         {
             _logger = logger;
             _store = store;
             _eventHistory = eventHistory;
+            _metrics = metrics;
             _validators = validators.ToArray();
         }
 
@@ -60,7 +64,7 @@ namespace Bechtle.A365.ConfigService.Services
                     return Result.Error($"data-validation failed; {errorMessages}", ErrorCode.ValidationFailed);
                 }
 
-                await domainObj.Save(_store, _eventHistory, _logger);
+                await domainObj.Save(_store, _eventHistory, _logger, _metrics);
             }
 
             return Result.Success();

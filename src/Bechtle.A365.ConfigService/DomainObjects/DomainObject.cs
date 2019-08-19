@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services;
@@ -32,7 +33,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <param name="store"></param>
         /// <param name="eventHistory"></param>
         /// <param name="logger"></param>
-        public virtual async Task Save(IEventStore store, IEventHistoryService eventHistory, ILogger logger)
+        /// <param name="metrics"></param>
+        public virtual async Task Save(IEventStore store,
+                                       IEventHistoryService eventHistory,
+                                       ILogger logger,
+                                       IMetrics metrics)
         {
             foreach (var @event in RecordedEvents)
             {
@@ -52,11 +57,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     case EventStatus.Recorded:
                         logger?.LogInformation($"pretending to save DomainEvent '{@event.EventType}', " +
                                                "but same event has already been recorded without being projected");
+                        metrics.Measure.Counter.Increment(KnownMetrics.EventsWrittenPrevented, @event.EventType);
                         break;
 
                     case EventStatus.Projected:
                         logger?.LogInformation($"pretending to save DomainEvent '{@event.EventType}', " +
                                                "but same event has already been projected without being superseded");
+                        metrics.Measure.Counter.Increment(KnownMetrics.EventsWrittenPrevented, @event.EventType);
                         break;
 
                     case EventStatus.Superseded:

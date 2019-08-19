@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -21,6 +22,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     public class EventStore : IEventStore
     {
         private readonly IConfiguration _configuration;
+        private readonly IMetrics _metrics;
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly ESLogger _eventStoreLogger;
@@ -35,13 +37,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>
         /// <param name="eventDeserializer"></param>
-        /// <param name="cache"></param>
         /// <param name="configuration"></param>
+        /// <param name="metrics"></param>
         public EventStore(ILogger<EventStore> logger,
                           ESLogger eventStoreLogger,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer,
-                          IConfiguration configuration)
+                          IConfiguration configuration,
+                          IMetrics metrics)
         {
             _connectionLock = new object();
             _logger = logger;
@@ -49,6 +52,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             _provider = provider;
             _eventDeserializer = eventDeserializer;
             _configuration = configuration;
+            _metrics = metrics;
 
             ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
         }
@@ -82,6 +86,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                 _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
 
+                _metrics.Measure.Counter.Increment(KnownMetrics.EventsRead, slice.Events.Length);
+
                 allEvents.AddRange(
                     slice.Events
                          .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
@@ -93,6 +99,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 currentPosition = slice.NextEventNumber;
                 continueReading = !slice.IsEndOfStream;
             } while (continueReading);
+
+            _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, allEvents.Count);
 
             return allEvents;
         }
@@ -135,6 +143,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 _logger.LogDebug($"read '{slice.Events.Length}' events " +
                                  $"{slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber} {direction}");
 
+                _metrics.Measure.Counter.Increment(KnownMetrics.EventsRead, slice.Events.Length);
+
                 // send events to streamProcessor
                 // return from function if we receive 'false' or if streamProcessor is empty
                 if (slice.Events
@@ -144,7 +154,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                           : (RecordedEvent: e.Event, Success: false, DomainEvent: null))
                          .Where(t => t.Success)
                          .Select(t => (t.RecordedEvent, t.DomainEvent))
-                         .Any(eventTuple => !streamProcessor.Invoke(eventTuple)))
+                         .Any(eventTuple =>
+                         {
+                             _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, eventTuple.DomainEvent.EventType);
+                             return !streamProcessor.Invoke(eventTuple);
+                         }))
                     return;
 
                 currentPosition = slice.NextEventNumber;
@@ -178,6 +192,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.Stream,
                                                                ExpectedVersion.Any,
                                                                eventData);
+
+            _metrics.Measure.Counter.Increment(KnownMetrics.EventsWritten, domainEvent.EventType);
 
             _logger.LogDebug($"sent event '{eventData.EventId}': " +
                              $"NextExpectedVersion: {result.NextExpectedVersion}; " +
@@ -257,11 +273,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
         private void OnConfigurationChanged() => Connect(true);
 
-        private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Connected;
+        private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args)
+        {
+            _metrics.Measure.Counter.Increment(KnownMetrics.EventStoreConnected);
+            ConnectionState = ConnectionState.Connected;
+        }
 
-        private void OnEventStoreDisconnected(object sender, ClientConnectionEventArgs args) => ConnectionState = ConnectionState.Disconnected;
+        private void OnEventStoreDisconnected(object sender, ClientConnectionEventArgs args)
+        {
+            _metrics.Measure.Counter.Increment(KnownMetrics.EventStoreDisconnected);
+            ConnectionState = ConnectionState.Disconnected;
+        }
 
-        private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args) => ConnectionState = ConnectionState.Reconnecting;
+        private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args)
+        {
+            _metrics.Measure.Counter.Increment(KnownMetrics.EventStoreReconnected);
+            ConnectionState = ConnectionState.Reconnecting;
+        }
 
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
             => _provider.GetService<IDomainEventConverter<T>>()
