@@ -1,44 +1,14 @@
-﻿param (
-    [Parameter(mandatory=$true)]
-    [String]
-    $FilePath = "..\appsettings.json",
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $EventBusConnectionServer,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $EventStoreConnectionUri,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $ProjectionStorageBackend,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $ProjectionStorageConnectionString,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $RabbitMqHost,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $RabbitMqUser,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $RabbitMqPassword,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $RabbitMqPort,
-
-    [Parameter(mandatory=$true)]
-    [String]
-    $RedisConnectionString
-)
+﻿$FilePath                          = "..\appsettings.json"
+$AppDir                            = AI_GetMsiProperty APPDIR
+$EventBusConnectionServer          = AI_GetMsiProperty EVENTBUSCONNECTIONSERVER
+$EventStoreConnectionUri           = AI_GetMsiProperty EVENTSTORECONNECTIONURI
+$ProjectionStorageBackend          = AI_GetMsiProperty PROJECTIONSTORAGEBACKEND
+$ProjectionStorageConnectionString = AI_GetMsiProperty PROJECTIONSTORAGECONNECTIONSTRING
+$RabbitMqHost                      = AI_GetMsiProperty RABBITMQHOST
+$RabbitMqUser                      = AI_GetMsiProperty RABBITMQUSER
+$RabbitMqPassword                  = AI_GetMsiProperty RABBITMQPASSWORD
+$RabbitMqPort                      = AI_GetMsiProperty RABBITMQPORT
+$RedisConnectionString             = AI_GetMsiProperty REDISCONNECTIONSTRING
 
 # Formats JSON in a nicer format than the built-in ConvertTo-Json does.
 function Format-Json([Parameter(Mandatory, ValueFromPipeline)][String] $json) {
