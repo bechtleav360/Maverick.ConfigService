@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="App.Metrics.AspNetCore.Mvc" Version="3.1.0" />
     <PackageReference Include="Bechtle.A365.Logging.NLog" Version="1.6.1-JsonConfig0005" />
     <PackageReference Include="Bechtle.A365.Maverick.Core.Health" Version="0.0.2-zzdevelop0025" />
     <PackageReference Include="Microsoft.AspNetCore.All" />

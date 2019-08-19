@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using App.Metrics.AspNetCore;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
@@ -98,6 +99,7 @@ namespace Bechtle.A365.ConfigService
         /// <returns></returns>
         private static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)
+                      .UseMetrics()
                       .UseStartup<Startup>()
                       .ConfigureAppConfiguration(
                           (context, builder) =>

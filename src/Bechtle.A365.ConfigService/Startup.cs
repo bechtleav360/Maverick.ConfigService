@@ -2,6 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using App.Metrics;
+using App.Metrics.Extensions.Configuration;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common;
@@ -124,10 +126,13 @@ namespace Bechtle.A365.ConfigService
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
-            _logger.LogInformation("registering MVC-Middleware");
+            _logger.LogInformation("registering MVC-Middleware with metrics-support");
+
+            services.AddMetrics(builder => { builder.Configuration.ReadFrom(Configuration); });
 
             // setup MVC
             services.AddMvc()
+                    .AddMetrics()
                     .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             _logger.LogInformation("registering API-Version support");

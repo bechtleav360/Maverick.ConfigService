@@ -91,6 +91,8 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                                                                                 .PreferRandomNode()
                                                                                 .KeepReconnecting()
                                                                                 .LimitRetriesForOperationTo(6)
+                                                                                .LimitConcurrentOperationsTo(1)
+                                                                                .EnableVerboseLogging()
                                                                                 .UseCustomLogger(eventStoreLogger),
                                                               config.EventStoreConnection.ConnectionName);
                        })

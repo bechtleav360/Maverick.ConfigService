@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using App.Metrics;
+using App.Metrics.Counter;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
@@ -16,14 +19,17 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class ConversionController : ControllerBase
     {
         private readonly IJsonTranslator _translator;
+        private readonly IMetrics _metrics;
 
         /// <inheritdoc />
         public ConversionController(IServiceProvider provider,
                                     ILogger<ConversionController> logger,
-                                    IJsonTranslator translator)
+                                    IJsonTranslator translator,
+                                    IMetrics metrics)
             : base(provider, logger)
         {
             _translator = translator;
+            _metrics = metrics;
         }
 
         /// <summary>
@@ -43,10 +49,13 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 var result = _translator.ToJson(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
 
+                _metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Map => Json");
+
                 return Ok(result ?? new JObject());
             }
             catch (Exception e)
             {
+                _metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
                 Logger.LogError(e, "failed to translate dictionary to json");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }
@@ -69,10 +78,13 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 var result = _translator.ToDictionary(json, separator ?? JsonTranslatorDefaultSettings.Separator);
 
+                _metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Json => Map");
+
                 return Ok(result ?? new Dictionary<string, string>());
             }
             catch (Exception e)
             {
+                _metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
                 Logger.LogError(e, "failed to translate json to dictionary");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }
