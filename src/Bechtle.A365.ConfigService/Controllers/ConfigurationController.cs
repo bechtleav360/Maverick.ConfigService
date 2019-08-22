@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -24,7 +23,6 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class ConfigurationController : ControllerBase
     {
         private readonly IEventHistoryService _eventHistory;
-        private readonly IMetrics _metrics;
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
@@ -37,15 +35,13 @@ namespace Bechtle.A365.ConfigService.Controllers
                                        IProjectionStore store,
                                        IJsonTranslator translator,
                                        IEnumerable<ICommandValidator> validators,
-                                       IEventHistoryService eventHistory,
-                                       IMetrics metrics)
+                                       IEventHistoryService eventHistory)
             : base(provider, logger)
         {
             _eventStore = eventStore;
             _store = store;
             _translator = translator;
             _eventHistory = eventHistory;
-            _metrics = metrics;
             _validators = validators.ToArray();
         }
 
@@ -97,7 +93,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
 
             foreach (var domainObj in domainObjects)
-                await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
+                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
 
             return Accepted();
         }
@@ -160,7 +156,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             }
 
             foreach (var domainObj in domainObjects)
-                await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
+                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
 
             return Accepted();
         }
@@ -220,7 +216,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (errors.Any())
                 return BadRequest(errors.Values.SelectMany(_ => _));
 
-            await domainObj.Save(_eventStore, _eventHistory, Logger, _metrics);
+            await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
 
             return AcceptedAtAction(
                 nameof(GetConfiguration),

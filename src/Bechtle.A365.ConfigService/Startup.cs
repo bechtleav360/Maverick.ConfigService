@@ -2,8 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using App.Metrics;
-using App.Metrics.Extensions.Configuration;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common;
@@ -110,6 +108,14 @@ namespace Bechtle.A365.ConfigService
                                 }),
                           _ => _logger.LogInformation("adding Swagger/-UI"))
                .Configure(a => a.UseHealth(), _ => _logger.LogInformation("adding Health-Middleware"))
+               .Configure(a => a.UseMetricsActiveRequestMiddleware(), _ => _logger.LogInformation("adding active-request metrics"))
+               .Configure(a => a.UseMetricsApdexTrackingMiddleware(), _ => _logger.LogInformation("adding apdex metrics"))
+               .Configure(a => a.UseMetricsErrorTrackingMiddleware(), _ => _logger.LogInformation("adding error metrics"))
+               .Configure(a => a.UseMetricsOAuth2TrackingMiddleware(), _ => _logger.LogInformation("adding oauth metrics"))
+               .Configure(a => a.UseMetricsPostAndPutSizeTrackingMiddleware(), _ => _logger.LogInformation("adding request-size metrics"))
+               .Configure(a => a.UseMetricsRequestTrackingMiddleware(), _ => _logger.LogInformation("adding request-path metrics"))
+               .Configure(a => a.UseMetricsTextEndpoint(), _ => _logger.LogInformation("adding text-metrics endpoint"))
+               .Configure(a => a.UseMetricsEndpoint(), _ => _logger.LogInformation("adding metrics endpoint"))
                .Configure(a => a.UseMvc(), _ => _logger.LogInformation("adding MVC-Middleware"));
 
             _logger.LogInformation("registering config-reload hook");
@@ -130,8 +136,6 @@ namespace Bechtle.A365.ConfigService
         public void ConfigureServices(IServiceCollection services)
         {
             _logger.LogInformation("registering MVC-Middleware with metrics-support");
-
-            services.AddMetrics(builder => { builder.Configuration.ReadFrom(Configuration); });
 
             // setup MVC
             services.AddMvc()

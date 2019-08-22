@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Models.V1;
@@ -24,20 +23,17 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class TemporaryKeyController : ControllerBase
     {
         private readonly IEventBus _eventBus;
-        private readonly IMetrics _metrics;
         private readonly ITemporaryKeyStore _keyStore;
 
         /// <inheritdoc />
         public TemporaryKeyController(IServiceProvider provider,
                                       ILogger<TemporaryKeyController> logger,
                                       ITemporaryKeyStore keyStore,
-                                      IEventBus eventBus,
-                                      IMetrics metrics)
+                                      IEventBus eventBus)
             : base(provider, logger)
         {
             _keyStore = keyStore;
             _eventBus = eventBus;
-            _metrics = metrics;
         }
 
         /// <summary>
@@ -239,7 +235,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                     return ProviderError(result);
 
                 foreach (var temp in keys.Entries)
-                    _metrics.Measure.Counter.Increment(KnownMetrics.TemporaryKeyCreated, temp.Key);
+                    Metrics.Measure.Counter.Increment(KnownMetrics.TemporaryKeyCreated, temp.Key);
 
                 await _eventBus.Connect();
 

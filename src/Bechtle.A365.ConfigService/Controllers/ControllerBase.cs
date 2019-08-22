@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -44,6 +45,11 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         protected IServiceProvider Provider;
 
+        /// <summary>
+        ///     <see cref="IMetrics"/> to record various application-specific metrics
+        /// </summary>
+        protected IMetrics Metrics;
+
         /// <inheritdoc />
         /// <param name="provider"></param>
         /// <param name="logger"></param>
@@ -51,6 +57,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             Provider = provider;
             Logger = logger;
+            Metrics = Provider.GetRequiredService<IMetrics>();
 
             if (provider.GetRequiredService<IConfiguration>()
                         .GetSection("Protection:Enabled")

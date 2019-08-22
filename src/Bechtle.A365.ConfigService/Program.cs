@@ -1,6 +1,9 @@
 ﻿using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using App.Metrics;
 using App.Metrics.AspNetCore;
+using App.Metrics.Formatters;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
@@ -11,8 +14,8 @@ using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using NLog.Extensions.Logging;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -92,6 +95,17 @@ namespace Bechtle.A365.ConfigService
             }
         }
 
+        private static void ConfigureMetrics(IMetricsBuilder builder)
+        {
+            builder.OutputMetrics.AsPlainText(options => { options.Encoding = Encoding.UTF8; })
+                   .OutputMetrics.AsJson(options =>
+                   {
+                       options.SerializerSettings.FloatFormatHandling = FloatFormatHandling.DefaultValue;
+                       options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
+                   })
+                   .OutputMetrics.Using<CustomMetricsFormatter>();
+        }
+
         /// <summary>
         ///     Create and Configure a WebHostBuilder
         /// </summary>
@@ -99,7 +113,15 @@ namespace Bechtle.A365.ConfigService
         /// <returns></returns>
         private static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)
+                      .ConfigureMetrics(ConfigureMetrics)
                       .UseMetrics()
+                      .UseMetricsEndpoints(options =>
+                      {
+                          var customFormatter = options.MetricsOutputFormatters.GetType<CustomMetricsFormatter>();
+                          if (!(customFormatter is null))
+                              options.MetricsEndpointOutputFormatter = customFormatter;
+                      })
+                      .UseMetricsWebTracking()
                       .UseStartup<Startup>()
                       .ConfigureAppConfiguration(
                           (context, builder) =>
