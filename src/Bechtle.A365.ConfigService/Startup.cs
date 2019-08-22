@@ -74,7 +74,10 @@ namespace Bechtle.A365.ConfigService
                               IHostingEnvironment env,
                               IApiVersionDescriptionProvider provider)
         {
-            app.Configure(a => a.UseAuthentication(), _ => _logger.LogInformation("adding authentication-hooks"));
+            if (Configuration.GetSection("Authentication:Kestrel:Enabled").Get<bool>())
+                app.Configure(a => a.UseAuthentication(), _ => _logger.LogInformation("adding authentication-hooks"));
+            else
+                _logger.LogInformation("skipping authentication-hooks");
 
             if (env.IsDevelopment())
             {
@@ -214,12 +217,12 @@ namespace Bechtle.A365.ConfigService
                             switch (settings.Backend)
                             {
                                 case DbBackend.MsSql:
-                                    _logger.LogInformation("using MsSql database-backend");
+                                    _logger.LogTrace("using MsSql database-backend");
                                     builder.UseSqlServer(settings.ConnectionString);
                                     break;
 
                                 case DbBackend.Postgres:
-                                    _logger.LogInformation("using PostgreSql database-backend");
+                                    _logger.LogTrace("using PostgreSql database-backend");
                                     builder.UseNpgsql(settings.ConnectionString);
                                     break;
 
