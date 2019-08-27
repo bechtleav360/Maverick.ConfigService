@@ -12,4 +12,4 @@ dotnet build src/Bechtle.A365.ConfigService/Bechtle.A365.ConfigService.csproj
 dotnet publish src/Bechtle.A365.ConfigService/Bechtle.A365.ConfigService.csproj -c Release -r debian.9-x64
 docker build -t localhost:5000/configservice src/Bechtle.A365.ConfigService/bin/Release/netcoreapp2.1/debian.9-x64/publish/
 
-docker-compose -f D:/TFS/Maverick/docker-compose.yml up -d configservice_init
+docker-compose -f D:/TFS/Maverick/docker-compose.yml up -d configservice
