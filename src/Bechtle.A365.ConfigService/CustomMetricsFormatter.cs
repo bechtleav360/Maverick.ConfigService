@@ -19,7 +19,11 @@ using Newtonsoft.Json.Converters;
 
 namespace Bechtle.A365.ConfigService
 {
+    // suppress RedundantAnonymousTypePropertyName warning because we want to be explicit how our Properties are called
+    // should they be renamed in the AppMetrics library we're probably screwing our Metrics-Store
+    // and they should be the same across all supported services (at least for the generic stuff)
     /// <inheritdoc />
+    [SuppressMessage("ReSharper", "RedundantAnonymousTypePropertyName")]
     public class CustomMetricsFormatter : IMetricsOutputFormatter
     {
         private readonly JsonSerializer _serializer;
@@ -44,7 +48,6 @@ namespace Bechtle.A365.ConfigService
         public MetricFields MetricFields { get; set; }
 
         /// <inheritdoc />
-        [SuppressMessage("ReSharper", "RedundantAnonymousTypePropertyName")]
         public Task WriteAsync(Stream output,
                                MetricsDataValueSource metricsData,
                                CancellationToken cancellationToken = new CancellationToken())
@@ -96,38 +99,54 @@ namespace Bechtle.A365.ConfigService
             // specify that encoding should *not* write UTF-8 BOM
             using (var streamWriter = new StreamWriter(output, new UTF8Encoding(false)))
             using (var jsonWriter = new JsonTextWriter(streamWriter))
+            {
                 _serializer.Serialize(jsonWriter, metrics);
+            }
 
             return Task.CompletedTask;
         }
 
-        private object TransformMeterMetric(string context, MeterValue meter, string name, IDictionary<string, string> tags = null) => new
+        private static object TransformApdex(string context, ApdexValueSource apdex) => new
         {
             ContextName = context,
-            Name = name,
-            Count = meter.Count,
-            FifteenMinuteRate = meter.FifteenMinuteRate,
-            FiveMinuteRate = meter.FiveMinuteRate,
-            Items = meter.Items
-                         .Select(item => TransformMeterMetricItem(context, item, name))
-                         .ToList(),
-            MeanRate = meter.MeanRate,
-            OneMinuteRate = meter.OneMinuteRate,
-            RateUnit = meter.RateUnit,
-            Tags = tags ?? new Dictionary<string, string>()
+            Name = apdex.Name,
+            Frustrating = apdex.Value.Frustrating,
+            SampleSize = apdex.Value.SampleSize,
+            Satisfied = apdex.Value.Satisfied,
+            Score = apdex.Value.Score,
+            Tolerating = apdex.Value.Tolerating,
+            Tags = apdex.Tags.ToDictionary()
         };
 
-        private object TransformMeterMetricItem(string context, MeterValue.SetItem item, string name) => new
+        private static object TransformCounter(string context, CounterValueSource counter) => new
         {
             ContextName = context,
-            Name = name,
-            Item = item.Item,
-            Percent = item.Percent,
-            Tags = item.Tags.ToDictionary(),
-            Value = TransformMeterMetric(context, item.Value, name)
+            Name = counter.Name,
+            Count = counter.Value.Count,
+            Tags = counter.Tags.ToDictionary(),
+            Items = counter.Value
+                           .Items
+                           .Select(item => new
+                           {
+                               ContextName = context,
+                               Name = counter.Name,
+                               Count = item.Count,
+                               Item = item.Item,
+                               Percent = item.Percent,
+                               Tags = item.Tags.ToDictionary()
+                           })
+                           .ToList()
         };
 
-        private object TransformHistogram(string context, HistogramValue histogram, string name, IDictionary<string, string> tags = null) => new
+        private static object TransformGauge(string context, GaugeValueSource gauge) => new
+        {
+            ContextName = context,
+            Name = gauge.Name,
+            Value = gauge.Value,
+            Tags = gauge.Tags.ToDictionary()
+        };
+
+        private static object TransformHistogram(string context, HistogramValue histogram, string name, IDictionary<string, string> tags = null) => new
         {
             ContextName = context,
             Name = name,
@@ -151,15 +170,33 @@ namespace Bechtle.A365.ConfigService
             Tags = tags ?? new Dictionary<string, string>()
         };
 
-        private object TransformGauge(string context, GaugeValueSource gauge) => new
+        private static object TransformMeterMetric(string context, MeterValue meter, string name, IDictionary<string, string> tags = null) => new
         {
             ContextName = context,
-            Name = gauge.Name,
-            Value = gauge.Value,
-            Tags = gauge.Tags
+            Name = name,
+            Count = meter.Count,
+            FifteenMinuteRate = meter.FifteenMinuteRate,
+            FiveMinuteRate = meter.FiveMinuteRate,
+            Items = meter.Items
+                         .Select(item => TransformMeterMetricItem(context, item, name))
+                         .ToList(),
+            MeanRate = meter.MeanRate,
+            OneMinuteRate = meter.OneMinuteRate,
+            RateUnit = meter.RateUnit,
+            Tags = tags ?? new Dictionary<string, string>()
         };
 
-        private object TransformTimer(string context, TimerValueSource timer) => new
+        private static object TransformMeterMetricItem(string context, MeterValue.SetItem item, string name) => new
+        {
+            ContextName = context,
+            Name = name,
+            Item = item.Item,
+            Percent = item.Percent,
+            Tags = item.Tags.ToDictionary(),
+            Value = TransformMeterMetric(context, item.Value, name)
+        };
+
+        private static object TransformTimer(string context, TimerValueSource timer) => new
         {
             ContextName = context,
             Name = timer.Name,
@@ -167,39 +204,7 @@ namespace Bechtle.A365.ConfigService
             Histogram = TransformHistogram(context, timer.Value.Histogram, timer.Name),
             Rate = TransformMeterMetric(context, timer.Value.Rate, timer.Name),
             DurationUnit = timer.DurationUnit,
-            Tags = timer.Tags
-        };
-
-        private object TransformApdex(string context, ApdexValueSource apdex) => new
-        {
-            ContextName = context,
-            Name = apdex.Name,
-            Frustrating = apdex.Value.Frustrating,
-            SampleSize = apdex.Value.SampleSize,
-            Satisfied = apdex.Value.Satisfied,
-            Score = apdex.Value.Score,
-            Tolerating = apdex.Value.Tolerating,
-            Tags = apdex.Tags
-        };
-
-        private object TransformCounter(string context, CounterValueSource counter) => new
-        {
-            ContextName = context,
-            Name = counter.Name,
-            Count = counter.Value.Count,
-            Tags = counter.Tags,
-            Items = counter.Value
-                           .Items
-                           .Select(item => new
-                           {
-                               ContextName = context,
-                               Name = counter.Name,
-                               Count = item.Count,
-                               Item = item.Item,
-                               Percent = item.Percent,
-                               Tags = item.Tags.ToDictionary()
-                           })
-                           .ToList()
+            Tags = timer.Tags.ToDictionary()
         };
     }
 }
