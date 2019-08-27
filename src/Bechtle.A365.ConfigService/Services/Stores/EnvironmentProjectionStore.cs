@@ -55,11 +55,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
                                }
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                return Result.Success<IList<EnvironmentIdentifier>>(dbResult.ToList());
                            });
@@ -91,11 +91,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
                                }
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
                                return Result.Success<IList<EnvironmentIdentifier>>(dbResult.ToList());
                            });
             }
@@ -131,7 +131,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (environmentKey == Guid.Empty)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IList<DtoConfigKeyCompletion>>("no environment found with (" +
                                                                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
                                                                                       $"{nameof(identifier.Name)}: {identifier.Name})",
@@ -141,7 +141,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                // send auto-completion data for all roots
                                if (string.IsNullOrWhiteSpace(key))
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return await CreateResult(await _context.FullAutoCompletePaths
                                                                            .Where(p => p.ConfigEnvironmentId == environmentKey &&
                                                                                        p.ParentId == null)
@@ -166,7 +166,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                  p.Path.Contains(rootPart))
                                                                      .ToListAsync();
 
-                                   entry.SetDuration(CacheDuration.Medium, _configuration);
+                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                    return await (possibleRoots.Count == 1 && possibleRoots.First()
                                                                                           .Path
@@ -183,7 +183,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (root is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IList<DtoConfigKeyCompletion>>($"key '{key}' is ambiguous, root does not match anything",
                                                                                       ErrorCode.NotFound);
                                }
@@ -191,7 +191,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                var result = await GetKeyAutoCompleteInternal(root, parts, range);
 
                                if (!result.IsError)
-                                   entry.SetDuration(CacheDuration.Medium, _configuration);
+                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                return result;
                            });
@@ -441,7 +441,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             var entry = _cache.CreateEntry(cacheKey);
             entry.Value = actualResult;
-            entry.SetDuration(CacheDuration.Medium, _configuration);
+            entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
             return actualResult;
         }
@@ -497,7 +497,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                    if (!string.IsNullOrWhiteSpace(filter))
                                        query = query.Where(k => k.Key.StartsWith(filter));
 
-                                   entry.SetDuration(CacheDuration.Medium, _configuration);
+                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
                                    return await query.OrderBy(k => k.Key)
                                                      .Skip(range.Offset)
                                                      .Take(range.Length)

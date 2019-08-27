@@ -67,7 +67,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                entry.SetDuration(identifiers is null
                                                      ? CacheDuration.None
                                                      : CacheDuration.Medium,
-                                                 _configuration);
+                                                 _configuration,
+                                                 _logger);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
                            });
@@ -108,7 +109,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                var result = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
 
-                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium, _configuration);
+                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium,
+                                                 _configuration,
+                                                 _logger);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(result ?? new List<ConfigurationIdentifier>());
                            });
@@ -149,7 +152,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                var result = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
 
-                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium, _configuration);
+                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium,
+                                                 _configuration,
+                                                 _logger);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(result ?? new List<ConfigurationIdentifier>());
                            });
@@ -191,7 +196,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<JToken>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
@@ -199,7 +204,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                {
                                    var result = JToken.Parse(dbResult);
 
-                                   entry.SetDuration(CacheDuration.Medium, _configuration);
+                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                    return Result.Success(result);
                                }
@@ -249,7 +254,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IDictionary<string, string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
@@ -261,7 +266,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                  k => k.Value,
                                                                                  StringComparer.OrdinalIgnoreCase);
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                return Result.Success<IDictionary<string, string>>(result);
                            });
@@ -299,7 +304,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
 
-                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium, _configuration);
+                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
+                                                 _configuration,
+                                                 _logger);
 
                                return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
                            });
@@ -342,7 +349,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
@@ -353,7 +360,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                     .Select(usedKey => usedKey.Key)
                                                     .ToArray();
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                return Result.Success<IEnumerable<string>>(result);
                            });
@@ -394,13 +401,13 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
                                var result = dbResult.Version.ToString();
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                return Result.Success(result);
                            });

@@ -55,11 +55,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier>());
                                }
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                return Result.Success<IList<StructureIdentifier>>(dbResult.ToList());
                            });
@@ -93,11 +93,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<int>>(new List<int>());
                                }
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
                                return Result.Success<IList<int>>(dbResult.Select(s => s.Version).ToList());
                            });
             }
@@ -127,7 +127,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
@@ -143,7 +143,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                  k => k.Value,
                                                                                  StringComparer.OrdinalIgnoreCase);
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
                                return Result.Success<IDictionary<string, string>>(result);
                            });
             }
@@ -177,7 +177,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                if (dbResult is null)
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration);
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
                                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
@@ -193,7 +193,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                  k => k.Value,
                                                                                  StringComparer.OrdinalIgnoreCase);
 
-                               entry.SetDuration(CacheDuration.Short, _configuration);
+                               entry.SetDuration(CacheDuration.Short, _configuration, _logger);
                                return Result.Success<IDictionary<string, string>>(result);
                            });
             }

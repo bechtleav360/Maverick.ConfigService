@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                          .ToListAsync();
 
                                if (!(items is null))
-                                   entry.SetDuration(CacheDuration.Tiny, _configuration);
+                                   entry.SetDuration(CacheDuration.Tiny, _configuration, _logger);
 
                                return Result.Success((IList<ProjectedEventMetadata>) items ?? new List<ProjectedEventMetadata>());
                            });
@@ -78,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                          .ToListAsync();
 
                                if (!(items is null))
-                                   entry.SetDuration(CacheDuration.Tiny, _configuration);
+                                   entry.SetDuration(CacheDuration.Tiny, _configuration, _logger);
 
                                return Result.Success((IList<ProjectedEventMetadata>) items ?? new List<ProjectedEventMetadata>());
                            });
