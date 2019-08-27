@@ -95,7 +95,7 @@ namespace Bechtle.A365.ConfigService
             }
         }
 
-        private static void ConfigureMetrics(IMetricsBuilder builder)
+        private static void ConfigureMetrics(WebHostBuilderContext context, IMetricsBuilder builder)
         {
             builder.OutputMetrics.AsPlainText(options => { options.Encoding = Encoding.UTF8; })
                    .OutputMetrics.AsJson(options =>
@@ -113,8 +113,15 @@ namespace Bechtle.A365.ConfigService
         /// <returns></returns>
         private static IWebHostBuilder CreateWebHostBuilder(string[] args)
             => WebHost.CreateDefaultBuilder(args)
+                      // configure custom formatter
                       .ConfigureMetrics(ConfigureMetrics)
-                      .UseMetrics()
+                      // following three calls replace UseMetrics()
+                      .ConfigureServices((context, services) =>
+                      {
+                          services.AddMetricsReportingHostedService();
+                          services.AddMetricsEndpoints(context.Configuration);
+                          services.AddMetricsTrackingMiddleware(context.Configuration);
+                      })
                       .UseMetricsEndpoints(options =>
                       {
                           var customFormatter = options.MetricsOutputFormatters.GetType<CustomMetricsFormatter>();
