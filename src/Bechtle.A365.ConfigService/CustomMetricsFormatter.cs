@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <inheritdoc />
-        public MetricsMediaTypeValue MediaType { get; } = new MetricsMediaTypeValue("text", "bechtle.custom.formatter", "v1", "plain");
+        public MetricsMediaTypeValue MediaType { get; } = new MetricsMediaTypeValue("application", "bechtle.custom.formatter", "v1", "json");
 
         /// <inheritdoc />
         public MetricFields MetricFields { get; set; }
