@@ -1,4 +1,4 @@
-version: "2.0"
+version: "2.3"
 services:
   configservice_migrate:
     image: localhost:5000/configservice_migrate
@@ -16,6 +16,7 @@ services:
       - "SQL02:172.16.10.31"
     volumes: 
       - C:/docker/logs/ConfigService/Projection:/app/logs
+      - D:/TFS/Certs/rootcas:/usr/local/share/ca-certificates
     restart: always
     network_mode: bridge
     environment:
@@ -35,7 +36,10 @@ services:
     volumes: 
       - C:/docker/logs/ConfigService:/app/logs
       - D:/TFS/Certs/w10lcl02/:/root/certs/ssl
+      - D:/TFS/Certs/rootcas:/usr/local/share/ca-certificates
     restart: always
+    depends_on:
+      - configservice_projection
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=http://*:8082
@@ -43,4 +47,10 @@ services:
       # - ASPNETCORE_SSL_PORT=8082
       # - VIRTUAL_HOST=configservice.localhost
       # - VIRTUAL_PORT=8082
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/api/health/status && echo 'Healthcheck successfull'"]
+      interval: 2m
+      timeout: 30s
+      retries: 3
+      start_period: 30s
  
