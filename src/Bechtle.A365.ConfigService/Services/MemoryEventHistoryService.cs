@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Logging;
@@ -13,15 +14,18 @@ namespace Bechtle.A365.ConfigService.Services
         private readonly IEventStore _eventStore;
         private readonly ILogger _logger;
         private readonly IProjectionStore _projectionStore;
+        private readonly IMetrics _metrics;
 
         /// <inheritdoc />
         public MemoryEventHistoryService(ILogger<MemoryEventHistoryService> logger,
                                          IEventStore eventStore,
-                                         IProjectionStore projectionStore)
+                                         IProjectionStore projectionStore,
+                                         IMetrics metrics)
         {
             _logger = logger;
             _eventStore = eventStore;
             _projectionStore = projectionStore;
+            _metrics = metrics;
         }
 
         /// <inheritdoc />
@@ -33,7 +37,9 @@ namespace Bechtle.A365.ConfigService.Services
                 return status;
 
             if (await IsEventSuperseded(domainEvent))
-                return EventStatus.Superseded;
+                status = EventStatus.Superseded;
+
+            _metrics.Measure.Counter.Increment(KnownMetrics.EventStatusRetrieved, status.ToString("G"));
 
             return status;
         }

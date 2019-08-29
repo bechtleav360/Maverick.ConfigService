@@ -29,6 +29,13 @@ namespace Bechtle.A365.ConfigService
             Context = KnownMetricContexts.EventStore
         };
 
+        public static readonly CounterOptions EventStatusRetrieved = new CounterOptions
+        {
+            Name = "DomainEvent-History-Status Retrieved",
+            MeasurementUnit = Unit.Custom("Kinds"),
+            Context = KnownMetricContexts.EventHistoryStatus
+        };
+
         public static readonly CounterOptions EventsStreamed = new CounterOptions
         {
             Name = "DomainEvents Streamed",
@@ -55,6 +62,13 @@ namespace Bechtle.A365.ConfigService
             Name = "EventStore Connection Re-Established",
             MeasurementUnit = Unit.Custom("Times"),
             Context = KnownMetricContexts.EventStore
+        };
+
+        public static readonly CounterOptions EventsValidated = new CounterOptions
+        {
+            Name = "DomainEvents Valildated",
+            MeasurementUnit = Unit.Events,
+            Context = KnownMetricContexts.EventValidation
         };
 
         public static readonly CounterOptions EventsWritten = new CounterOptions
@@ -88,13 +102,15 @@ namespace Bechtle.A365.ConfigService
 
     internal static class KnownMetricContexts
     {
-        public static string ConnectionInfos => Generics + ".ConnectionInfos";
-        public static string ConversionCalls => Internals + ".Conversions";
-        public static string EventStore => Generics + ".EventStore";
-        public static string Exceptions => Generics + ".Errors";
-        public static string TemporaryKeys => Generics + ".TemporaryKeys";
+        private static readonly string Generics = "Application";
+        private static readonly string Internals = "Application.Internals";
 
-        private static string Generics => "Application";
-        private static string Internals => "Application.Internals";
+        public static readonly string ConnectionInfos = $"{Generics}.ConnectionInfos";
+        public static readonly string ConversionCalls = $"{Internals}.Conversions";
+        public static readonly string EventStore = $"{Generics}.EventStore";
+        public static readonly string Exceptions = $"{Generics}.Errors";
+        public static readonly string TemporaryKeys = $"{Generics}.TemporaryKeys";
+        public static readonly string EventHistoryStatus = $"{Generics}.EventHistoryStatus";
+        public static readonly string EventValidation = $"{Generics}.EventValidation";
     }
 }

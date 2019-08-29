@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
@@ -8,43 +9,68 @@ namespace Bechtle.A365.ConfigService.Services
     /// <inheritdoc />
     public class InternalDataCommandValidator : ICommandValidator
     {
+        private readonly IMetrics _metrics;
+
+        /// <inheritdoc />
+        public InternalDataCommandValidator(IMetrics metrics)
+        {
+            _metrics = metrics;
+        }
+
         /// <inheritdoc />
         public IResult ValidateDomainEvent(DomainEvent domainEvent)
         {
             if (string.IsNullOrWhiteSpace(domainEvent.EventType))
                 return Result.Error("event does not contain EventType", ErrorCode.ValidationFailed);
 
+            IResult result;
+
             switch (domainEvent)
             {
                 case ConfigurationBuilt @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case DefaultEnvironmentCreated @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case EnvironmentCreated @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case EnvironmentDeleted @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case EnvironmentKeysImported @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case EnvironmentKeysModified @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case StructureCreated @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case StructureDeleted @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
 
                 case StructureVariablesModified @event:
-                    return ValidateDomainEvent(@event);
+                    result = ValidateDomainEvent(@event);
+                    break;
+
+                default:
+                    result = Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed);
+                    break;
             }
 
-            return Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed);
+            _metrics.Measure.Counter.Increment(KnownMetrics.EventsValidated, result.IsError ? "Invalid" : "Valid");
+
+            return result;
         }
 
         /// <summary>
