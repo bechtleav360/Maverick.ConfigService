@@ -49,6 +49,7 @@ namespace Bechtle.A365.ConfigService
         /// <inheritdoc />
         /// <param name="configuration"></param>
         /// <param name="logger"></param>
+        /// <param name="env"></param>
         public Startup(IConfiguration configuration, ILogger<Startup> logger, IHostingEnvironment env)
         {
             _logger = logger;

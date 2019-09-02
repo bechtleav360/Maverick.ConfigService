@@ -4,9 +4,7 @@ using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using App.Metrics;
-using App.Metrics.AspNetCore;
 using App.Metrics.Formatters;
-using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.AspNetCore;
@@ -68,14 +66,13 @@ namespace Bechtle.A365.ConfigService
                 if (Path.GetExtension(settings.Certificate) == "pfx")
                 {
                     certificate = settings.Password is null
-                                            ? new X509Certificate2(settings.Certificate)
-                                            : new X509Certificate2(settings.Certificate, settings.Password);
+                                      ? new X509Certificate2(settings.Certificate)
+                                      : new X509Certificate2(settings.Certificate, settings.Password);
                 }
 
                 var certpath = Environment.GetEnvironmentVariable("ASPNETCORE_SSLCERT_PATH");
                 if (!string.IsNullOrEmpty(certpath) || Path.GetExtension(settings.Certificate) == "crt")
                 {
-
                     var port = Environment.GetEnvironmentVariable("ASPNETCORE_SSL_PORT");
                     certificate = X509CertificateUtility.LoadFromCrt(certpath) ?? X509CertificateUtility.LoadFromCrt(settings.Certificate);
                     settings.Port = int.Parse(port ?? settings.Port.ToString());
