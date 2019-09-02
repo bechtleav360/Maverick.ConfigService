@@ -4,8 +4,6 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
 {
     public class RabbitMetricsReporterOptions
     {
-        public string AppId { get; set; }
-
         public bool Enabled { get; set; }
 
         public string Exchange { get; set; }
