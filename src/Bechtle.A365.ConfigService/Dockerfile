@@ -7,7 +7,7 @@ ARG SERVICENAME
 WORKDIR /src
 COPY . .
 RUN dotnet restore "src/$SERVICENAME/$SERVICENAME.csproj"
-WORKDIR /src/src/$(SERVICENAME)
+WORKDIR /src/src/$SERVICENAME
 RUN dotnet build "$SERVICENAME.csproj" -c Release -o /app
 
 FROM build AS publish
