@@ -1,5 +1,6 @@
 ﻿using App.Metrics;
 using App.Metrics.Gauge;
+using Bechtle.A365.ConfigService.Projection.Metrics;
 
 namespace Bechtle.A365.ConfigService.Projection.Extensions
 {

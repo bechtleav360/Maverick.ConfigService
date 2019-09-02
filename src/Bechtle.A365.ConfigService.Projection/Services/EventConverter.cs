@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.Extensions;
+using Bechtle.A365.ConfigService.Projection.Metrics;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

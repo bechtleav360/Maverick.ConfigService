@@ -7,7 +7,7 @@ using App.Metrics.Histogram;
 using App.Metrics.Meter;
 using App.Metrics.Timer;
 
-namespace Bechtle.A365.ConfigService.Projection
+namespace Bechtle.A365.ConfigService.Projection.Metrics
 {
     public static class KnownMetrics
     {
