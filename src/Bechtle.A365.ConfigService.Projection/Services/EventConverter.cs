@@ -167,6 +167,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                 }
                 finally
                 {
+                    _metrics.Measure.Counter.Increment(KnownMetrics.EventsConverted, resolvedEvent.Event.EventType);
                     _metrics.Measure.Counter.Decrement(KnownMetrics.ActiveRequestCount);
                 }
             }

@@ -138,6 +138,8 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                         transaction.Commit();
                         metadata.ProjectedSuccessfully = true;
 
+                        _metrics.Measure.Counter.Increment(KnownMetrics.DatabaseUpdates, metadata.Changes);
+
                         _logger.LogInformation($"transaction '{transaction.TransactionId}' committed");
                     }
                     catch (Exception e)
@@ -152,6 +154,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                     }
                     finally
                     {
+                        _metrics.Measure.Counter.Increment(KnownMetrics.EventsProjected, domainEvent.EventType);
                         _metrics.Measure.Counter.Decrement(KnownMetrics.ActiveRequestCount);
                         _logger.LogTrace("forcing GC.Collect...");
                         metadata.End = DateTime.UtcNow;

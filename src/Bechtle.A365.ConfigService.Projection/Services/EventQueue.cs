@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using App.Metrics;
+using Bechtle.A365.ConfigService.Projection.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Projection.Services
@@ -8,13 +10,16 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     {
         private readonly ConcurrentQueue<ProjectedEvent> _queuedEvents;
         private readonly ILogger _logger;
+        private readonly IMetrics _metrics;
         private readonly IMetricService _metricService;
 
         public EventQueue(ILogger<EventQueue> logger,
+                          IMetrics metrics,
                           IMetricService metricService)
         {
             _queuedEvents = new ConcurrentQueue<ProjectedEvent>();
             _logger = logger;
+            _metrics = metrics;
             _metricService = metricService;
         }
 
@@ -26,6 +31,8 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
                 _metricService.SetQueueLength(_queuedEvents.Count)
                               .Finish();
+
+                _metrics.Measure.Counter.Increment(KnownMetrics.QueueLength);
 
                 _logger.LogInformation($"event added to queue; " +
                                        $"{_queuedEvents.Count} events remaining; " +
@@ -49,6 +56,8 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
                 _metricService.SetQueueLength(_queuedEvents.Count)
                               .Finish();
+
+                _metrics.Measure.Counter.Decrement(KnownMetrics.QueueLength);
 
                 _logger.LogInformation($"event dequeued; " +
                                        $"{_queuedEvents.Count} events remaining; " +

@@ -15,7 +15,12 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
         ///     Context used for Contained Metrics.
         ///     Chosen to overlap with AspNetCore-Metrics and be aggregatable / viewable via the same names
         /// </summary>
-        public static string ContextName = "Application.HttpRequests";
+        private static readonly string ContextName = "Application.HttpRequests";
+
+        /// <summary>
+        ///     Context used for Custom Metrics.
+        /// </summary>
+        private static readonly string CustomContextName = "Application.Custom";
 
         public static readonly CounterOptions ActiveRequestCount = new CounterOptions
         {
@@ -29,6 +34,20 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
             Context = ContextName,
             Name = "Apdex",
             ApdexTSeconds = apdexTSeconds
+        };
+
+        public static readonly CounterOptions CompilerMessages = new CounterOptions
+        {
+            Context = CustomContextName,
+            Name = "Compiler Messages",
+            MeasurementUnit = Unit.Custom("Messages")
+        };
+
+        public static readonly CounterOptions DatabaseUpdates = new CounterOptions
+        {
+            Context = CustomContextName,
+            Name = "Database Updates",
+            MeasurementUnit = Unit.Custom("Updates")
         };
 
         public static readonly MeterOptions EndpointErrorRequestRate = new MeterOptions
@@ -59,6 +78,20 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
             MeasurementUnit = Unit.Requests
         };
 
+        public static readonly CounterOptions EventsConverted = new CounterOptions
+        {
+            Context = CustomContextName,
+            Name = "Converted",
+            MeasurementUnit = Unit.Events
+        };
+
+        public static readonly CounterOptions EventsProjected = new CounterOptions
+        {
+            Context = CustomContextName,
+            Name = "Projected",
+            MeasurementUnit = Unit.Events
+        };
+
         public static readonly GaugeOptions OneMinErrorPercentageRate = new GaugeOptions
         {
             Context = ContextName,
@@ -71,6 +104,13 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
             Context = ContextName,
             Name = "POST Size",
             MeasurementUnit = Unit.Bytes
+        };
+
+        public static readonly CounterOptions QueueLength = new CounterOptions
+        {
+            Context = CustomContextName,
+            Name = "Queue Length",
+            MeasurementUnit = Unit.Events
         };
 
         public static readonly TimerOptions RequestTransactionDuration = new TimerOptions

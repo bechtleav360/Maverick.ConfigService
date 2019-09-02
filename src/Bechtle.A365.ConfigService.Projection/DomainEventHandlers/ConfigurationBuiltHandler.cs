@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common.Compilation;
+using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
+using Bechtle.A365.ConfigService.Projection.Metrics;
 using Bechtle.A365.ConfigService.Projection.Services;
 using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.Extensions.Logging;
@@ -18,6 +23,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         private readonly IConfigurationDatabase _database;
         private readonly IEventBusService _eventBus;
         private readonly ILogger<ConfigurationBuiltHandler> _logger;
+        private readonly IMetrics _metrics;
         private readonly IConfigurationParser _parser;
         private readonly IJsonTranslator _translator;
 
@@ -27,6 +33,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                          IConfigurationParser parser,
                                          IJsonTranslator translator,
                                          IEventBusService eventBus,
+                                         IMetrics metrics,
                                          ILogger<ConfigurationBuiltHandler> logger)
         {
             _database = database;
@@ -34,6 +41,7 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
             _parser = parser;
             _translator = translator;
             _eventBus = eventBus;
+            _metrics = metrics;
             _logger = logger;
         }
 
@@ -73,6 +81,8 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                              structureInfo,
                                              _parser);
 
+            IncrementCompilerWarningCounter(compiled);
+
             var json = _translator.ToJson(compiled.CompiledConfiguration)
                                   .ToString();
 
@@ -85,6 +95,32 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                                               domainEvent.ValidTo);
 
             await PublishConfigurationChangedEvent(domainEvent);
+        }
+
+        private void IncrementCompilerWarningCounter(CompilationResult compiled)
+        {
+            var traceList = new List<TraceResult>(compiled.CompiledConfiguration.Count);
+            var stack = new Stack<TraceResult>();
+            // prepare stack with initial data
+            foreach (var item in compiled.CompilationTrace)
+                stack.Push(item);
+
+            while (stack.TryPop(out var item))
+            {
+                traceList.Add(item);
+                foreach (var child in item.Children)
+                    stack.Push(child);
+            }
+
+            _metrics.Measure.Counter.Increment(KnownMetrics.CompilerMessages,
+                                               traceList.OfType<KeyTraceResult>()
+                                                        .Sum(traceResult => traceResult.Warnings.Length),
+                                               "Warnings");
+
+            _metrics.Measure.Counter.Increment(KnownMetrics.CompilerMessages,
+                                               traceList.OfType<KeyTraceResult>()
+                                                        .Sum(traceResult => traceResult.Errors.Length),
+                                               "Errors");
         }
 
         private async Task PublishConfigurationChangedEvent(ConfigurationBuilt domainEvent)
@@ -104,11 +140,10 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
             var to = domainEvent.ValidTo;
             var now = DateTime.UtcNow;
 
-            if ((from is null && to is null) ||
-                (from is null && to >= now) ||
-                (from <= now && to is null) ||
-                (from <= now && to >= now))
-            {
+            if (from is null && to is null ||
+                from is null && to >= now ||
+                from <= now && to is null ||
+                from <= now && to >= now)
                 await _eventBus.Publish(new EventMessage
                 {
                     Event = new OnConfigurationPublished
@@ -119,7 +154,6 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
                         StructureVersion = domainEvent.Identifier.Structure.Version
                     }
                 });
-            }
         }
     }
 }
