@@ -1,7 +1,21 @@
-﻿FROM mcr.microsoft.com/dotnet/core/sdk:2.2 
-COPY . /app
+﻿ARG SERVICENAME=Bechtle.A365.ConfigService.Cli
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-stretch-slim AS base
 WORKDIR /app
-CMD dotnet Bechtle.A365.ConfigService.Cli.dll migrate -c "Server=sql02;Database=DOCKER_A365ConfigProjection;User Id=sa;Password=1;"
 
+FROM maverick.azurecr.io/dotnet/core/sdk:2.2-stretch AS build
+ARG SERVICENAME
+WORKDIR /src
+COPY . .
+RUN dotnet restore "src/$SERVICENAME/$SERVICENAME.csproj"
+WORKDIR /src/src/$(SERVICENAME)
+RUN dotnet build "$SERVICENAME.csproj" -c Release -o /app
 
+FROM build AS publish
+ARG SERVICENAME
+RUN dotnet publish "$SERVICENAME.csproj" -c Release -o /app
 
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app .
+
+CMD dotnet Bechtle.A365.ConfigService.Cli.dll migrate -c "Host=postgres;Port=5432;Database=DOCKER_A365ConfigProjection;User Id=sa;Password=1;" -b postgres

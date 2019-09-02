@@ -1,11 +1,22 @@
-﻿FROM mcr.microsoft.com/dotnet/core/sdk:2.2 
-COPY . /app
-#RUN rm /root/.dotnet/corefx/cryptography/x509stores/my/*
-#COPY aspnetapp.pfx /root/.dotnet/corefx/cryptography/x509stores/my/69611f15e60f53bb88581a2f0daaecc5cdd24d7a.pfx
-COPY devrootca.crt /usr/local/share/ca-certificates
-RUN update-ca-certificates
+﻿ARG SERVICENAME=Bechtle.A365.ConfigService.Projection
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-stretch-slim AS base
 WORKDIR /app
-CMD dotnet Bechtle.A365.ConfigService.Projection.dll --console
 
+FROM maverick.azurecr.io/dotnet/core/sdk:2.2-stretch AS build
+ARG SERVICENAME
+WORKDIR /src
+COPY . .
+RUN dotnet restore "src/$SERVICENAME/$SERVICENAME.csproj"
+WORKDIR /src/src/$(SERVICENAME)
+RUN dotnet build "$SERVICENAME.csproj" -c Release -o /app
 
+FROM build AS publish
+ARG SERVICENAME
+RUN dotnet publish "$SERVICENAME.csproj" -c Release -o /app
 
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app .
+
+RUN sed -i 's/\r$//' startup.sh && chmod +x startup.sh
+ENTRYPOINT sh startup.sh
