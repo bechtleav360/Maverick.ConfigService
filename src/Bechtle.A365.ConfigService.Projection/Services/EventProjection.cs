@@ -2,12 +2,15 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
+using Bechtle.A365.ConfigService.Projection.Extensions;
 using Bechtle.A365.ConfigService.Projection.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -20,19 +23,25 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     public class EventProjection : HostedService
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
         private readonly IMetricService _metricService;
+        private readonly IMetrics _metrics;
         private readonly IEventQueue _eventQueue;
 
         public EventProjection(IServiceProvider serviceProvider,
+                               IConfiguration configuration,
                                ILogger<EventProjection> logger,
                                IMetricService metricService,
+                               IMetrics metrics,
                                IEventQueue eventQueue)
             : base(serviceProvider)
         {
             _serviceProvider = serviceProvider;
+            _configuration = configuration;
             _logger = logger;
             _metricService = metricService;
+            _metrics = metrics;
             _eventQueue = eventQueue;
         }
 
@@ -80,6 +89,10 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         {
             _logger.LogInformation($"projecting DomainEvent of type '{domainEvent.EventType}' / '{id}'");
 
+            var transactionTags = MetricsExtensions.CreateTransactionTags("Worker: Event-Projection");
+            var endpointTags = MetricsExtensions.CreateEndpointTags("Worker: Event-Projection",
+                                                                    domainEvent.EventType);
+
             var metadata = new ProjectedEventMetadata
             {
                 Type = domainEvent.EventType,
@@ -87,8 +100,13 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                 Index = index
             };
 
+            using (_metrics.Measure.Apdex.Track(KnownMetrics.Apdex(_configuration.GetSection("MetricsOptions:ApdexTSeconds").Get<double>()), transactionTags))
+            using (_metrics.Measure.Apdex.Track(KnownMetrics.Apdex(_configuration.GetSection("MetricsOptions:ApdexTSeconds").Get<double>()), endpointTags))
+            using (_metrics.Measure.Timer.Time(KnownMetrics.RequestTransactionDuration, transactionTags))
+            using (_metrics.Measure.Timer.Time(KnownMetrics.EndpointRequestTransactionDuration, endpointTags))
             using (var scope = _serviceProvider.CreateScope())
             {
+                _metrics.Measure.Counter.Increment(KnownMetrics.ActiveRequestCount);
                 var context = scope.ServiceProvider.GetService<ProjectionStoreContext>();
                 var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
 
@@ -125,11 +143,15 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                     {
                         transaction.Rollback();
                         metadata.ProjectedSuccessfully = false;
+
                         _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}', " +
                                             $"rolling back transaction '{transaction.TransactionId}' :{e}");
+
+                        _metrics.RegisterFailure(endpointTags, transactionTags);
                     }
                     finally
                     {
+                        _metrics.Measure.Counter.Decrement(KnownMetrics.ActiveRequestCount);
                         _logger.LogTrace("forcing GC.Collect...");
                         metadata.End = DateTime.UtcNow;
                         GC.Collect();

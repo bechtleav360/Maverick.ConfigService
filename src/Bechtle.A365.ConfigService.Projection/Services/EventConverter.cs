@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
+using Bechtle.A365.ConfigService.Projection.Extensions;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         private readonly IConfiguration _configuration;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly IMetricService _metricService;
+        private readonly IMetrics _metrics;
         private readonly IEventQueue _eventQueue;
         private readonly ILogger<EventConverter> _logger;
         private readonly IServiceProvider _serviceProvider;
@@ -36,6 +39,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                               IConfiguration configuration,
                               IEventDeserializer eventDeserializer,
                               IMetricService metricService,
+                              IMetrics metrics,
                               IEventQueue eventQueue)
             : base(serviceProvider)
         {
@@ -44,6 +48,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             _configuration = configuration;
             _eventDeserializer = eventDeserializer;
             _metricService = metricService;
+            _metrics = metrics;
             _eventQueue = eventQueue;
 
             ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
@@ -104,44 +109,65 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
         private void EventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
-            try
+            var transactionTags = MetricsExtensions.CreateTransactionTags("Worker: Event-Conversion");
+            var endpointTags = MetricsExtensions.CreateEndpointTags("Worker: Event-Conversion",
+                                                                    resolvedEvent.Event.EventType);
+
+            _metrics.Measure.Histogram.Update(KnownMetrics.PostRequestSizeHistogram,
+                                              resolvedEvent.Event.Data.Length
+                                              + resolvedEvent.Event.Metadata.Length);
+
+            using (_metrics.Measure.Timer.Time(KnownMetrics.RequestTransactionDuration, transactionTags))
+            using (_metrics.Measure.Timer.Time(KnownMetrics.EndpointRequestTransactionDuration, endpointTags))
             {
-                _logger.LogInformation($"Stream: {resolvedEvent.OriginalStreamId}#{resolvedEvent.OriginalEventNumber}; " +
-                                       $"EventId: {resolvedEvent.OriginalEvent.EventId}; " +
-                                       $"EventType: {resolvedEvent.OriginalEvent.EventType}; " +
-                                       $"Created: {resolvedEvent.OriginalEvent.Created}; " +
-                                       $"IsJson: {resolvedEvent.OriginalEvent.IsJson}; " +
-                                       $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
-                                       $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
-
-                if (!_eventDeserializer.ToDomainEvent(resolvedEvent, out var domainEvent))
+                try
                 {
-                    var e = new Exception("unable to deserialize to DomainEvent");
-                    e.Data["resolvedEvent"] = resolvedEvent;
-                    e.Data["json"] = JsonConvert.SerializeObject(resolvedEvent);
+                    _metrics.Measure.Counter.Increment(KnownMetrics.ActiveRequestCount);
 
-                    throw e;
+                    _logger.LogInformation($"Stream: {resolvedEvent.OriginalStreamId}#{resolvedEvent.OriginalEventNumber}; " +
+                                           $"EventId: {resolvedEvent.OriginalEvent.EventId}; " +
+                                           $"EventType: {resolvedEvent.OriginalEvent.EventType}; " +
+                                           $"Created: {resolvedEvent.OriginalEvent.Created}; " +
+                                           $"IsJson: {resolvedEvent.OriginalEvent.IsJson}; " +
+                                           $"Data: {resolvedEvent.OriginalEvent.Data.Length} bytes; " +
+                                           $"Metadata: {resolvedEvent.OriginalEvent.Metadata.Length} bytes;");
+
+                    if (!_eventDeserializer.ToDomainEvent(resolvedEvent, out var domainEvent))
+                    {
+                        var e = new Exception("unable to deserialize to DomainEvent");
+                        e.Data["resolvedEvent"] = resolvedEvent;
+                        e.Data["json"] = JsonConvert.SerializeObject(resolvedEvent);
+
+                        throw e;
+                    }
+
+                    if (!_eventQueue.TryEnqueue(new ProjectedEvent
+                    {
+                        DomainEvent = domainEvent,
+                        Index = resolvedEvent.OriginalEventNumber,
+                        Id = $"{resolvedEvent.OriginalStreamId}#{resolvedEvent.OriginalEventNumber};{resolvedEvent.OriginalEvent.EventId:D}"
+                    }))
+                    {
+                        var e = new Exception("unable to add DomainEvent to queue");
+                        e.Data["domainEvent"] = domainEvent;
+                        e.Data["json"] = JsonConvert.SerializeObject(domainEvent);
+
+                        throw e;
+                    }
                 }
-
-                if (!_eventQueue.TryEnqueue(new ProjectedEvent
+                catch (Exception e)
                 {
-                    DomainEvent = domainEvent,
-                    Index = resolvedEvent.OriginalEventNumber,
-                    Id = $"{resolvedEvent.OriginalStreamId}#{resolvedEvent.OriginalEventNumber};{resolvedEvent.OriginalEvent.EventId:D}"
-                }))
-                {
-                    var e = new Exception("unable to add DomainEvent to queue");
-                    e.Data["domainEvent"] = domainEvent;
-                    e.Data["json"] = JsonConvert.SerializeObject(domainEvent);
+                    _logger.LogError(e, "could not convert ResolvedEvent from EventStore to DomainEvent - " +
+                                        "invariance of stream not given anymore, closing stream");
 
-                    throw e;
+                    _metrics.RegisterFailure(endpointTags, transactionTags);
+
+                    Disconnect();
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "could not convert ResolvedEvent from EventStore to DomainEvent - " +
-                                    "invariance of stream not given anymore, closing stream");
-                Disconnect();
+                finally
+                {
+                    _metrics.Measure.Counter.Decrement(KnownMetrics.ActiveRequestCount);
+                }
             }
         }
 
