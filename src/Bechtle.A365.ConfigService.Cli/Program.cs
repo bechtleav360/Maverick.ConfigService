@@ -12,6 +12,7 @@ namespace Bechtle.A365.ConfigService.Cli
 {
     [Subcommand(
         typeof(BrowseCommand),
+        typeof(CompareCommand),
         typeof(ExportCommand),
         typeof(ImportCommand),
         typeof(TestCommand),

@@ -81,8 +81,16 @@ namespace Bechtle.A365.ConfigService.Cli
             => WriteInternal(_console.Out, str, level, color, LogLevel.Information);
 
         /// <inheritdoc />
+        public void Write(Stream stream)
+            => WriteInternal(_console.Out, stream, LogLevel.Information);
+
+        /// <inheritdoc />
         public void WriteError(string str, int level = 0, ConsoleColor color = ConsoleColor.Red)
             => WriteInternal(_console.Error, str, level, color, LogLevel.Error);
+
+        /// <inheritdoc />
+        public void WriteError(Stream stream)
+            => WriteInternal(_console.Error, stream, LogLevel.Error);
 
         /// <inheritdoc />
         public void WriteErrorLine(string str, int level = 0, ConsoleColor color = ConsoleColor.Red)
@@ -101,14 +109,6 @@ namespace Bechtle.A365.ConfigService.Cli
             => WriteSeparatorInternal(_console.Out, ConsoleColor.White);
 
         /// <inheritdoc />
-        public void WriteVerbose(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
-            => WriteInternal(_console.Out, str, level, color, LogLevel.Debug);
-
-        /// <inheritdoc />
-        public void WriteVerboseLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
-            => WriteVerbose(str + Environment.NewLine, level, color);
-
-        /// <inheritdoc />
         public void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector)
         {
             var columns = new List<TableColumn>();
@@ -118,14 +118,12 @@ namespace Bechtle.A365.ConfigService.Cli
             {
                 var properties = propertySelector.Invoke(item);
                 foreach (var prop in properties)
-                {
                     if (columns.All(c => c.Name != prop.Key))
                         columns.Add(new TableColumn
                         {
                             Name = prop.Key,
                             Values = new List<string>()
                         });
-                }
 
                 foreach (var prop in properties)
                     columns.First(c => c.Name == prop.Key)
@@ -159,18 +157,17 @@ namespace Bechtle.A365.ConfigService.Cli
             }
         }
 
-        private void WriteTableCell(string value, int columnWidth)
-        {
-            Write("|");
+        /// <inheritdoc />
+        public void WriteVerbose(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
+            => WriteInternal(_console.Out, str, level, color, LogLevel.Debug);
 
-            var totalPadding = Math.Max(columnWidth + 2, value.Length + 2) - value.Length;
-            var leftPadding = totalPadding / 2;
-            var rightPadding = leftPadding + totalPadding % 2;
+        /// <inheritdoc />
+        public void WriteVerbose(Stream stream)
+            => WriteInternal(_console.Out, stream, LogLevel.Debug);
 
-            Write(new string(' ', leftPadding) + value + new string(' ', rightPadding));
-        }
-
-        private void WriteTableRowEnd() => WriteLine("|");
+        /// <inheritdoc />
+        public void WriteVerboseLine(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
+            => WriteVerbose(str + Environment.NewLine, level, color);
 
         private string GetIndent(int level)
         {
@@ -190,6 +187,23 @@ namespace Bechtle.A365.ConfigService.Cli
             }
         }
 
+        private void WriteInternal(TextWriter writer, Stream stream, LogLevel logLevel)
+        {
+            if (!IsEnabled(logLevel))
+                return;
+
+            lock (_consoleLock)
+            {
+                using (var reader = new StreamReader(stream, Encoding.UTF8, false, 1, true))
+                {
+                    do
+                    {
+                        writer.WriteLine(reader.ReadLine());
+                    } while (!reader.EndOfStream);
+                }
+            }
+        }
+
         private void WriteInternal(TextWriter writer, string str, int indentLevel, ConsoleColor color, LogLevel logLevel)
         {
             if (!IsEnabled(logLevel))
@@ -205,6 +219,19 @@ namespace Bechtle.A365.ConfigService.Cli
 
         private void WriteSeparatorInternal(TextWriter writer, ConsoleColor color)
             => WriteInternal(writer, "\r\n------------------------------------\r\n\r\n", 0, color, 0);
+
+        private void WriteTableCell(string value, int columnWidth)
+        {
+            Write("|");
+
+            var totalPadding = Math.Max(columnWidth + 2, value.Length + 2) - value.Length;
+            var leftPadding = totalPadding / 2;
+            var rightPadding = leftPadding + totalPadding % 2;
+
+            Write(new string(' ', leftPadding) + value + new string(' ', rightPadding));
+        }
+
+        private void WriteTableRowEnd() => WriteLine("|");
 
         private class DisposableDummy : IDisposable
         {
@@ -230,7 +257,7 @@ namespace Bechtle.A365.ConfigService.Cli
             public List<string> Values { get; set; }
 
             /// <summary>
-            ///     cache for <see cref="Width"/>
+            ///     cache for <see cref="Width" />
             /// </summary>
             private int? _width;
 

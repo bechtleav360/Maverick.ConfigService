@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Cli
@@ -33,5 +34,11 @@ namespace Bechtle.A365.ConfigService.Cli
         void WriteVerbose(string str, int level = 0, ConsoleColor color = ConsoleColor.White);
 
         void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector);
+
+        void Write(Stream stream);
+
+        void WriteError(Stream stream);
+
+        void WriteVerbose(Stream stream);
     }
 }
