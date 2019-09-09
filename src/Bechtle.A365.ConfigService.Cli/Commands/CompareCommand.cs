@@ -1,4 +1,10 @@
-﻿using Bechtle.A365.ConfigService.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
@@ -8,12 +14,6 @@ using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
@@ -27,24 +27,28 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         }
 
         [Option("-e|--environment", Description = "Environment to export, given in \"{Category}/{Name}\" form")]
-        public string[] Environments { get; set; }
+        public string[] Environments { get; set; } = new string[0];
 
         [Option("-i|--input", Description = "location of environment-dump")]
-        public string InputFile { get; set; }
+        public string InputFile { get; set; } = string.Empty;
 
-        [Option("-o|--output", Description = "location to export data to")]
-        public string OutputFile { get; set; }
-
-        [Option("-u|--use-environment", Description = "Environment to use from the ones available in <InputFile> or <stdin> if multiple defined. " +
-                                                      "given in \"{Category}/{Name}\" form. " +
-                                                      "Can be left out if only one is defined.")]
-        public string UseInputEnvironment { get; set; }
+        [Option("--keep-null-properties", CommandOptionType.NoValue,
+            Description = "set this flag to retain null-values if present. otherwise they are replaced with \"\"")]
+        public bool KeepNullProperties { get; set; } = false;
 
         [Option("-m|--mode", Description = "which operations should be recorded to match the target-environment. " +
                                            "'Add' to add keys which are new in source. " +
                                            "'Delete' to remove keys that have been deleted in source. " +
                                            "'Match' to write both 'Add' and 'Delete' operations")]
         public ComparisonMode Mode { get; set; } = ComparisonMode.Match;
+
+        [Option("-o|--output", Description = "location to export data to")]
+        public string OutputFile { get; set; } = string.Empty;
+
+        [Option("-u|--use-environment", Description = "Environment to use from the ones available in <InputFile> or <stdin> if multiple defined. " +
+                                                      "given in \"{Category}/{Name}\" form. " +
+                                                      "Can be left out if only one is defined.")]
+        public string UseInputEnvironment { get; set; } = string.Empty;
 
         /// <inheritdoc />
         protected override bool CheckParameters()
@@ -178,10 +182,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                     {
                         Source = new EnvironmentIdentifier(targetEnvironment.Category, targetEnvironment.Name),
                         Target = id,
-                        RequiredActions = changedKeys.Select(c => ConfigKeyAction.Set(c.Key,
-                                                                                      c.Value ?? string.Empty,
-                                                                                      c.Description ?? string.Empty,
-                                                                                      c.Type ?? string.Empty))
+                        RequiredActions = changedKeys.Select(c => KeepNullProperties
+                                                                      ? ConfigKeyAction.Set(c.Key, c.Value, c.Description, c.Type)
+                                                                      : ConfigKeyAction.Set(c.Key,
+                                                                                            c.Value ?? string.Empty,
+                                                                                            c.Description ?? string.Empty,
+                                                                                            c.Type ?? string.Empty))
                                                      .Concat(deletedKeys.Select(d => ConfigKeyAction.Delete(d.Key)))
                                                      .ToList()
                     });
@@ -374,7 +380,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         }
 
         /// <summary>
-        ///     write the result into a file or stdout - depending on <see cref="OutputFile"/>
+        ///     write the result into a file or stdout - depending on <see cref="OutputFile" />
         /// </summary>
         /// <param name="comparisons"></param>
         /// <returns></returns>
@@ -430,15 +436,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 Output.WriteLine($"error while writing output: {e}");
                 return 1;
             }
-        }
-
-        // ReSharper disable once ShiftExpressionRealShiftCountIsZero
-        [Flags]
-        public enum ComparisonMode : byte
-        {
-            Add = 1 << 0,
-            Delete = 1 << 1,
-            Match = Add | Delete
         }
     }
 }
