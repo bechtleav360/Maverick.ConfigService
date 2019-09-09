@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
     [Command("compare", Description = "compare an exported-environment with one or more local environments")]
+    [Subcommand(typeof(ImportComparisonCommand))]
     public class CompareCommand : SubCommand<Program>
     {
         public CompareCommand(IConsole console)
@@ -135,50 +136,47 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     compare the source-env with all target-envs and return the necessary actions to reach each target
         /// </summary>
-        /// <param name="sourceEnvironment"></param>
-        /// <param name="targetEnvironments"></param>
+        /// <param name="targetEnvironment"></param>
+        /// <param name="sourceEnvironments"></param>
         /// <returns></returns>
-        private IList<EnvironmentComparison> CompareEnvironments(EnvironmentExport sourceEnvironment,
-                                                                 IDictionary<EnvironmentIdentifier, ConfigEnvironmentKey[]> targetEnvironments)
+        private IList<EnvironmentComparison> CompareEnvironments(EnvironmentExport targetEnvironment,
+                                                                 IDictionary<EnvironmentIdentifier, ConfigEnvironmentKey[]> sourceEnvironments)
         {
             var comparisons = new List<EnvironmentComparison>();
 
             try
             {
-                foreach (var (id, keys) in targetEnvironments)
+                foreach (var (id, sourceKeys) in sourceEnvironments)
                 {
-                    Output.WriteVerboseLine($"comparing '{sourceEnvironment.Category}/{sourceEnvironment.Name}' <=> '{id}'");
+                    Output.WriteVerboseLine($"comparing '{targetEnvironment.Category}/{targetEnvironment.Name}' <=> '{id}'");
 
                     var changedKeys = (Mode & ComparisonMode.Add) != 0
-                                          ? sourceEnvironment.Keys
-                                                             .Where(sk =>
-                                                             {
-                                                                 // if the given key does not exist in the target environment or is somehow changed
-                                                                 // we add it to the list of changed keys for review
-                                                                 var foundKey = keys.FirstOrDefault(tk => tk.Key.Equals(sk.Key));
-                                                                 var result = foundKey is null
-                                                                              || foundKey.Value?.Equals(sk.Value) != true
-                                                                              || foundKey.Type?.Equals(sk.Type) != true
-                                                                              || foundKey.Description?.Equals(sk.Description) != true;
-                                                                 return result;
-                                                             })
-                                                             .ToList()
+                                          ? targetEnvironment.Keys.Where(key =>
+                                          {
+                                              // if the given key does not exist in the target environment or is somehow changed
+                                              // we add it to the list of changed keys for review
+                                              var sourceKey = sourceKeys.FirstOrDefault(k => k.Key.Equals(key.Key));
+
+                                              // null and "" are treated as equals here
+                                              return sourceKey is null
+                                                     || (sourceKey.Value ?? string.Empty).Equals(key.Value ?? string.Empty) != true
+                                                     || (sourceKey.Type ?? string.Empty).Equals(key.Type ?? string.Empty) != true
+                                                     || (sourceKey.Description ?? string.Empty).Equals(key.Description ?? string.Empty) != true;
+                                          }).ToList()
                                           : new List<EnvironmentKeyExport>();
 
                     var deletedKeys = (Mode & ComparisonMode.Delete) != 0
-                                          ? sourceEnvironment.Keys
-                                                             .Where(sk =>
-                                                             {
-                                                                 // if any target-key doesn't exist in the source any more,
-                                                                 // we add it to the list of deleted keys for review
-                                                                 return keys.All(tk => !tk.Key.Equals(sk.Key));
-                                                             })
-                                                             .ToList()
-                                          : new List<EnvironmentKeyExport>();
+                                          ? sourceKeys.Where(sk =>
+                                          {
+                                              // if any target-key doesn't exist in the source any more,
+                                              // we add it to the list of deleted keys for review
+                                              return targetEnvironment.Keys.All(tk => !tk.Key.Equals(sk.Key));
+                                          }).ToList()
+                                          : new List<ConfigEnvironmentKey>();
 
                     comparisons.Add(new EnvironmentComparison
                     {
-                        Source = new EnvironmentIdentifier(sourceEnvironment.Category, sourceEnvironment.Name),
+                        Source = new EnvironmentIdentifier(targetEnvironment.Category, targetEnvironment.Name),
                         Target = id,
                         RequiredActions = changedKeys.Select(c => ConfigKeyAction.Set(c.Key,
                                                                                       c.Value ?? string.Empty,
@@ -209,17 +207,18 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             try
             {
-                foreach (var targetId in envIds)
+                foreach (var target in envIds)
                 {
                     var request = await RestRequest.Make(Output)
-                                                   .Get(new Uri(new Uri(ConfigServiceEndpoint), "v1/environments/av360/dev/keys/objects"))
+                                                   .Get(new Uri(new Uri(ConfigServiceEndpoint),
+                                                                $"v1/environments/{target.Category}/{target.Name}/keys/objects"))
                                                    .ReceiveString()
                                                    .ReceiveObject<List<ConfigEnvironmentKey>>();
 
                     if (request.HttpResponseMessage?.IsSuccessStatusCode == true)
-                        results.Add(targetId, (await request.Take<List<ConfigEnvironmentKey>>())?.ToArray());
+                        results.Add(target, (await request.Take<List<ConfigEnvironmentKey>>())?.ToArray());
                     else
-                        Output.WriteErrorLine($"could not retrieve environment '{targetId}' for comparison");
+                        Output.WriteErrorLine($"could not retrieve environment '{target}' for comparison");
                 }
             }
             catch (Exception e)
