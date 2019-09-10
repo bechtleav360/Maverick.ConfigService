@@ -26,6 +26,33 @@ You always need to specify the ConfigService you're talking to after providing t
 dotnet Bechtle.A365.ConfigService.Cli [command] -s https://a365configurationservice.a365dev.de:8456/ [command-options]
 ```
 
+### Browse
+
+The `browse` command allows you to browse through the data available in the targeted ConfigService. 
+
+You can use the command to browse through these stores:
+- Environments
+- Configurations
+
+### Compare
+
+the `compare` command allows you to compare an exported snapshot of an Environment with local Environments, and to migrate the local Environment to the snapshot.
+The migration is a three-step process:
+1. export an Environment that represents the desired state
+2. execute `compare` to generate a list of actions
+3. execute `compare import` to execute the generated list
+
+If your Environment-Export contains more than one Environment, you need to specify which one to use when Comparing against the local Environments (`-u|--use-environment 'foo/bar'`).
+
+> By default, this command will generate commands to
+> - add keys available in the Export, but not in the local Environment
+> - delete keys that are available in the local Environment, but not in the Export
+> 
+> You can change this behaviour by passing the `-m|--mode [Add|Delete|Match]` flag
+
+> By default, this command will replace `null` properties (`Value | Description | Type`) with an empty string.  
+> To disable this, you can pass the `--keep-null-properties` flag
+
 ### Export
 
 The `export` command allows you to export data (environments only, ATM).
@@ -41,6 +68,24 @@ Alternatively you can specify `--Output` to write directly into a file.
 The `import` command allows you to import data (environments only, ATM) which was previously exported via `export`.
 
 You need to either provide the data via `stdin` or point to a file with `--File`.
+
+### Migrate
+
+The `migrate` command allows you to execute Database-Migrations to the target-Database.  
+Which migrations are available in the specific Cli you're using is set during Compile-Time.  
+You can use the `migrate list` command to get an overview over which migrations have been applied, or are supported by your Cli-Version.  
+The output of `migrate list` looks like this. (DateFormat: `yyyy/MM/dd HH:mm:ss`)
+
+```
+> .\Bechtle.A365.ConfigService.Cli.exe migrate list -c "{MsSQL-Connection-String}" -b "MsSQL"
+2018/11/14 09:29:48 | InitialCreate                | Applied | Supported
+2019/01/03 13:50:58 | add-introspection            | Applied | Supported
+2019/01/08 10:27:31 | ConfigKeyMetadata            | Applied | Supported
+2019/01/15 13:51:47 | EnvironmentKeyAutoCompletion | Applied | Supported
+2019/01/25 08:25:02 | MarkStaleConfiguration       | Applied | Supported
+2019/06/28 08:01:00 | AddKeyVersioning             | Applied | Supported
+2019/07/18 14:01:13 | AddProjectionMetadata        | Applied | Supported
+```
 
 ### Test
 
