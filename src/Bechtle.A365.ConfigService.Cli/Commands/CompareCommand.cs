@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
-        [Option("-e|--environment", Description = "Environment to export, given in \"{Category}/{Name}\" form")]
+        [Option("-e|--environment", Description = "Environment to compare against the Input-Environment, given in \"{Category}/{Name}\" form")]
         public string[] Environments { get; set; } = new string[0];
 
         [Option("-i|--input", Description = "location of environment-dump")]
@@ -36,10 +36,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             Description = "set this flag to retain null-values if present. otherwise they are replaced with \"\"")]
         public bool KeepNullProperties { get; set; } = false;
 
-        [Option("-m|--mode", Description = "which operations should be recorded to match the target-environment. " +
-                                           "'Add' to add keys which are new in source. " +
-                                           "'Delete' to remove keys that have been deleted in source. " +
-                                           "'Match' to write both 'Add' and 'Delete' operations")]
+        [Option("-m|--mode", Description = "which operations should be executed to match the target-environment. " +
+                                           "\n\t\t- 'Add'   : add keys which are new in source. " +
+                                           "\n\t\t- 'Delete': remove keys that have been deleted in source. " +
+                                           "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
         public ComparisonMode Mode { get; set; } = ComparisonMode.Match;
 
         [Option("-o|--output", Description = "location to export data to")]
