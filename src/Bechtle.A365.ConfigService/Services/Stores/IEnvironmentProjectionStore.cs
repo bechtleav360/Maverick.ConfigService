@@ -38,6 +38,13 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <summary>
         ///     get the keys of an Environment as Objects
         /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentKeyQueryParameters parameters);
+
+        /// <summary>
+        ///     get the keys of an Environment as Objects
+        /// </summary>
         /// <param name="identifier"></param>
         /// <param name="range"></param>
         /// <returns></returns>
@@ -61,6 +68,13 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="range"></param>
         /// <returns></returns>
         Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, string preferExactMatch, QueryRange range);
+
+        /// <summary>
+        ///     get the keys of an Environment
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters);
 
         /// <summary>
         ///     get the keys of an Environment

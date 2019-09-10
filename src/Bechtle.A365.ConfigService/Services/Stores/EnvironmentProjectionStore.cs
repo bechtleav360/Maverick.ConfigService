@@ -208,6 +208,22 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
+        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentKeyQueryParameters parameters)
+            => GetKeysInternal(parameters.Environment,
+                               parameters.Filter,
+                               parameters.PreferExactMatch,
+                               parameters.Range,
+                               item => new DtoConfigKey
+                               {
+                                   Key = item.Key,
+                                   Value = item.Value,
+                                   Description = item.Description,
+                                   Type = item.Type
+                               },
+                               item => item.Key,
+                               items => items);
+
+        /// <inheritdoc />
         public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier,
                                                                       QueryRange range)
             => GetKeysInternal(identifier,
@@ -301,6 +317,18 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
                                                                                                       item => item.Value,
                                                                                                       StringComparer.OrdinalIgnoreCase));
+
+        /// <inheritdoc />
+        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters)
+            => GetKeysInternal(parameters.Environment,
+                               parameters.Filter,
+                               parameters.PreferExactMatch,
+                               parameters.Range,
+                               item => item,
+                               item => item.Key,
+                               keys => (IDictionary<string, string>) keys.ToImmutableDictionary(item => item.Key,
+                                                                                                item => item.Value,
+                                                                                                StringComparer.OrdinalIgnoreCase));
 
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
                                                                     Func<TItem, string> keySelector,
