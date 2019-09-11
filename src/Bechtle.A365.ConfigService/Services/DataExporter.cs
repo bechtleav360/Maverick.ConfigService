@@ -50,7 +50,11 @@ namespace Bechtle.A365.ConfigService.Services
 
         private async Task<EnvironmentExport> ExportInternal(EnvironmentIdentifier id)
         {
-            var env = await _store.Environments.GetKeyObjects(id, QueryRange.All);
+            var env = await _store.Environments.GetKeyObjects(new EnvironmentKeyQueryParameters
+            {
+                Environment = id,
+                Range = QueryRange.All
+            });
 
             if (!env.IsError)
                 return new EnvironmentExport

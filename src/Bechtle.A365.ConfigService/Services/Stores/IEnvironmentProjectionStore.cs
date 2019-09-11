@@ -60,16 +60,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range);
 
         /// <summary>
-        ///     get the keys of an Environment as Objects
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, string preferExactMatch, QueryRange range);
-
-        /// <summary>
         ///     get the keys of an Environment
         /// </summary>
         /// <param name="parameters"></param>
@@ -92,15 +82,5 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="range"></param>
         /// <returns></returns>
         Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range);
-
-        /// <summary>
-        ///     get the keys of an Environment
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, string preferExactMatch, QueryRange range);
     }
 }

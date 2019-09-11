@@ -67,7 +67,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (structureVariableResult.IsError)
                 throw new Exception(structureVariableResult.Message);
 
-            var environmentResult = await _store.Environments.GetKeys(envId, QueryRange.All);
+            var environmentResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = envId,
+                Range = QueryRange.All
+            });
+
             if (environmentResult.IsError)
                 throw new Exception(environmentResult.Message);
 
@@ -147,7 +152,11 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (!string.IsNullOrWhiteSpace(environment.Category) && !string.IsNullOrWhiteSpace(environment.Name))
             {
                 var id = new EnvironmentIdentifier(environment.Category, environment.Name);
-                var result = await _store.Environments.GetKeys(id, QueryRange.All);
+                var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+                {
+                    Environment = id,
+                    Range = QueryRange.All
+                });
 
                 if (!result.IsError)
                     return result.Data;

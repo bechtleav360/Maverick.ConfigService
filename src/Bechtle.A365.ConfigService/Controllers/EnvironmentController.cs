@@ -181,7 +181,13 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeys(identifier, filter, preferExactMatch, range);
+            var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = identifier,
+                Filter = filter,
+                PreferExactMatch = preferExactMatch,
+                Range = range
+            });
 
             return Result(result);
         }
@@ -202,7 +208,13 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeys(identifier, filter, preferExactMatch, QueryRange.All);
+            var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = identifier,
+                Filter = filter,
+                PreferExactMatch = preferExactMatch,
+                Range = QueryRange.All
+            });
 
             if (result.IsError)
                 return ProviderError(result);
@@ -234,7 +246,13 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeyObjects(identifier, filter, preferExactMatch, range);
+            var result = await _store.Environments.GetKeyObjects(new EnvironmentKeyQueryParameters
+            {
+                Environment = identifier,
+                Filter = filter,
+                PreferExactMatch = preferExactMatch,
+                Range = range
+            });
 
             if (result.IsError)
                 return ProviderError(result);

@@ -60,7 +60,11 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeyResult = await _store.Environments.GetKeys(envId, QueryRange.All);
+            var envKeyResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = envId,
+                Range = QueryRange.All
+            });
 
             if (envKeyResult.IsError)
                 return ProviderError(envKeyResult);
@@ -93,7 +97,11 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeyResult = await _store.Environments.GetKeys(envId, QueryRange.All);
+            var envKeyResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = envId,
+                Range = QueryRange.All
+            });
 
             if (envKeyResult.IsError)
                 return ProviderError(envKeyResult);
@@ -137,7 +145,11 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeysResult = await _store.Environments.GetKeys(envId, QueryRange.All);
+            var envKeysResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = envId,
+                Range = QueryRange.All
+            });
 
             if (envKeysResult.IsError)
                 return ProviderError(envKeysResult);

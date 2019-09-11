@@ -259,40 +259,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                items => items);
 
         /// <inheritdoc />
-        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier,
-                                                                      string filter,
-                                                                      string preferExactMatch,
-                                                                      QueryRange range)
-            => GetKeysInternal(identifier,
-                               filter,
-                               preferExactMatch,
-                               range,
-                               item => new DtoConfigKey
-                               {
-                                   Key = item.Key,
-                                   Value = item.Value,
-                                   Description = item.Description,
-                                   Type = item.Type
-                               },
-                               item => item.Key,
-                               items => items);
-
-        /// <inheritdoc />
-        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier,
-                                                                  string filter,
-                                                                  string preferExactMatch,
-                                                                  QueryRange range)
-            => GetKeysInternal(identifier,
-                               filter,
-                               preferExactMatch,
-                               range,
-                               item => item,
-                               item => item.Key,
-                               keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
-                                                                                                      item => item.Value,
-                                                                                                      StringComparer.OrdinalIgnoreCase));
-
-        /// <inheritdoc />
         public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range)
             => GetKeysInternal(identifier,
                                null,
