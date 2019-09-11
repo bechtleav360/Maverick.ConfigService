@@ -5,9 +5,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <summary>
     ///     structured parameters for
-    ///     <see cref="IEnvironmentProjectionStore.GetKeys(EnvironmentKeyQueryParameters)"  />
+    ///     <see cref="IEnvironmentProjectionStore.GetKeys(EnvironmentKeyQueryParameters)" />
     ///     and
-    ///     <see cref="IEnvironmentProjectionStore.GetKeyObjects(EnvironmentKeyQueryParameters)"  />
+    ///     <see cref="IEnvironmentProjectionStore.GetKeyObjects(EnvironmentKeyQueryParameters)" />
     /// </summary>
     public struct EnvironmentKeyQueryParameters
     {
@@ -31,5 +31,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         ///     [Optional] Limit the Start and End of the Result-set. Used for Paging the Data
         /// </summary>
         public QueryRange Range { get; set; }
+
+        /// <summary>
+        ///     [Optional] Root-Path that should be removed from all found Entries
+        /// </summary>
+        public string RemoveRoot { get; set; }
     }
 }

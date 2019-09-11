@@ -208,17 +208,27 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentKeyQueryParameters parameters)
-            => GetKeysInternal(parameters,
-                               item => new DtoConfigKey
-                               {
-                                   Key = item.Key,
-                                   Value = item.Value,
-                                   Description = item.Description,
-                                   Type = item.Type
-                               },
-                               item => item.Key,
-                               items => items);
+        public async Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentKeyQueryParameters parameters)
+        {
+            var result = await GetKeysInternal(parameters,
+                                               item => new DtoConfigKey
+                                               {
+                                                   Key = item.Key,
+                                                   Value = item.Value,
+                                                   Description = item.Description,
+                                                   Type = item.Type
+                                               },
+                                               item => item.Key,
+                                               items => items);
+
+            if (result.IsError)
+                return result;
+
+            if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
+                return RemoveRoot(result.Data.ToList(), parameters.RemoveRoot);
+
+            return result;
+        }
 
         /// <inheritdoc />
         public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range)
@@ -287,13 +297,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                                       StringComparer.OrdinalIgnoreCase));
 
         /// <inheritdoc />
-        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters)
-            => GetKeysInternal(parameters,
-                               item => item,
-                               item => item.Key,
-                               keys => (IDictionary<string, string>) keys.ToImmutableDictionary(item => item.Key,
-                                                                                                item => item.Value,
-                                                                                                StringComparer.OrdinalIgnoreCase));
+        public async Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters)
+        {
+            var result = await GetKeysInternal(parameters,
+                                               item => item,
+                                               item => item.Key,
+                                               keys => (IDictionary<string, string>) keys.ToImmutableDictionary(item => item.Key,
+                                                                                                                item => item.Value,
+                                                                                                                StringComparer.OrdinalIgnoreCase));
+
+            if (result.IsError)
+                return result;
+
+            if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
+                return RemoveRoot(result.Data, parameters.RemoveRoot);
+
+            return result;
+        }
 
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
                                                                     Func<TItem, string> keySelector,
@@ -442,7 +462,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <summary>
         ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
         /// </summary>
-        /// <param name="parameters">see <see cref="EnvironmentKeyQueryParameters"/> for more information on each parameter</param>
+        /// <param name="parameters">see <see cref="EnvironmentKeyQueryParameters" /> for more information on each parameter</param>
         /// <param name="selector">internal selector transforming the filtered items to an intermediate representation</param>
         /// <param name="keySelector">selector pointing to the 'Key' property of the intermediate representation</param>
         /// <param name="transform">final transformation applied to the result-set</param>
@@ -462,10 +482,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                           .FirstOrDefaultAsync();
 
                 if (envId == default)
-                    return Result.Error<TResult>("no environment found with (" +
-                                                 $"{nameof(parameters.Environment.Category)}: {parameters.Environment.Category}; " +
-                                                 $"{nameof(parameters.Environment.Name)}: {parameters.Environment.Name})",
-                                                 ErrorCode.NotFound);
+                    return Result.Error<TResult>($"no environment found with ({parameters.Environment})", ErrorCode.NotFound);
 
                 var keys = await _cache.GetOrCreateAsync(
                                CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
@@ -475,7 +492,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                            parameters.Environment,
                                                            parameters.Filter,
                                                            parameters.PreferExactMatch,
-                                                           parameters.Range),
+                                                           parameters.Range,
+                                                           parameters.RemoveRoot),
                                async entry =>
                                {
                                    var query = _context.ConfigEnvironmentKeys
@@ -502,7 +520,68 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             catch (Exception e)
             {
                 _logger.LogError(e, $"failed to retrieve keys for environment ({parameters.Environment})");
-                return Result.Error<TResult>("failed to retrieve keys for environment ({parameters.Environment})", ErrorCode.DbQueryError);
+                return Result.Error<TResult>($"failed to retrieve keys for environment ({parameters.Environment})", ErrorCode.DbQueryError);
+            }
+        }
+
+        /// <summary>
+        ///     remove the 'root' portion of each given key
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        private IResult<IDictionary<string, string>> RemoveRoot(IDictionary<string, string> keys, string root)
+        {
+            try
+            {
+                // if every item passes the check for the same root
+                // project each item into a new dict with the modified Key
+                if (keys.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
+                    return Result.Success((IDictionary<string, string>) keys.ToDictionary(kvp => kvp.Key.Substring(root.Length),
+                                                                                          kvp => kvp.Value));
+
+                _logger.LogDebug($"could not remove root '{root}' from all entries - not all items share same root");
+                return Result.Error<IDictionary<string, string>>($"could not remove root '{root}' from all entries - not all items share same root",
+                                                                 ErrorCode.InvalidData);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"could not remove root '{root}' from all entries");
+                return Result.Error<IDictionary<string, string>>($"could not remove root '{root}' from all entries", ErrorCode.Undefined);
+            }
+        }
+
+        /// <summary>
+        ///     remove the 'root' portion of each given key
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <param name="root"></param>
+        /// <returns></returns>
+        private IResult<IEnumerable<DtoConfigKey>> RemoveRoot(IEnumerable<DtoConfigKey> keys, string root)
+        {
+            try
+            {
+                var keyList = keys.ToList();
+
+                // if every item passes the check for the same root
+                // modify the .Key property and put the entries into a new list that we return
+                if (keyList.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
+                    return Result.Success(keyList.Select(entry =>
+                                                 {
+                                                     entry.Key = entry.Key.Substring(root.Length);
+                                                     return entry;
+                                                 })
+                                                 .ToList()
+                                                 .AsEnumerable());
+
+                _logger.LogDebug($"could not remove root '{root}' from all ConfigKeys - not all items share same root");
+                return Result.Error<IEnumerable<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys - not all items share same root",
+                                                               ErrorCode.InvalidData);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"could not remove root '{root}' from all ConfigKeys");
+                return Result.Error<IEnumerable<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys", ErrorCode.Undefined);
             }
         }
     }

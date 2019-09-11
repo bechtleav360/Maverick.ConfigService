@@ -166,6 +166,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="filter"></param>
         /// <param name="preferExactMatch"></param>
+        /// <param name="root"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
@@ -174,6 +175,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                  [FromRoute] string name,
                                                  [FromQuery] string filter,
                                                  [FromQuery] string preferExactMatch,
+                                                 [FromQuery] string root,
                                                  [FromQuery] int offset = -1,
                                                  [FromQuery] int length = -1)
         {
@@ -186,7 +188,8 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Environment = identifier,
                 Filter = filter,
                 PreferExactMatch = preferExactMatch,
-                Range = range
+                Range = range,
+                RemoveRoot = root
             });
 
             return Result(result);
@@ -199,12 +202,14 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="filter"></param>
         /// <param name="preferExactMatch"></param>
+        /// <param name="root"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
                                                        [FromRoute] string name,
                                                        [FromQuery] string filter,
-                                                       [FromQuery] string preferExactMatch)
+                                                       [FromQuery] string preferExactMatch,
+                                                       [FromQuery] string root)
         {
             var identifier = new EnvironmentIdentifier(category, name);
 
@@ -213,7 +218,8 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Environment = identifier,
                 Filter = filter,
                 PreferExactMatch = preferExactMatch,
-                Range = QueryRange.All
+                Range = QueryRange.All,
+                RemoveRoot = root
             });
 
             if (result.IsError)
@@ -231,6 +237,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="name"></param>
         /// <param name="filter"></param>
         /// <param name="preferExactMatch"></param>
+        /// <param name="root"></param>
         /// <param name="offset" />
         /// <param name="length" />
         /// <returns></returns>
@@ -239,6 +246,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                                                              [FromRoute] string name,
                                                              [FromQuery] string filter,
                                                              [FromQuery] string preferExactMatch,
+                                                             [FromQuery] string root,
                                                              [FromQuery] int offset = -1,
                                                              [FromQuery] int length = -1)
         {
@@ -251,7 +259,8 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Environment = identifier,
                 Filter = filter,
                 PreferExactMatch = preferExactMatch,
-                Range = range
+                Range = range,
+                RemoveRoot = root
             });
 
             if (result.IsError)
