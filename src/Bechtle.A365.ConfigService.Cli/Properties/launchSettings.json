@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Bechtle.A365.ConfigService.Cli": {
-      "commandName": "Project",
-      "commandLineArgs": "migrate -c \"Server=localhost; Database=SD_A365ConfigProjection; User Id=postgres; Password=1;\" -b postgres"
+      "commandName": "Project"
     }
   }
 }
