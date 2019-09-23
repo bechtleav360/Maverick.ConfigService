@@ -2,7 +2,7 @@
 
   <!-- Global Stuff -->
   <PropertyGroup>
-    <version>2.3.0</version>
+    <Version>2.3.1</Version>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <LangVersion>8.0</LangVersion>

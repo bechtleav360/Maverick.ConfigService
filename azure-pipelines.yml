@@ -1,0 +1,107 @@
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)_$(Rev:rrrr)
+
+trigger:
+  branches:
+    include:
+      - master
+      - develop
+  paths:
+    exclude:
+      - azure-pipelines.yml
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: A365/PipelineTemplates
+
+stages:
+  - stage: Build
+    variables:
+      buildConfiguration: 'Release'
+      buildRuntime: 'win10-x64'
+      netcoreSdkVersion: '3.1.100'
+      buildRevision: $[counter(format('{0}-{1}', variables['Build.Repository.Name'], variables['Build.SourceBranchName']), 1)]
+    jobs:
+      - job: Application
+        pool: 'A365VSTS'
+        steps:
+        # make sure to use the proper SDK
+        - task: UseDotNet@2
+          displayName: 'use DotnetCore-SDK "$(netcoreSdkVersion)"'
+          inputs:
+            packageType: 'sdk'
+            version: '$(netcoreSdkVersion)'
+
+        # build test-project
+        - task: DotNetCoreCLI@2
+          displayName: 'build test-project'
+          inputs:
+            command: 'build'
+            projects: 'tests/Bechtle.A365.ConfigService.Tests/Bechtle.A365.ConfigService.Tests.csproj'
+            arguments: '-c $(buildConfiguration)'
+
+        # execute unit tests
+        - task: VSTest@2
+          displayName: 'execute unit tests via VSTest'
+          inputs:
+            testSelector: 'testAssemblies'
+            testAssemblyVer2: 'tests/Bechtle.A365.ConfigService.Tests/bin/$(buildConfiguration)/netcoreapp2.2/Bechtle.A365.ConfigService.Tests.dll'
+            searchFolder: '$(System.DefaultWorkingDirectory)'
+            rerunFailedTests: true
+            rerunType: basedOnTestFailurePercentage
+            rerunFailedThreshold: '33'
+            rerunMaxAttempts: '3'
+
+        # build Service
+        - template: build-project.yaml@templates
+          parameters:
+            projectLocation: 'src/Bechtle.A365.ConfigService'
+            projectFile: 'Bechtle.A365.ConfigService.csproj'
+            projectName: 'Service'
+
+        # build CLI
+        - template: build-project.yaml@templates
+          parameters:
+            projectLocation: 'src/Bechtle.A365.ConfigService.Cli'
+            projectFile: 'Bechtle.A365.ConfigService.Cli.csproj'
+            projectName: 'Cli'
+            buildArguments: '-r $(buildRuntime)'
+
+        # publish the release-binaries back to AzureDevOps
+        - task: PublishBuildArtifacts@1
+          displayName: 'publish binaries to Azure Pipelines'
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            ArtifactName: 'binaries'
+            publishLocation: 'Container'
+
+      - job: Docker
+        pool: 'Docker'
+        steps:
+        # build Service
+        - template: build-project-container.yaml@templates
+          parameters:
+            projectLocation: '$(Build.SourcesDirectory)/src/Bechtle.A365.ConfigService'
+            projectFile: 'Bechtle.A365.ConfigService.csproj'
+            projectName: 'Service'
+            containerName: 'configservice'
+            containerRegistry: Maverick
+            nugetPassword: '$(nuget_password)'
+            containerTagPrefix: 'maverick.azurecr.io/'
+
+        # build Cli
+        - template: build-project-container.yaml@templates
+          parameters:
+            projectLocation: '$(Build.SourcesDirectory)/src/Bechtle.A365.ConfigService.Cli'
+            projectFile: 'Bechtle.A365.ConfigService.Cli.csproj'
+            projectName: 'Cli'
+            containerName: 'configservice-cli'
+            containerRegistry: Maverick
+            nugetPassword: '$(nuget_password)'
+            containerTagPrefix: 'maverick.azurecr.io/'
