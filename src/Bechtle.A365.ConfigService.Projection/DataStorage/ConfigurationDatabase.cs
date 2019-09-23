@@ -324,6 +324,12 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         public async Task<IResult> GenerateEnvironmentKeyAutocompleteData(EnvironmentIdentifier identifier)
         {
             var environment = await GetEnvironmentInternal(identifier);
+            var existingPaths = _context.AutoCompletePaths
+                                        .Where(p => p.ConfigEnvironmentId == environment.Id)
+                                        .ToList();
+
+            var toRemove = new List<ConfigEnvironmentKeyPath>();
+            var toAdd = new List<ConfigEnvironmentKeyPath>();
 
             if (environment?.Keys is null)
             {
@@ -331,16 +337,26 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 return Result.Error($"couldn't generate auto-complete data for environment '{identifier}': environment was not found", ErrorCode.NotFound);
             }
 
-            var roots = new List<ConfigEnvironmentKeyPath>();
-
-            foreach (var environmentKey in environment.Keys.OrderBy(k => k.Key))
+            foreach (var entry in environment.Keys.OrderBy(k => k.Key))
             {
-                _logger.LogTrace($"generating autocomplete-data for '{environmentKey.Key}'");
+                // if there is already a prepared path for the current key, skip forward
+                if (existingPaths.Any(existing => entry.Key.Equals(existing.FullPath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (_logger.IsEnabled(LogLevel.Trace))
+                        _logger.LogTrace($"existing autocomplete-data for '{entry.Key}' found, skipping");
+                    continue;
+                }
 
-                var parts = environmentKey.Key.Split('/');
+                if (_logger.IsEnabled(LogLevel.Trace))
+                    _logger.LogTrace($"generating autocomplete-data for '{entry.Key}'");
+
+                var parts = entry.Key.Split('/');
 
                 var rootPart = parts.First();
-                var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
+
+                // search for the proper root for this entry, start in the newly-added items and use the existing ones as fallback
+                var root = toAdd.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase))
+                           ?? existingPaths.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
 
                 if (root is null)
                 {
@@ -356,9 +372,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                         FullPath = rootPart
                     };
 
-                    _logger.LogTrace($"adding root-key '{rootPart}'");
+                    if (_logger.IsEnabled(LogLevel.Trace))
+                        _logger.LogTrace($"adding root-key '{rootPart}'");
 
-                    roots.Add(root);
+                    toAdd.Add(root);
                 }
 
                 var current = root;
@@ -381,7 +398,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                             FullPath = current.FullPath + '/' + part
                         };
 
-                        _logger.LogTrace($"adding child-key to '{current.FullPath}' => '{next.Path}'");
+                        if (_logger.IsEnabled(LogLevel.Trace))
+                            _logger.LogTrace($"adding child-key to '{current.FullPath}' => '{next.Path}'");
 
                         current.Children.Add(next);
                     }
@@ -390,20 +408,19 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 }
             }
 
-            var existingPaths = _context.AutoCompletePaths
-                                        .Where(p => p.ConfigEnvironmentId == environment.Id)
-                                        .ToList();
-
-            _logger.LogTrace($"removing existing autocomplete-data for environment '{identifier}'");
-
-            _context.AutoCompletePaths.RemoveRange(existingPaths);
-
-            _logger.LogTrace($"adding new autocomplete-data for environment '{identifier}'");
-
-            _context.AutoCompletePaths.AddRange(roots);
+            // remove all existingPath-entries that don't have a matching partner in the current environmentKeys
+            toRemove.AddRange(
+                existingPaths.Where(
+                    existing => environment.Keys.All(
+                        entry => !entry.Key.Equals(existing.FullPath, StringComparison.OrdinalIgnoreCase))));
 
             try
             {
+                _logger.LogTrace($"updating autocomplete-data for environment '{identifier}'");
+
+                _context.AutoCompletePaths.RemoveRange(toRemove);
+                _context.AutoCompletePaths.AddRange(toAdd);
+
                 _context.SaveChanges();
 
                 return Result.Success();
