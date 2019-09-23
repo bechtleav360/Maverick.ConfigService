@@ -90,6 +90,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
                                                                                 .PerformOnAnyNode()
                                                                                 .PreferRandomNode()
                                                                                 .KeepReconnecting()
+                                                                                .SetReconnectionDelayTo(TimeSpan.FromSeconds(60))
                                                                                 .LimitRetriesForOperationTo(6)
                                                                                 .LimitConcurrentOperationsTo(1)
                                                                                 .EnableVerboseLogging()
