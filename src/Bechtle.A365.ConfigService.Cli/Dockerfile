@@ -1,5 +1,5 @@
 ﻿ARG SERVICENAME=Bechtle.A365.ConfigService.Cli
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-stretch-slim AS base
+FROM mcr.microsoft.com/dotnet/core/runtime:2.2-stretch-slim AS base
 WORKDIR /app
 
 FROM maverick.azurecr.io/dotnet/core/sdk:2.2-stretch AS build
