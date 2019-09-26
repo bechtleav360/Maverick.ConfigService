@@ -182,6 +182,9 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
                 _rabbitConnection?.Dispose();
         }
 
+        // external names should stay the same even if internal name changes
+        // ignore warnings to make clear the external names are chosen to stay
+        // ReSharper disable RedundantAnonymousTypePropertyName
         private static object TransformApdex(string context, ApdexValueSource apdex) => new
         {
             UtcTime = DateTime.UtcNow.ToString("O"),
@@ -289,5 +292,6 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
             DurationUnit = timer.DurationUnit,
             Tags = timer.Tags.ToDictionary()
         };
+        // ReSharper restore RedundantAnonymousTypePropertyName
     }
 }

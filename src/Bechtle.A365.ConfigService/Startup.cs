@@ -237,6 +237,8 @@ namespace Bechtle.A365.ConfigService
                                     builder.UseNpgsql(settings.ConnectionString);
                                     break;
 
+                                // let's be explicit what happens for UNSET or NON-IMPLEMENTED backends
+                                // ReSharper disable once RedundantCaseLabel
                                 case DbBackend.None:
                                 default:
                                     _logger.LogError($"Unsupported DbBackend: '{settings.Backend}'; " +

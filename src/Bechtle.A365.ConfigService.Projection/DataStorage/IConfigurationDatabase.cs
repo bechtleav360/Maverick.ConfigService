@@ -114,7 +114,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         /// <summary>
         ///     get a list of metadata-objects for all projected events
         /// </summary>
-        /// <param name="eventMetadata"></param>
         /// <returns></returns>
         Task<IResult<IList<ProjectedEventMetadata>>> GetProjectedEventMetadata();
 

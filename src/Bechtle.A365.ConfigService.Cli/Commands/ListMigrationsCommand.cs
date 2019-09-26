@@ -152,7 +152,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         private enum MigrationState
         {
             Unknown = 0,
-            Pending = 1 << 0,
+            Pending = 1,
             Applied = 1 << 1
         }
     }
