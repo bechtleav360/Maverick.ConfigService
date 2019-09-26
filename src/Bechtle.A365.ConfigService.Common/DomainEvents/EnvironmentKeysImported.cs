@@ -15,18 +15,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             ModifiedKeys = modifiedKeys;
         }
 
-        /// <inheritdoc />
-        public EnvironmentKeysImported()
-        {
-        }
-
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; set; }
+        public EnvironmentIdentifier Identifier { get; }
 
         /// <summary>
         ///     list of Actions that have been applied to the keys
         /// </summary>
-        public ConfigKeyAction[] ModifiedKeys { get; set; }
+        public ConfigKeyAction[] ModifiedKeys { get; }
 
         public bool Equals(EnvironmentKeysImported other) => Equals(other, false);
 

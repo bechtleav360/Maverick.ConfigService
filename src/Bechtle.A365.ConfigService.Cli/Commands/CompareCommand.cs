@@ -113,11 +113,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             {
                 var split = e.Split('/');
 
-                return new EnvironmentIdentifier
-                {
-                    Category = split[0],
-                    Name = split[1]
-                };
+                return new EnvironmentIdentifier(split[0], split[1]);
             }));
 
             if (targetEnvironments is null)
@@ -252,11 +248,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 }
 
                 var useSplit = UseInputEnvironment.Split('/');
-                var usedEnvironmentId = new EnvironmentIdentifier
-                {
-                    Category = useSplit[0],
-                    Name = useSplit[1]
-                };
+                var usedEnvironmentId = new EnvironmentIdentifier(useSplit[0], useSplit[1]);
 
                 return export.Environments
                              .FirstOrDefault(e => string.Equals(e.Category,

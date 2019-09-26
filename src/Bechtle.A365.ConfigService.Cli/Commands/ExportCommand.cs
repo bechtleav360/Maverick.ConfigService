@@ -78,11 +78,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                            {
                                                var split = e.Split('/');
 
-                                               return new EnvironmentIdentifier
-                                               {
-                                                   Category = split[0],
-                                                   Name = split[1]
-                                               };
+                                               return new EnvironmentIdentifier(split[0], split[1]);
                                            })
                                            .ToArray()
             };

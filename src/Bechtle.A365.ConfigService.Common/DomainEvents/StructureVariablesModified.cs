@@ -15,18 +15,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             ModifiedKeys = modifiedKeys;
         }
 
-        /// <inheritdoc />
-        public StructureVariablesModified()
-        {
-        }
-
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Identifier { get; set; }
+        public StructureIdentifier Identifier { get; }
 
         /// <summary>
         ///     list of actions that have been applied to the variables
         /// </summary>
-        public ConfigKeyAction[] ModifiedKeys { get; set; }
+        public ConfigKeyAction[] ModifiedKeys { get; }
 
         public bool Equals(StructureVariablesModified other) => Equals(other, false);
 

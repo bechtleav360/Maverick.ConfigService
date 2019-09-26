@@ -14,13 +14,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Identifier = identifier;
         }
 
-        /// <inheritdoc />
-        public EnvironmentDeleted()
-        {
-        }
-
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; set; }
+        public EnvironmentIdentifier Identifier { get; }
 
         public bool Equals(EnvironmentDeleted other) => Equals(other, false);
 

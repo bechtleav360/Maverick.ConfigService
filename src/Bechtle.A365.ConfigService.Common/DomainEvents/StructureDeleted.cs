@@ -14,13 +14,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Identifier = identifier;
         }
 
-        /// <inheritdoc />
-        public StructureDeleted()
-        {
-        }
-
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Identifier { get; set; }
+        public StructureIdentifier Identifier { get; }
 
         public bool Equals(StructureDeleted other) => Equals(other, false);
 

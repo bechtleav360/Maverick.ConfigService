@@ -29,21 +29,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Version = version;
         }
 
-        /// <inheritdoc />
-        public ConfigurationIdentifier()
-        {
-        }
-
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Environment { get; set; }
+        public EnvironmentIdentifier Environment { get; }
 
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Structure { get; set; }
+        public StructureIdentifier Structure { get; }
 
         /// <summary>
         ///     Optional version of this Configuration
         /// </summary>
-        public long Version { get; set; }
+        public long Version { get; }
 
         public bool Equals(ConfigurationIdentifier other)
         {

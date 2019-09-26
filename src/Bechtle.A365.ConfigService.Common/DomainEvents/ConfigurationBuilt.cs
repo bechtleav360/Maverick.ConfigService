@@ -19,23 +19,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             ValidTo = validTo;
         }
 
-        /// <inheritdoc />
-        public ConfigurationBuilt()
-        {
-        }
-
         /// <inheritdoc cref="ConfigurationIdentifier" />
-        public ConfigurationIdentifier Identifier { get; set; }
+        public ConfigurationIdentifier Identifier { get; }
 
         /// <summary>
         ///     This Configuration is to be Valid from the given point in time, or always if null
         /// </summary>
-        public DateTime? ValidFrom { get; set; }
+        public DateTime? ValidFrom { get; }
 
         /// <summary>
         ///     This Configuration is to be Valid up to the given point in time, or indefinitely if null
         /// </summary>
-        public DateTime? ValidTo { get; set; }
+        public DateTime? ValidTo { get; }
 
         public bool Equals(ConfigurationBuilt other) => Equals(other, false);
 

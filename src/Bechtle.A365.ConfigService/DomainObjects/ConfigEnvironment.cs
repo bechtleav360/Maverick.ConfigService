@@ -56,12 +56,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public ConfigEnvironment IdentifiedBy(EnvironmentIdentifier identifier, bool isDefault = false)
         {
-            _identifier = identifier;
-            if (isDefault)
-            {
-                _isDefault = true;
-                _identifier.Name = "Default";
-            }
+            _isDefault = isDefault;
+            _identifier = _isDefault
+                              ? identifier
+                              : new EnvironmentIdentifier(_identifier.Category, "Default");
 
             return this;
         }

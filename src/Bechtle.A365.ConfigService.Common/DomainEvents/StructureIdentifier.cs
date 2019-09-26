@@ -9,11 +9,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class StructureIdentifier : Identifier, IEquatable<StructureIdentifier>
     {
         /// <inheritdoc />
-        public StructureIdentifier()
-        {
-        }
-
-        /// <inheritdoc />
         public StructureIdentifier(string name, int version)
         {
             Name = name;
@@ -28,12 +23,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     name of this structure, indicates uses the Configuration built from this and <see cref="StructureIdentifier" />
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <summary>
         ///     unique version of this Structure
         /// </summary>
-        public int Version { get; set; }
+        public int Version { get; }
 
         public bool Equals(StructureIdentifier other)
         {

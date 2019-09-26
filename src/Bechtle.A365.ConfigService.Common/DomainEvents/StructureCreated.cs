@@ -20,23 +20,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Variables = new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase);
         }
 
-        /// <inheritdoc />
-        public StructureCreated()
-        {
-        }
-
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Identifier { get; set; }
+        public StructureIdentifier Identifier { get; }
 
         /// <summary>
         ///     keys that make up this Structure
         /// </summary>
-        public Dictionary<string, string> Keys { get; set; }
+        public Dictionary<string, string> Keys { get; }
 
         /// <summary>
         ///     variables that may be referenced from Environment or Keys
         /// </summary>
-        public Dictionary<string, string> Variables { get; set; }
+        public Dictionary<string, string> Variables { get; }
 
         public bool Equals(StructureCreated other) => Equals(other, false);
 
