@@ -8,10 +8,15 @@ namespace Bechtle.A365.ConfigService.Tests
 {
     public class ConfigValueParserTests
     {
-        private IConfigurationParser Parser => new AntlrConfigurationParser();
+        public ConfigValueParserTests()
+        {
+            _parser = new AntlrConfigurationParser();
+        }
+
+        private readonly IConfigurationParser _parser;
 
         /// <summary>
-        ///     used for <see cref="GetReferencesFromString"/>
+        ///     used for <see cref="GetReferencesFromString" />
         /// </summary>
         public static IEnumerable<object[]> ReferenceData => new[]
         {
@@ -55,30 +60,11 @@ namespace Bechtle.A365.ConfigService.Tests
             new object[] {"{{Using:Some/Path/To/Somewhere/Other/Than/Here; Alias:somewhereIBelong}}", 1, new[] {typeof(ReferencePart)}}
         };
 
-        private List<ConfigValuePart> Parse(string text) => Parser.Parse(text);
-
-        [Fact]
-        public void ParseSimpleReference()
-        {
-            var result = Parser.Parse("{{Path: Some/Path/To/The/Unknown}}");
-
-            Assert.Single(result);
-            Assert.IsType<ReferencePart>(result[0]);
-
-            var reference = result.OfType<ReferencePart>()
-                                  .FirstOrDefault();
-
-            Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
-            Assert.True(reference.Commands.Keys.Count == 1);
-            Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
-        }
-
         [Theory]
         [MemberData(nameof(ReferenceData))]
         public void GetReferencesFromString(string text, int expectedResults, Type[] expectedTypes)
         {
-            var result = Parse(text);
+            var result = _parser.Parse(text);
 
             Assert.NotNull(result);
             Assert.Equal(expectedResults, result.Count);
@@ -88,126 +74,12 @@ namespace Bechtle.A365.ConfigService.Tests
                 Assert.IsType(expectedTypes[i], result[i]);
         }
 
-        [Fact]
-        public void IgnoreSingleBraces()
-        {
-            var input = "${longdate} ${logger} ${level} ${message}";
-            var result = Parse(input);
-
-            Assert.NotNull(result);
-            Assert.True(result.Count == 1);
-            Assert.IsType<ValuePart>(result.First());
-            Assert.True(result.OfType<ValuePart>().First().Text == input);
-        }
-
-        [Fact]
-        public void ExtractCorrectReference()
-        {
-            var result = Parse("this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}");
-
-            Assert.Equal(2, result.Count);
-            Assert.IsType<ValuePart>(result[0]);
-            Assert.IsType<ReferencePart>(result[1]);
-
-            var reference = result.OfType<ReferencePart>()
-                                  .FirstOrDefault();
-
-            Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
-            Assert.True(reference.Commands.Keys.Count == 3);
-            Assert.True(reference.Commands[ReferenceCommand.Alias] == "Secret");
-            Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
-            Assert.True(reference.Commands[ReferenceCommand.Using] == "Handle");
-        }
-
-        [Fact]
-        public void TrimPathValues()
-        {
-            var result = Parse("this is fluff {{   /Some/Path/To/The/Unknown   ;   Using: nothing;}}");
-
-            Assert.Equal(2, result.Count);
-            Assert.IsType<ValuePart>(result[0]);
-            Assert.IsType<ReferencePart>(result[1]);
-
-            var reference = result.OfType<ReferencePart>()
-                                  .FirstOrDefault();
-
-            Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
-            Assert.Equal("nothing", reference.Commands[ReferenceCommand.Using]);
-            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
-        }
-
-        [Fact]
-        public void QuotedValueWithSpaces()
-        {
-            var result = Parse("{{ \"/Some/Path/To/The/Unknown\" }}");
-
-            Assert.Single(result);
-            Assert.IsType<ReferencePart>(result[0]);
-
-            var reference = result.OfType<ReferencePart>()
-                                  .FirstOrDefault();
-
-            Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
-            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
-        }
-
-        [Fact]
-        public void QuotedValueWithSpacesAndTrailingSemicolon()
-        {
-            var result = Parse("{{ \"/Some/Path/To/The/Unknown\"; }}");
-
-            Assert.Single(result);
-            Assert.IsType<ReferencePart>(result[0]);
-
-            var reference = result.OfType<ReferencePart>()
-                                  .FirstOrDefault();
-
-            Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
-            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
-        }
-
-        [Fact]
-        public void ValueWithSpaces()
-        {
-            var result = Parse("{{ /Some/Path/To/The/Unknown }}");
-
-            Assert.Single(result);
-            Assert.IsType<ReferencePart>(result[0]);
-
-            var reference = result.OfType<ReferencePart>()
-                                  .FirstOrDefault();
-
-            Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
-            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
-        }
-
-        [Fact]
-        public void ValueWithSpacesAndTrailingSemicolon()
-        {
-            var result = Parse("{{ /Some/Path/To/The/Unknown; }}");
-
-            Assert.Single(result);
-            Assert.IsType<ReferencePart>(result[0]);
-
-            var reference = result.OfType<ReferencePart>()
-                                  .FirstOrDefault();
-
-            Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
-            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
-        }
-
         [Theory]
         [InlineData("{{ Fallback: ; /Some/Path/To/The/Unknown; }}")]
         [InlineData("{{ /Some/Path/To/The/Unknown; Fallback: }}")]
         public void ExtractValueAndEmptyFallback(string text)
         {
-            var result = Parse(text);
+            var result = _parser.Parse(text);
 
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
@@ -230,7 +102,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [InlineData("{{Fallback: ; }}")]
         public void ExtractEmptyCommands(string text)
         {
-            var result = Parse(text);
+            var result = _parser.Parse(text);
 
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
@@ -241,6 +113,137 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.NotNull(reference);
             Assert.NotEmpty(reference.Commands);
             Assert.Empty(reference.Commands.First().Value);
+        }
+
+        [Fact]
+        public void ExtractCorrectReference()
+        {
+            var result = _parser.Parse("this is fluff {{Using:Handle; Alias:Secret; Path:Some/Path/To/The/Unknown}}");
+
+            Assert.Equal(2, result.Count);
+            Assert.IsType<ValuePart>(result[0]);
+            Assert.IsType<ReferencePart>(result[1]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.True(reference.Commands.Keys.Count == 3);
+            Assert.True(reference.Commands[ReferenceCommand.Alias] == "Secret");
+            Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
+            Assert.True(reference.Commands[ReferenceCommand.Using] == "Handle");
+        }
+
+        [Fact]
+        public void IgnoreSingleBraces()
+        {
+            var input = "${longdate} ${logger} ${level} ${message}";
+            var result = _parser.Parse(input);
+
+            Assert.NotNull(result);
+            Assert.True(result.Count == 1);
+            Assert.IsType<ValuePart>(result.First());
+            Assert.True(result.OfType<ValuePart>().First().Text == input);
+        }
+
+        [Fact]
+        public void ParseSimpleReference()
+        {
+            var result = _parser.Parse("{{Path: Some/Path/To/The/Unknown}}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.True(reference.Commands.Keys.Count == 1);
+            Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
+        }
+
+        [Fact]
+        public void QuotedValueWithSpaces()
+        {
+            var result = _parser.Parse("{{ \"/Some/Path/To/The/Unknown\" }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Fact]
+        public void QuotedValueWithSpacesAndTrailingSemicolon()
+        {
+            var result = _parser.Parse("{{ \"/Some/Path/To/The/Unknown\"; }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Fact]
+        public void TrimPathValues()
+        {
+            var result = _parser.Parse("this is fluff {{   /Some/Path/To/The/Unknown   ;   Using: nothing;}}");
+
+            Assert.Equal(2, result.Count);
+            Assert.IsType<ValuePart>(result[0]);
+            Assert.IsType<ReferencePart>(result[1]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("nothing", reference.Commands[ReferenceCommand.Using]);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Fact]
+        public void ValueWithSpaces()
+        {
+            var result = _parser.Parse("{{ /Some/Path/To/The/Unknown }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
+        }
+
+        [Fact]
+        public void ValueWithSpacesAndTrailingSemicolon()
+        {
+            var result = _parser.Parse("{{ /Some/Path/To/The/Unknown; }}");
+
+            Assert.Single(result);
+            Assert.IsType<ReferencePart>(result[0]);
+
+            var reference = result.OfType<ReferencePart>()
+                                  .FirstOrDefault();
+
+            Assert.NotNull(reference);
+            Assert.NotEmpty(reference.Commands);
+            Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
         }
     }
 }

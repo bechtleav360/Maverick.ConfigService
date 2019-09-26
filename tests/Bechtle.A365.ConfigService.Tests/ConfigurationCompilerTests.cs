@@ -11,12 +11,18 @@ namespace Bechtle.A365.ConfigService.Tests
     // using ReadOnlyDictionaries to ensure the compiler can't write to the given collections
     public class ConfigurationCompilerTests
     {
-        private static IConfigurationCompiler Compiler => new ConfigurationCompiler(
-            new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
-                                   .BuildServiceProvider()
-                                   .GetRequiredService<ILogger<ConfigurationCompiler>>());
+        private readonly IConfigurationCompiler _compiler;
+        private readonly IConfigurationParser _parser;
 
-        private static IConfigurationParser Parser => new AntlrConfigurationParser();
+        public ConfigurationCompilerTests()
+        {
+            _compiler = new ConfigurationCompiler(
+                new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
+                                       .BuildServiceProvider()
+                                       .GetRequiredService<ILogger<ConfigurationCompiler>>());
+
+            _parser = new AntlrConfigurationParser();
+        }
 
         /// <summary>
         ///     resolve a reference to a complex result (object)
@@ -45,7 +51,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
             Assert.Equal("A", compiled["A/A"]);
@@ -83,7 +89,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
             // actually not sure if this is what we want...
@@ -122,7 +128,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
             Assert.Equal(string.Empty, compiled["A"]);
@@ -152,7 +158,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
             Assert.NotEmpty(compiled);
@@ -190,7 +196,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
             Assert.Equal(5, compiled.Count);
@@ -224,7 +230,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
             Assert.Equal(1, compiled.Count);
@@ -256,7 +262,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
 
@@ -283,7 +289,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
 
-            var compiled = Compiler.Compile(env, structure, Parser).CompiledConfiguration;
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
 
             Assert.NotNull(compiled);
             Assert.Empty(compiled);
