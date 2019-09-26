@@ -538,7 +538,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             }
 
             return Result.Success(new StructureSnapshot(identifier,
-                                                        structure.Version,
                                                         structure.Keys
                                                                  .ToDictionary(data => data.Key,
                                                                                data => data.Value),

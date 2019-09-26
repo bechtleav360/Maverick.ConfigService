@@ -11,12 +11,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
     {
         /// <inheritdoc />
         public StructureSnapshot(StructureIdentifier identifier,
-                                 int version,
                                  IDictionary<string, string> keys,
                                  IDictionary<string, string> variables)
         {
             Identifier = identifier;
-            Version = version;
             Data = new ReadOnlyDictionary<string, string>(keys);
             Variables = new ReadOnlyDictionary<string, string>(variables);
         }
@@ -35,10 +33,5 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         ///     key-value pairs containing the structures variables
         /// </summary>
         public IDictionary<string, string> Variables { get; }
-
-        /// <summary>
-        ///     version of the associated data
-        /// </summary>
-        public int Version { get; }
     }
 }
