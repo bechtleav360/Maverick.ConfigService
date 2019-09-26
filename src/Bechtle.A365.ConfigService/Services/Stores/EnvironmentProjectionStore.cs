@@ -141,7 +141,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                // send auto-completion data for all roots
                                if (string.IsNullOrWhiteSpace(key))
                                {
-                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
                                    return await CreateResult(await _context.FullAutoCompletePaths
                                                                            .Where(p => p.ConfigEnvironmentId == environmentKey &&
                                                                                        p.ParentId == null)
