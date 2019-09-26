@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Parsing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -10,8 +11,10 @@ namespace Bechtle.A365.ConfigService.Tests
     // using ReadOnlyDictionaries to ensure the compiler can't write to the given collections
     public class ConfigurationCompilerTests
     {
-        private static IConfigurationCompiler Compiler => new ConfigurationCompiler(new LoggerFactory().AddConsole(LogLevel.Warning)
-                                                                                                       .CreateLogger<ConfigurationCompiler>());
+        private static IConfigurationCompiler Compiler => new ConfigurationCompiler(
+            new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
+                                   .BuildServiceProvider()
+                                   .GetRequiredService<ILogger<ConfigurationCompiler>>());
 
         private static IConfigurationParser Parser => new AntlrConfigurationParser();
 
@@ -70,7 +73,7 @@ namespace Bechtle.A365.ConfigService.Tests
                     {"A/E", "E"}
                 })
             };
-            
+
             var structure = new StructureCompilationInfo
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
@@ -109,7 +112,7 @@ namespace Bechtle.A365.ConfigService.Tests
                     {"A/E", "E"}
                 })
             };
-            
+
             var structure = new StructureCompilationInfo
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
@@ -139,7 +142,7 @@ namespace Bechtle.A365.ConfigService.Tests
                     {"B", "{{A}}"}
                 })
             };
-            
+
             var structure = new StructureCompilationInfo
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
@@ -173,7 +176,7 @@ namespace Bechtle.A365.ConfigService.Tests
                     {"E", "ResolvedValue"}
                 })
             };
-            
+
             var structure = new StructureCompilationInfo
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
@@ -211,7 +214,7 @@ namespace Bechtle.A365.ConfigService.Tests
                     {"Key/With/Path", "ResolvedValue"}
                 })
             };
-            
+
             var structure = new StructureCompilationInfo
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
@@ -241,7 +244,7 @@ namespace Bechtle.A365.ConfigService.Tests
                     {"C", "CV"}
                 })
             };
-            
+
             var structure = new StructureCompilationInfo
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
@@ -273,7 +276,7 @@ namespace Bechtle.A365.ConfigService.Tests
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
             };
-            
+
             var structure = new StructureCompilationInfo
             {
                 Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>()),
