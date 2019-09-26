@@ -125,6 +125,12 @@ namespace Bechtle.A365.ConfigService.Projection
                                     break;
 
                                 case DbBackend.None:
+                                    logger.LogError("no DbBackend chosen; change ProjectionStorage:Backend; " +
+                                                    $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
+                                    throw new ArgumentOutOfRangeException(nameof(settings.Backend),
+                                                                          "no DbBackend chosen; change ProjectionStorage:Backend; " +
+                                                                          $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
+
                                 default:
                                     logger.LogError($"Unsupported DbBackend: '{settings.Backend}'; " +
                                                     $"change ProjectionStorage:Backend; " +
