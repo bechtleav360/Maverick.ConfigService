@@ -170,6 +170,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 Key = key;
             }
 
+            // ReSharper disable once CollectionNeverQueried.Local
             public SortedList<DateTime, KeyRevision> Changes { get; }
 
             public string Key { get; }
