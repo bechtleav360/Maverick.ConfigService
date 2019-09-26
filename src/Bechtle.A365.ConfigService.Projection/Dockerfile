@@ -8,11 +8,11 @@ WORKDIR /src
 COPY . .
 RUN dotnet restore "src/$SERVICENAME/$SERVICENAME.csproj"
 WORKDIR /src/src/$SERVICENAME
-RUN dotnet build "$SERVICENAME.csproj" -c Release -o /app
+RUN dotnet build "$SERVICENAME.csproj" -c Release -r linux-x64 -o /app
 
 FROM build AS publish
 ARG SERVICENAME
-RUN dotnet publish "$SERVICENAME.csproj" -c Release -o /app
+RUN dotnet publish "$SERVICENAME.csproj" -c Release -r linux-x64 -o /app
 
 FROM base AS final
 WORKDIR /app
