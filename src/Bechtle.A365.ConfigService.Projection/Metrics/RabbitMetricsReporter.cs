@@ -54,18 +54,21 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
             };
         }
 
-        private void Connect()
+        private bool Connect()
         {
             try
             {
                 if (!(_rabbitConnection is null) && !_rabbitConnection.IsClosed)
-                    return;
+                    return true;
 
                 var connection = _connectionFactory.CreateConnection();
                 _rabbitConnection = connection.CreateModel();
+
+                return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
+                return false;
             }
         }
 
@@ -74,7 +77,8 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
         {
             try
             {
-                Connect();
+                if (!Connect())
+                    return Task.FromResult(false);
 
                 if (_rabbitConnection is null
                     || _rabbitConnection.IsClosed
