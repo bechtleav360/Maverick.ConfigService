@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,9 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         /// <inheritdoc />
         public async Task HandleDomainEvent(DefaultEnvironmentCreated domainEvent)
         {
+            if (domainEvent is null)
+                throw new ArgumentNullException(nameof(domainEvent), $"{nameof(domainEvent)} must not be null");
+
             _logger.LogInformation($"creating default environment {domainEvent.Identifier}");
 
             await _database.CreateEnvironment(domainEvent.Identifier, true);
