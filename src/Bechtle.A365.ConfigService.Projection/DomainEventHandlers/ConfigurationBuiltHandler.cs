@@ -48,6 +48,9 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         /// <inheritdoc />
         public async Task HandleDomainEvent(ConfigurationBuilt domainEvent)
         {
+            if (domainEvent is null)
+                throw new ArgumentNullException(nameof(domainEvent), $"{nameof(domainEvent)} must not be null");
+
             var envId = domainEvent.Identifier.Environment;
             var structId = domainEvent.Identifier.Structure;
 
