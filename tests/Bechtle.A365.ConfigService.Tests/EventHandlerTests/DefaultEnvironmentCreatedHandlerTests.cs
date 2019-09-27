@@ -68,6 +68,24 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
         }
 
         [Fact]
+        public async Task HandleDomainEventWithTargetAlreadyCreated()
+        {
+            var dbMock = new Mock<IConfigurationDatabase>(MockBehavior.Strict);
+
+            dbMock.Setup(db => db.Connect())
+                  .ReturnsAsync(Result.Success());
+
+            dbMock.Setup(db => db.CreateEnvironment(It.IsAny<EnvironmentIdentifier>(), true))
+                  .ReturnsAsync(Result.Error("environment already created", ErrorCode.EnvironmentAlreadyExists));
+
+            var database = dbMock.Object;
+            var domainEvent = new Mock<DefaultEnvironmentCreated>(() => new DefaultEnvironmentCreated(new EnvironmentIdentifier("env-cat", "env-name"))).Object;
+            var handler = new DefaultEnvironmentCreatedHandler(database, new Mock<ILogger<DefaultEnvironmentCreatedHandler>>().Object);
+
+            await handler.HandleDomainEvent(domainEvent);
+        }
+
+        [Fact]
         public async Task HandleEmptyDomainEvent()
         {
             var dbMock = new Mock<IConfigurationDatabase>(MockBehavior.Strict);

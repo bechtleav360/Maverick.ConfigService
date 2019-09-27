@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -23,6 +24,9 @@ namespace Bechtle.A365.ConfigService.Projection.DomainEventHandlers
         /// <inheritdoc />
         public async Task HandleDomainEvent(EnvironmentKeysImported domainEvent)
         {
+            if (domainEvent is null)
+                throw new ArgumentNullException(nameof(domainEvent), $"{nameof(domainEvent)} must not be null");
+
             _logger.LogInformation($"importing '{domainEvent.ModifiedKeys.Length}' keys into '{domainEvent.Identifier}'");
 
             var setKeys = domainEvent.ModifiedKeys.Count(k => k.Type == ConfigKeyActionType.Set);
