@@ -105,7 +105,7 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
 
             dbMock.Setup(db => db.Connect()).ReturnsAsync(Result.Success());
 
-            if (envFound)
+            if (structFound)
                 dbMock.Setup(db => db.GetStructure(It.IsAny<StructureIdentifier>()))
                       .ReturnsAsync(
                           (StructureIdentifier identifier) =>
@@ -116,7 +116,7 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
                 dbMock.Setup(db => db.GetStructure(It.IsAny<StructureIdentifier>()))
                       .ReturnsAsync((StructureIdentifier identifier) => Result.Error<StructureSnapshot>("structure not found", ErrorCode.NotFound));
 
-            if (structFound)
+            if (envFound)
                 dbMock.Setup(db => db.GetEnvironmentWithInheritance(It.IsAny<EnvironmentIdentifier>()))
                       .ReturnsAsync(
                           (EnvironmentIdentifier identifier) =>
