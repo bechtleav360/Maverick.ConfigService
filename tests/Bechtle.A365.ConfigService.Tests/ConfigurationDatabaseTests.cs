@@ -633,7 +633,61 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task GetEnvironment() => throw new NotImplementedException();
+        public async Task GetEnvironment()
+        {
+            var expected = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{FD4F8A93-BC3C-402D-8017-C16B6EF2E3A5}"),
+                DefaultEnvironment = false,
+                Category = "Foo",
+                Name = "Bar",
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey
+                    {
+                        Key = "Foo",
+                        Value = "Bar"
+                    }
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(expected);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
+
+            Assert.Equal(expected.Category, result.Data.Identifier.Category);
+            Assert.Equal(expected.Name, result.Data.Identifier.Name);
+            Assert.Single(result.Data.Data);
+        }
+
+        [Fact]
+        public async Task GetUnknownEnvironment()
+        {
+            var expected = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{FD4F8A93-BC3C-402D-8017-C16B6EF2E3A5}"),
+                DefaultEnvironment = false,
+                Category = "Foo",
+                Name = "Bar",
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey
+                    {
+                        Key = "Foo",
+                        Value = "Bar"
+                    }
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(expected);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetEnvironment(new EnvironmentIdentifier("Invalid", "Environment"));
+
+            Assert.True(result.IsError);
+            Assert.Null(result.Data);
+        }
 
         [Fact]
         public async Task GetEnvironmentWithInheritance() => throw new NotImplementedException();
