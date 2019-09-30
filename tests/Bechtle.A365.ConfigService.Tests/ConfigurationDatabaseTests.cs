@@ -696,10 +696,73 @@ namespace Bechtle.A365.ConfigService.Tests
         public async Task GetLatestActiveConfiguration() => throw new NotImplementedException();
 
         [Fact]
-        public async Task GetLatestProjectedEventId() => throw new NotImplementedException();
+        public async Task GetLatestProjectedEventId()
+        {
+            var expected = new ProjectionMetadata
+            {
+                Id = Guid.Parse("{97DD36E7-DCEA-48F5-B165-C375B4D5502F}"),
+                LastActiveConfigurationId = Guid.Empty,
+                LatestEvent = 42
+            };
+
+            await _context.Metadata.AddAsync(expected);
+            await _context.SaveChangesAsync();
+
+            var actual = await _database.GetLatestProjectedEventId();
+
+            Assert.Equal(expected.LatestEvent, actual);
+        }
 
         [Fact]
-        public async Task GetProjectedEventMetadata() => throw new NotImplementedException();
+        public async Task GetEmptyLatestProjectedEventId()
+        {
+            var actual = await _database.GetLatestProjectedEventId();
+
+            Assert.Null(actual);
+        }
+
+        [Fact]
+        public async Task GetProjectedEventMetadata()
+        {
+            await _context.ProjectedEventMetadata.AddRangeAsync(
+                new ProjectedEventMetadata
+                {
+                    Id = Guid.Parse("{00A2AA5E-B120-49AF-8E9E-B3831EF64F4C}"),
+                    Type = "TestEvent1",
+                    Index = 13,
+                    Changes = 26,
+                    End = new DateTime(2, 2, 2, 2, 2, 2, DateTimeKind.Utc),
+                    Start = new DateTime(1, 1, 1, 1, 1, 1, DateTimeKind.Utc),
+                    ProjectedSuccessfully = true
+                },
+                new ProjectedEventMetadata
+                {
+                    Id = Guid.Parse("{51CF6190-1A10-4788-A33F-A84A37DC6E7E}"),
+                    Type = "TestEvent2",
+                    Index = 14,
+                    Changes = 424242,
+                    End = new DateTime(3, 3, 3, 3, 3, 3, DateTimeKind.Utc),
+                    Start = new DateTime(2, 2, 2, 2, 2, 2, DateTimeKind.Utc),
+                    ProjectedSuccessfully = true
+                });
+
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetProjectedEventMetadata();
+
+            Assert.False(result.IsError);
+            Assert.NotEmpty(result.Data);
+            Assert.Equal(2, result.Data.Count);
+        }
+
+        [Fact]
+        public async Task GetEmptyProjectedEventMetadata()
+        {
+            var result = await _database.GetProjectedEventMetadata();
+
+            Assert.False(result.IsError);
+            Assert.Empty(result.Data);
+        }
 
         [Fact]
         public async Task GetStructure()
@@ -755,7 +818,20 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public async Task SetLatestActiveConfiguration() => throw new NotImplementedException();
 
-        [Fact]
-        public async Task SetLatestProjectedEventId() => throw new NotImplementedException();
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public async Task SetLatestProjectedEventId(long id)
+        {
+            await _database.SetLatestProjectedEventId(id);
+
+            Assert.Single(_context.Metadata);
+            Assert.Equal(id, _context.Metadata.First().LatestEvent);
+        }
     }
 }
