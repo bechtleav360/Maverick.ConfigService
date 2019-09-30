@@ -15,8 +15,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                  IDictionary<string, string> variables)
         {
             Identifier = identifier;
-            Data = new ReadOnlyDictionary<string, string>(keys);
-            Variables = new ReadOnlyDictionary<string, string>(variables);
+            Data = new ReadOnlyDictionary<string, string>(keys ?? new Dictionary<string, string>());
+            Variables = new ReadOnlyDictionary<string, string>(variables ?? new Dictionary<string, string>());
         }
 
         /// <summary>

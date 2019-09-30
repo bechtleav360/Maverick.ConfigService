@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Projection.DataStorage
@@ -12,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
         public EnvironmentSnapshot(EnvironmentIdentifier identifier, IDictionary<string, string> data)
         {
             Identifier = identifier;
-            Data = data;
+            Data = new ReadOnlyDictionary<string, string>(data ?? new Dictionary<string, string>());
         }
 
         /// <summary>
