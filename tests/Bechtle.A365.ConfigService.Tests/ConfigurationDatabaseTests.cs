@@ -47,6 +47,15 @@ namespace Bechtle.A365.ConfigService.Tests
         private readonly SqliteConnection _sqliteConnection;
 
         [Fact]
+        public async Task AppendProjectedEventMetadata() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task ApplyEnvironmentChanges() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task ApplyStructureChanges() => throw new NotImplementedException();
+
+        [Fact]
         public async Task Connect()
         {
             var result = await _database.Connect();
@@ -78,5 +87,47 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.NotNull(_context.Structures.Single(s => s.Name.Equals("Foo", StringComparison.Ordinal)
                                                            && s.Version == 42));
         }
+
+        [Fact]
+        public async Task DeleteEnvironment() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task DeleteStructure() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GenerateEnvironmentKeyAutocompleteData() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GetDefaultEnvironment() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GetEnvironment() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GetEnvironmentWithInheritance() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GetLatestActiveConfiguration() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GetLatestProjectedEventId() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GetProjectedEventMetadata() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task GetStructure() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task ImportEnvironment() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task SaveConfiguration() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task SetLatestActiveConfiguration() => throw new NotImplementedException();
+
+        [Fact]
+        public async Task SetLatestProjectedEventId() => throw new NotImplementedException();
     }
 }
