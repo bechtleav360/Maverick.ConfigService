@@ -172,6 +172,43 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
+        public async Task ApplyChangesWithUndefinedTarget()
+        {
+            var initialKey = new ConfigEnvironmentKey
+            {
+                Id = Guid.Parse("{40F1B991-5D85-48B0-B609-288031D03D9A}"),
+                Description = "Key1-Description",
+                Key = "Key1",
+                Type = "Key1-Type",
+                Value = "Key1-Value",
+                Version = 424242
+            };
+
+            var configEnvironment = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{973D5AF0-0368-4BA4-8D75-3D166A0E15E8}"),
+                Keys = new List<ConfigEnvironmentKey> {initialKey},
+                Name = "Bar",
+                Category = "Foo",
+                DefaultEnvironment = false
+            };
+
+            await _context.ConfigEnvironments.AddAsync(configEnvironment);
+            await _context.SaveChangesAsync();
+
+            // test
+            var result = await _database.ApplyChanges(new EnvironmentIdentifier("Invalid", "Target"),
+                                                      new List<ConfigKeyAction>
+                                                      {
+                                                          ConfigKeyAction.Delete("Key1"),
+                                                          ConfigKeyAction.Set("Key2", "Key2-Value", "Key2-Description", "Key2-Type")
+                                                      });
+
+            Assert.NotNull(result);
+            Assert.True(result.IsError);
+        }
+
+        [Fact]
         public async Task ApplyStructureChanges() => throw new NotImplementedException();
 
         [Fact]
@@ -181,6 +218,18 @@ namespace Bechtle.A365.ConfigService.Tests
 
             Assert.NotNull(result);
             Assert.False(result.IsError);
+        }
+
+        [Fact]
+        public async Task CreateDefaultEnvironment()
+        {
+            var result = await _database.CreateEnvironment(new EnvironmentIdentifier("Foo", "Bar"), true);
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+            Assert.Single(_context.ConfigEnvironments.Where(e => e.Category.Equals("Foo", StringComparison.Ordinal)
+                                                                 && e.Name.Equals("Bar", StringComparison.Ordinal)
+                                                                 && e.DefaultEnvironment));
         }
 
         [Fact]
