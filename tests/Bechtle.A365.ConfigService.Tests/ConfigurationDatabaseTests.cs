@@ -258,7 +258,37 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task DeleteEnvironment() => throw new NotImplementedException();
+        public async Task DeleteEnvironment()
+        {
+            var configEnvironment = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{BE1C159C-E132-4DD1-A412-8EF8CED3E44C}"),
+                Category = "Foo",
+                Name = "Bar",
+                DefaultEnvironment = false,
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey
+                    {
+                        Id = Guid.Parse("{044D97B2-97EC-4180-AA77-46B56BFC5BED}"),
+                        Key = "Key1",
+                        Value = "Value",
+                        Description = "Description1",
+                        Type = "Type1",
+                        Version = 424242
+                    }
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(configEnvironment);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.DeleteEnvironment(new EnvironmentIdentifier(configEnvironment.Category, configEnvironment.Name));
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+            Assert.Empty(_context.ConfigEnvironments);
+        }
 
         [Fact]
         public async Task DeleteStructure() => throw new NotImplementedException();
