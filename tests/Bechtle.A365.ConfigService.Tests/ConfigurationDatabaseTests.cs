@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
@@ -93,6 +94,81 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.Equal(expected.End, actual.End);
             Assert.Equal(expected.ProjectedSuccessfully, actual.ProjectedSuccessfully);
             Assert.Equal(expected.Start, actual.Start);
+        }
+
+        [Fact]
+        public async Task ApplyEmptyChangesToEnvironment()
+        {
+            var initialKey = new ConfigEnvironmentKey
+            {
+                Id = Guid.Parse("{40F1B991-5D85-48B0-B609-288031D03D9A}"),
+                Description = "Key1-Description",
+                Key = "Key1",
+                Type = "Key1-Type",
+                Value = "Key1-Value",
+                Version = 424242
+            };
+
+            var configEnvironment = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{973D5AF0-0368-4BA4-8D75-3D166A0E15E8}"),
+                Keys = new List<ConfigEnvironmentKey> {initialKey},
+                Name = "Bar",
+                Category = "Foo",
+                DefaultEnvironment = false
+            };
+
+            await _context.ConfigEnvironments.AddAsync(configEnvironment);
+            await _context.SaveChangesAsync();
+
+            // test
+            var result = await _database.ApplyChanges(new EnvironmentIdentifier("Foo", "Bar"), new List<ConfigKeyAction>());
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+
+            Assert.Single(_context.ConfigEnvironments.Where(env => env.Id == configEnvironment.Id));
+            Assert.Single(_context.ConfigEnvironmentKeys.Where(k => k.Id == initialKey.Id));
+        }
+
+        [Fact]
+        public async Task ApplyChangesToEnvironment()
+        {
+            var initialKey = new ConfigEnvironmentKey
+            {
+                Id = Guid.Parse("{40F1B991-5D85-48B0-B609-288031D03D9A}"),
+                Description = "Key1-Description",
+                Key = "Key1",
+                Type = "Key1-Type",
+                Value = "Key1-Value",
+                Version = 424242
+            };
+
+            var configEnvironment = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{973D5AF0-0368-4BA4-8D75-3D166A0E15E8}"),
+                Keys = new List<ConfigEnvironmentKey> {initialKey},
+                Name = "Bar",
+                Category = "Foo",
+                DefaultEnvironment = false
+            };
+
+            await _context.ConfigEnvironments.AddAsync(configEnvironment);
+            await _context.SaveChangesAsync();
+
+            // test
+            var result = await _database.ApplyChanges(new EnvironmentIdentifier("Foo", "Bar"),
+                                                      new List<ConfigKeyAction>
+                                                      {
+                                                          ConfigKeyAction.Delete("Key1"),
+                                                          ConfigKeyAction.Set("Key2", "Key2-Value", "Key2-Description", "Key2-Type")
+                                                      });
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+
+            Assert.Empty(_context.ConfigEnvironmentKeys.Where(k => k.Id == initialKey.Id));
+            Assert.Single(_context.ConfigEnvironmentKeys.Where(k => k.Key.Equals("Key2", StringComparison.Ordinal)));
         }
 
         [Fact]
