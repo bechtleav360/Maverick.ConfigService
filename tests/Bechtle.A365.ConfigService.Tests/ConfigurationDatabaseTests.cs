@@ -418,7 +418,66 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task DeleteStructure() => throw new NotImplementedException();
+        public async Task DeleteStructure()
+        {
+            var structure = new Structure
+            {
+                Id = Guid.Parse("{CD504D98-AEDF-415E-8EEB-FBBB20814348}"),
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey>(),
+                Variables = new List<StructureVariable>()
+            };
+
+            await _context.Structures.AddAsync(structure);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.DeleteStructure(new StructureIdentifier(structure.Name, structure.Version));
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+            Assert.Empty(_context.Structures);
+        }
+
+        [Fact]
+        public async Task DeleteStructureWithKeysAndVariables()
+        {
+            var structure = new Structure
+            {
+                Id = Guid.Parse("{CD504D98-AEDF-415E-8EEB-FBBB20814348}"),
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey>
+                {
+                    new StructureKey
+                    {
+                        Id = Guid.Parse("{8AC5EBA8-AD60-407C-90A1-A0E207A3D967}"),
+                        Key = "Key1",
+                        Value = "Value1"
+                    }
+                },
+                Variables = new List<StructureVariable>
+                {
+                    new StructureVariable
+                    {
+                        Id = Guid.Parse("{E367214C-B1C0-4DB2-AD0D-FB40E2C9E536}"),
+                        Key = "Var1",
+                        Value = "Val1"
+                    }
+                }
+            };
+
+            await _context.Structures.AddAsync(structure);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.DeleteStructure(new StructureIdentifier(structure.Name, structure.Version));
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+            Assert.Empty(_context.Structures);
+            Assert.Empty(_context.StructureKeys);
+            Assert.Empty(_context.StructureVariables);
+        }
 
         [Fact]
         public async Task GenerateEnvironmentKeyAutocompleteData() => throw new NotImplementedException();
