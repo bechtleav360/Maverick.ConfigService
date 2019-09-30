@@ -47,10 +47,53 @@ namespace Bechtle.A365.ConfigService.Tests
         private readonly SqliteConnection _sqliteConnection;
 
         [Fact]
-        public async Task AppendProjectedEventMetadata() => throw new NotImplementedException();
+        public async Task AppendProjectedEventMetadataSucceeds()
+        {
+            var result = await _database.AppendProjectedEventMetadata(new ProjectedEventMetadata
+            {
+                Id = Guid.NewGuid(),
+                Type = "FooEventType",
+                Index = 42,
+                Changes = 123456,
+                End = new DateTime(2, 2, 2, 2, 2, 2, DateTimeKind.Utc),
+                ProjectedSuccessfully = true,
+                Start = new DateTime(1, 1, 1, 1, 1, 1, DateTimeKind.Utc)
+            });
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+            Assert.Single(_context.ProjectedEventMetadata.Where(m => m.Index == 42));
+        }
 
         [Fact]
-        public async Task ApplyEnvironmentChanges() => throw new NotImplementedException();
+        public async Task AppendProjectedEventMetadataSavesRecordExactly()
+        {
+            var expected = new ProjectedEventMetadata
+            {
+                Id = Guid.Parse("{CA215812-2A48-432A-B01A-A70E85A33792}"),
+                Type = "FooEventType",
+                Index = 42,
+                Changes = 123456,
+                End = new DateTime(2, 2, 2, 2, 2, 2, DateTimeKind.Utc),
+                ProjectedSuccessfully = true,
+                Start = new DateTime(1, 1, 1, 1, 1, 1, DateTimeKind.Utc)
+            };
+            var result = await _database.AppendProjectedEventMetadata(expected);
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+
+            var actual = _context.ProjectedEventMetadata.Single(m => m.Index == 42);
+
+            Assert.NotNull(actual);
+            Assert.Equal(expected.Id, actual.Id);
+            Assert.Equal(expected.Type, actual.Type);
+            Assert.Equal(expected.Index, actual.Index);
+            Assert.Equal(expected.Changes, actual.Changes);
+            Assert.Equal(expected.End, actual.End);
+            Assert.Equal(expected.ProjectedSuccessfully, actual.ProjectedSuccessfully);
+            Assert.Equal(expected.Start, actual.Start);
+        }
 
         [Fact]
         public async Task ApplyStructureChanges() => throw new NotImplementedException();
