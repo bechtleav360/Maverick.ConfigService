@@ -128,8 +128,9 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
 
             var database = dbMock.Object;
 
-            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new EnvironmentIdentifier("env-cat", "env-name"),
-                                                                                        new StructureIdentifier("struct-name", 1),
+            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(
+                                                                                            new EnvironmentIdentifier("env-cat", "env-name"),
+                                                                                            new StructureIdentifier("struct-name", 1)),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 
@@ -161,8 +162,7 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
 
             var database = dbMock.Object;
 
-            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(envId,
-                                                                                        structId,
+            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(envId, structId),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 
@@ -202,8 +202,9 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
                                                          {"Lorem/0003", "amet"}
                                                      });
 
-            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new EnvironmentIdentifier("env-foo", "env-bar"),
-                                                                                        new StructureIdentifier("struct-foo", 42),
+            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(
+                                                                                            new EnvironmentIdentifier("env-foo", "env-bar"),
+                                                                                            new StructureIdentifier("struct-foo", 42)),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 
@@ -225,8 +226,9 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
                                                      new Dictionary<string, string>(),
                                                      new Dictionary<string, string>());
 
-            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new EnvironmentIdentifier("env-foo", "env-bar"),
-                                                                                        new StructureIdentifier("struct-foo", 42),
+            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(
+                                                                                            new EnvironmentIdentifier("env-foo", "env-bar"),
+                                                                                            new StructureIdentifier("struct-foo", 42)),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 
@@ -256,7 +258,7 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
                                                         _metrics,
                                                         new Mock<ILogger<ConfigurationBuiltHandler>>().Object);
 
-            await Assert.ThrowsAsync<ArgumentNullException>(()=> handler.HandleDomainEvent(null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => handler.HandleDomainEvent(null));
         }
 
         /// <summary>

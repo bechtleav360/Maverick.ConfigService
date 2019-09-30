@@ -1,5 +1,6 @@
 ﻿using System;
 using Bechtle.A365.ConfigService.Common.DbObjects;
+using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -9,6 +10,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentIdentifier : Identifier, IEquatable<EnvironmentIdentifier>
     {
         /// <inheritdoc />
+        [JsonConstructor]
         public EnvironmentIdentifier(string category, string name)
         {
             Category = category;

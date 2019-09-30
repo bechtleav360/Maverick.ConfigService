@@ -9,12 +9,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class ConfigurationBuilt : DomainEvent, IEquatable<ConfigurationBuilt>
     {
         /// <inheritdoc />
-        public ConfigurationBuilt(EnvironmentIdentifier environment,
-                                  StructureIdentifier structure,
+        public ConfigurationBuilt(ConfigurationIdentifier identifier,
                                   DateTime? validFrom,
                                   DateTime? validTo)
         {
-            Identifier = new ConfigurationIdentifier(environment, structure);
+            Identifier = identifier;
             ValidFrom = validFrom;
             ValidTo = validTo;
         }
