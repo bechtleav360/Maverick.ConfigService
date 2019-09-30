@@ -59,6 +59,10 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         /// <summary>
         /// </summary>
+        public DbSet<ProjectedEventMetadata> ProjectedEventMetadata { get; set; }
+
+        /// <summary>
+        /// </summary>
         public DbSet<StructureKey> StructureKeys { get; set; }
 
         /// <summary>
@@ -67,7 +71,7 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         /// <summary>
         /// </summary>
-        public DbSet<ProjectedEventMetadata> ProjectedEventMetadata { get; set; }
+        public DbSet<StructureVariable> StructureVariables { get; set; }
 
         /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)
