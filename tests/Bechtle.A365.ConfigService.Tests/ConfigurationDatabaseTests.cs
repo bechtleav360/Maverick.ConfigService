@@ -483,7 +483,154 @@ namespace Bechtle.A365.ConfigService.Tests
         public async Task GenerateEnvironmentKeyAutocompleteData() => throw new NotImplementedException();
 
         [Fact]
-        public async Task GetDefaultEnvironment() => throw new NotImplementedException();
+        public async Task GetDefaultEnvironmentWithExpectedName()
+        {
+            var expected = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{F02C0718-AEC3-4417-BF3A-E02DC6023A73}"),
+                Category = "Foo",
+                Name = "Default",
+                DefaultEnvironment = true,
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey
+                    {
+                        Id = Guid.Parse("{D1538E9C-5FB1-4C75-8AEA-7D607A2C3AC3}"),
+                        Key = "Key1",
+                        Value = "Value",
+                        Description = "Description1",
+                        Type = "Type1",
+                        Version = 424242
+                    }
+                }
+            };
+
+            var diversion = new[]
+            {
+                new ConfigEnvironment
+                {
+                    Id = Guid.Parse("{0674EFD4-8188-406D-9488-5B184074D3D6}"),
+                    Category = "Foo",
+                    Name = "Bar",
+                    DefaultEnvironment = false,
+                    Keys = new List<ConfigEnvironmentKey>
+                    {
+                        new ConfigEnvironmentKey
+                        {
+                            Id = Guid.Parse("{48EA9B43-C62B-43E8-9FDF-2AB6678ECF4C}"),
+                            Key = "Key1",
+                            Value = "Value",
+                            Description = "Description1",
+                            Type = "Type1",
+                            Version = 424242
+                        }
+                    }
+                },
+                new ConfigEnvironment
+                {
+                    Id = Guid.Parse("{54478C97-F597-4226-8CA2-3D62171BB208}"),
+                    Category = "Foo",
+                    Name = "Baz",
+                    DefaultEnvironment = false,
+                    Keys = new List<ConfigEnvironmentKey>
+                    {
+                        new ConfigEnvironmentKey
+                        {
+                            Id = Guid.Parse("{06AF4A9C-7368-4A99-B2AE-FA61727FB22C}"),
+                            Key = "Key1",
+                            Value = "Value",
+                            Description = "Description1",
+                            Type = "Type1",
+                            Version = 424242
+                        }
+                    }
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(expected);
+            await _context.ConfigEnvironments.AddRangeAsync(diversion);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetDefaultEnvironment("Foo");
+
+            Assert.Equal(expected.Category, result.Data.Identifier.Category);
+            Assert.Equal(expected.Name, result.Data.Identifier.Name);
+        }
+
+        [Fact]
+        public async Task GetDefaultEnvironmentWithCustomName()
+        {
+            var expected = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{F02C0718-AEC3-4417-BF3A-E02DC6023A73}"),
+                Category = "Foo",
+                Name = "Def",
+                DefaultEnvironment = true,
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey
+                    {
+                        Id = Guid.Parse("{D1538E9C-5FB1-4C75-8AEA-7D607A2C3AC3}"),
+                        Key = "Key1",
+                        Value = "Value",
+                        Description = "Description1",
+                        Type = "Type1",
+                        Version = 424242
+                    }
+                }
+            };
+
+            var diversion = new[]
+            {
+                new ConfigEnvironment
+                {
+                    Id = Guid.Parse("{0674EFD4-8188-406D-9488-5B184074D3D6}"),
+                    Category = "Foo",
+                    Name = "Bar",
+                    DefaultEnvironment = false,
+                    Keys = new List<ConfigEnvironmentKey>
+                    {
+                        new ConfigEnvironmentKey
+                        {
+                            Id = Guid.Parse("{48EA9B43-C62B-43E8-9FDF-2AB6678ECF4C}"),
+                            Key = "Key1",
+                            Value = "Value",
+                            Description = "Description1",
+                            Type = "Type1",
+                            Version = 424242
+                        }
+                    }
+                },
+                new ConfigEnvironment
+                {
+                    Id = Guid.Parse("{54478C97-F597-4226-8CA2-3D62171BB208}"),
+                    Category = "Foo",
+                    Name = "Baz",
+                    DefaultEnvironment = false,
+                    Keys = new List<ConfigEnvironmentKey>
+                    {
+                        new ConfigEnvironmentKey
+                        {
+                            Id = Guid.Parse("{06AF4A9C-7368-4A99-B2AE-FA61727FB22C}"),
+                            Key = "Key1",
+                            Value = "Value",
+                            Description = "Description1",
+                            Type = "Type1",
+                            Version = 424242
+                        }
+                    }
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(expected);
+            await _context.ConfigEnvironments.AddRangeAsync(diversion);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetDefaultEnvironment("Foo");
+
+            Assert.Equal(expected.Category, result.Data.Identifier.Category);
+            Assert.Equal(expected.Name, result.Data.Identifier.Name);
+        }
 
         [Fact]
         public async Task GetEnvironment() => throw new NotImplementedException();
