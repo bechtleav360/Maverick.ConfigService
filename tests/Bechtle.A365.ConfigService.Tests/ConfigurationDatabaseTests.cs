@@ -240,7 +240,8 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.NotNull(result);
             Assert.False(result.IsError);
             Assert.Single(_context.ConfigEnvironments.Where(e => e.Category.Equals("Foo", StringComparison.Ordinal)
-                                                                 && e.Name.Equals("Bar", StringComparison.Ordinal)));
+                                                                 && e.Name.Equals("Bar", StringComparison.Ordinal)
+                                                                 && e.DefaultEnvironment == false));
         }
 
         [Fact]
