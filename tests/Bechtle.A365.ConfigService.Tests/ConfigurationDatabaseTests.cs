@@ -172,7 +172,7 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task ApplyChangesWithUndefinedTarget()
+        public async Task ApplyEnvironmentChangesWithUndefinedTarget()
         {
             var initialKey = new ConfigEnvironmentKey
             {
@@ -209,7 +209,134 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task ApplyStructureChanges() => throw new NotImplementedException();
+        public async Task ApplyEmptyChangesToStructure()
+        {
+            var initialKey = new StructureKey
+            {
+                Id = Guid.Parse("{2F6C004A-13EE-472C-AACC-F2B1F25ACFD8}"),
+                Key = "Key1",
+                Value = "Value1"
+            };
+
+            var initialVariable = new StructureVariable
+            {
+                Id = Guid.Parse("{9FB568E8-D5F7-49C9-8425-DA9D4BBF3510}"),
+                Key = "Var1",
+                Value = "Val1"
+            };
+
+            var structure = new Structure
+            {
+                Id = Guid.Parse("{973D5AF0-0368-4BA4-8D75-3D166A0E15E8}"),
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey> {initialKey},
+                Variables = new List<StructureVariable> {initialVariable}
+            };
+
+            await _context.Structures.AddAsync(structure);
+            await _context.SaveChangesAsync();
+
+            // test
+            var result = await _database.ApplyChanges(new StructureIdentifier("Foo", 42), new List<ConfigKeyAction>());
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+
+            Assert.Single(_context.Structures.Where(s => s.Id == structure.Id));
+            Assert.Single(_context.StructureKeys.Where(k => k.Id == initialKey.Id));
+            Assert.Single(_context.StructureVariables.Where(v => v.Id == initialVariable.Id));
+        }
+
+        [Fact]
+        public async Task ApplyChangesToStructure()
+        {
+            var initialKey = new StructureKey
+            {
+                Id = Guid.Parse("{2F6C004A-13EE-472C-AACC-F2B1F25ACFD8}"),
+                Key = "Key1",
+                Value = "Value1"
+            };
+
+            var initialVariable = new StructureVariable
+            {
+                Id = Guid.Parse("{9FB568E8-D5F7-49C9-8425-DA9D4BBF3510}"),
+                Key = "Var1",
+                Value = "Val1"
+            };
+
+            var structure = new Structure
+            {
+                Id = Guid.Parse("{973D5AF0-0368-4BA4-8D75-3D166A0E15E8}"),
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey> {initialKey},
+                Variables = new List<StructureVariable> {initialVariable}
+            };
+
+            await _context.Structures.AddAsync(structure);
+            await _context.SaveChangesAsync();
+
+            // test
+            var result = await _database.ApplyChanges(new StructureIdentifier("Foo", 42), new List<ConfigKeyAction>
+            {
+                ConfigKeyAction.Delete("Var1"),
+                ConfigKeyAction.Set("Var2", "Val2", null, null)
+            });
+
+            Assert.NotNull(result);
+            Assert.False(result.IsError);
+
+            Assert.Single(_context.Structures.Where(s => s.Id == structure.Id));
+            Assert.Single(_context.StructureKeys.Where(k => k.Id == initialKey.Id));
+            Assert.Empty(_context.StructureVariables.Where(v => v.Id == initialVariable.Id));
+            Assert.Single(_context.StructureVariables.Where(v => v.Key.Equals("Var2", StringComparison.Ordinal)
+                                                                 && v.Value.Equals("Val2", StringComparison.Ordinal)));
+        }
+
+        [Fact]
+        public async Task ApplyStructureChangesWithUndefinedTarget()
+        {
+            var initialKey = new StructureKey
+            {
+                Id = Guid.Parse("{2F6C004A-13EE-472C-AACC-F2B1F25ACFD8}"),
+                Key = "Key1",
+                Value = "Value1"
+            };
+
+            var initialVariable = new StructureVariable
+            {
+                Id = Guid.Parse("{9FB568E8-D5F7-49C9-8425-DA9D4BBF3510}"),
+                Key = "Var1",
+                Value = "Val1"
+            };
+
+            var structure = new Structure
+            {
+                Id = Guid.Parse("{973D5AF0-0368-4BA4-8D75-3D166A0E15E8}"),
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey> {initialKey},
+                Variables = new List<StructureVariable> {initialVariable}
+            };
+
+            await _context.Structures.AddAsync(structure);
+            await _context.SaveChangesAsync();
+
+            // test
+            var result = await _database.ApplyChanges(new StructureIdentifier("InvalidStructure", 41), new List<ConfigKeyAction>
+            {
+                ConfigKeyAction.Delete("Key1"),
+                ConfigKeyAction.Set("Key2", "Value2", "Description2", "Value2")
+            });
+
+            Assert.NotNull(result);
+            Assert.True(result.IsError);
+
+            Assert.Single(_context.Structures.Where(s => s.Id == structure.Id));
+            Assert.Single(_context.StructureKeys.Where(k => k.Id == initialKey.Id));
+            Assert.Single(_context.StructureVariables.Where(v => v.Id == initialVariable.Id));
+        }
 
         [Fact]
         public async Task Connect()
