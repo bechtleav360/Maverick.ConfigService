@@ -71,8 +71,8 @@ namespace Bechtle.A365.ConfigService.Tests
 
             Assert.NotNull(result);
             Assert.False(result.IsError);
-            Assert.NotNull(_context.ConfigEnvironments.Single(e => e.Category.Equals("Foo", StringComparison.Ordinal)
-                                                                   && e.Name.Equals("Bar", StringComparison.Ordinal)));
+            Assert.Single(_context.ConfigEnvironments.Where(e => e.Category.Equals("Foo", StringComparison.Ordinal)
+                                                                 && e.Name.Equals("Bar", StringComparison.Ordinal)));
         }
 
         [Fact]
@@ -84,8 +84,8 @@ namespace Bechtle.A365.ConfigService.Tests
 
             Assert.NotNull(result);
             Assert.False(result.IsError);
-            Assert.NotNull(_context.Structures.Single(s => s.Name.Equals("Foo", StringComparison.Ordinal)
-                                                           && s.Version == 42));
+            Assert.Single(_context.Structures.Where(s => s.Name.Equals("Foo", StringComparison.Ordinal)
+                                                         && s.Version == 42));
         }
 
         [Fact]
