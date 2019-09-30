@@ -813,7 +813,42 @@ namespace Bechtle.A365.ConfigService.Tests
         public async Task ImportEnvironment() => throw new NotImplementedException();
 
         [Fact]
-        public async Task SaveConfiguration() => throw new NotImplementedException();
+        public async Task SaveConfigurationAsExpected()
+        {
+            await _context.ConfigEnvironments.AddAsync(new ConfigEnvironment
+            {
+                Category = "Foo",
+                Name = "Bar",
+                Keys = new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey {Key = "Key1", Value = "Value1"}}
+            });
+            await _context.Structures.AddAsync(new Structure
+            {
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey> {new StructureKey {Key = "Reference1", Value = "{{Key1}}"}},
+                Variables = new List<StructureVariable> {new StructureVariable {Key = "Var1", Value = "Val1"}}
+            });
+            await _context.SaveChangesAsync();
+
+            var environmentSnapshot = new EnvironmentSnapshot(new EnvironmentIdentifier("Foo", "Bar"),
+                                                              new Dictionary<string, string> {{"Key1", "Value1"}});
+
+            var structureSnapshot = new StructureSnapshot(new StructureIdentifier("Foo", 42),
+                                                          new Dictionary<string, string> {{"Reference1", "{{Key1}}"}},
+                                                          new Dictionary<string, string> {{"Var1", "Val1"}});
+
+            var configuration = new Dictionary<string, string> {{"Reference1", "Value1"}};
+            var json = "{\"Reference1\": \"Value1\"}";
+            var usedKeys = new[] {"Key1"};
+
+            var result = await _database.SaveConfiguration(environmentSnapshot,
+                                                           structureSnapshot,
+                                                           configuration,
+                                                           json,
+                                                           usedKeys,
+                                                           DateTime.MinValue,
+                                                           DateTime.MaxValue);
+        }
 
         [Fact]
         public async Task SetLatestActiveConfiguration() => throw new NotImplementedException();

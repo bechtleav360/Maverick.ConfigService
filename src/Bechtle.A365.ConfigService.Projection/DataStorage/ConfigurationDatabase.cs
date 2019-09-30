@@ -622,6 +622,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 UpToDate = true,
                 ValidFrom = validFrom,
                 ValidTo = validTo,
+                // @TODO: investigate if another check is really necessary here - if not, we can reduce the Snapshot parameters to their *Identifier components
                 UsedConfigurationKeys = usedKeyList.Where(k => environment.Data.ContainsKey(k))
                                                    .Select(key => new UsedConfigurationKey
                                                    {
