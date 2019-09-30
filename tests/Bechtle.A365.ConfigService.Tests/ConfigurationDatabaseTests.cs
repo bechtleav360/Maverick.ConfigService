@@ -702,7 +702,49 @@ namespace Bechtle.A365.ConfigService.Tests
         public async Task GetProjectedEventMetadata() => throw new NotImplementedException();
 
         [Fact]
-        public async Task GetStructure() => throw new NotImplementedException();
+        public async Task GetStructure()
+        {
+            var expected = new Structure
+            {
+                Id = Guid.Parse("{49E0E9B6-7E25-4E83-A3A7-798C0D8E39A8}"),
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey> {new StructureKey {Key = "Key1", Value = "Value1"}},
+                Variables = new List<StructureVariable> {new StructureVariable {Key = "Var1", Value = "Val1"}}
+            };
+
+            await _context.Structures.AddAsync(expected);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetStructure(new StructureIdentifier("Foo", 42));
+
+            Assert.False(result.IsError);
+            Assert.Equal(expected.Name, result.Data.Identifier.Name);
+            Assert.Equal(expected.Version, result.Data.Identifier.Version);
+            Assert.NotEmpty(result.Data.Data);
+            Assert.NotEmpty(result.Data.Variables);
+        }
+
+        [Fact]
+        public async Task GetUnknownStructure()
+        {
+            var expected = new Structure
+            {
+                Id = Guid.Parse("{49E0E9B6-7E25-4E83-A3A7-798C0D8E39A8}"),
+                Name = "Foo",
+                Version = 42,
+                Keys = new List<StructureKey> {new StructureKey {Key = "Key1", Value = "Value1"}},
+                Variables = new List<StructureVariable> {new StructureVariable {Key = "Var1", Value = "Val1"}}
+            };
+
+            await _context.Structures.AddAsync(expected);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetStructure(new StructureIdentifier("Invalid", 41));
+
+            Assert.True(result.IsError);
+            Assert.Null(result.Data);
+        }
 
         [Fact]
         public async Task ImportEnvironment() => throw new NotImplementedException();
