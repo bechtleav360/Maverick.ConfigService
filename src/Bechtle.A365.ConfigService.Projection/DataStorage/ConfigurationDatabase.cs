@@ -417,7 +417,26 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
         /// <inheritdoc />
         public async Task<IResult<EnvironmentSnapshot>> GetDefaultEnvironment(string category)
-            => await GetEnvironment(new EnvironmentIdentifier(category, "Default"));
+        {
+            var identifier = new EnvironmentIdentifier(category, "Default");
+
+            var environment = await GetDefaultEnvironmentInternal(identifier);
+
+            if (environment == null)
+            {
+                _logger.LogError($"no Default-{nameof(Environment)} with id {identifier} found");
+                return Result.Error<EnvironmentSnapshot>($"no Default-{nameof(Environment)} with id {identifier} found", ErrorCode.NotFound);
+            }
+
+            var environmentData = environment.Keys
+                                             .ToDictionary(data => data.Key,
+                                                           data => data.Value);
+
+            return Result.Success(new EnvironmentSnapshot(new EnvironmentIdentifier(
+                                                              environment.Category,
+                                                              environment.Name),
+                                                          environmentData));
+        }
 
         /// <inheritdoc />
         public async Task<IResult<EnvironmentSnapshot>> GetEnvironment(EnvironmentIdentifier identifier)
@@ -434,7 +453,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                              .ToDictionary(data => data.Key,
                                                            data => data.Value);
 
-            return Result.Success(new EnvironmentSnapshot(identifier, environmentData));
+            return Result.Success(new EnvironmentSnapshot(new EnvironmentIdentifier(
+                                                              environment.Category,
+                                                              environment.Name),
+                                                          environmentData));
         }
 
         /// <inheritdoc />
@@ -714,6 +736,15 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             => await _context.FullConfigEnvironments
                              .FirstOrDefaultAsync(env => env.Category == identifier.Category &&
                                                          env.Name == identifier.Name);
+
+        private async Task<ConfigEnvironment> GetDefaultEnvironmentInternal(EnvironmentIdentifier identifier)
+            => await _context.FullConfigEnvironments
+                             .SingleOrDefaultAsync(env => env.Category == identifier.Category
+                                                          && env.DefaultEnvironment)
+               ?? await _context.FullConfigEnvironments
+                                .FirstOrDefaultAsync(env => env.Category == identifier.Category
+                                                            && env.Name == identifier.Name
+                                                            && env.DefaultEnvironment);
 
         private async Task<Structure> GetStructureInternal(StructureIdentifier identifier)
             => await _context.FullStructures
