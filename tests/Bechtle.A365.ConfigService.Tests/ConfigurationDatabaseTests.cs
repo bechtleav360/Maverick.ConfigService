@@ -693,7 +693,47 @@ namespace Bechtle.A365.ConfigService.Tests
         public async Task GetEnvironmentWithInheritance() => throw new NotImplementedException();
 
         [Fact]
-        public async Task GetLatestActiveConfiguration() => throw new NotImplementedException();
+        public async Task GetLatestActiveConfiguration()
+        {
+            var configId = Guid.NewGuid();
+            var configuration = new ProjectedConfiguration
+            {
+                Id = configId,
+                Keys = new List<ProjectedConfigurationKey>(),
+                ConfigEnvironment = new ConfigEnvironment
+                {
+                    Category = "Foo",
+                    Name = "Bar",
+                    Keys = new List<ConfigEnvironmentKey>()
+                },
+                ConfigurationJson = string.Empty,
+                Version = long.MaxValue,
+                Structure = new Structure
+                {
+                    Name = "Foo",
+                    Version = 42,
+                    Keys = new List<StructureKey>(),
+                    Variables = new List<StructureVariable>()
+                },
+                StructureVersion = 42,
+                UpToDate = true,
+                UsedConfigurationKeys = new List<UsedConfigurationKey>(),
+                ValidFrom = DateTime.MinValue,
+                ValidTo = DateTime.MaxValue
+            };
+
+            await _context.ProjectedConfigurations.AddAsync(configuration);
+            await _context.Metadata.AddAsync(new ProjectionMetadata
+            {
+                LastActiveConfigurationId = configId,
+                LatestEvent = 42
+            });
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetLatestActiveConfiguration();
+
+            Assert.Equal(new ConfigurationIdentifier(configuration), result);
+        }
 
         [Fact]
         public async Task GetLatestProjectedEventId()
@@ -851,7 +891,44 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task SetLatestActiveConfiguration() => throw new NotImplementedException();
+        public async Task SetLatestActiveConfiguration()
+        {
+            var configId = Guid.NewGuid();
+            var configuration = new ProjectedConfiguration
+            {
+                Id = configId,
+                Keys = new List<ProjectedConfigurationKey>(),
+                ConfigEnvironment = new ConfigEnvironment
+                {
+                    Category = "Foo",
+                    Name = "Bar",
+                    Keys = new List<ConfigEnvironmentKey>()
+                },
+                ConfigurationJson = string.Empty,
+                Version = long.MaxValue,
+                Structure = new Structure
+                {
+                    Name = "Foo",
+                    Version = 42,
+                    Keys = new List<StructureKey>(),
+                    Variables = new List<StructureVariable>()
+                },
+                StructureVersion = 42,
+                UpToDate = true,
+                UsedConfigurationKeys = new List<UsedConfigurationKey>(),
+                ValidFrom = DateTime.MinValue,
+                ValidTo = DateTime.MaxValue
+            };
+            var configurationId = new ConfigurationIdentifier(configuration);
+
+            await _context.ProjectedConfigurations.AddAsync(configuration);
+            await _context.SaveChangesAsync();
+
+            await _database.SetLatestActiveConfiguration(configurationId);
+
+            Assert.Single(_context.Metadata);
+            Assert.Equal(configId, _context.Metadata.First().LastActiveConfigurationId);
+        }
 
         [Theory]
         [InlineData(0)]
