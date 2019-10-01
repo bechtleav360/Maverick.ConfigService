@@ -474,7 +474,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                              .ToDictionary(data => data.Key,
                                                            data => data.Value);
 
-            var defaultEnv = await GetEnvironmentInternal(new EnvironmentIdentifier(identifier.Category, "Default"));
+            var defaultEnv = await GetDefaultEnvironmentInternal(new EnvironmentIdentifier(identifier.Category, "Default"));
 
             // add all keys from defaultEnv to environmentData that are not already set in environmentData
             // inherit by adding instead of overriding keys

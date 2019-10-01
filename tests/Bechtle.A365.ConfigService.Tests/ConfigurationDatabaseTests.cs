@@ -690,7 +690,76 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task GetEnvironmentWithInheritance() => throw new NotImplementedException();
+        public async Task GetEnvironmentWithAvailableInheritance()
+        {
+            var expectedBase = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{FD4F8A93-BC3C-402D-8017-C16B6EF2E3A5}"),
+                DefaultEnvironment = true,
+                Category = "Foo",
+                Name = "Base",
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey {Key = "Foo-Base", Value = "Bar-Base"},
+                    new ConfigEnvironmentKey {Key = "Foo-Overwrite", Value = "Bar-Not-Overwritten"}
+                }
+            };
+
+            var expectedChild = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{F13A6A76-C47E-47EF-81ED-209833561A45}"),
+                DefaultEnvironment = false,
+                Category = "Foo",
+                Name = "Child",
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey {Key = "Foo-Child", Value = "Bar-Child"},
+                    new ConfigEnvironmentKey {Key = "Foo-Overwrite", Value = "Bar-Overwritten"}
+                }
+            };
+
+            await _context.ConfigEnvironments.AddRangeAsync(expectedBase, expectedChild);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetEnvironmentWithInheritance(new EnvironmentIdentifier("Foo", "Child"));
+
+            Assert.False(result.IsError);
+
+            // expected to find Foo-Base, Foo-Child, Foo-Overwrite
+            Assert.Equal(3, result.Data.Data.Count);
+            Assert.Equal("Bar-Base", result.Data.Data["Foo-Base"]);
+            Assert.Equal("Bar-Child", result.Data.Data["Foo-Child"]);
+            Assert.Equal("Bar-Overwritten", result.Data.Data["Foo-Overwrite"]);
+        }
+
+        [Fact]
+        public async Task GetEnvironmentWithUnavailableInheritance()
+        {
+            var expectedChild = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{F13A6A76-C47E-47EF-81ED-209833561A45}"),
+                DefaultEnvironment = false,
+                Category = "Foo",
+                Name = "Child",
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey {Key = "Foo-Child", Value = "Bar-Child"},
+                    new ConfigEnvironmentKey {Key = "Foo-Overwrite", Value = "Bar-Overwritten"}
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(expectedChild);
+            await _context.SaveChangesAsync();
+
+            var result = await _database.GetEnvironmentWithInheritance(new EnvironmentIdentifier("Foo", "Child"));
+
+            Assert.False(result.IsError);
+
+            // expected to find Foo-Base, Foo-Child, Foo-Overwrite
+            Assert.Equal(2, result.Data.Data.Count);
+            Assert.Equal("Bar-Child", result.Data.Data["Foo-Child"]);
+            Assert.Equal("Bar-Overwritten", result.Data.Data["Foo-Overwrite"]);
+        }
 
         [Fact]
         public async Task GetLatestActiveConfiguration()
@@ -850,7 +919,65 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task ImportEnvironment() => throw new NotImplementedException();
+        public async Task ImportEnvironmentAndOverwrite()
+        {
+            await _context.ConfigEnvironments.AddAsync(new ConfigEnvironment
+            {
+                Category = "Foo",
+                Name = "Bar",
+                DefaultEnvironment = true,
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey {Key = "Key1", Value = "Value1"},
+                    new ConfigEnvironmentKey {Key = "Key2", Value = "Value2"},
+                    new ConfigEnvironmentKey {Key = "Key3", Value = "Value3"},
+                    new ConfigEnvironmentKey {Key = "Key4", Value = "Value4"}
+                }
+            });
+            await _context.SaveChangesAsync();
+
+            var result = await _database.ImportEnvironment(new EnvironmentIdentifier("Foo", "Bar"), new[]
+            {
+                ConfigKeyAction.Set("Key1", "Value_1"),
+                ConfigKeyAction.Set("Key2", "Value_2"),
+                ConfigKeyAction.Set("Key3", "Value_3"),
+                ConfigKeyAction.Set("Key4", "Value_4"),
+            });
+
+            Assert.False(result.IsError);
+            Assert.Single(_context.ConfigEnvironments);
+
+            var keys = _context.ConfigEnvironmentKeys.OrderBy(k => k.Key).ToList();
+            Assert.Equal(4, keys.Count);
+
+            Assert.Equal("Value_1", keys[0].Value);
+            Assert.Equal("Value_2", keys[1].Value);
+            Assert.Equal("Value_3", keys[2].Value);
+            Assert.Equal("Value_4", keys[3].Value);
+        }
+
+        [Fact]
+        public async Task ImportEnvironmentAndCreate()
+        {
+            var result = await _database.ImportEnvironment(new EnvironmentIdentifier("Foo", "Bar"), new[]
+            {
+                ConfigKeyAction.Set("Key1", "Value_1"),
+                ConfigKeyAction.Set("Key2", "Value_2"),
+                ConfigKeyAction.Set("Key3", "Value_3"),
+                ConfigKeyAction.Set("Key4", "Value_4"),
+            });
+
+            Assert.False(result.IsError);
+            Assert.Single(_context.ConfigEnvironments);
+
+            var keys = _context.ConfigEnvironmentKeys.OrderBy(k => k.Key).ToList();
+            Assert.Equal(4, keys.Count);
+
+            Assert.Equal("Value_1", keys[0].Value);
+            Assert.Equal("Value_2", keys[1].Value);
+            Assert.Equal("Value_3", keys[2].Value);
+            Assert.Equal("Value_4", keys[3].Value);
+        }
 
         [Fact]
         public async Task SaveConfigurationAsExpected()
