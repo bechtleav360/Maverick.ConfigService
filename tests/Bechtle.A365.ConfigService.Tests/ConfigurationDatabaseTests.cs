@@ -480,7 +480,76 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public async Task GenerateEnvironmentKeyAutocompleteData() => throw new NotImplementedException();
+        public async Task GenerateAutocompleteDataBasic()
+        {
+            var expected = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{FD4F8A93-BC3C-402D-8017-C16B6EF2E3A5}"),
+                Category = "Foo",
+                Name = "Bar",
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey {Key = "Key1", Value = "Value1"},
+                    new ConfigEnvironmentKey {Key = "Key2", Value = "Value2"},
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(expected);
+            await _context.SaveChangesAsync();
+
+            await _database.GenerateEnvironmentKeyAutocompleteData(new EnvironmentIdentifier("Foo", "Bar"));
+
+            var paths = _context.AutoCompletePaths.OrderBy(p => p.FullPath).ToList();
+
+            Assert.Equal(2, paths.Count);
+
+            Assert.Equal("Key1", paths[0].Path);
+            Assert.Equal("Key1", paths[0].FullPath);
+
+            Assert.Equal("Key2", paths[1].Path);
+            Assert.Equal("Key2", paths[1].FullPath);
+        }
+
+        [Fact]
+        public async Task GenerateAutocompleteDataComplex()
+        {
+            var expected = new ConfigEnvironment
+            {
+                Id = Guid.Parse("{FD4F8A93-BC3C-402D-8017-C16B6EF2E3A5}"),
+                Category = "Foo",
+                Name = "Bar",
+                Keys = new List<ConfigEnvironmentKey>
+                {
+                    new ConfigEnvironmentKey {Key = "Complex/Number1", Value = "Value1"},
+                    new ConfigEnvironmentKey {Key = "Complex/Key/Number2", Value = "Value2"},
+                    new ConfigEnvironmentKey {Key = "Complex/Key/Number3", Value = "Value3"}
+                }
+            };
+
+            await _context.ConfigEnvironments.AddAsync(expected);
+            await _context.SaveChangesAsync();
+
+            await _database.GenerateEnvironmentKeyAutocompleteData(new EnvironmentIdentifier("Foo", "Bar"));
+
+            var paths = _context.AutoCompletePaths.OrderBy(p => p.FullPath).ToList();
+
+            Assert.Equal(5, paths.Count);
+
+            Assert.Equal("Complex", paths[0].Path);
+            Assert.Equal("Complex", paths[0].FullPath);
+
+            Assert.Equal("Key", paths[1].Path);
+            Assert.Equal("Complex/Key", paths[1].FullPath);
+
+            Assert.Equal("Number2", paths[2].Path);
+            Assert.Equal("Complex/Key/Number2", paths[2].FullPath);
+
+            Assert.Equal("Number3", paths[3].Path);
+            Assert.Equal("Complex/Key/Number3", paths[3].FullPath);
+
+            Assert.Equal("Number1", paths[4].Path);
+            Assert.Equal("Complex/Number1", paths[4].FullPath);
+        }
 
         [Fact]
         public async Task GetDefaultEnvironmentWithExpectedName()
