@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
                 // apparently this also handles JRaw
                 case JValue jValue:
-                    Visit(jValue, currentPath, dict, encodePath);
+                    Visit(jValue, currentPath, dict);
                     break;
 
                 default:
@@ -90,7 +90,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         private void Visit(JProperty jProperty, string currentPath, IDictionary<string, string> dict, bool encodePath)
             => Visit(jProperty.Value, MakeNextPath(currentPath, jProperty.Name, encodePath), dict, encodePath);
 
-        private void Visit(JValue jValue, string currentPath, IDictionary<string, string> dict, bool encodePath)
+        private void Visit(JValue jValue, string currentPath, IDictionary<string, string> dict)
             => dict[currentPath] = jValue?.Value?.ToString();
     }
 }
