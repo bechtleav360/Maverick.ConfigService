@@ -1077,13 +1077,13 @@ namespace Bechtle.A365.ConfigService.Tests
             var json = "{\"Reference1\": \"Value1\"}";
             var usedKeys = new[] {"Key1"};
 
-            var result = await _database.SaveConfiguration(environmentSnapshot,
-                                                           structureSnapshot,
-                                                           configuration,
-                                                           json,
-                                                           usedKeys,
-                                                           DateTime.MinValue,
-                                                           DateTime.MaxValue);
+            await _database.SaveConfiguration(environmentSnapshot,
+                                              structureSnapshot,
+                                              configuration,
+                                              json,
+                                              usedKeys,
+                                              DateTime.MinValue,
+                                              DateTime.MaxValue);
         }
 
         [Fact]
