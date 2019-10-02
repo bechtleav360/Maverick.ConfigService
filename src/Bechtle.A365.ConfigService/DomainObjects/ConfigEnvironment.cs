@@ -71,9 +71,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public ConfigEnvironment ImportKeys(IEnumerable<DtoConfigKey> keys)
         {
-            var actions = keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type));
+            var actions = keys?.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type)).ToList()
+                          ?? new List<ConfigKeyAction>();
 
-            RecordedEvents.Add(new EnvironmentKeysImported(_identifier, actions.ToArray()));
+            if (actions.Any())
+                RecordedEvents.Add(new EnvironmentKeysImported(_identifier, actions.ToArray()));
+
             return this;
         }
 
@@ -84,7 +87,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public ConfigEnvironment ModifyKeys(IEnumerable<ConfigKeyAction> actions)
         {
-            RecordedEvents.Add(new EnvironmentKeysModified(_identifier, actions.ToArray()));
+            var actualActions = actions?.ToArray() ?? new ConfigKeyAction[0];
+            if (actualActions.Any())
+                RecordedEvents.Add(new EnvironmentKeysModified(_identifier, actualActions));
 
             return this;
         }
