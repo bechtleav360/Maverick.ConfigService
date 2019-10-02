@@ -35,7 +35,6 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        
         [HttpPost(Name = "ImportConfiguration")]
         public async Task<IActionResult> Import(IFormFile file)
         {
@@ -82,7 +81,8 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (result.IsError)
                 return ProviderError(result);
 
-            return Ok(result);
+            return AcceptedAtAction(nameof(EnvironmentController.GetAvailableEnvironments),
+                                    RouteUtilities.ControllerName<EnvironmentController>());
         }
     }
 }
