@@ -125,6 +125,9 @@
             <Component Id="cmp80FB867ED329AC4D93250D18EA55D4F5" Guid="*">
                 <File Id="fil77C0E8479B916489778E2ED7BFEE741C" KeyPath="yes" Source="$(var.BasePathCli)\api-ms-win-crt-utility-l1-1-0.dll" />
             </Component>
+            <Component Id="cmp57CA1040519DE3795B8D02A56FF9A0D2" Guid="*">
+                <File Id="filD4D055DF537A314271FA4D9B89E0D0C4" KeyPath="yes" Source="$(var.BasePathCli)\appsettings.Docker.json" />
+            </Component>
             <Component Id="cmp60956F06F2C216DB1F3839B3950A56EE" Guid="*">
                 <File Id="fil4B9803BB8889A635FFBF270169A4ADB0" KeyPath="yes" Source="$(var.BasePathCli)\appsettings.migrations.json" />
             </Component>
@@ -217,6 +220,9 @@
             </Component>
             <Component Id="cmp33A3F2BD0988F31A08C908D1E52373CB" Guid="*">
                 <File Id="filAFB4139196DC42F7E98F193931E847EE" KeyPath="yes" Source="$(var.BasePathCli)\dbgshim.dll" />
+            </Component>
+            <Component Id="cmpF58C6383B10768AA02BFF56AA2C4C416" Guid="*">
+                <File Id="fil75E664969C05DB52461CFDC3DB3793BB" KeyPath="yes" Source="$(var.BasePathCli)\Dockerfile" />
             </Component>
             <Component Id="cmp5367A972EE0FB388087C493434DD7FDE" Guid="*">
                 <File Id="filC436F51EE42A57951658F84E1E2FB2D1" KeyPath="yes" Source="$(var.BasePathCli)\EventStore.ClientAPI.dll" />
@@ -818,8 +824,8 @@
             <Component Id="cmp6537949F39C741BE0D2F9011616D7596" Guid="*">
                 <File Id="filCB50811A8C4C095606D12EEB7D2253D2" KeyPath="yes" Source="$(var.BasePathCli)\mscordaccore.dll" />
             </Component>
-            <Component Id="cmpA3C6AC5B105D2A37CF35443A75244E3F" Guid="*">
-                <File Id="fil921BCF2DE275FE436A6EAEB47F4168C6" KeyPath="yes" Source="$(var.BasePathCli)\mscordaccore_amd64_amd64_4.6.27617.05.dll" />
+            <Component Id="cmpF3141EE48D996943F62665D4EAAB3B63" Guid="*">
+                <File Id="fil45D04766E5A2D7FE6373BD18CBF5D1F8" KeyPath="yes" Source="$(var.BasePathCli)\mscordaccore_amd64_amd64_4.6.28008.02.dll" />
             </Component>
             <Component Id="cmp874E4D0304475BDA38E94DB54A662653" Guid="*">
                 <File Id="filF6BCA4E307FA6FF638DD88EDBA34643E" KeyPath="yes" Source="$(var.BasePathCli)\mscordbi.dll" />
@@ -878,8 +884,8 @@
             <Component Id="cmpE1C9F7DE4743E4356E0AE3C985499F49" Guid="*">
                 <File Id="fil94C4B4F993C5A9E4C91855FE178CB98D" KeyPath="yes" Source="$(var.BasePathCli)\SOS.NETCore.dll" />
             </Component>
-            <Component Id="cmp3D1D76626ED525ACA64D0998ADD6D6BA" Guid="*">
-                <File Id="filE50DFB0B72EF5837665B570EB9EA2AA5" KeyPath="yes" Source="$(var.BasePathCli)\sos_amd64_amd64_4.6.27617.05.dll" />
+            <Component Id="cmp1F9B9BB82EEAA17C77683702445D7500" Guid="*">
+                <File Id="fil63D087AE86EA12DC8EA27DBE93F79B56" KeyPath="yes" Source="$(var.BasePathCli)\sos_amd64_amd64_4.6.28008.02.dll" />
             </Component>
             <Component Id="cmpD49F2102B1E43FCA72D15B359B06DFBC" Guid="*">
                 <File Id="fil3ED662C5B61E904676C4343E2C2670C0" KeyPath="yes" Source="$(var.BasePathCli)\SQLitePCLRaw.batteries_green.dll" />
@@ -1541,6 +1547,7 @@
             <ComponentRef Id="cmp13F3B8042CEFA322D4C3AE17A9822C83" />
             <ComponentRef Id="cmp258C1F75C1B5BE51618991C2EB7926C6" />
             <ComponentRef Id="cmp80FB867ED329AC4D93250D18EA55D4F5" />
+            <ComponentRef Id="cmp57CA1040519DE3795B8D02A56FF9A0D2" />
             <ComponentRef Id="cmp60956F06F2C216DB1F3839B3950A56EE" />
             <ComponentRef Id="cmp6B40B02E3F8354220E96A35C8A1F4088" />
             <ComponentRef Id="cmp4F896F1262A2D79DBF76992C5203EE13" />
@@ -1572,6 +1579,7 @@
             <ComponentRef Id="cmp0BD88A31EC21A8145E1A583AE60C942F" />
             <ComponentRef Id="cmp58E28C028E6B8B7BCC5F9871A2E9BC4C" />
             <ComponentRef Id="cmp33A3F2BD0988F31A08C908D1E52373CB" />
+            <ComponentRef Id="cmpF58C6383B10768AA02BFF56AA2C4C416" />
             <ComponentRef Id="cmp5367A972EE0FB388087C493434DD7FDE" />
             <ComponentRef Id="cmp94E07C859C9E52CC49B3723DDE8ED9E7" />
             <ComponentRef Id="cmpFA0976636370A92B1F2D3E951B6FDB29" />
@@ -1772,7 +1780,7 @@
             <ComponentRef Id="cmpE0B89992EE838A7219F919064A923C2C" />
             <ComponentRef Id="cmp1E98D175F9E5D962BF0BD31ECA049581" />
             <ComponentRef Id="cmp6537949F39C741BE0D2F9011616D7596" />
-            <ComponentRef Id="cmpA3C6AC5B105D2A37CF35443A75244E3F" />
+            <ComponentRef Id="cmpF3141EE48D996943F62665D4EAAB3B63" />
             <ComponentRef Id="cmp874E4D0304475BDA38E94DB54A662653" />
             <ComponentRef Id="cmp0F9C7121395527C84A63D1AFF77EF7A4" />
             <ComponentRef Id="cmp550A8CCFAC403BBEC61DC6E3BBF11293" />
@@ -1792,7 +1800,7 @@
             <ComponentRef Id="cmpA79DEC7CC4065D9DBF1691228C355FFB" />
             <ComponentRef Id="cmp8A468F57E2FC57EF9B452BF1C0978E6B" />
             <ComponentRef Id="cmpE1C9F7DE4743E4356E0AE3C985499F49" />
-            <ComponentRef Id="cmp3D1D76626ED525ACA64D0998ADD6D6BA" />
+            <ComponentRef Id="cmp1F9B9BB82EEAA17C77683702445D7500" />
             <ComponentRef Id="cmpD49F2102B1E43FCA72D15B359B06DFBC" />
             <ComponentRef Id="cmp4EA014CBBE4D1B04B3C4E50FCAD4867A" />
             <ComponentRef Id="cmpF8E56E0026158D272E2DD2235FD607B0" />
