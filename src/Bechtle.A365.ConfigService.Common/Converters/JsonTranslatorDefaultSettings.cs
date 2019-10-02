@@ -3,5 +3,7 @@
     public static class JsonTranslatorDefaultSettings
     {
         public static readonly string Separator = "/";
+
+        public static readonly bool EscapePath = false;
     }
 }

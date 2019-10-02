@@ -1,4 +1,5 @@
-﻿using Bechtle.A365.ConfigService.Common.Converters;
+﻿using System.Linq;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -103,6 +104,30 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.True(translated.ContainsKey("0001/Bar"));
             Assert.Equal("Bar", translated["0000/Foo"]);
             Assert.Equal("Baz", translated["0001/Bar"]);
+        }
+
+        [Fact]
+        public void LeaveSpacesByDefault()
+        {
+            var jObject = JsonConvert.DeserializeObject<JToken>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
+            var translated = _translator.ToDictionary(jObject);
+
+            Assert.NotNull(translated);
+            Assert.Equal(1, translated.Count);
+            Assert.Equal("Foo With Spaces %2F Slashes", translated.First().Key);
+            Assert.Equal("Bar", translated.First().Value);
+        }
+
+        [Fact]
+        public void EncodeSpacesWhenTold()
+        {
+            var jObject = JsonConvert.DeserializeObject<JToken>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
+            var translated = _translator.ToDictionary(jObject, true);
+
+            Assert.NotNull(translated);
+            Assert.Equal(1, translated.Count);
+            Assert.Equal("Foo%20With%20Spaces%20%2F%20Slashes", translated.First().Key);
+            Assert.Equal("Bar", translated.First().Value);
         }
     }
 }

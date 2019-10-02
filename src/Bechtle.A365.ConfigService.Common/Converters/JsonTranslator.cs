@@ -16,10 +16,20 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         }
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionary(JToken json) => ToDictionary(json, JsonTranslatorDefaultSettings.Separator);
+        public IDictionary<string, string> ToDictionary(JToken json)
+            => ToDictionary(json, JsonTranslatorDefaultSettings.Separator, JsonTranslatorDefaultSettings.EscapePath);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionary(JToken json, string separator) => _jsonToDictConverter.ToDict(json, separator);
+        public IDictionary<string, string> ToDictionary(JToken json, bool encodePath)
+            => ToDictionary(json, JsonTranslatorDefaultSettings.Separator, encodePath);
+
+        /// <inheritdoc />
+        public IDictionary<string, string> ToDictionary(JToken json, string separator)
+            => ToDictionary(json, separator, JsonTranslatorDefaultSettings.EscapePath);
+
+        /// <inheritdoc />
+        public IDictionary<string, string> ToDictionary(JToken json, string separator, bool encodePath)
+            => _jsonToDictConverter.ToDict(json, separator, encodePath);
 
         /// <inheritdoc />
         public JToken ToJson(IDictionary<string, string> dict) => _dictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);

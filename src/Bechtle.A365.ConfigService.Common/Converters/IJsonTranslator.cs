@@ -19,6 +19,20 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         IDictionary<string, string> ToDictionary(JToken json);
 
         /// <summary>
+        ///     counterpart to <see cref="ToJson(IDictionary{string,string})" />, converts json to a number of Key / Value pairs
+        ///     <remarks>
+        ///         {
+        ///         "Some/Path/To/Somewhere" => "SomeValue",
+        ///         "Endpoints/0000/Name" => "configuration"
+        ///         }
+        ///     </remarks>
+        /// </summary>
+        /// <param name="json"></param>
+        /// <param name="encodePath">true to fully encode the path</param>
+        /// <returns></returns>
+        IDictionary<string, string> ToDictionary(JToken json, bool encodePath);
+
+        /// <summary>
         ///     counterpart to <see cref="ToJson(IDictionary{string,string}, string)" />, converts json to a number of Key / Value pairs
         ///     <remarks>
         ///         {
@@ -31,6 +45,21 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="separator">separator to use in the keys</param>
         /// <returns></returns>
         IDictionary<string, string> ToDictionary(JToken json, string separator);
+
+        /// <summary>
+        ///     counterpart to <see cref="ToJson(IDictionary{string,string}, string)" />, converts json to a number of Key / Value pairs
+        ///     <remarks>
+        ///         {
+        ///         "Some/Path/To/Somewhere" => "SomeValue",
+        ///         "Endpoints/0000/Name" => "configuration"
+        ///         }
+        ///     </remarks>
+        /// </summary>
+        /// <param name="json"></param>
+        /// <param name="separator">separator to use in the keys</param>
+        /// <param name="encodePath">true to fully encode the path</param>
+        /// <returns></returns>
+        IDictionary<string, string> ToDictionary(JToken json, string separator, bool encodePath);
 
         /// <summary>
         ///     convert a dictionary of Paths=>Values to a JToken.
