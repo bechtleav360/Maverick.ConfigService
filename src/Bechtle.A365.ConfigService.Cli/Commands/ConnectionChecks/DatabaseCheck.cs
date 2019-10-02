@@ -40,12 +40,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                         output.WriteLine(migration, 2);
 
                     var tables = context.MetadataString
-                                        .FromSql("SELECT TABLE_NAME as Result FROM INFORMATION_SCHEMA.TABLES ORDER BY Result")
+                                        .FromSqlInterpolated($"SELECT TABLE_NAME as Result FROM INFORMATION_SCHEMA.TABLES ORDER BY Result")
                                         .ToList()
                                         .Select(x => x.Result)
                                         .ToDictionary(table => table,
                                                       table => context.MetadataInt
-                                                                      .FromSql($"SELECT COUNT(*) as Result FROM {table}", table)
+                                                                      .FromSqlInterpolated($"SELECT COUNT(*) as Result FROM {table}")
                                                                       .First()
                                                                       .Result);
 

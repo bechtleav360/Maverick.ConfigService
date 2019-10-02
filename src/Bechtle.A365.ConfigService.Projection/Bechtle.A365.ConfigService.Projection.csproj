@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-    <version>2.2.0</version>
-    <LangVersion>7.3</LangVersion>
+    <Version>2.3.0</Version>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,23 +35,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="App.Metrics" Version="3.2.0-dev0002" />
     <PackageReference Include="App.Metrics.Extensions.Hosting" Version="3.2.0-dev0002" />
     <PackageReference Include="App.Metrics.Extensions.Configuration" Version="3.2.0-dev0002" />
     <PackageReference Include="App.Metrics.Extensions.DependencyInjection" Version="3.2.0-dev0002" />
     <PackageReference Include="Bechtle.A365.Logging.NLog" Version="1.5.0-zzdevelop0012" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.4" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="4.5.0" />
-    <PackageReference Include="Polly" Version="7.1.0" />
-    <PackageReference Include="RabbitMQ.Client" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="4.6.0" />
+    <PackageReference Include="Polly" Version="7.1.1" />
+    <PackageReference Include="RabbitMQ.Client" Version="5.1.1" />
   </ItemGroup>
 
   <ItemGroup>
