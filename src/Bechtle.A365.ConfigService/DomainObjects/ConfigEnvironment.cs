@@ -58,8 +58,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             _isDefault = isDefault;
             _identifier = _isDefault
-                              ? identifier
-                              : new EnvironmentIdentifier(identifier.Category, "Default");
+                              ? new EnvironmentIdentifier(identifier.Category, "Default")
+                              : identifier;
 
             return this;
         }
