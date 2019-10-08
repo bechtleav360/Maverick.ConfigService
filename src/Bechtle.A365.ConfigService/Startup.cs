@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
@@ -44,13 +45,13 @@ namespace Bechtle.A365.ConfigService
     public class Startup
     {
         private readonly ILogger<Startup> _logger;
-        private readonly IHostingEnvironment _environment;
+        private readonly IWebHostEnvironment _environment;
 
         /// <inheritdoc />
         /// <param name="configuration"></param>
         /// <param name="logger"></param>
         /// <param name="env"></param>
-        public Startup(IConfiguration configuration, ILogger<Startup> logger, IHostingEnvironment env)
+        public Startup(IConfiguration configuration, ILogger<Startup> logger, IWebHostEnvironment env)
         {
             _logger = logger;
             _environment = env;
@@ -71,9 +72,11 @@ namespace Bechtle.A365.ConfigService
         /// <param name="env"></param>
         /// <param name="provider"></param>
         public void Configure(IApplicationBuilder app,
-                              IHostingEnvironment env,
+                              IWebHostEnvironment env,
                               IApiVersionDescriptionProvider provider)
         {
+            app.Configure(a => a.UseRouting(), _ => _logger.LogInformation("adding routing"));
+
             if (Configuration.GetSection("Authentication:Kestrel:Enabled").Get<bool>())
                 app.Configure(a => a.UseAuthentication(), _ => _logger.LogInformation("adding authentication-hooks"));
             else
@@ -119,7 +122,7 @@ namespace Bechtle.A365.ConfigService
                .Configure(a => a.UseMetricsRequestTrackingMiddleware(), _ => _logger.LogInformation("adding request-path metrics"))
                .Configure(a => a.UseMetricsTextEndpoint(), _ => _logger.LogInformation("adding text-metrics endpoint"))
                .Configure(a => a.UseMetricsEndpoint(), _ => _logger.LogInformation("adding metrics endpoint"))
-               .Configure(a => a.UseMvc(), _ => _logger.LogInformation("adding MVC-Middleware"));
+               .Configure(a => a.UseEndpoints(builder => builder.MapControllers()), _ => _logger.LogInformation("adding controller-endpoints"));
 
             _logger.LogInformation("registering config-reload hook");
 
@@ -143,7 +146,7 @@ namespace Bechtle.A365.ConfigService
             // setup MVC
             services.AddMvc()
                     .AddMetrics()
-                    .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                    .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             _logger.LogInformation("registering API-Version support");
 
@@ -178,25 +181,24 @@ namespace Bechtle.A365.ConfigService
 
             _logger.LogInformation("Registering Authentication-Services");
 
-
-            if (_environment.EnvironmentName.ToLower() != "docker")
+            if (!_environment.EnvironmentName.Equals("docker", StringComparison.OrdinalIgnoreCase))
             {
                 // Cert-Based Authentication - if enabled
                 services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
-                    .AddCertificate(options =>
-                    {
-                        options.Events = new CertificateAuthenticationEvents
+                        .AddCertificate(options =>
                         {
-                            OnAuthenticationFailed = context => context.HttpContext
-                                .RequestServices
-                                .GetService<ICertificateValidator>()
-                                .Fail(context),
-                            OnValidateCertificate = context => context.HttpContext
-                                .RequestServices
-                                .GetService<ICertificateValidator>()
-                                .Validate(context)
-                        };
-                    });
+                            options.Events = new CertificateAuthenticationEvents
+                            {
+                                OnAuthenticationFailed = context => context.HttpContext
+                                                                           .RequestServices
+                                                                           .GetService<ICertificateValidator>()
+                                                                           .Fail(context),
+                                OnValidateCertificate = context => context.HttpContext
+                                                                          .RequestServices
+                                                                          .GetService<ICertificateValidator>()
+                                                                          .Validate(context)
+                            };
+                        });
             }
 
             _logger.LogInformation("Registering App-Services");
