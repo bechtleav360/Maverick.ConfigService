@@ -863,7 +863,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             if (existingKey is null)
                 return (new StructureVariable
                            {
-                               Id = Guid.NewGuid(),
+                               // empty guid to indicate EFCore that this is a new entry and should be tracked as Added
+                               Id = Guid.Empty,
                                StructureId = structure.Id,
                                Key = action.Key,
                                Value = action.Value
@@ -884,7 +885,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             if (existingKey is null)
                 return (new ConfigEnvironmentKey
                            {
-                               Id = Guid.NewGuid(),
+                               // empty guid to indicate EFCore that this is a new entry and should be tracked as Added
+                               Id = Guid.Empty,
                                ConfigEnvironmentId = environment.Id,
                                Key = action.Key,
                                Value = action.Value,
