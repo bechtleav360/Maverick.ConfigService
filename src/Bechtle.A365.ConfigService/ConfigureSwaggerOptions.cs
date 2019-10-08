@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Bechtle.A365.ConfigService
@@ -35,9 +35,9 @@ namespace Bechtle.A365.ConfigService
                 options.SwaggerDoc(description.GroupName, CreateInfoForApiVersion(description));
         }
 
-        private static Info CreateInfoForApiVersion(ApiVersionDescription description)
+        private static OpenApiInfo CreateInfoForApiVersion(ApiVersionDescription description)
         {
-            var info = new Info
+            var info = new OpenApiInfo
             {
                 Title = "Bechtle.A365.ConfigService",
                 Version = description.ApiVersion.ToString(),

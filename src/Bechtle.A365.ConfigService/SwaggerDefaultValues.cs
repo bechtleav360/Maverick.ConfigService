@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
-using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Bechtle.A365.ConfigService
@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService
         /// </summary>
         /// <param name="operation">The operation to apply the filter to.</param>
         /// <param name="context">The current operation filter context.</param>
-        public void Apply(Operation operation, OperationFilterContext context)
+        public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
             var apiDescription = context.ApiDescription;
 
@@ -33,15 +33,12 @@ namespace Bechtle.A365.ConfigService
             if (operation.Parameters == null)
                 return;
 
-            foreach (var parameter in operation.Parameters.OfType<NonBodyParameter>())
+            foreach (var parameter in operation.Parameters)
             {
                 var description = apiDescription.ParameterDescriptions.First(p => p.Name == parameter.Name);
 
                 if (parameter.Description == null)
                     parameter.Description = description.ModelMetadata?.Description;
-
-                if (parameter.Default == null)
-                    parameter.Default = description.DefaultValue;
 
                 parameter.Required |= description.IsRequired;
             }
