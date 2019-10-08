@@ -2,11 +2,9 @@
 
 namespace Bechtle.A365.ConfigService.Common.DbObjects
 {
-    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-    // necessary for lazy-loading
     public class ConfigEnvironmentKey
     {
-        public virtual ConfigEnvironment ConfigEnvironment { get; set; }
+        public ConfigEnvironment ConfigEnvironment { get; set; }
 
         public Guid ConfigEnvironmentId { get; set; }
 

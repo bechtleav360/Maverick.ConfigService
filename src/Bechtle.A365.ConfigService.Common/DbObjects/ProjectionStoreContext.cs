@@ -35,13 +35,6 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         /// <summary>
         /// </summary>
-        public IQueryable<ProjectedConfiguration> FullProjectedConfigurations => ProjectedConfigurations.Include(c => c.Keys)
-                                                                                                        .Include(c => c.UsedConfigurationKeys)
-                                                                                                        .Include(c => c.ConfigEnvironment)
-                                                                                                        .Include(c => c.Structure);
-
-        /// <summary>
-        /// </summary>
         public IQueryable<Structure> FullStructures => Structures.Include(s => s.Keys)
                                                                  .Include(s => s.Variables);
 
@@ -72,6 +65,10 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
         /// <summary>
         /// </summary>
         public DbSet<StructureVariable> StructureVariables { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public DbSet<UsedConfigurationKey> UsedConfigurationKeys { get; set; }
 
         /// <inheritdoc />
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -105,6 +102,8 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
             modelBuilder.Entity<ProjectedEventMetadata>()
                         .ToTable(nameof(ProjectedEventMetadata));
+
+            modelBuilder.Entity<UsedConfigurationKey>();
         }
     }
 }

@@ -3,11 +3,9 @@ using System.Collections.Generic;
 
 namespace Bechtle.A365.ConfigService.Common.DbObjects
 {
-    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-    // necessary for lazy-loading
     public class ProjectedConfiguration
     {
-        public virtual ConfigEnvironment ConfigEnvironment { get; set; }
+        public ConfigEnvironment ConfigEnvironment { get; set; }
 
         public Guid ConfigEnvironmentId { get; set; }
 
@@ -17,15 +15,15 @@ namespace Bechtle.A365.ConfigService.Common.DbObjects
 
         public Guid Id { get; set; }
 
-        public virtual List<ProjectedConfigurationKey> Keys { get; set; }
+        public List<ProjectedConfigurationKey> Keys { get; set; }
 
-        public virtual Structure Structure { get; set; }
+        public Structure Structure { get; set; }
 
         public Guid StructureId { get; set; }
 
         public int StructureVersion { get; set; }
 
-        public virtual List<UsedConfigurationKey> UsedConfigurationKeys { get; set; }
+        public List<UsedConfigurationKey> UsedConfigurationKeys { get; set; }
 
         public DateTime? ValidFrom { get; set; }
 
