@@ -113,7 +113,12 @@ namespace Bechtle.A365.ConfigService
                                                                 $"ConfigService {description.GroupName.ToUpperInvariant()}");
                                 }),
                           _ => _logger.LogInformation("adding Swagger/-UI"))
-               .Configure(a => a.UseHealth(), _ => _logger.LogInformation("adding Health-Middleware"))
+               .Configure(a => a.UseEndpoints(routes => routes.MapControllerRoute("Health", "api/health/status/{depth?}", new
+                          {
+                              controller = "Health",
+                              action = "Status"
+                          })),
+                          _ => _logger.LogInformation("adding Health-Middleware"))
                .Configure(a => a.UseMetricsActiveRequestMiddleware(), _ => _logger.LogInformation("adding active-request metrics"))
                .Configure(a => a.UseMetricsApdexTrackingMiddleware(), _ => _logger.LogInformation("adding apdex metrics"))
                .Configure(a => a.UseMetricsErrorTrackingMiddleware(), _ => _logger.LogInformation("adding error metrics"))
