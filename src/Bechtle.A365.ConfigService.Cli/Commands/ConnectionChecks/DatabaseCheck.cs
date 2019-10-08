@@ -110,9 +110,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             _connectionString = connectionString;
         }
 
-        public DbQuery<AdHocQuery<int>> MetadataInt { get; set; }
+        public DbSet<AdHocQuery<int>> MetadataInt { get; set; }
 
-        public DbQuery<AdHocQuery<string>> MetadataString { get; set; }
+        public DbSet<AdHocQuery<string>> MetadataString { get; set; }
 
         /// <inheritdoc />
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
