@@ -1,12 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Global Stuff -->
   <PropertyGroup>
+    <Version>2.3.0</Version>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <Description>ASP.NET Core middleware that enables an application to support certificate authentication.</Description>
     <LangVersion>8.0</LangVersion>
-    <Version>2.3.0</Version>
   </PropertyGroup>
 
+  <!-- Package Dependencies -->
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />

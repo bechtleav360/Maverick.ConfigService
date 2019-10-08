@@ -1,9 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Global Stuff -->
   <PropertyGroup>
+    <Version>2.3.0</Version>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
+  <!-- Project Dependencies -->
   <ItemGroup>
     <ProjectReference Include="..\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj" />
   </ItemGroup>
