@@ -199,9 +199,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             if (defaultEnvironment)
             {
                 var defaultEnvironments = _context.ConfigEnvironments
-                                                  .Count(env => string.Equals(env.Category,
-                                                                              identifier.Category,
-                                                                              StringComparison.OrdinalIgnoreCase)
+                                                  .Count(env => env.Category.Equals(identifier.Category, StringComparison.OrdinalIgnoreCase)
                                                                 && env.DefaultEnvironment);
 
                 if (defaultEnvironments > 0)
