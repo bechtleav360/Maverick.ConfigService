@@ -85,13 +85,16 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             // mark configurations as changed when:
             // UsedKeys contains one of the Changed / Deleted Keys
 
-            foreach (var builtConfig in _context.FullProjectedConfigurations
+            foreach (var builtConfig in _context.ProjectedConfigurations
+                                                .Include(e => e.ConfigEnvironment)
+                                                .Include(e => e.Structure)
                                                 .Where(c => c.UpToDate)
                                                 .ToArray())
             {
-                var usedKeys = builtConfig.UsedConfigurationKeys
-                                          .OrderBy(k => k.Key)
-                                          .ToArray();
+                var usedKeys = await _context.UsedConfigurationKeys
+                                             .Where(k => k.ProjectedConfigurationId == builtConfig.Id)
+                                             .OrderBy(k => k.Key)
+                                             .ToListAsync();
 
                 // if any of the Changed- or Removed-Keys is found in the Keys used to build this Configuration - mark it as stale
                 if (changedKeys.Select(ck => ck.Key)
@@ -503,7 +506,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             if (configId == Guid.Empty)
                 return null;
 
-            var configuration = await _context.FullProjectedConfigurations
+            var configuration = await _context.ProjectedConfigurations
                                               .Where(c => c.Id == configId)
                                               .Select(c => new ConfigurationIdentifier(c))
                                               .FirstOrDefaultAsync();

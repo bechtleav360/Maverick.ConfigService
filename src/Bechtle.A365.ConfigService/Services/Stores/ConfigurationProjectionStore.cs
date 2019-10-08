@@ -245,7 +245,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.FullProjectedConfigurations
+                               var dbResult = await _context.ProjectedConfigurations
+                                                            .Include(e => e.ConfigEnvironment)
+                                                            .Include(e => e.Structure)
                                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                                             .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
                                                                                       c.ConfigEnvironment.Category == identifier.Environment.Category &&
@@ -340,7 +342,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.FullProjectedConfigurations
+                               var dbResult = await _context.ProjectedConfigurations
+                                                            .Include(e => e.ConfigEnvironment)
+                                                            .Include(e => e.Structure)
                                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                                             .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
                                                                                       c.ConfigEnvironment.Category == identifier.Environment.Category &&
@@ -392,7 +396,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        when.Ticks),
                            async entry =>
                            {
-                               var dbResult = await _context.FullProjectedConfigurations
+                               var dbResult = await _context.ProjectedConfigurations
+                                                            .Include(e => e.ConfigEnvironment)
+                                                            .Include(e => e.Structure)
                                                             .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
                                                             .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
                                                                                       c.ConfigEnvironment.Category == identifier.Environment.Category &&
