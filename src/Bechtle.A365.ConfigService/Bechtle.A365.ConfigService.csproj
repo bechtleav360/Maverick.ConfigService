@@ -8,6 +8,11 @@
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
+  <!-- AspNetCore Hosting / Use OOP hosting explicitly to maintain Linux-Compatibility -->
+  <PropertyGroup>
+    <AspNetCoreHostingModel>OutOfProcess</AspNetCoreHostingModel>
+  </PropertyGroup>
+
   <!-- Docker Stuff -->
   <PropertyGroup>
     <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
