@@ -9,7 +9,7 @@
 
   <!-- Package Dependencies -->
   <ItemGroup>
-    <PackageReference Include="Bechtle.A365.Core.EventBus" Version="2.1.0-netcore0014" />
+    <PackageReference Include="Bechtle.A365.Core.EventBus" Version="2.2.0-netcore0018" />
     <PackageReference Include="EventStore.Client" Version="5.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="3.0.0">
