@@ -168,7 +168,7 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.False(result.IsError);
 
             Assert.Empty(_context.ConfigEnvironmentKeys.Where(k => k.Id == initialKey.Id));
-            Assert.Single(_context.ConfigEnvironmentKeys.Where(k => k.Key.Equals("Key2", StringComparison.Ordinal)));
+            Assert.Single(_context.ConfigEnvironmentKeys.Where(k => k.Key == "Key2"));
         }
 
         [Fact]
@@ -290,8 +290,7 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.Single(_context.Structures.Where(s => s.Id == structure.Id));
             Assert.Single(_context.StructureKeys.Where(k => k.Id == initialKey.Id));
             Assert.Empty(_context.StructureVariables.Where(v => v.Id == initialVariable.Id));
-            Assert.Single(_context.StructureVariables.Where(v => v.Key.Equals("Var2", StringComparison.Ordinal)
-                                                                 && v.Value.Equals("Val2", StringComparison.Ordinal)));
+            Assert.Single(_context.StructureVariables.Where(v => v.Key == "Var2" && v.Value == "Val2"));
         }
 
         [Fact]
@@ -354,8 +353,8 @@ namespace Bechtle.A365.ConfigService.Tests
 
             Assert.NotNull(result);
             Assert.False(result.IsError);
-            Assert.Single(_context.ConfigEnvironments.Where(e => e.Category.Equals("Foo", StringComparison.Ordinal)
-                                                                 && e.Name.Equals("Bar", StringComparison.Ordinal)
+            Assert.Single(_context.ConfigEnvironments.Where(e => e.Category == "Foo"
+                                                                 && e.Name == "Bar"
                                                                  && e.DefaultEnvironment));
         }
 
@@ -366,8 +365,8 @@ namespace Bechtle.A365.ConfigService.Tests
 
             Assert.NotNull(result);
             Assert.False(result.IsError);
-            Assert.Single(_context.ConfigEnvironments.Where(e => e.Category.Equals("Foo", StringComparison.Ordinal)
-                                                                 && e.Name.Equals("Bar", StringComparison.Ordinal)
+            Assert.Single(_context.ConfigEnvironments.Where(e => e.Category == "Foo"
+                                                                 && e.Name == "Bar"
                                                                  && e.DefaultEnvironment == false));
         }
 
@@ -380,8 +379,7 @@ namespace Bechtle.A365.ConfigService.Tests
 
             Assert.NotNull(result);
             Assert.False(result.IsError);
-            Assert.Single(_context.Structures.Where(s => s.Name.Equals("Foo", StringComparison.Ordinal)
-                                                         && s.Version == 42));
+            Assert.Single(_context.Structures.Where(s => s.Name == "Foo" && s.Version == 42));
         }
 
         [Fact]
