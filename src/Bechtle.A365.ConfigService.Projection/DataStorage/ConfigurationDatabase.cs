@@ -215,7 +215,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             await _context.ConfigEnvironments.AddAsync(new ConfigEnvironment
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Empty,
                 Name = identifier.Name,
                 Category = identifier.Category,
                 DefaultEnvironment = defaultEnvironment,
@@ -240,19 +240,19 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             await _context.Structures.AddAsync(new Structure
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Empty,
                 Name = identifier.Name,
                 Version = identifier.Version,
                 Keys = keys.Select(kvp => new StructureKey
                            {
-                               Id = Guid.NewGuid(),
+                               Id = Guid.Empty,
                                Key = kvp.Key,
                                Value = kvp.Value
                            })
                            .ToList(),
                 Variables = variables.Select(kvp => new StructureVariable
                                      {
-                                         Id = Guid.NewGuid(),
+                                         Id = Guid.Empty,
                                          Key = kvp.Key,
                                          Value = kvp.Value
                                      })
@@ -347,7 +347,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 {
                     root = new ConfigEnvironmentKeyPath
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.Empty,
                         ConfigEnvironment = environment,
                         ConfigEnvironmentId = environment.Id,
                         Children = new List<ConfigEnvironmentKeyPath>(),
@@ -372,7 +372,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                     {
                         next = new ConfigEnvironmentKeyPath
                         {
-                            Id = Guid.NewGuid(),
+                            Id = Guid.Empty,
                             ConfigEnvironment = environment,
                             ConfigEnvironmentId = environment.Id,
                             Children = new List<ConfigEnvironmentKeyPath>(),
@@ -637,7 +637,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             var compiledConfiguration = new ProjectedConfiguration
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Empty,
                 ConfigEnvironmentId = foundEnvironment.Id,
                 StructureId = foundStructure.Id,
                 StructureVersion = foundStructure.Version,
@@ -649,13 +649,13 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 UsedConfigurationKeys = usedKeyList.Where(k => environment.Data.ContainsKey(k))
                                                    .Select(key => new UsedConfigurationKey
                                                    {
-                                                       Id = Guid.NewGuid(),
+                                                       Id = Guid.Empty,
                                                        Key = key
                                                    })
                                                    .ToList(),
                 Keys = configuration.Select(kvp => new ProjectedConfigurationKey
                                     {
-                                        Id = Guid.NewGuid(),
+                                        Id = Guid.Empty,
                                         Key = kvp.Key,
                                         Value = kvp.Value
                                     })
