@@ -177,7 +177,6 @@ namespace Bechtle.A365.ConfigService
                     {
                         options.CustomSchemaIds(t => t.FullName);
                         options.OperationFilter<SwaggerDefaultValues>();
-                        options.DescribeAllEnumsAsStrings();
 
                         var ass = Assembly.GetEntryAssembly();
                         if (!(ass is null))
