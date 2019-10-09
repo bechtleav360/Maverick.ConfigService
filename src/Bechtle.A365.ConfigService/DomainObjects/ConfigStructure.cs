@@ -56,7 +56,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public ConfigStructure ModifyVariables(IList<ConfigKeyAction> actions)
         {
-            RecordedEvents.Add(new StructureVariablesModified(_identifier, actions.ToArray()));
+            if (!(actions is null))
+                RecordedEvents.Add(new StructureVariablesModified(_identifier, actions.ToArray()));
             return this;
         }
     }

@@ -5,6 +5,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Services;
 using Bechtle.A365.ConfigService.Services.Stores;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -55,7 +56,9 @@ namespace Bechtle.A365.ConfigService.Tests.DomainObjectTests
         {
             // nothing is setup, because nothing should be called when no events have been added
             var store = new Mock<IEventStore>(MockBehavior.Strict);
-            var logger = new Mock<ILogger<StructureTests>>(MockBehavior.Strict);
+            var logger = new ServiceCollection().AddLogging()
+                                                .BuildServiceProvider()
+                                                .GetRequiredService<ILogger<StructureTests>>();
 
             // setup history to return the desired state - all events have been seen and shouldn't be saved again
             var history = new Mock<IEventHistoryService>(MockBehavior.Strict);
@@ -68,7 +71,7 @@ namespace Bechtle.A365.ConfigService.Tests.DomainObjectTests
 
             await domainObject.Save(store.Object,
                                     history.Object,
-                                    logger.Object,
+                                    logger,
                                     _metrics);
         }
 
@@ -76,7 +79,9 @@ namespace Bechtle.A365.ConfigService.Tests.DomainObjectTests
         [MemberData(nameof(ProcessedEventStates))]
         public async Task ProcessEvents(EventStatus status)
         {
-            var logger = new Mock<ILogger<StructureTests>>(MockBehavior.Strict);
+            var logger = new ServiceCollection().AddLogging()
+                                                .BuildServiceProvider()
+                                                .GetRequiredService<ILogger<StructureTests>>();
 
             // setup store to appear as if everything was written correctly
             var store = new Mock<IEventStore>(MockBehavior.Strict);
@@ -94,11 +99,11 @@ namespace Bechtle.A365.ConfigService.Tests.DomainObjectTests
 
             await domainObject.Save(store.Object,
                                     history.Object,
-                                    logger.Object,
+                                    logger,
                                     _metrics);
 
             history.Verify(s => s.GetEventStatus(It.IsAny<StructureCreated>()), Times.Once);
-            store.Verify(s => s.WriteEvent(It.IsAny<StructureCreated>()), Times.Once);
+            store.Verify(s => s.WriteEvent(It.IsAny<DomainEvent>()), Times.Once);
         }
     }
 }
