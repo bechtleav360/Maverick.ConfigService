@@ -68,5 +68,12 @@ if(Test-Path $FilePath) {
     $a.LoggingConfiguration.NLog.Variables.RabbitMqUser = $RabbitMqUser
     $a.LoggingConfiguration.NLog.Variables.RabbitMqPassword = $RabbitMqPassword
     $a.LoggingConfiguration.NLog.Variables.RabbitMqPort = $RabbitMqPort
+    $a.MetricsReporting.AppId = "Bechtle.A365.ConfigService.Projection"
+    $a.MetricsReporting.Exchange = "A365.Metrics"
+    $a.MetricsReporting.Hostname = $RabbitMqHost
+    $a.MetricsReporting.Port = $RabbitMqPort
+    $a.MetricsReporting.Username = $RabbitMqUser
+    $a.MetricsReporting.Password = $RabbitMqPassword
+    $a.MetricsReporting.Topic = "Bechtle.A365.ConfigService.Projection.{0}"
     $a | ConvertTo-Json -Depth 100 | Format-Json | set-content $FilePath -Encoding UTF8
 }
