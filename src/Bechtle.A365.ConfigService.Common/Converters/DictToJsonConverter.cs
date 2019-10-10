@@ -58,9 +58,14 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                                                                 .OrderBy(c => int.Parse(c.Name))
                                                                 .Select(CreateToken));
 
-        private JObject CreateObject(Node node) => new JObject(node.Children
-                                                                   .Select(c => new JProperty(UnEscapePath(c.Name),
-                                                                                              CreateToken(c))));
+        // group nodes by their path and then select the first one for each group
+        // @TODO: log a warning when multiple items have been found
+        private JObject CreateObject(Node node)
+            => new JObject(
+                node.Children
+                    .GroupBy(child => UnEscapePath(child.Name))
+                    .Select(group => group.Select(child => new JProperty(UnEscapePath(child.Name), CreateToken(child)))
+                                          .First()));
 
         private JToken CreateToken(Node node)
         {
