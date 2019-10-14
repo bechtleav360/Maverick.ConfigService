@@ -87,6 +87,11 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
+                // create directory-structure if it doesn't already exist
+                var fileInfo = new FileInfo(ConfigFileLocation);
+                if (!Directory.Exists(fileInfo.DirectoryName))
+                    Directory.CreateDirectory(fileInfo.DirectoryName);
+
                 await using var file = System.IO.File.CreateText(ConfigFileLocation);
                 using var writer = new JsonTextWriter(file);
 
@@ -151,6 +156,11 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             try
             {
+                // create directory-structure if it doesn't already exist
+                var fileInfo = new FileInfo(ConfigFileLocation);
+                if (!Directory.Exists(fileInfo.DirectoryName))
+                    Directory.CreateDirectory(fileInfo.DirectoryName);
+
                 await System.IO.File.WriteAllTextAsync(ConfigFileLocation,
                                                        json.ToString(Formatting.Indented,
                                                                      new StringEnumConverter(),
