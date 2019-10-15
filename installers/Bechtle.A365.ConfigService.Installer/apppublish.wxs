@@ -329,6 +329,11 @@
             <Component Id="cmpB139B49DF4DF8F44C525B449EA8187F7" Guid="*">
                 <File Id="filE7A3E65CC622C2E3B9B57707B12C9645" KeyPath="yes" Source="$(var.BasePath)\web.config" />
             </Component>
+            <Directory Id="dir76A8B56EDC1C4DD3CB4177F3704BC91E" Name="data">
+                <Component Id="cmp27776765DCD0539DF50C508F9ABB0359" Guid="*">
+                    <File Id="fil9102E8F981698AACBD53ADB410AE1227" KeyPath="yes" Source="$(var.BasePath)\data\appsettings.json" />
+                </Component>
+            </Directory>
             <Directory Id="dir58E8247E2885C01898CAD009F9EFD8BA" Name="runtimes">
                 <Directory Id="dir6F1D17A2D7C1116227465D3FD3B62581" Name="alpine-x64">
                     <Directory Id="dir9BBDBAC5727332C8038A4F8437B87A50" Name="native">
@@ -589,6 +594,7 @@
             <ComponentRef Id="cmpC8B4E2670FF4E41E22F95F7602D47941" />
             <ComponentRef Id="cmpF9FE3EF269B462CCFCD03056FED69C64" />
             <ComponentRef Id="cmpB139B49DF4DF8F44C525B449EA8187F7" />
+            <ComponentRef Id="cmp27776765DCD0539DF50C508F9ABB0359" />
             <ComponentRef Id="cmp1284CD8E63214CD328609FA134426A88" />
             <ComponentRef Id="cmpB7009B0474FB9B6971F5B3DEF75E92BD" />
             <ComponentRef Id="cmp9610396A30E278178332CAFB8008E496" />
