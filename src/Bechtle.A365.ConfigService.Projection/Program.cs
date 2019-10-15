@@ -79,7 +79,8 @@ namespace Bechtle.A365.ConfigService.Projection
                       .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, true)
                       .AddEnvironmentVariables()
                       .AddEnvironmentVariables("MAV_CONFIG_PROJECTION")
-                      .AddCommandLine(args);
+                      .AddCommandLine(args)
+                      .AddJsonFile("data/appsettings.json", true, true);
 
         /// <summary>
         ///     Configure Application-Logging
