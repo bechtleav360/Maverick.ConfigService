@@ -62,11 +62,10 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         /// <param name="configuration"></param>
         /// <returns></returns>
         public static IServiceCollection AddProjectionConfiguration(this IServiceCollection services, ILogger logger, IConfiguration configuration)
-            => services.AddSingleton(logger, configuration)
-                       .AddSingleton(logger, provider => provider.GetService<IConfiguration>().Get<ProjectionConfiguration>())
-                       .AddSingleton(logger, provider => provider.GetService<ProjectionConfiguration>().EventBusConnection)
-                       .AddSingleton(logger, provider => provider.GetService<ProjectionConfiguration>().EventStoreConnection)
-                       .AddSingleton(logger, provider => provider.GetService<ProjectionConfiguration>().ProjectionStorage);
+            => services.AddTransient(logger, provider => provider.GetService<IConfiguration>().Get<ProjectionConfiguration>())
+                       .AddTransient(logger, provider => provider.GetService<ProjectionConfiguration>().EventBusConnection)
+                       .AddTransient(logger, provider => provider.GetService<ProjectionConfiguration>().EventStoreConnection)
+                       .AddTransient(logger, provider => provider.GetService<ProjectionConfiguration>().ProjectionStorage);
 
         /// <summary>
         ///     services for specific tasks within the projection

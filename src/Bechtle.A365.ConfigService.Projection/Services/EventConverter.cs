@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using Polly;
 
 namespace Bechtle.A365.ConfigService.Projection.Services
 {
@@ -23,12 +24,11 @@ namespace Bechtle.A365.ConfigService.Projection.Services
     /// </summary>
     public class EventConverter : HostedService
     {
-        private readonly IConfiguration _configuration;
         private readonly IEventDeserializer _eventDeserializer;
-        private readonly IMetricService _metricService;
-        private readonly IMetrics _metrics;
         private readonly IEventQueue _eventQueue;
         private readonly ILogger<EventConverter> _logger;
+        private readonly IMetrics _metrics;
+        private readonly IMetricService _metricService;
         private readonly IServiceProvider _serviceProvider;
 
         // not readonly because .Close() disposes the object
@@ -37,7 +37,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
         public EventConverter(IServiceProvider serviceProvider,
                               ILogger<EventConverter> logger,
-                              IConfiguration configuration,
                               IEventDeserializer eventDeserializer,
                               IMetricService metricService,
                               IMetrics metrics,
@@ -46,13 +45,10 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
-            _configuration = configuration;
             _eventDeserializer = eventDeserializer;
             _metricService = metricService;
             _metrics = metrics;
             _eventQueue = eventQueue;
-
-            ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
         }
 
         /// <inheritdoc />
@@ -60,51 +56,70 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         {
             await Task.Yield();
 
-            await Connect();
+            await Policy.Handle<Exception>()
+                        .WaitAndRetryForeverAsync(i =>
+                        {
+                            var maxTimeout = TimeSpan.FromMinutes(1);
+                            var desiredTimeout = TimeSpan.FromSeconds(5).Multiply(i);
+
+                            return desiredTimeout.TotalSeconds > maxTimeout.TotalSeconds
+                                       ? maxTimeout
+                                       : desiredTimeout;
+                        })
+                        .ExecuteAsync(Connect);
         }
 
         private async Task Connect()
         {
-            _eventStore = _serviceProvider.GetService<IEventStoreConnection>();
+            _logger.LogInformation("connecting to EventStore/Db to prepare DomainEvents");
+            _logger.LogDebug("retrieving current configuration");
 
-            var config = _configuration.Get<ProjectionConfiguration>();
+            var configuration = _serviceProvider.GetService<IConfiguration>();
+            var config = configuration.Get<ProjectionConfiguration>();
 
             long? latestEvent;
             using (var scope = _serviceProvider.CreateScope())
             {
+                _logger.LogDebug("trying to open connection to Database");
+
                 var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
                 await database.Connect();
+
+                _logger.LogDebug("connected to database, retrieving latest projected event-id");
+
                 latestEvent = await database.GetLatestProjectedEventId();
+
+                _logger.LogDebug($"latest event-id retrieved: '{latestEvent}'");
             }
 
+            _logger.LogDebug("trying to open connection to EventStore");
+
+            _eventStore = _serviceProvider.GetService<IEventStoreConnection>();
             await _eventStore.ConnectAsync();
 
-            _eventStore.SubscribeToStreamFrom(config.EventStoreConnection.Stream,
-                                              latestEvent,
-                                              new CatchUpSubscriptionSettings(config.EventStoreConnection.MaxLiveQueueSize,
-                                                                              config.EventStoreConnection.ReadBatchSize,
-                                                                              false,
-                                                                              true,
-                                                                              config.EventStoreConnection.Stream),
-                                              EventAppeared,
-                                              subscription =>
-                                              {
-                                                  _metricService.SetEventStoreConnected(true).Finish();
-                                                  _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened");
-                                              },
-                                              (subscription, reason, exception) =>
-                                              {
-                                                  _metricService.SetEventStoreConnected(false).Finish();
-                                                  _logger.LogCritical($"subscription '{subscription.SubscriptionName}' " +
-                                                                      $"dropped for reason: {reason}; exception {exception}");
-                                              });
+            _logger.LogDebug($"EventStore connected, subscribing to stream '{config.EventStoreConnection.Stream}'");
+
+            _eventStore.SubscribeToStreamFrom(
+                config.EventStoreConnection.Stream,
+                latestEvent,
+                new CatchUpSubscriptionSettings(config.EventStoreConnection.MaxLiveQueueSize,
+                                                config.EventStoreConnection.ReadBatchSize,
+                                                false,
+                                                true,
+                                                config.EventStoreConnection.Stream),
+                EventAppeared,
+                LiveProcessingStarted,
+                SubscriptionDropped);
+
+            // do this last, because we only care about updates if we actually manage to complete the connection-process
+            ChangeToken.OnChange(configuration.GetReloadToken, OnConfigurationChanged);
         }
 
         private void Disconnect()
         {
             _logger.LogInformation("closing connection to EventStore");
-            _eventStore.Close();
-            _eventStore.Dispose();
+            _eventStore?.Close();
+            _eventStore?.Dispose();
             _eventStore = null;
         }
 
@@ -173,10 +188,22 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             }
         }
 
+        private void LiveProcessingStarted(EventStoreCatchUpSubscription subscription)
+        {
+            _logger.LogInformation($"subscription to '{subscription.SubscriptionName}' opened");
+            _metricService.SetEventStoreConnected(true).Finish();
+        }
+
         private void OnConfigurationChanged()
         {
             Disconnect();
             Connect().RunSync();
+        }
+
+        private void SubscriptionDropped(EventStoreCatchUpSubscription subscription, SubscriptionDropReason reason, Exception exception)
+        {
+            _logger.LogCritical($"subscription '{subscription.SubscriptionName}' dropped for reason: {reason}; exception {exception}");
+            _metricService.SetEventStoreConnected(false).Finish();
         }
     }
 }

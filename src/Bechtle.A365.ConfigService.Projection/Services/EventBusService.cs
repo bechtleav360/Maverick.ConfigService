@@ -29,6 +29,17 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         private readonly SemaphoreSlim _subscriptionChangingLock = new SemaphoreSlim(1, 1);
         private readonly IConfiguration _configuration;
 
+        private readonly ISyncPolicy _retryPolicy = Policy.Handle<Exception>()
+                                                          .WaitAndRetryForever(i =>
+                                                          {
+                                                              var maxTimeout = TimeSpan.FromMinutes(1);
+                                                              var desiredTimeout = TimeSpan.FromSeconds(5).Multiply(i);
+
+                                                              return desiredTimeout.TotalSeconds > maxTimeout.TotalSeconds
+                                                                         ? maxTimeout
+                                                                         : desiredTimeout;
+                                                          });
+
         private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         private WebSocketEventBusClient _client;
         private long _closing;
@@ -50,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             ChangeToken.OnChange(configuration.GetReloadToken, OnConfigurationChanged);
 
             _eventBusConnection = configuration.Get<ProjectionConfiguration>()
-                                          .EventBusConnection;
+                                               .EventBusConnection;
 
             _loggerFactory = loggerFactory;
 
@@ -60,8 +71,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
             _onClosed = async e => await ReconnectInternal(e);
 
-            _client = new WebSocketEventBusClient(_eventBusConnection.Server, loggerFactory);
-            _client.HasClosed += _onClosed;
+            _retryPolicy.Execute(CreateWebsocketClient);
         }
 
         /// <inheritdoc />
@@ -454,7 +464,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                 }
             }
 
-            CreateWebsocketClient();
+            _retryPolicy.Execute(CreateWebsocketClient);
         }
     }
 
