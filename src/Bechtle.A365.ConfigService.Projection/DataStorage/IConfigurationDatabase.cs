@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 {
     /// <summary>
     /// </summary>
-    public interface IConfigurationDatabase
+    public interface IConfigurationDatabase : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     append a new metadata-object to the list of event-metadata

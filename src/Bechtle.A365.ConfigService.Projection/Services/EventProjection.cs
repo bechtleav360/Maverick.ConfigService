@@ -6,6 +6,7 @@ using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using Bechtle.A365.ConfigService.Projection.Extensions;
@@ -90,9 +91,20 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         {
             _logger.LogInformation($"projecting DomainEvent of type '{domainEvent.EventType}' / '{id}'");
 
+            // handle all the metrics-stuff at the start so we don't have to worry about it anymore
             var transactionTags = MetricsExtensions.CreateTransactionTags("Worker: Event-Projection");
             var endpointTags = MetricsExtensions.CreateEndpointTags("Worker: Event-Projection",
                                                                     domainEvent.EventType);
+
+            // initialize several disposable timers that will be disposed together
+            // these don't really matter for functionality, but are required for the app-metrics
+            using var _ = new AggregateDisposable(
+                _metrics.Measure.Apdex.Track(KnownMetrics.Apdex(_configuration.GetSection("MetricsOptions:ApdexTSeconds").Get<double>()), transactionTags),
+                _metrics.Measure.Apdex.Track(KnownMetrics.Apdex(_configuration.GetSection("MetricsOptions:ApdexTSeconds").Get<double>()), endpointTags),
+                _metrics.Measure.Timer.Time(KnownMetrics.RequestTransactionDuration, transactionTags),
+                _metrics.Measure.Timer.Time(KnownMetrics.EndpointRequestTransactionDuration, endpointTags));
+
+            _metrics.Measure.Counter.Increment(KnownMetrics.ActiveRequestCount);
 
             var metadata = new ProjectedEventMetadata
             {
@@ -101,69 +113,60 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                 Index = index
             };
 
-            using (_metrics.Measure.Apdex.Track(KnownMetrics.Apdex(_configuration.GetSection("MetricsOptions:ApdexTSeconds").Get<double>()), transactionTags))
-            using (_metrics.Measure.Apdex.Track(KnownMetrics.Apdex(_configuration.GetSection("MetricsOptions:ApdexTSeconds").Get<double>()), endpointTags))
-            using (_metrics.Measure.Timer.Time(KnownMetrics.RequestTransactionDuration, transactionTags))
-            using (_metrics.Measure.Timer.Time(KnownMetrics.EndpointRequestTransactionDuration, endpointTags))
-            using (var scope = _serviceProvider.CreateScope())
+            using var scope = _serviceProvider.CreateScope();
+            await using var context = scope.ServiceProvider.GetService<ProjectionStoreContext>();
+            await using var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
+            await using var transaction = context.Database.BeginTransaction();
+
+            _logger.LogInformation($"using transaction '{transaction.TransactionId}' for event '{domainEvent.EventType}'");
+
+            try
             {
-                _metrics.Measure.Counter.Increment(KnownMetrics.ActiveRequestCount);
-                var context = scope.ServiceProvider.GetService<ProjectionStoreContext>();
-                var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
+                _logger.LogDebug($"projecting event '{domainEvent.EventType}'");
 
-                using (var transaction = context.Database.BeginTransaction())
-                {
-                    _logger.LogInformation($"using transaction '{transaction.TransactionId}' for event '{domainEvent.EventType}'");
+                await ProcessDomainEvent(domainEvent, scope.ServiceProvider);
 
-                    try
-                    {
-                        _logger.LogDebug($"projecting event '{domainEvent.EventType}'");
+                _logger.LogDebug($"recording successful projection of event #{index} to database");
 
-                        await ProcessDomainEvent(domainEvent, scope.ServiceProvider);
+                await database.SetLatestProjectedEventId(index);
 
-                        _logger.LogDebug($"recording successful projection of event #{index} to database");
+                _logger.LogInformation("saving changes made to the database...");
 
-                        await database.SetLatestProjectedEventId(index);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug($"saving '{context.ChangeTracker.Entries().Count()}' changes made to the database...");
 
-                        _logger.LogInformation("saving changes made to the database...");
+                await context.SaveChangesAsync();
 
-                        if (_logger.IsEnabled(LogLevel.Debug))
-                            _logger.LogDebug($"saving '{context.ChangeTracker.Entries().Count()}' changes made to the database...");
+                _logger.LogInformation($"committing transaction '{transaction.TransactionId}'");
 
-                        await context.SaveChangesAsync();
+                metadata.Changes = context.ChangeTracker.Entries().Count();
+                transaction.Commit();
+                metadata.ProjectedSuccessfully = true;
 
-                        _logger.LogInformation($"committing transaction '{transaction.TransactionId}'");
+                _metrics.Measure.Counter.Increment(KnownMetrics.DatabaseUpdates, metadata.Changes);
 
-                        metadata.Changes = context.ChangeTracker.Entries().Count();
-                        transaction.Commit();
-                        metadata.ProjectedSuccessfully = true;
-
-                        _metrics.Measure.Counter.Increment(KnownMetrics.DatabaseUpdates, metadata.Changes);
-
-                        _logger.LogInformation($"transaction '{transaction.TransactionId}' committed");
-                    }
-                    catch (Exception e)
-                    {
-                        transaction.Rollback();
-                        metadata.ProjectedSuccessfully = false;
-
-                        _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}', " +
-                                            $"rolling back transaction '{transaction.TransactionId}' :{e}");
-
-                        _metrics.RegisterFailure(endpointTags, transactionTags);
-                    }
-                    finally
-                    {
-                        _metrics.Measure.Counter.Increment(KnownMetrics.EventsProjected, domainEvent.EventType);
-                        _metrics.Measure.Counter.Decrement(KnownMetrics.ActiveRequestCount);
-                        _logger.LogTrace("forcing GC.Collect...");
-                        metadata.End = DateTime.UtcNow;
-                        GC.Collect();
-                    }
-                }
-
-                await database.AppendProjectedEventMetadata(metadata);
+                _logger.LogInformation($"transaction '{transaction.TransactionId}' committed");
             }
+            catch (Exception e)
+            {
+                transaction.Rollback();
+                metadata.ProjectedSuccessfully = false;
+
+                _logger.LogCritical($"could not project domain-event of type '{domainEvent.EventType}', " +
+                                    $"rolling back transaction '{transaction.TransactionId}' :{e}");
+
+                _metrics.RegisterFailure(endpointTags, transactionTags);
+            }
+            finally
+            {
+                _metrics.Measure.Counter.Increment(KnownMetrics.EventsProjected, domainEvent.EventType);
+                _metrics.Measure.Counter.Decrement(KnownMetrics.ActiveRequestCount);
+                _logger.LogTrace("forcing GC.Collect...");
+                metadata.End = DateTime.UtcNow;
+                GC.Collect();
+            }
+
+            await database.AppendProjectedEventMetadata(metadata);
         }
 
         private async Task ProcessDomainEvent(DomainEvent domainEvent, IServiceProvider provider)

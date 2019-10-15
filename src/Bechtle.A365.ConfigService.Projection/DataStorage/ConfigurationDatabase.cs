@@ -909,5 +909,9 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
 
             return (default, existingKey);
         }
+
+        public void Dispose() => _context?.Dispose();
+
+        public ValueTask DisposeAsync() => _context?.DisposeAsync() ?? new ValueTask(Task.CompletedTask);
     }
 }
