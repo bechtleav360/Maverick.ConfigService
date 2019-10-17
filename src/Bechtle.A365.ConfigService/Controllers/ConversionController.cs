@@ -4,6 +4,7 @@ using System.Net;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
@@ -41,11 +42,11 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (dictionary is null)
                     return Ok(new JObject());
 
-                var result = _translator.ToJson(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
+                var result = _translator.ToJsonNative(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
 
                 Metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Map => Json");
 
-                return Ok(result ?? new JObject());
+                return Ok(result);
             }
             catch (Exception e)
             {
@@ -62,15 +63,12 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="separator"></param>
         /// <returns></returns>
         [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
-        public IActionResult JsonToDictionary([FromBody] JToken json,
+        public IActionResult JsonToDictionary([FromBody] System.Text.Json.JsonElement json,
                                               [FromQuery] string separator = null)
         {
             try
             {
-                if (json is null)
-                    return Ok(new Dictionary<string, string>());
-
-                var result = _translator.ToDictionary(json, separator ?? JsonTranslatorDefaultSettings.Separator);
+                var result = _translator.ToDictionaryNative(json, separator ?? JsonTranslatorDefaultSettings.Separator);
 
                 Metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Json => Map");
 

@@ -1,25 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class DictToJsonConverter
     {
-        public JToken ToJson(IDictionary<string, string> dict, string separator)
+        private static Node ConvertToTree(IDictionary<string, string> dict, string separator)
         {
-            if (!dict.Any())
-                return new JObject();
-
             var root = new Node();
 
             // generate tree of Nodes
-            foreach (var entry in dict.OrderBy(k => k.Key))
+            foreach (var (key, value) in dict.OrderBy(k => k.Key))
             {
-                var key = entry.Key;
-                var value = entry.Value;
-
                 var pathParts = new Queue<string>(key.Split(separator));
                 var currentNode = root;
 
@@ -49,9 +46,65 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                 currentNode.Value = value;
             }
 
+            return root;
+        }
+
+        private static void CreateTokenNative(Node node, Utf8JsonWriter jsonStream)
+        {
+            if (!node.Children.Any())
+            {
+                jsonStream.WriteStringValue(node.Value);
+            }
+            else if (node.Children.All(c => int.TryParse(c.Name, out _)))
+            {
+                jsonStream.WriteStartArray();
+                foreach (var child in node.Children.OrderBy(c => c.Name))
+                {
+                    jsonStream.WritePropertyName(child.Name);
+                    CreateTokenNative(child, jsonStream);
+                }
+
+                jsonStream.WriteEndArray();
+            }
+            else
+            {
+                jsonStream.WriteStartObject();
+                foreach (var child in node.Children)
+                {
+                    jsonStream.WritePropertyName(child.Name);
+                    CreateTokenNative(child, jsonStream);
+                }
+
+                jsonStream.WriteEndArray();
+            }
+        }
+
+        public JToken ToJson(IDictionary<string, string> dict, string separator)
+        {
+            if (!dict.Any())
+                return new JObject();
+
+            var root = ConvertToTree(dict, separator);
+
             var jToken = CreateToken(root);
 
             return jToken;
+        }
+
+        public string ToJsonNative(IDictionary<string, string> dict, string separator)
+        {
+            if (!dict.Any())
+                return string.Empty;
+
+            var root = ConvertToTree(dict, separator);
+
+            using var memoryStream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions {Indented = true}))
+            {
+                CreateTokenNative(root, writer);
+            }
+
+            return Encoding.UTF8.GetString(memoryStream.ToArray());
         }
 
         private JArray CreateArray(Node node) => new JArray(node.Children

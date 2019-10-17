@@ -151,7 +151,6 @@ namespace Bechtle.A365.ConfigService
             // setup MVC
             services.AddMvc()
                     .AddMetrics()
-                    .AddNewtonsoftJson()
                     .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             _logger.LogInformation("registering API-Version support");
