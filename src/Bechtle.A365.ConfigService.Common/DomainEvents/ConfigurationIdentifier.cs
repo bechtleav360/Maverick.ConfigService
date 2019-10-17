@@ -1,7 +1,6 @@
 ﻿using System;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 
-
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <summary>
@@ -23,7 +22,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        [JsonConstructor]
         public ConfigurationIdentifier(EnvironmentIdentifier environment, StructureIdentifier structure, long version)
         {
             Environment = environment;

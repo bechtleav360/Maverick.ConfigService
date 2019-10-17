@@ -1,7 +1,6 @@
 ﻿using System;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 
-
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <summary>
@@ -10,7 +9,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class StructureIdentifier : Identifier, IEquatable<StructureIdentifier>
     {
         /// <inheritdoc />
-        [JsonConstructor]
         public StructureIdentifier(string name, int version)
         {
             Name = name;
