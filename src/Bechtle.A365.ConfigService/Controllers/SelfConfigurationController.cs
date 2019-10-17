@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Converters;
+using Bechtle.A365.ConfigService.Common.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-
-
-
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -36,25 +36,29 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpPut]
-        public async Task<IActionResult> AppendConfiguration([FromBody] JToken json)
+        public async Task<IActionResult> AppendConfiguration([FromBody] JsonElement json)
         {
             var givenKeys = _translator.ToDictionary(json);
             IDictionary<string, string> currentKeys = null;
-
-            var converter = new JsonSerializer
-            {
-                Formatting = Formatting.Indented,
-                Converters = {new StringEnumConverter(), new IsoDateTimeConverter()}
-            };
 
             try
             {
                 if (System.IO.File.Exists(ConfigFileLocation))
                 {
                     using var file = System.IO.File.OpenText(ConfigFileLocation);
-                    using var reader = new JsonTextReader(file);
 
-                    var currentJson = converter.Deserialize<JToken>(reader);
+                    var currentJson = JsonSerializer.Deserialize<JsonElement>(
+                        await file.ReadToEndAsync(),
+                        new JsonSerializerOptions
+                        {
+                            WriteIndented = true,
+                            Converters =
+                            {
+                                new JsonStringEnumConverter(),
+                                new JsonIsoDateConverter()
+                            }
+                        });
+
                     currentKeys = _translator.ToDictionary(currentJson);
                 }
                 else
@@ -92,13 +96,18 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (!Directory.Exists(fileInfo.DirectoryName))
                     Directory.CreateDirectory(fileInfo.DirectoryName);
 
-                await using var file = System.IO.File.CreateText(ConfigFileLocation);
-                using var writer = new JsonTextWriter(file);
-
-                converter.Serialize(writer, resultJson);
-
-                await writer.FlushAsync();
-                await file.FlushAsync();
+                await System.IO.File.WriteAllBytesAsync(
+                    ConfigFileLocation,
+                    JsonSerializer.SerializeToUtf8Bytes(resultJson,
+                                                        new JsonSerializerOptions
+                                                        {
+                                                            WriteIndented = true,
+                                                            Converters =
+                                                            {
+                                                                new JsonStringEnumConverter(),
+                                                                new JsonIsoDateConverter()
+                                                            }
+                                                        }));
 
                 return Ok();
             }
@@ -114,19 +123,28 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IActionResult DumpConfiguration()
+        public async Task<IActionResult> DumpConfiguration()
         {
             try
             {
                 if (!System.IO.File.Exists(ConfigFileLocation))
-                    return Ok(new JObject());
+                    return Ok(new JsonElement());
 
                 using var file = System.IO.File.OpenText(ConfigFileLocation);
-                using var reader = new JsonTextReader(file);
 
-                var converter = new JsonSerializer();
-                var json = converter.Deserialize<JToken>(reader);
-                return Ok(json.ToString(Formatting.Indented));
+                var currentJson = JsonSerializer.Deserialize<JsonElement>(
+                    await file.ReadToEndAsync(),
+                    new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        Converters =
+                        {
+                            new JsonStringEnumConverter(),
+                            new JsonIsoDateConverter()
+                        }
+                    });
+
+                return Ok(currentJson);
             }
             catch (IOException e)
             {
@@ -152,7 +170,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="json"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> SetConfiguration([FromBody] JToken json)
+        public async Task<IActionResult> SetConfiguration([FromBody] JsonElement json)
         {
             try
             {
@@ -161,10 +179,17 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (!Directory.Exists(fileInfo.DirectoryName))
                     Directory.CreateDirectory(fileInfo.DirectoryName);
 
-                await System.IO.File.WriteAllTextAsync(ConfigFileLocation,
-                                                       json.ToString(Formatting.Indented,
-                                                                     new StringEnumConverter(),
-                                                                     new IsoDateTimeConverter()));
+                await System.IO.File.WriteAllBytesAsync(
+                    ConfigFileLocation,
+                    JsonSerializer.SerializeToUtf8Bytes(json, new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        Converters =
+                        {
+                            new JsonStringEnumConverter(),
+                            new JsonIsoDateConverter()
+                        }
+                    }));
 
                 return Ok();
             }

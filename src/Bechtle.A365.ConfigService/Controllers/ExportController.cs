@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Services;
@@ -57,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             return File(
                 new MemoryStream(
                     Encoding.UTF8.GetBytes(
-                        JsonConvert.SerializeObject(result.Data, Formatting.Indented))),
+                        JsonSerializer.Serialize(result.Data, new JsonSerializerOptions {WriteIndented = true}))),
                 "application/octet-stream",
                 proposedName);
         }

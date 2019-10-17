@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using App.Metrics;
@@ -13,7 +14,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-
 using Polly;
 
 namespace Bechtle.A365.ConfigService.Projection.Services
@@ -152,7 +152,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                     {
                         var e = new Exception("unable to deserialize to DomainEvent");
                         e.Data["resolvedEvent"] = resolvedEvent;
-                        e.Data["json"] = JsonConvert.SerializeObject(resolvedEvent);
+                        e.Data["json"] = JsonSerializer.Serialize(resolvedEvent);
 
                         throw e;
                     }
@@ -166,7 +166,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
                     {
                         var e = new Exception("unable to add DomainEvent to queue");
                         e.Data["domainEvent"] = domainEvent;
-                        e.Data["json"] = JsonConvert.SerializeObject(domainEvent);
+                        e.Data["json"] = JsonSerializer.Serialize(domainEvent);
 
                         throw e;
                     }

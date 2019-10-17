@@ -124,8 +124,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                             throw new ArgumentOutOfRangeException();
                     }
 
-                var serializedDeletions = JsonConvert.SerializeObject(deletions.Select(d => d.Key).ToList());
-                var serializedChanges = JsonConvert.SerializeObject(changes);
+                var serializedDeletions = JsonSerializer.Serialize(deletions.Select(d => d.Key).ToList());
+                var serializedChanges = JsonSerializer.Serialize(changes);
 
                 if ((Mode & ComparisonMode.Delete) != 0 && deletions.Any())
                     await RestRequest.Make(Output)

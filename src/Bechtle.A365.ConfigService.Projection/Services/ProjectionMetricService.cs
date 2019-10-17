@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.Models;
 using Microsoft.Extensions.Logging;
@@ -98,7 +99,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
         private ProjectionMetricService Log()
         {
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation($"current status is: \r\n{JsonConvert.SerializeObject(GetCurrentStatus())}");
+                _logger.LogInformation($"current status is: \r\n{JsonSerializer.Serialize(GetCurrentStatus())}");
             return this;
         }
     }

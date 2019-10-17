@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
-
-
 
 namespace Bechtle.A365.ConfigService.Common.Utilities
 {
@@ -12,13 +12,12 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
         {
             var configObject = config.Get<T>();
 
-            var settings = new JsonSerializerSettings {Formatting = Formatting.Indented};
-            settings.Converters.Add(new StringEnumConverter());
+            var settings = new JsonSerializerOptions {WriteIndented = true, Converters = {new JsonStringEnumConverter()}};
 
             return $"Raw Config-Keys:{Environment.NewLine}" +
                    $"{FormatConfigurationRecursive(config)}" +
                    $"using Config-Object:{Environment.NewLine}" +
-                   $"{JsonConvert.SerializeObject(configObject, settings)}";
+                   $"{JsonSerializer.Serialize(configObject, settings)}";
         }
 
         private static string FormatConfigurationRecursive(IConfiguration config, int indent = 0)

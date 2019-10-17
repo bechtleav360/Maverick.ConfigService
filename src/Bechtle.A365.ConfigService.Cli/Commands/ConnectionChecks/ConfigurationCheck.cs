@@ -83,7 +83,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 output.WriteLine($"Error: {e.GetType().Name}; {e.Message}", 1);
             }
 
-            var configJson = JsonConvert.SerializeObject(csConfig, Formatting.Indented);
+            var configJson = JsonSerializer.Serialize(csConfig, Formatting.Indented);
             output.WriteLine($"Effective Configuration:{Environment.NewLine}{configJson}", 1);
 
             output.WriteLine(string.Empty, 1);

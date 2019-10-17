@@ -2,13 +2,13 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -65,7 +65,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                export = JsonConvert.DeserializeObject<ConfigExport>(json);
+                export = JsonSerializer.Deserialize<ConfigExport>(json);
 
                 if (export is null)
                     return BadRequest("uploaded file can't be mapped to object");

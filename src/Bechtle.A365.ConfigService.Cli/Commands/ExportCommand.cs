@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             var request = await RestRequest.Make(Output)
                                            .Post(new Uri(new Uri(ConfigServiceEndpoint), "export"),
-                                                 new StringContent(JsonConvert.SerializeObject(exportDefinition, Formatting.None),
+                                                 new StringContent(JsonSerializer.Serialize(exportDefinition, Formatting.None),
                                                                    Encoding.UTF8,
                                                                    "application/json"))
                                            .ReceiveString();
@@ -130,10 +130,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 switch (format)
                 {
                     case ReformatKind.Compress:
-                        return JsonConvert.SerializeObject(obj, Formatting.None);
+                        return JsonSerializer.Serialize(obj, Formatting.None);
 
                     case ReformatKind.Indent:
-                        return JsonConvert.SerializeObject(obj, Formatting.Indented);
+                        return JsonSerializer.Serialize(obj, Formatting.Indented);
 
                     default:
                         Output.WriteError($"unknown format '{format:G}'");

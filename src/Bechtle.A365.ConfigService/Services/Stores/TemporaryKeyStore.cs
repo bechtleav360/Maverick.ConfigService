@@ -300,7 +300,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             try
             {
                 await _cache.SetAsync(CacheKeyJournalName.ToLowerInvariant(),
-                                      Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(journal, Formatting.None)));
+                                      Encoding.UTF8.GetBytes(JsonSerializer.Serialize(journal, Formatting.None)));
             }
             catch (Exception e)
             {
