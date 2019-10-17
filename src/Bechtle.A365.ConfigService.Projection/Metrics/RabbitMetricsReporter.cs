@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using App.Metrics;
@@ -14,18 +15,18 @@ using App.Metrics.Histogram;
 using App.Metrics.Meter;
 using App.Metrics.Reporting;
 using App.Metrics.Timer;
-
-
+using Bechtle.A365.ConfigService.Common.Serialization;
 using RabbitMQ.Client;
 
 namespace Bechtle.A365.ConfigService.Projection.Metrics
 {
+
     /// <inheritdoc cref="IReportMetrics" />
     public class RabbitMetricsReporter : IReportMetrics, IDisposable
     {
         private readonly RabbitMetricsReporterOptions _options;
         private readonly ConnectionFactory _connectionFactory;
-        private readonly JsonSerializerSettings _jsonSerializerSettings;
+        private readonly JsonSerializerOptions _jsonSerializerSettings;
         private IModel _rabbitConnection;
 
         public RabbitMetricsReporter(RabbitMetricsReporterOptions options)
@@ -41,16 +42,15 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
                 Port = _options?.Port ?? 5601
             };
 
-            _jsonSerializerSettings = new JsonSerializerSettings
+            _jsonSerializerSettings = new JsonSerializerOptions
             {
                 Converters =
                 {
-                    new IsoDateTimeConverter(),
-                    new StringEnumConverter()
-                },
-                DateFormatHandling = DateFormatHandling.IsoDateFormat,
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                FloatFormatHandling = FloatFormatHandling.DefaultValue
+                    new JsonStringEnumConverter(),
+                    new JsonIsoDateConverter(),
+                    new FloatConverter(),
+                    new DoubleConverter()
+                }
             };
         }
 
@@ -156,7 +156,7 @@ namespace Bechtle.A365.ConfigService.Projection.Metrics
                             continue;
                     }
 
-                    var message = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(simpleMetric, _jsonSerializerSettings));
+                    var message = JsonSerializer.SerializeToUtf8Bytes(simpleMetric, _jsonSerializerSettings);
 
                     _rabbitConnection.BasicPublish(_options.Exchange,
                                                    string.Format(_options.Topic, context.Context, name),
