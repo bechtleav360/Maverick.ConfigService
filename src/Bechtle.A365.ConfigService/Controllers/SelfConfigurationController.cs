@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
+
+
+
 
 namespace Bechtle.A365.ConfigService.Controllers
 {

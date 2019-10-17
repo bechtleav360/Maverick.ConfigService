@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
-using Newtonsoft.Json;
+
 
 namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 {

@@ -9,8 +9,8 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.Utilities.Rest;
 using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+
+
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {

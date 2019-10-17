@@ -14,8 +14,8 @@ using App.Metrics.Gauge;
 using App.Metrics.Histogram;
 using App.Metrics.Meter;
 using App.Metrics.Timer;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+
+
 
 namespace Bechtle.A365.ConfigService
 {

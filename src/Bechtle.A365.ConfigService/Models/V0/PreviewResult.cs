@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿
 using System.Collections.Generic;
 
 namespace Bechtle.A365.ConfigService.Models.V0

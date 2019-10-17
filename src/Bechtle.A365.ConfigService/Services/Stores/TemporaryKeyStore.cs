@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+
 
 namespace Bechtle.A365.ConfigService.Services.Stores
 {

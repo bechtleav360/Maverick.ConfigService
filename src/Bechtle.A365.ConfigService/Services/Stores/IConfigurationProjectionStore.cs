@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Newtonsoft.Json.Linq;
+
 
 namespace Bechtle.A365.ConfigService.Services.Stores
 {

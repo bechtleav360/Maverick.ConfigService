@@ -2,7 +2,7 @@
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Projection.Models;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+
 
 namespace Bechtle.A365.ConfigService.Projection.Services
 {

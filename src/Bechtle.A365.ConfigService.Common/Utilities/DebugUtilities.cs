@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Text;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+
+
 
 namespace Bechtle.A365.ConfigService.Common.Utilities
 {

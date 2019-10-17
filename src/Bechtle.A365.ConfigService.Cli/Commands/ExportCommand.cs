@@ -10,7 +10,7 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
-using Newtonsoft.Json;
+
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {

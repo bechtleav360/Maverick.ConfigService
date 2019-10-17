@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
+
 
 namespace Bechtle.A365.ConfigService.Models.V1
 {

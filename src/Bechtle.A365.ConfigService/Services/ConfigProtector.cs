@@ -3,8 +3,8 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+
+
 
 namespace Bechtle.A365.ConfigService.Services
 {

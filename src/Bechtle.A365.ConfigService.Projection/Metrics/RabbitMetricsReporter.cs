@@ -14,8 +14,8 @@ using App.Metrics.Histogram;
 using App.Metrics.Meter;
 using App.Metrics.Reporting;
 using App.Metrics.Timer;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+
+
 using RabbitMQ.Client;
 
 namespace Bechtle.A365.ConfigService.Projection.Metrics

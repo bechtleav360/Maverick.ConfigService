@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {

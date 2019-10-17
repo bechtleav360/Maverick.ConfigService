@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Newtonsoft.Json;
+
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {

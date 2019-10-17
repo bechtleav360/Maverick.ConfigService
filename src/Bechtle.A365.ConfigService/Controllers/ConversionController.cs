@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Bechtle.A365.ConfigService.Controllers
 {
@@ -40,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             try
             {
                 if (dictionary is null)
-                    return Ok(new JObject());
+                    return BadRequest("no dictionary received");
 
                 var result = _translator.ToJsonNative(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
 
@@ -63,7 +62,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <param name="separator"></param>
         /// <returns></returns>
         [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
-        public IActionResult JsonToDictionary([FromBody] System.Text.Json.JsonElement json,
+        public IActionResult JsonToDictionary([FromBody] JsonElement json,
                                               [FromQuery] string separator = null)
         {
             try

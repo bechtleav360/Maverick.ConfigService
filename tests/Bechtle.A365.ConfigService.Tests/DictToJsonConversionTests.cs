@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Bechtle.A365.ConfigService.Common.Converters;
-using Newtonsoft.Json.Linq;
+
 using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests

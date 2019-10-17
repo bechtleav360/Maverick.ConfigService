@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+
 using NLog.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService

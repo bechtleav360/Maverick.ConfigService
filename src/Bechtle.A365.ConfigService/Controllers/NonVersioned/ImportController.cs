@@ -8,7 +8,7 @@ using Bechtle.A365.ConfigService.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+
 
 namespace Bechtle.A365.ConfigService.Controllers.NonVersioned
 {
