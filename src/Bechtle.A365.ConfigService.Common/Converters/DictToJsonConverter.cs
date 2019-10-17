@@ -70,24 +70,12 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                 jsonStream.WriteStartObject();
                 foreach (var child in node.Children)
                 {
-                    jsonStream.WritePropertyName(child.Name);
+                    jsonStream.WritePropertyName(UnEscapePath(child.Name));
                     CreateTokenNative(child, jsonStream);
                 }
 
                 jsonStream.WriteEndArray();
             }
-        }
-
-        public JToken ToJson(IDictionary<string, string> dict, string separator)
-        {
-            if (!dict.Any())
-                return new JObject();
-
-            var root = ConvertToTree(dict, separator);
-
-            var jToken = CreateToken(root);
-
-            return jToken;
         }
 
         public string ToJsonNative(IDictionary<string, string> dict, string separator)
@@ -106,33 +94,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             return Encoding.UTF8.GetString(memoryStream.ToArray());
         }
 
-        private JArray CreateArray(Node node) => new JArray(node.Children
-                                                                .OrderBy(c => int.Parse(c.Name))
-                                                                .Select(CreateToken));
-
-        // group nodes by their path and then select the first one for each group
-        // @TODO: log a warning when multiple items have been found
-        private JObject CreateObject(Node node)
-            => new JObject(
-                node.Children
-                    .GroupBy(child => UnEscapePath(child.Name))
-                    .Select(group => group.Select(child => new JProperty(UnEscapePath(child.Name), CreateToken(child)))
-                                          .First()));
-
-        private JToken CreateToken(Node node)
-        {
-            if (!node.Children.Any())
-                return CreateValue(node);
-
-            if (node.Children.All(c => int.TryParse(c.Name, out _)))
-                return CreateArray(node);
-
-            return CreateObject(node);
-        }
-
-        private JValue CreateValue(Node node) => new JValue(node.Value);
-
-        private string UnEscapePath(string p) => Uri.UnescapeDataString(p);
+        private static string UnEscapePath(string p) => Uri.UnescapeDataString(p);
 
         private class Node
         {
