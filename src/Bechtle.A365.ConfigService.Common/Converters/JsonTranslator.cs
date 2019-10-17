@@ -5,36 +5,26 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class JsonTranslator : IJsonTranslator
     {
-        private readonly DictToJsonConverter _dictToJsonConverter;
-        private readonly JsonToDictConverter _jsonToDictConverter;
+        /// <inheritdoc />
+        public IDictionary<string, string> ToDictionary(JsonElement json)
+            => ToDictionary(json, JsonTranslatorDefaultSettings.Separator, JsonTranslatorDefaultSettings.EscapePath);
 
         /// <inheritdoc />
-        public JsonTranslator()
-        {
-            _dictToJsonConverter = new DictToJsonConverter();
-            _jsonToDictConverter = new JsonToDictConverter();
-        }
+        public IDictionary<string, string> ToDictionary(JsonElement json, bool encodePath)
+            => ToDictionary(json, JsonTranslatorDefaultSettings.Separator, encodePath);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionaryNative(JsonElement json)
-            => ToDictionaryNative(json, JsonTranslatorDefaultSettings.Separator, JsonTranslatorDefaultSettings.EscapePath);
+        public IDictionary<string, string> ToDictionary(JsonElement json, string separator)
+            => ToDictionary(json, separator, JsonTranslatorDefaultSettings.EscapePath);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionaryNative(JsonElement json, bool encodePath)
-            => ToDictionaryNative(json, JsonTranslatorDefaultSettings.Separator, encodePath);
+        public IDictionary<string, string> ToDictionary(JsonElement json, string separator, bool encodePath)
+            => JsonToDictConverter.ToDict(json, separator, encodePath);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionaryNative(JsonElement json, string separator)
-            => ToDictionaryNative(json, separator, JsonTranslatorDefaultSettings.EscapePath);
+        public string ToJson(IDictionary<string, string> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionaryNative(JsonElement json, string separator, bool encodePath)
-            => _jsonToDictConverter.ToDictNative(json, separator, encodePath);
-
-        /// <inheritdoc />
-        public string ToJsonNative(IDictionary<string, string> dict) => _dictToJsonConverter.ToJsonNative(dict, JsonTranslatorDefaultSettings.Separator);
-
-        /// <inheritdoc />
-        public string ToJsonNative(IDictionary<string, string> dict, string separator) => _dictToJsonConverter.ToJsonNative(dict, separator);
+        public string ToJson(IDictionary<string, string> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
     }
 }

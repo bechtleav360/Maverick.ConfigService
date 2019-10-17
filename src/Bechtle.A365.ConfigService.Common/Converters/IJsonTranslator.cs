@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        IDictionary<string, string> ToDictionaryNative(JsonElement json);
+        IDictionary<string, string> ToDictionary(JsonElement json);
 
         /// <summary>
         ///     counterpart to <see cref="ToJson(IDictionary{string,string})" />, converts json to a number of Key / Value pairs
@@ -30,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="json"></param>
         /// <param name="encodePath">true to fully encode the path</param>
         /// <returns></returns>
-        IDictionary<string, string> ToDictionaryNative(JsonElement json, bool encodePath);
+        IDictionary<string, string> ToDictionary(JsonElement json, bool encodePath);
 
         /// <summary>
         ///     counterpart to <see cref="ToJson(IDictionary{string,string}, string)" />, converts json to a number of Key / Value pairs
@@ -44,7 +44,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="json"></param>
         /// <param name="separator">separator to use in the keys</param>
         /// <returns></returns>
-        IDictionary<string, string> ToDictionaryNative(JsonElement json, string separator);
+        IDictionary<string, string> ToDictionary(JsonElement json, string separator);
 
         /// <summary>
         ///     counterpart to <see cref="ToJson(IDictionary{string,string}, string)" />, converts json to a number of Key / Value pairs
@@ -59,7 +59,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="separator">separator to use in the keys</param>
         /// <param name="encodePath">true to fully encode the path</param>
         /// <returns></returns>
-        IDictionary<string, string> ToDictionaryNative(JsonElement json, string separator, bool encodePath);
+        IDictionary<string, string> ToDictionary(JsonElement json, string separator, bool encodePath);
 
         /// <summary>
         ///     convert a dictionary of Paths=>Values to a JToken.
@@ -73,7 +73,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// </summary>
         /// <param name="dict"></param>
         /// <returns></returns>
-        string ToJsonNative(IDictionary<string, string> dict);
+        string ToJson(IDictionary<string, string> dict);
 
         /// <summary>
         ///     convert a dictionary of Paths=>Values to a JToken.
@@ -88,6 +88,6 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="dict"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        string ToJsonNative(IDictionary<string, string> dict, string separator);
+        string ToJson(IDictionary<string, string> dict, string separator);
     }
 }

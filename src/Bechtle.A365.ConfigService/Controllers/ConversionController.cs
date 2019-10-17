@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 if (dictionary is null)
                     return BadRequest("no dictionary received");
 
-                var result = _translator.ToJsonNative(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
+                var result = _translator.ToJson(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
 
                 Metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Map => Json");
 
@@ -67,7 +67,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         {
             try
             {
-                var result = _translator.ToDictionaryNative(json, separator ?? JsonTranslatorDefaultSettings.Separator);
+                var result = _translator.ToDictionary(json, separator ?? JsonTranslatorDefaultSettings.Separator);
 
                 Metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Json => Map");
 

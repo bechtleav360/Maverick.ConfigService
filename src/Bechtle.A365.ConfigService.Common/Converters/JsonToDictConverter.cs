@@ -7,7 +7,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class JsonToDictConverter
     {
-        public IDictionary<string, string> ToDictNative(JsonElement json, string separator, bool encodePath)
+        public static IDictionary<string, string> ToDict(JsonElement json, string separator, bool encodePath)
         {
             var dict = new Dictionary<string, string>();
 
@@ -20,7 +20,23 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                                      kvp => kvp.Value);
         }
 
-        private void Visit(JsonElement json, string currentPath, IDictionary<string, string> dict, bool encodePath)
+        /// <summary>
+        ///     escape the given path according to <see cref="encodePath" />
+        /// </summary>
+        /// <param name="p"></param>
+        /// <param name="encodePath">if true, the whole path will be fully encoded. if false, only "/" will be replaced with %2F</param>
+        /// <returns></returns>
+        private static string EscapePath(string p, bool encodePath)
+            => encodePath
+                   ? Uri.EscapeDataString(p)
+                   : p.Replace("/", "%2F");
+
+        private static string MakeNextPath(string currentPath, string nextPath, bool encodePath)
+            => string.IsNullOrWhiteSpace(currentPath)
+                   ? EscapePath(nextPath, encodePath)
+                   : $"{currentPath}/{EscapePath(nextPath, encodePath)}";
+
+        private static void Visit(JsonElement json, string currentPath, IDictionary<string, string> dict, bool encodePath)
         {
             switch (json.ValueKind)
             {
@@ -58,23 +74,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             }
         }
 
-        private void Visit(JsonProperty property, string currentPath, IDictionary<string, string> dict, bool encodePath)
+        private static void Visit(JsonProperty property, string currentPath, IDictionary<string, string> dict, bool encodePath)
             => Visit(property.Value, MakeNextPath(currentPath, property.Name, encodePath), dict, encodePath);
-
-        /// <summary>
-        ///     escape the given path according to <see cref="encodePath"/>
-        /// </summary>
-        /// <param name="p"></param>
-        /// <param name="encodePath">if true, the whole path will be fully encoded. if false, only "/" will be replaced with %2F</param>
-        /// <returns></returns>
-        private string EscapePath(string p, bool encodePath)
-            => encodePath
-                   ? Uri.EscapeDataString(p)
-                   : p.Replace("/", "%2F");
-
-        private string MakeNextPath(string currentPath, string nextPath, bool encodePath)
-            => string.IsNullOrWhiteSpace(currentPath)
-                   ? EscapePath(nextPath, encodePath)
-                   : $"{currentPath}/{EscapePath(nextPath, encodePath)}";
     }
 }

@@ -9,6 +9,22 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class DictToJsonConverter
     {
+        public static string ToJson(IDictionary<string, string> dict, string separator)
+        {
+            if (!dict.Any())
+                return string.Empty;
+
+            var root = ConvertToTree(dict, separator);
+
+            using var memoryStream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions {Indented = true}))
+            {
+                CreateTokenNative(root, writer);
+            }
+
+            return Encoding.UTF8.GetString(memoryStream.ToArray());
+        }
+
         private static Node ConvertToTree(IDictionary<string, string> dict, string separator)
         {
             var root = new Node();
@@ -76,22 +92,6 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
                 jsonStream.WriteEndArray();
             }
-        }
-
-        public string ToJsonNative(IDictionary<string, string> dict, string separator)
-        {
-            if (!dict.Any())
-                return string.Empty;
-
-            var root = ConvertToTree(dict, separator);
-
-            using var memoryStream = new MemoryStream();
-            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions {Indented = true}))
-            {
-                CreateTokenNative(root, writer);
-            }
-
-            return Encoding.UTF8.GetString(memoryStream.ToArray());
         }
 
         private static string UnEscapePath(string p) => Uri.UnescapeDataString(p);
