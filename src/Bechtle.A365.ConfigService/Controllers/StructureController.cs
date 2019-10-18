@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
@@ -62,11 +63,21 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (structure.Version <= 0)
                 return BadRequest($"invalid version provided '{structure.Version}'");
 
-            if (structure.Structure is null)
-                return BadRequest($"Structure.{nameof(DtoStructure.Structure)} is empty");
+            switch (structure.Structure.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    if (!structure.Structure.EnumerateObject().Any())
+                        return BadRequest("empty structure-body given");
+                    break;
 
-            if (!structure.Structure.Children().Any())
-                return BadRequest($"Structure.{nameof(DtoStructure.Structure)} is invalid; does not contain child-nodes");
+                case JsonValueKind.Array:
+                    if (!structure.Structure.EnumerateArray().Any())
+                        return BadRequest("empty structure-body given");
+                    break;
+
+                default:
+                    return BadRequest("invalid structure-body given (invalid type or null)");
+            }
 
             if (structure.Variables is null || !structure.Variables.Any())
                 Logger.LogDebug($"Structure.{nameof(DtoStructure.Variables)} is null or empty, seems fishy but may be correct");

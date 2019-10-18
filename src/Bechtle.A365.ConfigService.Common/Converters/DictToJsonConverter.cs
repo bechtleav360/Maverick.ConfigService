@@ -9,10 +9,10 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class DictToJsonConverter
     {
-        public static string ToJson(IDictionary<string, string> dict, string separator)
+        public static JsonDocument ToJson(IDictionary<string, string> dict, string separator)
         {
             if (!dict.Any())
-                return string.Empty;
+                return JsonDocument.Parse(string.Empty);
 
             var root = ConvertToTree(dict, separator);
 
@@ -22,7 +22,8 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                 CreateTokenNative(root, writer);
             }
 
-            return Encoding.UTF8.GetString(memoryStream.ToArray());
+            memoryStream.Position = 0;
+            return JsonDocument.Parse(memoryStream);
         }
 
         private static Node ConvertToTree(IDictionary<string, string> dict, string separator)
@@ -66,31 +67,42 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
         private static void CreateTokenNative(Node node, Utf8JsonWriter jsonStream)
         {
-            if (!node.Children.Any())
+            try
             {
-                jsonStream.WriteStringValue(node.Value);
-            }
-            else if (node.Children.All(c => int.TryParse(c.Name, out _)))
-            {
-                jsonStream.WriteStartArray();
-                foreach (var child in node.Children.OrderBy(c => c.Name))
+                if (!node.Children.Any())
                 {
-                    jsonStream.WritePropertyName(child.Name);
-                    CreateTokenNative(child, jsonStream);
+                    jsonStream.WriteStringValue(node.Value);
                 }
-
-                jsonStream.WriteEndArray();
-            }
-            else
-            {
-                jsonStream.WriteStartObject();
-                foreach (var child in node.Children)
+                else if (node.Children.All(c => int.TryParse(c.Name, out _)))
                 {
-                    jsonStream.WritePropertyName(UnEscapePath(child.Name));
-                    CreateTokenNative(child, jsonStream);
-                }
+                    jsonStream.WriteStartArray();
 
-                jsonStream.WriteEndArray();
+                    foreach (var child in node.Children.OrderBy(c => c.Name))
+                    {
+                        if (child.Children.Count == 0)
+                            jsonStream.WriteStringValue(child.Value);
+                        else
+                            CreateTokenNative(child, jsonStream);
+                    }
+
+                    jsonStream.WriteEndArray();
+                }
+                else
+                {
+                    jsonStream.WriteStartObject();
+
+                    foreach (var child in node.Children)
+                    {
+                        jsonStream.WritePropertyName(UnEscapePath(child.Name));
+                        CreateTokenNative(child, jsonStream);
+                    }
+
+                    jsonStream.WriteEndObject();
+                }
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"error occured during json-translation at level: '{node.Name}'. see InnerException for more information", e);
             }
         }
 

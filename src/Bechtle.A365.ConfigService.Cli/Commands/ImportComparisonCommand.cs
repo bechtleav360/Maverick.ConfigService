@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Serialization;
 using Bechtle.A365.Utilities.Rest;
 using McMaster.Extensions.CommandLineUtils;
-
 
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
@@ -87,11 +89,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             try
             {
-                return JsonConvert.DeserializeObject<List<EnvironmentComparison>>(json, new JsonSerializerSettings
+                return JsonSerializer.Deserialize<List<EnvironmentComparison>>(json, new JsonSerializerOptions
                 {
-                    Converters = {new StringEnumConverter()},
-                    FloatFormatHandling = FloatFormatHandling.DefaultValue,
-                    Formatting = Formatting.Indented
+                    Converters =
+                    {
+                        new JsonIsoDateConverter(),
+                        new JsonStringEnumConverter(),
+                        new DoubleConverter(),
+                        new FloatConverter()
+                    }
                 });
             }
             catch (JsonException e)

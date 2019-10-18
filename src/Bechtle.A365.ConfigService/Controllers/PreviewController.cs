@@ -136,12 +136,10 @@ namespace Bechtle.A365.ConfigService.Controllers
                                              structureInfo,
                                              _parser);
 
-            var json = _translator.ToJson(compiled.CompiledConfiguration);
-
             return Ok(new PreviewResult
             {
-                Map = compiled.CompiledConfiguration.ToImmutableSortedDictionary(),
-                Json = json,
+                Map = compiled.CompiledConfiguration.ToDictionary(_ => _.Key, _ => _.Value),
+                Json = _translator.ToJson(compiled.CompiledConfiguration),
                 UsedKeys = compiled.GetUsedKeys().Where(key => environmentInfo.Keys.ContainsKey(key))
             });
         }

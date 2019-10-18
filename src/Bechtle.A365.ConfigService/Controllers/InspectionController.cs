@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
@@ -234,8 +235,21 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (structure is null)
                 return BadRequest("no structure was uploaded");
 
-            if (structure.Structure is null)
-                return BadRequest("structure doesn't contain a body ($.Structure)");
+            switch (structure.Structure.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    if (!structure.Structure.EnumerateObject().Any())
+                        return BadRequest("empty structure-body given");
+                    break;
+
+                case JsonValueKind.Array:
+                    if (!structure.Structure.EnumerateArray().Any())
+                        return BadRequest("empty structure-body given");
+                    break;
+
+                default:
+                    return BadRequest("invalid structure-body given (invalid type or null)");
+            }
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 

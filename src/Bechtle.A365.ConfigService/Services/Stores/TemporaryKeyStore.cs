@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-
 
 namespace Bechtle.A365.ConfigService.Services.Stores
 {
@@ -245,7 +245,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                     if (!string.IsNullOrWhiteSpace(currentJournalValue))
                     {
-                        var value = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(currentJournalValue);
+                        var value = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(currentJournalValue);
 
                         foreach (var (key, values) in value)
                             returnValue.Add(key, values);
@@ -299,8 +299,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                await _cache.SetAsync(CacheKeyJournalName.ToLowerInvariant(),
-                                      Encoding.UTF8.GetBytes(JsonSerializer.Serialize(journal, Formatting.None)));
+                await _cache.SetAsync(CacheKeyJournalName.ToLowerInvariant(), JsonSerializer.SerializeToUtf8Bytes(journal));
             }
             catch (Exception e)
             {

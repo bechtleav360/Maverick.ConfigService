@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
@@ -12,8 +13,6 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
-
-
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
@@ -341,7 +340,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             try
             {
                 // validate it against the actual object
-                export = JsonConvert.DeserializeObject<ConfigExport>(input);
+                export = JsonSerializer.Deserialize<ConfigExport>(input);
 
                 if (export is null)
                 {
@@ -380,47 +379,33 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             try
             {
-                var serializer = new JsonSerializer
+                await using var memoryStream = new MemoryStream();
+                await JsonSerializer.SerializeAsync(memoryStream, comparisons);
+
+                // reset stream to start from beginning next time we read from it
+                memoryStream.Position = 0;
+
+                // if no file is given, redirect to stdout
+                if (string.IsNullOrWhiteSpace(OutputFile))
                 {
-                    Converters = {new StringEnumConverter()},
-                    FloatFormatHandling = FloatFormatHandling.DefaultValue,
-                    Formatting = Formatting.Indented
-                };
+                    Output.Write(memoryStream);
+                    return 0;
+                }
 
-                using (var memoryStream = new MemoryStream())
-                using (var textWriter = new StreamWriter(memoryStream, new UTF8Encoding(false)))
-                using (var jsonWriter = new JsonTextWriter(textWriter))
+                // if file is given write to it
+                try
                 {
-                    serializer.Serialize(jsonWriter, comparisons);
-
-                    // flush all data manually to be sure no character is left behind
-                    jsonWriter.Flush();
-
-                    // reset stream to start from beginning next time we read from it
-                    memoryStream.Position = 0;
-
-                    // if no file is given, redirect to stdout
-                    if (string.IsNullOrWhiteSpace(OutputFile))
+                    await using (var file = File.OpenWrite(OutputFile))
                     {
-                        Output.Write(memoryStream);
-                        return 0;
+                        await memoryStream.CopyToAsync(file);
                     }
 
-                    // if file is given write to it
-                    try
-                    {
-                        using (var file = File.OpenWrite(OutputFile))
-                        {
-                            await memoryStream.CopyToAsync(file);
-                        }
-
-                        return 0;
-                    }
-                    catch (IOException e)
-                    {
-                        Output.WriteError($"could not write to file '{OutputFile}': {e}");
-                        return 1;
-                    }
+                    return 0;
+                }
+                catch (IOException e)
+                {
+                    Output.WriteError($"could not write to file '{OutputFile}': {e}");
+                    return 1;
                 }
             }
             catch (Exception e)

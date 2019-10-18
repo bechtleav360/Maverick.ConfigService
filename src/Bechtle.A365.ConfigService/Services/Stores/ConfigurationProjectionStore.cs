@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
@@ -11,8 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-
-
 
 namespace Bechtle.A365.ConfigService.Services.Stores
 {
@@ -167,7 +166,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when)
+        public async Task<IResult<JsonElement>> GetJson(ConfigurationIdentifier identifier, DateTime when)
         {
             var formattedParams = "(" +
                                   $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; " +
@@ -197,12 +196,12 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                if (dbResult is null)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
-                                   return Result.Error<JToken>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                                   return Result.Error<JsonElement>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
                                try
                                {
-                                   var result = JToken.Parse(dbResult);
+                                   var result = JsonSerializer.Deserialize<JsonElement>(dbResult);
 
                                    entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
@@ -218,8 +217,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             catch (Exception e)
             {
                 _logger.LogError(e, $"failed to retrieve projected configuration keys for id: {formattedParams}");
-                return Result.Error<JToken>($"failed to retrieve projected configuration keys for id: {formattedParams}",
-                                            ErrorCode.DbQueryError);
+                return Result.Error<JsonElement>($"failed to retrieve projected configuration keys for id: {formattedParams}",
+                                                 ErrorCode.DbQueryError);
             }
         }
 

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
@@ -10,7 +11,6 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
-
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
@@ -85,9 +85,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             var request = await RestRequest.Make(Output)
                                            .Post(new Uri(new Uri(ConfigServiceEndpoint), "export"),
-                                                 new StringContent(JsonSerializer.Serialize(exportDefinition, Formatting.None),
-                                                                   Encoding.UTF8,
-                                                                   "application/json"))
+                                                 new StringContent(
+                                                     JsonSerializer.Serialize(exportDefinition,
+                                                                              new JsonSerializerOptions
+                                                                              {
+                                                                                  WriteIndented = true
+                                                                              }),
+                                                     Encoding.UTF8,
+                                                     "application/json"))
                                            .ReceiveString();
 
             var result = await request.Take<string>();
@@ -125,15 +130,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             try
             {
-                var obj = JsonConvert.DeserializeObject<ConfigExport>(raw);
+                var obj = JsonSerializer.Deserialize<ConfigExport>(raw);
 
                 switch (format)
                 {
                     case ReformatKind.Compress:
-                        return JsonSerializer.Serialize(obj, Formatting.None);
+                        return JsonSerializer.Serialize(obj, new JsonSerializerOptions {WriteIndented = false});
 
                     case ReformatKind.Indent:
-                        return JsonSerializer.Serialize(obj, Formatting.Indented);
+                        return JsonSerializer.Serialize(obj, new JsonSerializerOptions {WriteIndented = true});
 
                     default:
                         Output.WriteError($"unknown format '{format:G}'");

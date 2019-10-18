@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using App.Metrics;
@@ -14,8 +15,7 @@ using App.Metrics.Gauge;
 using App.Metrics.Histogram;
 using App.Metrics.Meter;
 using App.Metrics.Timer;
-
-
+using Bechtle.A365.ConfigService.Common.Serialization;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -26,21 +26,6 @@ namespace Bechtle.A365.ConfigService
     [SuppressMessage("ReSharper", "RedundantAnonymousTypePropertyName")]
     public class CustomMetricsFormatter : IMetricsOutputFormatter
     {
-        private readonly JsonSerializer _serializer;
-
-        /// <inheritdoc />
-        public CustomMetricsFormatter()
-        {
-            _serializer = new JsonSerializer
-            {
-                Formatting = Formatting.Indented,
-                FloatFormatHandling = FloatFormatHandling.DefaultValue,
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc
-            };
-            _serializer.Converters.Add(new StringEnumConverter());
-            _serializer.Converters.Add(new IsoDateTimeConverter());
-        }
-
         /// <inheritdoc />
         public MetricsMediaTypeValue MediaType { get; } = new MetricsMediaTypeValue("application", "bechtle.custom.formatter", "v1", "json");
 
@@ -48,9 +33,9 @@ namespace Bechtle.A365.ConfigService
         public MetricFields MetricFields { get; set; }
 
         /// <inheritdoc />
-        public Task WriteAsync(Stream output,
-                               MetricsDataValueSource metricsData,
-                               CancellationToken cancellationToken = new CancellationToken())
+        public async Task WriteAsync(Stream output,
+                                     MetricsDataValueSource metricsData,
+                                     CancellationToken cancellationToken = new CancellationToken())
         {
             // initialize list with at least as many places as counters are given
             // some counters may have .Items which won't be counted here
@@ -62,7 +47,7 @@ namespace Bechtle.A365.ConfigService
                                                                          + c.Timers.Count()));
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.CompletedTask;
+                return;
 
             // for each Metrics-Context, project all *ValueSources into a simpler representation
             // collect all Metrics into a flat list for easier consumption via logstash / other
@@ -94,16 +79,24 @@ namespace Bechtle.A365.ConfigService
             }
 
             if (cancellationToken.IsCancellationRequested)
-                return Task.CompletedTask;
+                return;
 
-            // specify that encoding should *not* write UTF-8 BOM
-            using (var streamWriter = new StreamWriter(output, new UTF8Encoding(false)))
-            using (var jsonWriter = new JsonTextWriter(streamWriter))
-            {
-                _serializer.Serialize(jsonWriter, metrics);
-            }
-
-            return Task.CompletedTask;
+            // @TODO: check if UTF8-BOM is written here or not - should *not* be written
+            await output.WriteAsync(
+                JsonSerializer.SerializeToUtf8Bytes(
+                    metrics,
+                    new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        Converters =
+                        {
+                            new DoubleConverter(),
+                            new FloatConverter(),
+                            new JsonIsoDateConverter(),
+                            new JsonStringEnumConverter()
+                        }
+                    }),
+                cancellationToken);
         }
 
         private static object TransformApdex(string context, ApdexValueSource apdex) => new

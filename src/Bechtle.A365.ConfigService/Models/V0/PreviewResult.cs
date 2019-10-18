@@ -1,5 +1,5 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Text.Json;
 
 namespace Bechtle.A365.ConfigService.Models.V0
 {
@@ -11,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Models.V0
         /// <summary>
         ///     Result as JSON
         /// </summary>
-        public JToken Json { get; set; }
+        public JsonElement Json { get; set; }
 
         /// <summary>
         ///     Result as Key->Value Map

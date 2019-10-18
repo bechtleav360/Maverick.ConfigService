@@ -1,12 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
-
 
 namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 {
@@ -83,7 +83,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 output.WriteLine($"Error: {e.GetType().Name}; {e.Message}", 1);
             }
 
-            var configJson = JsonSerializer.Serialize(csConfig, Formatting.Indented);
+            var configJson = JsonSerializer.Serialize(csConfig, new JsonSerializerOptions {WriteIndented = true});
             output.WriteLine($"Effective Configuration:{Environment.NewLine}{configJson}", 1);
 
             output.WriteLine(string.Empty, 1);

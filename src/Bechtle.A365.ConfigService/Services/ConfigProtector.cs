@@ -3,8 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-
-
+using System.Text.Json;
 
 namespace Bechtle.A365.ConfigService.Services
 {
@@ -14,37 +13,29 @@ namespace Bechtle.A365.ConfigService.Services
         /// <inheritdoc />
         public string DecryptWithPrivateKey(string data, X509Certificate2 cert)
         {
-            using (var rsa = cert.GetRSAPrivateKey())
-            {
-                return DecryptInternal(data, rsa);
-            }
+            using var rsa = cert.GetRSAPrivateKey();
+            return DecryptInternal(data, rsa);
         }
 
         /// <inheritdoc />
         public string DecryptWithPublicKey(string data, X509Certificate2 cert)
         {
-            using (var rsa = cert.GetRSAPublicKey())
-            {
-                return DecryptInternal(data, rsa);
-            }
+            using var rsa = cert.GetRSAPublicKey();
+            return DecryptInternal(data, rsa);
         }
 
         /// <inheritdoc />
         public string EncryptWithPrivateKey(string data, X509Certificate2 cert)
         {
-            using (var rsa = cert.GetRSAPrivateKey())
-            {
-                return EncryptInternal(data, rsa);
-            }
+            using var rsa = cert.GetRSAPrivateKey();
+            return EncryptInternal(data, rsa);
         }
 
         /// <inheritdoc />
         public string EncryptWithPublicKey(string data, X509Certificate2 cert)
         {
-            using (var rsa = cert.GetRSAPublicKey())
-            {
-                return EncryptInternal(data, rsa);
-            }
+            using var rsa = cert.GetRSAPublicKey();
+            return EncryptInternal(data, rsa);
         }
 
         /// <summary>
@@ -57,28 +48,24 @@ namespace Bechtle.A365.ConfigService.Services
         {
             var json = Encoding.UTF8.GetString(Convert.FromBase64String(data));
 
-            var encrypted = JsonConvert.DeserializeObject<EncryptionResult>(json);
+            var encrypted = JsonSerializer.Deserialize<EncryptionResult>(json);
 
             var decryptedMetadata = rsa.Decrypt(Convert.FromBase64String(encrypted.Metadata), RSAEncryptionPadding.OaepSHA512);
             var metadataJson = Encoding.UTF8.GetString(decryptedMetadata);
-            var metadata = JsonConvert.DeserializeObject<AesEncryptionMetadata>(metadataJson);
+            var metadata = JsonSerializer.Deserialize<AesEncryptionMetadata>(metadataJson);
 
-            using (var aes = Aes.Create() ?? throw new NotSupportedException("Aes-Encryption not supported on current platform"))
+            using var aes = Aes.Create() ?? throw new NotSupportedException("Aes-Encryption not supported on current platform");
+            aes.Key = Convert.FromBase64String(metadata.Key);
+            aes.IV = Convert.FromBase64String(metadata.IV);
+
+            using var memStream = new MemoryStream();
+            using (var crypto = new CryptoStream(memStream, aes.CreateDecryptor(), CryptoStreamMode.Write))
             {
-                aes.Key = Convert.FromBase64String(metadata.Key);
-                aes.IV = Convert.FromBase64String(metadata.IV);
-
-                using (var memStream = new MemoryStream())
-                {
-                    using (var crypto = new CryptoStream(memStream, aes.CreateDecryptor(), CryptoStreamMode.Write))
-                    {
-                        var raw = Convert.FromBase64String(encrypted.Payload);
-                        crypto.Write(raw, 0, raw.Length);
-                    }
-
-                    return Encoding.UTF8.GetString(memStream.ToArray());
-                }
+                var raw = Convert.FromBase64String(encrypted.Payload);
+                crypto.Write(raw, 0, raw.Length);
             }
+
+            return Encoding.UTF8.GetString(memStream.ToArray());
         }
 
         /// <summary>
@@ -89,39 +76,37 @@ namespace Bechtle.A365.ConfigService.Services
         /// <returns></returns>
         private string EncryptInternal(string data, RSA rsa)
         {
-            using (var aes = Aes.Create() ?? throw new NotSupportedException("Aes-Encryption not supported on current platform"))
+            using var aes = Aes.Create() ?? throw new NotSupportedException("Aes-Encryption not supported on current platform");
+
+            byte[] encryptedPayload;
+
+            using (var memStream = new MemoryStream())
             {
-                byte[] encryptedPayload;
-
-                using (var memStream = new MemoryStream())
+                using (var crypto = new CryptoStream(memStream, aes.CreateEncryptor(), CryptoStreamMode.Write))
                 {
-                    using (var crypto = new CryptoStream(memStream, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
-                        var raw = Encoding.UTF8.GetBytes(data);
-                        crypto.Write(raw, 0, raw.Length);
-                    }
-
-                    encryptedPayload = memStream.ToArray();
+                    var raw = Encoding.UTF8.GetBytes(data);
+                    crypto.Write(raw, 0, raw.Length);
                 }
 
-                var encryptedMetadata = rsa.Encrypt(
-                    Encoding.UTF8.GetBytes(
-                        JObject.FromObject(new AesEncryptionMetadata
-                               {
-                                   Key = Convert.ToBase64String(aes.Key),
-                                   IV = Convert.ToBase64String(aes.IV)
-                               })
-                               .ToString(Formatting.None)),
-                    RSAEncryptionPadding.OaepSHA512);
-
-                var jsonResult = JObject.FromObject(new EncryptionResult
-                {
-                    Metadata = Convert.ToBase64String(encryptedMetadata),
-                    Payload = Convert.ToBase64String(encryptedPayload)
-                }).ToString();
-
-                return Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonResult));
+                encryptedPayload = memStream.ToArray();
             }
+
+            var encryptedMetadata = rsa.Encrypt(
+                JsonSerializer.SerializeToUtf8Bytes(
+                    new AesEncryptionMetadata
+                    {
+                        Key = Convert.ToBase64String(aes.Key),
+                        IV = Convert.ToBase64String(aes.IV)
+                    }),
+                RSAEncryptionPadding.OaepSHA512);
+
+            return Convert.ToBase64String(
+                JsonSerializer.SerializeToUtf8Bytes(
+                    new EncryptionResult
+                    {
+                        Metadata = Convert.ToBase64String(encryptedMetadata),
+                        Payload = Convert.ToBase64String(encryptedPayload)
+                    }));
         }
 
         private class EncryptionResult

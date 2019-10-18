@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-
 
 namespace Bechtle.A365.ConfigService.Services.Stores
 {
@@ -44,7 +44,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="identifier"></param>
         /// <param name="when"></param>
         /// <returns></returns>
-        Task<IResult<JToken>> GetJson(ConfigurationIdentifier identifier, DateTime when);
+        Task<IResult<JsonElement>> GetJson(ConfigurationIdentifier identifier, DateTime when);
 
         /// <summary>
         ///     get the keys of a Configuration

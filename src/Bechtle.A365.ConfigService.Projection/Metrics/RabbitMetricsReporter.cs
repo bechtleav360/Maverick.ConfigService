@@ -20,7 +20,6 @@ using RabbitMQ.Client;
 
 namespace Bechtle.A365.ConfigService.Projection.Metrics
 {
-
     /// <inheritdoc cref="IReportMetrics" />
     public class RabbitMetricsReporter : IReportMetrics, IDisposable
     {
