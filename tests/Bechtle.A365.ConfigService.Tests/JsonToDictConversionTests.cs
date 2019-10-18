@@ -1,7 +1,6 @@
 ﻿using System.Linq;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.Converters;
-
-
 using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests
@@ -20,27 +19,8 @@ namespace Bechtle.A365.ConfigService.Tests
         [InlineData("[]")]
         public void EmptyObject(string json)
         {
-            var jObject = JsonConvert.DeserializeObject<JToken>(json);
+            var jObject = JsonSerializer.Deserialize<JsonElement>(json);
             var translated = _translator.ToDictionary(jObject);
-
-            Assert.NotNull(translated);
-            Assert.Equal(0, translated.Count);
-        }
-
-        [Fact]
-        public void EmptyString()
-        {
-            var jObject = JsonConvert.DeserializeObject<JToken>("");
-            var translated = _translator.ToDictionary(jObject);
-
-            Assert.NotNull(translated);
-            Assert.Equal(0, translated.Count);
-        }
-
-        [Fact]
-        public void Null()
-        {
-            var translated = _translator.ToDictionary(null);
 
             Assert.NotNull(translated);
             Assert.Equal(0, translated.Count);
@@ -49,7 +29,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void NumberArray()
         {
-            var jObject = JsonConvert.DeserializeObject<JToken>("[1,2,3]");
+            var jObject = JsonSerializer.Deserialize<JsonElement>("[1,2,3]");
             var translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
@@ -65,7 +45,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void SimpleObject()
         {
-            var jObject = JsonConvert.DeserializeObject<JToken>("{\"Foo\": \"Bar\", \"Bar\": \"Baz\", \"Baz\": { \"FooBarBaz\": \"42\"}}");
+            var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Foo\": \"Bar\", \"Bar\": \"Baz\", \"Baz\": { \"FooBarBaz\": \"42\"}}");
             var translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
@@ -83,7 +63,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void SimplestObject()
         {
-            var jObject = JsonConvert.DeserializeObject<JToken>("{\"Property\": \"Value\"}");
+            var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Property\": \"Value\"}");
             var translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
@@ -95,7 +75,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void StringArray()
         {
-            var jObject = JsonConvert.DeserializeObject<JToken>("[{\"Foo\": \"Bar\"}, {\"Bar\": \"Baz\"}]");
+            var jObject = JsonSerializer.Deserialize<JsonElement>("[{\"Foo\": \"Bar\"}, {\"Bar\": \"Baz\"}]");
             var translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
@@ -109,7 +89,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void LeaveSpacesByDefault()
         {
-            var jObject = JsonConvert.DeserializeObject<JToken>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
+            var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
             var translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
@@ -121,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void EncodeSpacesWhenTold()
         {
-            var jObject = JsonConvert.DeserializeObject<JToken>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
+            var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
             var translated = _translator.ToDictionary(jObject, true);
 
             Assert.NotNull(translated);

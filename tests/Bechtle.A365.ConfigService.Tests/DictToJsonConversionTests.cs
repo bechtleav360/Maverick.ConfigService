@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.Converters;
-
 using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests
@@ -19,19 +19,15 @@ namespace Bechtle.A365.ConfigService.Tests
         {
             var translated = _translator.ToJson(new Dictionary<string, string>
             {
-                {"Foo/Bar/Baz/One/Two/Three/Office", "4711"}
+                {"Foo/Bar/Baz", "4711"}
             });
 
             Assert.NotNull(translated);
-            Assert.IsType<JObject>(translated);
-            Assert.IsType<JObject>(translated["Foo"]);
-            Assert.IsType<JObject>(translated["Foo"]["Bar"]);
-            Assert.IsType<JObject>(translated["Foo"]["Bar"]["Baz"]);
-            Assert.IsType<JObject>(translated["Foo"]["Bar"]["Baz"]["One"]);
-            Assert.IsType<JObject>(translated["Foo"]["Bar"]["Baz"]["One"]["Two"]);
-            Assert.IsType<JObject>(translated["Foo"]["Bar"]["Baz"]["One"]["Two"]["Three"]);
-            Assert.IsType<JValue>(translated["Foo"]["Bar"]["Baz"]["One"]["Two"]["Three"]["Office"]);
-            Assert.Equal("4711", translated["Foo"]["Bar"]["Baz"]["One"]["Two"]["Three"]["Office"].ToString());
+            Assert.IsType<JsonDocument>(translated);
+            Assert.IsType<JsonElement>(translated.RootElement.GetProperty("Foo"));
+            Assert.IsType<JsonElement>(translated.RootElement.GetProperty("Foo").GetProperty("Bar"));
+            Assert.IsType<JsonElement>(translated.RootElement.GetProperty("Foo").GetProperty("Bar").GetProperty("Baz"));
+            Assert.Equal("4711", translated.RootElement.GetProperty("Foo").GetProperty("Bar").GetProperty("Baz").ToString());
         }
 
         [Fact]
@@ -40,9 +36,8 @@ namespace Bechtle.A365.ConfigService.Tests
             var translated = _translator.ToJson(new Dictionary<string, string>());
 
             Assert.NotNull(translated);
-            Assert.IsType<JObject>(translated);
-            Assert.False(translated.HasValues);
-            Assert.Empty(translated.Children());
+            Assert.IsType<JsonDocument>(translated);
+            Assert.Empty(translated.RootElement.EnumerateObject());
         }
 
         [Fact]
@@ -55,9 +50,9 @@ namespace Bechtle.A365.ConfigService.Tests
             });
 
             Assert.NotNull(translated);
-            Assert.IsType<JArray>(translated);
-            Assert.Equal("42", translated[0].ToString());
-            Assert.Equal("4711", translated[1].ToString());
+            Assert.IsType<JsonDocument>(translated);
+            Assert.Equal("42", translated.RootElement[0].ToString());
+            Assert.Equal("4711", translated.RootElement[1].ToString());
         }
 
         [Fact]
@@ -69,8 +64,8 @@ namespace Bechtle.A365.ConfigService.Tests
             });
 
             Assert.NotNull(translated);
-            Assert.IsType<JObject>(translated);
-            Assert.Equal("Bar", translated["Foo"]);
+            Assert.IsType<JsonDocument>(translated);
+            Assert.Equal("Bar", translated.RootElement.GetProperty("Foo").ToString());
         }
     }
 }

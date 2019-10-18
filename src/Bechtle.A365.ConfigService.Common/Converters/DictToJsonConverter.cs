@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         public static JsonDocument ToJson(IDictionary<string, string> dict, string separator)
         {
             if (!dict.Any())
-                return JsonDocument.Parse(string.Empty);
+                return JsonDocument.Parse("{}");
 
             var root = ConvertToTree(dict, separator);
 
