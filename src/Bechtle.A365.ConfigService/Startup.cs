@@ -288,10 +288,6 @@ namespace Bechtle.A365.ConfigService
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");
 
-            // build the provider to grab the EventStore instance in the Health-Checks
-            // @TODO: inject ServiceProvider into health-checks somehow
-            var intermediateProvider = services.BuildServiceProvider();
-
             services.AddHealth(builder =>
             {
                 var config = Configuration.Get<ConfigServiceConfiguration>();
@@ -303,31 +299,22 @@ namespace Bechtle.A365.ConfigService
                 {
                     try
                     {
-                        var store = intermediateProvider.GetService<IEventStore>();
-
-                        if (store is null)
-                            return new ServiceStatus("EventStore.Connection", ServiceState.Red);
-
-                        switch (store.ConnectionState)
+                        return Services.Stores.EventStore.ConnectionState switch
                         {
-                            case ConnectionState.Connected:
-                                return new ServiceStatus("EventStore.Connection", ServiceState.Green);
-
-                            case ConnectionState.Reconnecting:
-                                return new ServiceStatus("EventStore.Connection", ServiceState.Yellow)
-                                {
-                                    ErrorMessage = "connection to EventStore is unavailable, but it is being re-established"
-                                };
-
-                            // let's be exact what happens in what state...
-                            // ReSharper disable once RedundantCaseLabel
-                            case ConnectionState.Disconnected:
-                            default:
-                                return new ServiceStatus("EventStore.Connection", ServiceState.Red)
-                                {
-                                    ErrorMessage = "connection to EventStore is unavailable and NOT being re-established"
-                                };
-                        }
+                            ConnectionState.Connected => new ServiceStatus("EventStore.Connection", ServiceState.Green),
+                            ConnectionState.Reconnecting => new ServiceStatus("EventStore.Connection", ServiceState.Yellow)
+                            {
+                                ErrorMessage = "connection to EventStore is unavailable, but it is being re-established"
+                            },
+                            ConnectionState.Disconnected => new ServiceStatus("EventStore.Connection", ServiceState.Red)
+                            {
+                                ErrorMessage = "connection to EventStore is unavailable and NOT being re-established"
+                            },
+                            _ => new ServiceStatus("EventStore.Connection", ServiceState.Red)
+                            {
+                                ErrorMessage = "connection to EventStore is unavailable and NOT being re-established"
+                            }
+                        };
                     }
                     catch (Exception e)
                     {

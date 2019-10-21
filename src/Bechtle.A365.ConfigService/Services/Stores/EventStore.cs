@@ -21,6 +21,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     /// <inheritdoc cref="IEventStore" />
     public class EventStore : IEventStore
     {
+        /// <inheritdoc cref="Services.ConnectionState" />
+        public static ConnectionState ConnectionState { get; private set; } = ConnectionState.Disconnected;
+
         private readonly IConfiguration _configuration;
         private readonly IMetrics _metrics;
         private readonly object _connectionLock;
@@ -56,9 +59,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
         }
-
-        /// <inheritdoc />
-        public ConnectionState ConnectionState { get; private set; }
 
         /// <inheritdoc />
         public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents(StreamDirection direction = StreamDirection.Forwards)
@@ -253,8 +253,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                     _logger.LogError(e, "error in EventStore Connection-Settings");
                     throw;
                 }
-
-                ConnectionState = ConnectionState.Disconnected;
 
                 _eventStore.Connected += OnEventStoreConnected;
                 _eventStore.Disconnected += OnEventStoreDisconnected;
