@@ -2,8 +2,6 @@
 using Bechtle.A365.ConfigService.Cli.Commands;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

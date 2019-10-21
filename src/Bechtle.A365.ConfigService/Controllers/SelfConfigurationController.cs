@@ -39,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Controllers
         public async Task<IActionResult> AppendConfiguration([FromBody] JsonElement json)
         {
             var givenKeys = _translator.ToDictionary(json);
-            IDictionary<string, string> currentKeys = null;
+            IDictionary<string, string> currentKeys;
 
             try
             {
