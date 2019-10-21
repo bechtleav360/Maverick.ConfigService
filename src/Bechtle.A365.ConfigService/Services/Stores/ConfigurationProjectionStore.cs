@@ -48,20 +48,20 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                            async entry =>
                            {
                                var utcWhen = when.ToUniversalTime();
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Include(c => c.ConfigEnvironment)
-                                                            .Include(c => c.Structure)
-                                                            .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= utcWhen &&
-                                                                        (c.ValidTo ?? DateTime.MaxValue) >= utcWhen)
-                                                            .OrderBy(s => s.ConfigEnvironment.Category)
-                                                            .ThenBy(s => s.ConfigEnvironment.Name)
-                                                            .ThenBy(s => s.Structure.Name)
-                                                            .ThenByDescending(s => s.Structure.Version)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .ToListAsync();
-
-                               var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
+                               var identifiers =
+                                   await _context.ProjectedConfigurations
+                                                 .Include(c => c.ConfigEnvironment)
+                                                 .Include(c => c.Structure)
+                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= utcWhen
+                                                             && (c.ValidTo ?? DateTime.MaxValue) >= utcWhen)
+                                                 .OrderBy(s => s.ConfigEnvironment.Category)
+                                                 .ThenBy(s => s.ConfigEnvironment.Name)
+                                                 .ThenBy(s => s.Structure.Name)
+                                                 .ThenByDescending(s => s.Structure.Version)
+                                                 .Skip(range.Offset)
+                                                 .Take(range.Length)
+                                                 .Select(s => new ConfigurationIdentifier(s))
+                                                 .ToListAsync();
 
                                entry.SetDuration(identifiers is null
                                                      ? CacheDuration.None
@@ -94,25 +94,26 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Include(c => c.ConfigEnvironment)
-                                                            .Include(c => c.Structure)
-                                                            .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                            .Where(c => c.ConfigEnvironment.Category == environment.Category &&
-                                                                        c.ConfigEnvironment.Name == environment.Name)
-                                                            .OrderBy(s => s.Structure.Name)
-                                                            .ThenByDescending(s => s.Structure.Version)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .ToListAsync();
+                               var identifiers =
+                                   await _context.ProjectedConfigurations
+                                                 .Include(c => c.ConfigEnvironment)
+                                                 .Include(c => c.Structure)
+                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
+                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                                 .Where(c => c.ConfigEnvironment.Category == environment.Category
+                                                             && c.ConfigEnvironment.Name == environment.Name)
+                                                 .OrderBy(s => s.Structure.Name)
+                                                 .ThenByDescending(s => s.Structure.Version)
+                                                 .Skip(range.Offset)
+                                                 .Take(range.Length)
+                                                 .Select(s => new ConfigurationIdentifier(s))
+                                                 .ToListAsync();
 
-                               var result = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
-
-                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium,
+                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
                                                  _configuration,
                                                  _logger);
 
-                               return Result.Success<IList<ConfigurationIdentifier>>(result ?? new List<ConfigurationIdentifier>());
+                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
                            });
             }
             catch (Exception e)
@@ -137,25 +138,26 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Include(c => c.ConfigEnvironment)
-                                                            .Include(c => c.Structure)
-                                                            .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                            .Where(c => c.Structure.Name == structure.Name &&
-                                                                        c.Structure.Version == structure.Version)
-                                                            .OrderBy(s => s.ConfigEnvironment.Category)
-                                                            .ThenBy(s => s.ConfigEnvironment.Name)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .ToListAsync();
+                               var identifiers =
+                                   await _context.ProjectedConfigurations
+                                                 .Include(c => c.ConfigEnvironment)
+                                                 .Include(c => c.Structure)
+                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
+                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                                 .Where(c => c.Structure.Name == structure.Name
+                                                             && c.Structure.Version == structure.Version)
+                                                 .OrderBy(s => s.ConfigEnvironment.Category)
+                                                 .ThenBy(s => s.ConfigEnvironment.Name)
+                                                 .Skip(range.Offset)
+                                                 .Take(range.Length)
+                                                 .Select(s => new ConfigurationIdentifier(s))
+                                                 .ToListAsync();
 
-                               var result = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
-
-                               entry.SetDuration(result is null ? CacheDuration.None : CacheDuration.Medium,
+                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
                                                  _configuration,
                                                  _logger);
 
-                               return Result.Success<IList<ConfigurationIdentifier>>(result ?? new List<ConfigurationIdentifier>());
+                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
                            });
             }
             catch (Exception e)
@@ -184,14 +186,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        when.Ticks),
                            async entry =>
                            {
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                            .Where(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
-                                                                        c.ConfigEnvironment.Category == identifier.Environment.Category &&
-                                                                        c.Structure.Name == identifier.Structure.Name &&
-                                                                        c.Structure.Version == identifier.Structure.Version)
-                                                            .Select(c => c.ConfigurationJson)
-                                                            .FirstOrDefaultAsync();
+                               var dbResult =
+                                   await _context.ProjectedConfigurations
+                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
+                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                                 .Where(c => c.ConfigEnvironment.Name == identifier.Environment.Name
+                                                             && c.ConfigEnvironment.Category == identifier.Environment.Category
+                                                             && c.Structure.Name == identifier.Structure.Name
+                                                             && c.Structure.Version == identifier.Structure.Version)
+                                                 .Select(c => c.ConfigurationJson)
+                                                 .FirstOrDefaultAsync();
 
                                if (dbResult is null)
                                {
@@ -244,14 +248,17 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Include(e => e.ConfigEnvironment)
-                                                            .Include(e => e.Structure)
-                                                            .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                            .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
-                                                                                      c.ConfigEnvironment.Category == identifier.Environment.Category &&
-                                                                                      c.Structure.Name == identifier.Structure.Name &&
-                                                                                      c.Structure.Version == identifier.Structure.Version);
+                               var dbResult =
+                                   await _context.ProjectedConfigurations
+                                                 .Include(e => e.ConfigEnvironment)
+                                                 .Include(e => e.Structure)
+                                                 .Include(e => e.Keys)
+                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
+                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                                 .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name
+                                                                           && c.ConfigEnvironment.Category == identifier.Environment.Category
+                                                                           && c.Structure.Name == identifier.Structure.Name
+                                                                           && c.Structure.Version == identifier.Structure.Version);
 
                                if (dbResult is null)
                                {
@@ -291,19 +298,18 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Include(c => c.ConfigEnvironment)
-                                                            .Include(c => c.Structure)
-                                                            .Where(p => !p.UpToDate)
-                                                            .OrderBy(s => s.ConfigEnvironment.Category)
-                                                            .ThenBy(s => s.ConfigEnvironment.Name)
-                                                            .ThenBy(s => s.Structure.Name)
-                                                            .ThenByDescending(s => s.Structure.Version)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .ToListAsync();
-
-                               var identifiers = dbResult?.Select(s => new ConfigurationIdentifier(s)).ToList();
+                               var identifiers = await _context.ProjectedConfigurations
+                                                               .Include(c => c.ConfigEnvironment)
+                                                               .Include(c => c.Structure)
+                                                               .Where(p => !p.UpToDate)
+                                                               .OrderBy(s => s.ConfigEnvironment.Category)
+                                                               .ThenBy(s => s.ConfigEnvironment.Name)
+                                                               .ThenBy(s => s.Structure.Name)
+                                                               .ThenByDescending(s => s.Structure.Version)
+                                                               .Skip(range.Offset)
+                                                               .Take(range.Length)
+                                                               .Select(s => new ConfigurationIdentifier(s))
+                                                               .ToListAsync();
 
                                entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
                                                  _configuration,
@@ -341,14 +347,17 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Include(e => e.ConfigEnvironment)
-                                                            .Include(e => e.Structure)
-                                                            .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                            .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
-                                                                                      c.ConfigEnvironment.Category == identifier.Environment.Category &&
-                                                                                      c.Structure.Name == identifier.Structure.Name &&
-                                                                                      c.Structure.Version == identifier.Structure.Version);
+                               var dbResult =
+                                   await _context.ProjectedConfigurations
+                                                 .Include(e => e.ConfigEnvironment)
+                                                 .Include(e => e.Structure)
+                                                 .Include(e => e.UsedConfigurationKeys)
+                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
+                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                                 .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name
+                                                                           && c.ConfigEnvironment.Category == identifier.Environment.Category
+                                                                           && c.Structure.Name == identifier.Structure.Name
+                                                                           && c.Structure.Version == identifier.Structure.Version);
 
                                if (dbResult is null)
                                {
@@ -395,14 +404,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        when.Ticks),
                            async entry =>
                            {
-                               var dbResult = await _context.ProjectedConfigurations
-                                                            .Include(e => e.ConfigEnvironment)
-                                                            .Include(e => e.Structure)
-                                                            .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                            .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name &&
-                                                                                      c.ConfigEnvironment.Category == identifier.Environment.Category &&
-                                                                                      c.Structure.Name == identifier.Structure.Name &&
-                                                                                      c.Structure.Version == identifier.Structure.Version);
+                               var dbResult =
+                                   await _context.ProjectedConfigurations
+                                                 .Include(e => e.ConfigEnvironment)
+                                                 .Include(e => e.Structure)
+                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
+                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
+                                                 .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name
+                                                                           && c.ConfigEnvironment.Category == identifier.Environment.Category
+                                                                           && c.Structure.Name == identifier.Structure.Name
+                                                                           && c.Structure.Version == identifier.Structure.Version);
 
                                if (dbResult is null)
                                {

@@ -123,11 +123,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                            {
                                key = Uri.UnescapeDataString(key ?? string.Empty);
 
-                               var environmentKey = await _context.ConfigEnvironments
-                                                                  .Where(s => s.Category == identifier.Category &&
-                                                                              s.Name == identifier.Name)
-                                                                  .Select(env => env.Id)
-                                                                  .FirstOrDefaultAsync();
+                               var environmentKey =
+                                   await _context.ConfigEnvironments
+                                                 .Where(s => s.Category == identifier.Category && s.Name == identifier.Name)
+                                                 .Select(env => env.Id)
+                                                 .FirstOrDefaultAsync();
 
                                if (environmentKey == Guid.Empty)
                                {
@@ -360,16 +360,17 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 if (path.Children is null)
                     await CollectChildren(path);
 
-            return Result.Success<IList<DtoConfigKeyCompletion>>(array.OrderBy(p => p.Path)
-                                                                      .Skip(range.Offset)
-                                                                      .Take(range.Length)
-                                                                      .Select(p => new DtoConfigKeyCompletion
-                                                                      {
-                                                                          Completion = p.Path,
-                                                                          FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
-                                                                          HasChildren = p.Children.Any()
-                                                                      })
-                                                                      .ToList());
+            return Result.Success<IList<DtoConfigKeyCompletion>>(
+                array.OrderBy(p => p.Path)
+                     .Skip(range.Offset)
+                     .Take(range.Length)
+                     .Select(p => new DtoConfigKeyCompletion
+                     {
+                         Completion = p.Path,
+                         FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                         HasChildren = p.Children.Any()
+                     })
+                     .ToList());
         }
 
         /// <summary>
@@ -476,8 +477,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             try
             {
                 var envId = await _context.FullConfigEnvironments
-                                          .Where(s => s.Category == parameters.Environment.Category &&
-                                                      s.Name == parameters.Environment.Name)
+                                          .Where(s => s.Category == parameters.Environment.Category
+                                                      && s.Name == parameters.Environment.Name)
                                           .Select(e => e.Id)
                                           .FirstOrDefaultAsync();
 

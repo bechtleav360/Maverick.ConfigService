@@ -61,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
-                               return Result.Success<IList<StructureIdentifier>>(dbResult.ToList());
+                               return Result.Success<IList<StructureIdentifier>>(dbResult);
                            });
             }
             catch (Exception e)
@@ -83,22 +83,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.Structures
+                               var versions = await _context.Structures
                                                             .Where(s => s.Name == name)
                                                             .OrderBy(s => s.Name)
                                                             .ThenByDescending(s => s.Version)
                                                             .Skip(range.Offset)
                                                             .Take(range.Length)
+                                                            .Select(s => s.Version)
                                                             .ToListAsync();
 
-                               if (dbResult is null)
+                               if (versions is null)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<int>>(new List<int>());
                                }
 
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-                               return Result.Success<IList<int>>(dbResult.Select(s => s.Version).ToList());
+                               return Result.Success<IList<int>>(versions);
                            });
             }
             catch (Exception e)
@@ -122,8 +123,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                            async entry =>
                            {
                                var dbResult = await _context.FullStructures
-                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
-                                                                                      s.Version == identifier.Version);
+                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name
+                                                                                      && s.Version == identifier.Version);
 
                                if (dbResult is null)
                                {
@@ -172,8 +173,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                            async entry =>
                            {
                                var dbResult = await _context.FullStructures
-                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name &&
-                                                                                      s.Version == identifier.Version);
+                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name
+                                                                                      && s.Version == identifier.Version);
 
                                if (dbResult is null)
                                {
