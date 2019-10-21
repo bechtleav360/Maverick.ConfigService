@@ -18,5 +18,5 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
 
-ENTRYPOINT ["dotnet" "Bechtle.A365.ConfigService.Cli.dll" "migrate" "-b" "postgres"]
+ENTRYPOINT ["/usr/bin/dotnet" "Bechtle.A365.ConfigService.Cli.dll" "migrate" "-b" "postgres"]
 CMD ["-c" "Host=postgres;Port=5432;Database=ConfigProjection;User Id=sa;Password=1;"]
