@@ -1,2 +1,3 @@
-﻿COMMAND=${command:--help}
-dotnet Bechtle.A365.ConfigService.Cli.dll ${COMMAND}
+﻿echo "Executing command: '${command}''"
+
+dotnet Bechtle.A365.ConfigService.Cli.dll ${command}
