@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 echo "Command: '$command'"
-dotnet Bechtle.A365.ConfigService.Cli.dll "$command"
+echo dotnet Bechtle.A365.ConfigService.Cli.dll "$command" > start.sh && ./start.sh
