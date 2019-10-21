@@ -1,5 +1,5 @@
 ﻿ARG SERVICENAME=Bechtle.A365.ConfigService.Projection
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-stretch-slim AS base
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2-stretch AS base
 WORKDIR /app
 
 FROM maverick.azurecr.io/dotnet/core/sdk:2.2-stretch AS build
