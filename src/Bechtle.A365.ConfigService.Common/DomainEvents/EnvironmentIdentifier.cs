@@ -20,7 +20,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
         }
 
-        // @TODO: maybe use a better name for this? Tenant / Folder / etc?
         /// <summary>
         ///     Category for a group of Environments, think Folder / Tenant and the like
         /// </summary>
