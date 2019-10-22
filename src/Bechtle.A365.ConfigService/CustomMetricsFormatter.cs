@@ -81,7 +81,6 @@ namespace Bechtle.A365.ConfigService
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            // @TODO: check if UTF8-BOM is written here or not - should *not* be written
             await output.WriteAsync(
                 JsonSerializer.SerializeToUtf8Bytes(
                     metrics,
