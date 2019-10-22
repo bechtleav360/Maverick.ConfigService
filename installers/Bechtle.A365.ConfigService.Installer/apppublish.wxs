@@ -158,9 +158,6 @@
             <Component Id="cmpCF9B3A227754E55B2A4622BDADF51333" Guid="*">
                 <File Id="fil244CDAED28510644E512EA1DBCB9390F" KeyPath="yes" Source="$(var.BasePath)\BouncyCastle.Crypto.dll" />
             </Component>
-            <Component Id="cmp7CC2A6AC4220DAC7231BB5E9C94B83A4" Guid="*">
-                <File Id="fil28C4D02BAEC848ED4EF2F5CC9892E41E" KeyPath="yes" Source="$(var.BasePath)\Castle.Core.dll" />
-            </Component>
             <Component Id="cmp1416C3D3F39D9287DB19F3BCC92BACB8" Guid="*">
                 <File Id="filD78B0700B783EF6D4B88213184DE584F" KeyPath="yes" Source="$(var.BasePath)\EventStore.ClientAPI.dll" />
             </Component>
@@ -217,9 +214,6 @@
             </Component>
             <Component Id="cmp8ECB45C87038A07C9C036DACB12BD3D3" Guid="*">
                 <File Id="filFEE672B37FD89848D8A45C0C8751EECD" KeyPath="yes" Source="$(var.BasePath)\Microsoft.EntityFrameworkCore.dll" />
-            </Component>
-            <Component Id="cmpE124CC0D9F0655CB4F70F960DEF276E0" Guid="*">
-                <File Id="fil26350CB81CB8958EA0EA9E6620B50098" KeyPath="yes" Source="$(var.BasePath)\Microsoft.EntityFrameworkCore.Proxies.dll" />
             </Component>
             <Component Id="cmp3D0A5CB47707279B9AED9C4655BA24DD" Guid="*">
                 <File Id="fil4C803CF4486F15F8392710290E97A2D4" KeyPath="yes" Source="$(var.BasePath)\Microsoft.EntityFrameworkCore.Relational.dll" />
@@ -537,7 +531,6 @@
             <ComponentRef Id="cmpA688F647BD4E40FA4CAD2F30B661E303" />
             <ComponentRef Id="cmpA70E6ECA15013057E7345C758D4BCA32" />
             <ComponentRef Id="cmpCF9B3A227754E55B2A4622BDADF51333" />
-            <ComponentRef Id="cmp7CC2A6AC4220DAC7231BB5E9C94B83A4" />
             <ComponentRef Id="cmp1416C3D3F39D9287DB19F3BCC92BACB8" />
             <ComponentRef Id="cmp99CA45F9D0E42E7560D8EDD5D1820F0B" />
             <ComponentRef Id="cmp08C3B3DBF1C427767053F4120ABC92B7" />
@@ -557,7 +550,6 @@
             <ComponentRef Id="cmp8829932782E2062A8292EB806216CC80" />
             <ComponentRef Id="cmpF6638B4348C85D6A2F1219A3502A560F" />
             <ComponentRef Id="cmp8ECB45C87038A07C9C036DACB12BD3D3" />
-            <ComponentRef Id="cmpE124CC0D9F0655CB4F70F960DEF276E0" />
             <ComponentRef Id="cmp3D0A5CB47707279B9AED9C4655BA24DD" />
             <ComponentRef Id="cmp9583A430B4AAA75B6C29258548C11E3F" />
             <ComponentRef Id="cmp70F367A6DA7599FD23CCED349BE4ACC0" />
