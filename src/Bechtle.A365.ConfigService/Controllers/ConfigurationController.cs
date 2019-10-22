@@ -278,7 +278,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier);
+            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
 
             var result = await _store.Configurations.GetKeys(configId, when, range);
 
@@ -319,7 +319,7 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
                 var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-                var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier);
+                var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
 
                 var result = await _store.Configurations.GetKeys(configId, when, QueryRange.All);
 
@@ -415,7 +415,13 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var result = await _store.Configurations.GetUsedConfigurationKeys(new ConfigurationIdentifier(envIdentifier, structureIdentifier), when, range);
+            var result = await _store.Configurations.GetUsedConfigurationKeys(
+                             new ConfigurationIdentifier(
+                                 envIdentifier,
+                                 structureIdentifier,
+                                 default),
+                             when,
+                             range);
 
             return Result(result);
         }
@@ -441,7 +447,7 @@ namespace Bechtle.A365.ConfigService.Controllers
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier);
+            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
 
             var version = await _store.Configurations.GetVersion(configId, when);
 

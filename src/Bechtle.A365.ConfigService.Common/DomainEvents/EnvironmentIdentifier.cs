@@ -15,11 +15,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Name = name;
         }
 
-        /// <inheritdoc />
-        public EnvironmentIdentifier(ConfigEnvironment environment) : this(environment.Category, environment.Name)
-        {
-        }
-
         /// <summary>
         ///     Category for a group of Environments, think Folder / Tenant and the like
         /// </summary>
@@ -36,6 +31,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, other)) return true;
             return string.Equals(Category, other.Category, StringComparison.OrdinalIgnoreCase) && string.Equals(Name, other.Name);
         }
+
+        /// <summary>
+        ///     construct a new <see cref="EnvironmentIdentifier" /> from the values in the given <paramref name="environment" />
+        /// </summary>
+        /// <param name="environment"></param>
+        /// <returns></returns>
+        public static EnvironmentIdentifier From(ConfigEnvironment environment) => new EnvironmentIdentifier(environment?.Category, environment?.Name);
 
         public static bool operator ==(EnvironmentIdentifier left, EnvironmentIdentifier right) => Equals(left, right);
 

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
@@ -12,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         public (byte[] Data, byte[] Metadata) Serialize(DomainEvent created) => Serialize(created as T);
 
         /// <inheritdoc />
-        public T Deserialize(byte[] data, byte[] metadata) => JsonSerializer.Deserialize<T>(data);
+        public T Deserialize(byte[] data, byte[] metadata) => Newtonsoft.Json.JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(data));
 
         /// <inheritdoc />
         public (byte[] Data, byte[] Metadata) Serialize(T created)

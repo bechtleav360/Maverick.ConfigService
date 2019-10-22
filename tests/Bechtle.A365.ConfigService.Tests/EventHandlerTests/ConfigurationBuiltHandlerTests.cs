@@ -130,7 +130,8 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
 
             var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(
                                                                                             new EnvironmentIdentifier("env-cat", "env-name"),
-                                                                                            new StructureIdentifier("struct-name", 1)),
+                                                                                            new StructureIdentifier("struct-name", 1),
+                                                                                            4711),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 
@@ -162,7 +163,7 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
 
             var database = dbMock.Object;
 
-            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(envId, structId),
+            var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(envId, structId, 4711),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 
@@ -204,7 +205,8 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
 
             var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(
                                                                                             new EnvironmentIdentifier("env-foo", "env-bar"),
-                                                                                            new StructureIdentifier("struct-foo", 42)),
+                                                                                            new StructureIdentifier("struct-foo", 42),
+                                                                                            4711),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 
@@ -228,7 +230,8 @@ namespace Bechtle.A365.ConfigService.Tests.EventHandlerTests
 
             var domainEvent = new Mock<ConfigurationBuilt>(() => new ConfigurationBuilt(new ConfigurationIdentifier(
                                                                                             new EnvironmentIdentifier("env-foo", "env-bar"),
-                                                                                            new StructureIdentifier("struct-foo", 42)),
+                                                                                            new StructureIdentifier("struct-foo", 42),
+                                                                                            4711),
                                                                                         DateTime.MinValue,
                                                                                         DateTime.MaxValue)).Object;
 

@@ -15,11 +15,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Version = version;
         }
 
-        /// <inheritdoc />
-        public StructureIdentifier(Structure structure) : this(structure.Name, structure.Version)
-        {
-        }
-
         /// <summary>
         ///     name of this structure, indicates uses the Configuration built from this and <see cref="StructureIdentifier" />
         /// </summary>
@@ -36,6 +31,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, other)) return true;
             return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Version == other.Version;
         }
+
+        /// <summary>
+        ///     construct a new <see cref="StructureIdentifier" /> from the values in the given <paramref name="structure" />
+        /// </summary>
+        /// <param name="structure"></param>
+        /// <returns></returns>
+        public static StructureIdentifier From(Structure structure) => new StructureIdentifier(structure?.Name, structure?.Version ?? 0);
 
         public static bool operator ==(StructureIdentifier left, StructureIdentifier right) => Equals(left, right);
 

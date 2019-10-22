@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                  .ThenByDescending(s => s.Structure.Version)
                                                  .Skip(range.Offset)
                                                  .Take(range.Length)
-                                                 .Select(s => new ConfigurationIdentifier(s))
+                                                 .Select(s => ConfigurationIdentifier.From(s))
                                                  .ToListAsync();
 
                                entry.SetDuration(identifiers is null
@@ -106,7 +106,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                  .ThenByDescending(s => s.Structure.Version)
                                                  .Skip(range.Offset)
                                                  .Take(range.Length)
-                                                 .Select(s => new ConfigurationIdentifier(s))
+                                                 .Select(s => ConfigurationIdentifier.From(s))
                                                  .ToListAsync();
 
                                entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
@@ -150,7 +150,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                  .ThenBy(s => s.ConfigEnvironment.Name)
                                                  .Skip(range.Offset)
                                                  .Take(range.Length)
-                                                 .Select(s => new ConfigurationIdentifier(s))
+                                                 .Select(s => ConfigurationIdentifier.From (s))
                                                  .ToListAsync();
 
                                entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
@@ -308,7 +308,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                .ThenByDescending(s => s.Structure.Version)
                                                                .Skip(range.Offset)
                                                                .Take(range.Length)
-                                                               .Select(s => new ConfigurationIdentifier(s))
+                                                               .Select(s => ConfigurationIdentifier.From(s))
                                                                .ToListAsync();
 
                                entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,

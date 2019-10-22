@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public ConfigSnapshot Create()
         {
-            RecordedEvents.Add(new ConfigurationBuilt(new ConfigurationIdentifier(_environment, _structure), _validFrom, _validTo));
+            RecordedEvents.Add(new ConfigurationBuilt(new ConfigurationIdentifier(_environment, _structure, default), _validFrom, _validTo));
 
             return this;
         }

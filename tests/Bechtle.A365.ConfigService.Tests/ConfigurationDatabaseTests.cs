@@ -868,7 +868,7 @@ namespace Bechtle.A365.ConfigService.Tests
 
             var result = await _database.GetLatestActiveConfiguration();
 
-            Assert.Equal(new ConfigurationIdentifier(configuration), result);
+            Assert.Equal(ConfigurationIdentifier.From(configuration), result);
         }
 
         [Fact]
@@ -1113,7 +1113,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 ValidFrom = DateTime.MinValue,
                 ValidTo = DateTime.MaxValue
             };
-            var configurationId = new ConfigurationIdentifier(configuration);
+            var configurationId = ConfigurationIdentifier.From(configuration);
 
             await _context.ProjectedConfigurations.AddAsync(configuration);
             await _context.SaveChangesAsync();

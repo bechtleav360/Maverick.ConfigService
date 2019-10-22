@@ -8,19 +8,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     /// </summary>
     public class ConfigurationIdentifier : Identifier, IEquatable<ConfigurationIdentifier>
     {
-        public ConfigurationIdentifier(ProjectedConfiguration projectedConfiguration)
-            : this(new EnvironmentIdentifier(projectedConfiguration.ConfigEnvironment),
-                   new StructureIdentifier(projectedConfiguration.Structure),
-                   projectedConfiguration.Version)
-        {
-        }
-
-        /// <inheritdoc />
-        public ConfigurationIdentifier(EnvironmentIdentifier environment, StructureIdentifier structure)
-            : this(environment, structure, default)
-        {
-        }
-
         /// <inheritdoc />
         public ConfigurationIdentifier(EnvironmentIdentifier environment, StructureIdentifier structure, long version)
         {
@@ -46,6 +33,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, other)) return true;
             return Equals(Environment, other.Environment) && Equals(Structure, other.Structure) && Version == other.Version;
         }
+
+        /// <summary>
+        ///     construct a new <see cref="ConfigurationIdentifier" /> from the values in the given <paramref name="projectedConfiguration" />
+        /// </summary>
+        /// <param name="projectedConfiguration"></param>
+        /// <returns></returns>
+        public static ConfigurationIdentifier From(ProjectedConfiguration projectedConfiguration)
+            => new ConfigurationIdentifier(EnvironmentIdentifier.From(projectedConfiguration.ConfigEnvironment),
+                                           StructureIdentifier.From(projectedConfiguration.Structure),
+                                           projectedConfiguration.Version);
 
         public static bool operator ==(ConfigurationIdentifier left, ConfigurationIdentifier right) => Equals(left, right);
 

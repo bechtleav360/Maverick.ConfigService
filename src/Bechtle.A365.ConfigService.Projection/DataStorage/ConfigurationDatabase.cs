@@ -104,8 +104,8 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                                .Any(ck => usedKeys.Select(uk => uk.Key)
                                                   .Contains(ck)))
                 {
-                    var envId = new EnvironmentIdentifier(builtConfig.ConfigEnvironment);
-                    var structId = new StructureIdentifier(builtConfig.Structure);
+                    var envId = EnvironmentIdentifier.From(builtConfig.ConfigEnvironment);
+                    var structId = StructureIdentifier.From(builtConfig.Structure);
 
                     _logger.LogInformation($"marking Configuration for Environment {envId} and Structure {structId} as Stale");
                     builtConfig.UpToDate = false;
@@ -506,9 +506,10 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
             if (configId == Guid.Empty)
                 return null;
 
+            // @TODO: investigate if static function call is permitted in expression
             var configuration = await _context.ProjectedConfigurations
                                               .Where(c => c.Id == configId)
-                                              .Select(c => new ConfigurationIdentifier(c))
+                                              .Select(c => ConfigurationIdentifier.From(c))
                                               .FirstOrDefaultAsync();
 
             return configuration;
@@ -645,7 +646,6 @@ namespace Bechtle.A365.ConfigService.Projection.DataStorage
                 UpToDate = true,
                 ValidFrom = validFrom,
                 ValidTo = validTo,
-                // @TODO: investigate if another check is really necessary here - if not, we can reduce the Snapshot parameters to their *Identifier components
                 UsedConfigurationKeys = usedKeyList.Where(k => environment.Data.ContainsKey(k))
                                                    .Select(key => new UsedConfigurationKey
                                                    {
