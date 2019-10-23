@@ -23,6 +23,7 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class EnvironmentController : ControllerBase
     {
         private readonly IEventHistoryService _eventHistory;
+        private readonly StreamedObjectStore _objectStore;
         private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
@@ -35,13 +36,15 @@ namespace Bechtle.A365.ConfigService.Controllers
                                      IEventStore eventStore,
                                      IJsonTranslator translator,
                                      IEnumerable<ICommandValidator> validators,
-                                     IEventHistoryService eventHistory)
+                                     IEventHistoryService eventHistory,
+                                     StreamedObjectStore objectStore)
             : base(provider, logger)
         {
             _store = store;
             _eventStore = eventStore;
             _translator = translator;
             _eventHistory = eventHistory;
+            _objectStore = objectStore;
             _validators = validators.ToArray();
         }
 
@@ -63,24 +66,25 @@ namespace Bechtle.A365.ConfigService.Controllers
             try
             {
                 // create DefaultEnvironment
-                var envObj = new ConfigEnvironment().DefaultIdentifiedBy(category)
-                                                    .Create();
+                var defaultEnvironment = await _objectStore.Get(new EnvironmentIdentifier(category, "Default"));
+                var result = defaultEnvironment.Create(true);
+                if (result.IsError)
+                    return ProviderError(result);
 
-                var envErrors = envObj.Validate(_validators);
+                var defaultEnvErrors = defaultEnvironment.Validate(_validators);
+                if (defaultEnvErrors.Any())
+                    return BadRequest(defaultEnvErrors.Values.SelectMany(_ => _));
+
+                await defaultEnvironment.WriteRecordedEvents(_eventStore);
+
+                // create requested environment
+                var environment = await _objectStore.Get(new EnvironmentIdentifier(category, name));
+
+                var envErrors = environment.Validate(_validators);
                 if (envErrors.Any())
                     return BadRequest(envErrors.Values.SelectMany(_ => _));
 
-                await envObj.Save(_eventStore, _eventHistory, Logger, Metrics);
-
-                // create requested environment
-                var configObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                                       .Create();
-
-                var configErrors = configObj.Validate(_validators);
-                if (configErrors.Any())
-                    return BadRequest(configErrors.Values.SelectMany(_ => _));
-
-                await configObj.Save(_eventStore, _eventHistory, Logger, Metrics);
+                await environment.WriteRecordedEvents(_eventStore);
 
                 return AcceptedAtAction(nameof(GetKeys),
                                         RouteUtilities.ControllerName<EnvironmentController>(),
@@ -183,16 +187,15 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
-            {
-                Environment = identifier,
-                Filter = filter,
-                PreferExactMatch = preferExactMatch,
-                Range = range,
-                RemoveRoot = root
-            });
+            var environment = await _objectStore.Get(identifier);
+            var result = environment.Keys
+                                    .OrderBy(k => k.Key)
+                                    .Skip(range.Offset)
+                                    .Take(range.Length)
+                                    .Select(entry => entry.Value)
+                                    .ToDictionary(entry => entry.Key, entry => entry.Value);
 
-            return Result(result);
+            return Ok(result);
         }
 
         /// <summary>

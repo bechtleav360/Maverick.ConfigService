@@ -277,6 +277,7 @@ namespace Bechtle.A365.ConfigService
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
                     .AddScoped<IEventHistoryService, MemoryEventHistoryService>(_logger)
+                    .AddScoped<StreamedObjectStore>()
                     .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)

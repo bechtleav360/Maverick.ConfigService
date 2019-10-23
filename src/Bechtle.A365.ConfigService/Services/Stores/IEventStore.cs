@@ -48,5 +48,12 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="domainEvent"></param>
         /// <returns></returns>
         Task WriteEvent<T>(T domainEvent) where T : DomainEvent;
+
+        /// <summary>
+        ///     write multiple DomainEvents into the store
+        /// </summary>
+        /// <param name="domainEvents"></param>
+        /// <returns></returns>
+        Task WriteEvents(IList<DomainEvent> domainEvents);
     }
 }

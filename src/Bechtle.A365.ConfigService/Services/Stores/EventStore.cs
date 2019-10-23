@@ -201,6 +201,48 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
         }
 
+        /// <inheritdoc />
+        public async Task WriteEvents(IList<DomainEvent> domainEvents)
+        {
+            // connect if we're not already connected
+            Connect();
+
+            var eventList = string.Join(", ", domainEvents.Select(e => e.EventType));
+
+            _logger.LogDebug($"{nameof(WriteEvents)}('{eventList}')");
+
+            var eventData = domainEvents.Select(e =>
+            {
+                var (data, metadata) = SerializeDomainEvent(e);
+
+                return new EventData(Guid.NewGuid(),
+                                     e.EventType,
+                                     false,
+                                     data,
+                                     metadata);
+            }).ToList();
+
+            foreach (var item in eventData)
+                _logger.LogInformation("sending " +
+                                       $"EventId: '{item.EventId}'; " +
+                                       $"Type: '{item.Type}'; " +
+                                       $"IsJson: '{item.IsJson}'; " +
+                                       $"Data: {item.Data.Length} bytes; " +
+                                       $"Metadata: {item.Metadata.Length} bytes;");
+
+            var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.Stream,
+                                                               ExpectedVersion.Any,
+                                                               eventData);
+
+            foreach (var item in domainEvents)
+                _metrics.Measure.Counter.Increment(KnownMetrics.EventsWritten, item.EventType);
+
+            _logger.LogDebug($"sent {domainEvents.Count} events '{eventList}': " +
+                             $"NextExpectedVersion: {result.NextExpectedVersion}; " +
+                             $"CommitPosition: {result.LogPosition.CommitPosition}; " +
+                             $"PreparePosition: {result.LogPosition.PreparePosition};");
+        }
+
         private void Connect(bool reconnect = false)
         {
             // use lock to prevent multiple simultaneous calls to Connect causing multiple connections
@@ -292,5 +334,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
             => _provider.GetService<IDomainEventConverter<T>>()
                         .Serialize(domainEvent);
+
+        private (byte[] Data, byte[] Metadata) SerializeDomainEvent(DomainEvent domainEvent)
+            => ((IDomainEventConverter) _provider.GetService(typeof(IDomainEventConverter<>).MakeGenericType(domainEvent.GetType())))
+                .Serialize(domainEvent);
     }
 }

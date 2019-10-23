@@ -53,6 +53,11 @@
         /// <summary>
         ///     DomainEvent contains invalid data and cannot be executed / written
         /// </summary>
-        ValidationFailed = 9
+        ValidationFailed = 9,
+
+        /// <summary>
+        ///     environment has already been deleted
+        /// </summary>
+        EnvironmentAlreadyDeleted = 10
     }
 }
