@@ -1,161 +1,13 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Services.Stores;
 
-namespace Bechtle.A365.ConfigService.Services
+namespace Bechtle.A365.ConfigService.DomainObjects
 {
-    /// <summary>
-    ///     base-class for all Event-Store-Streamed objects
-    /// </summary>
-    public abstract class StreamedObject
-    {
-        private bool _eventsBeingDrained;
-
-        private readonly object _eventLock = new object();
-
-        /// <summary>
-        ///     Current Version-Number of this Object
-        /// </summary>
-        public long CurrentVersion { get; protected set; } = -1;
-
-        /// <summary>
-        ///     List of Captured, Successful events applied to this Object
-        /// </summary>
-        protected List<DomainEvent> CapturedDomainEvents { get; set; } = new List<DomainEvent>();
-
-        /// <summary>
-        ///     apply a series of <see cref="StreamedEvent" /> to this object,
-        ///     in order to modify its state to a more current one.
-        /// </summary>
-        /// <param name="streamedEvents"></param>
-        public virtual void ApplyEvents(IEnumerable<StreamedEvent> streamedEvents)
-        {
-            if (streamedEvents is null)
-                return;
-
-            foreach (var streamedEvent in streamedEvents)
-                ApplyEvent(streamedEvent);
-        }
-
-        /// <summary>
-        ///     apply a single <see cref="StreamedEvent" /> to this object,
-        ///     in order to modify its state to a more current one.
-        /// </summary>
-        /// <param name="streamedEvent"></param>
-        public virtual void ApplyEvent(StreamedEvent streamedEvent)
-        {
-            // ReSharper disable once UseNullPropagation
-            if (streamedEvent is null)
-                return;
-
-            if (streamedEvent.DomainEvent is null)
-                return;
-
-            if (streamedEvent.Version <= CurrentVersion)
-                return;
-
-            if (ApplyEventInternal(streamedEvent))
-                CurrentVersion = streamedEvent.Version;
-        }
-
-        /// <summary>
-        ///     apply a single <see cref="StreamedEvent" /> to this object,
-        ///     in order to modify its state to a more current one.
-        /// </summary>
-        /// <param name="streamedEvent"></param>
-        protected abstract bool ApplyEventInternal(StreamedEvent streamedEvent);
-
-        /// <summary>
-        ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
-        /// </summary>
-        public abstract void ApplySnapshot(StreamedObjectSnapshot snapshot);
-
-        /// <summary>
-        ///     create the current object as a new Snapshot
-        /// </summary>
-        /// <returns></returns>
-        public virtual StreamedObjectSnapshot CreateSnapshot() => new StreamedObjectSnapshot
-        {
-            Version = CurrentVersion,
-            Data = JsonSerializer.SerializeToUtf8Bytes(this),
-            DataType = GetType().Name
-        };
-
-        /// <summary>
-        ///     Get a list of new events applied to this Object since its creation
-        /// </summary>
-        /// <returns></returns>
-        public virtual DomainEvent[] GetRecordedEvents()
-        {
-            var retVal = new DomainEvent[CapturedDomainEvents.Count];
-            CapturedDomainEvents.CopyTo(retVal);
-
-            return retVal;
-        }
-
-        /// <summary>
-        ///     write the recorded events to the given <see cref="IEventStore"/>
-        /// </summary>
-        /// <param name="store"></param>
-        /// <returns></returns>
-        public virtual async Task<IResult> WriteRecordedEvents(IEventStore store)
-        {
-            try
-            {
-                // take lock and see if another instance may already drain this queue
-                lock (_eventLock)
-                {
-                    if (_eventsBeingDrained)
-                        return Result.Success();
-
-                    _eventsBeingDrained = true;
-                }
-
-                await store.WriteEvents(CapturedDomainEvents);
-                CapturedDomainEvents.Clear();
-
-                return Result.Success();
-            }
-            catch (Exception e)
-            {
-                return Result.Error($"could not write events to IEventStore: {e.Message}", ErrorCode.Undefined);
-            }
-            finally
-            {
-                lock (_eventLock)
-                {
-                    _eventsBeingDrained = false;
-                }
-            }
-        }
-
-        /// <summary>
-        ///     validate all recorded events with the given <see cref="ICommandValidator"/>
-        /// </summary>
-        /// <param name="validators"></param>
-        /// <returns></returns>
-        public IDictionary<DomainEvent, IList<IResult>> Validate(IList<ICommandValidator> validators)
-            => CapturedDomainEvents.ToDictionary(@event => @event,
-                                                 @event => (IList<IResult>) validators.Select(v => v.ValidateDomainEvent(@event))
-                                                                                      .ToList())
-                                   .Where(kvp => kvp.Value.Any(r => r.IsError))
-                                   .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-    }
-
-    public class StreamedEvent
-    {
-        public DomainEvent DomainEvent { get; set; }
-
-        public long Version { get; set; }
-    }
-
     public class StreamedEnvironment : StreamedObject
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
@@ -168,7 +20,11 @@ namespace Bechtle.A365.ConfigService.Services
 
         public bool IsDefault { get; protected set; }
 
-        public Dictionary<string, ConfigEnvironmentKey> Keys { get; protected set; }
+        public Dictionary<string, StreamedEnvironmentKey> Keys { get; protected set; }
+
+        private List<StreamedEnvironmentKeyPath> _keyPaths;
+
+        public List<StreamedEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
         /// <inheritdoc />
         public StreamedEnvironment(EnvironmentIdentifier identifier)
@@ -186,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Services
             Deleted = false;
             Identifier = new EnvironmentIdentifier(identifier.Category, identifier.Name);
             IsDefault = false;
-            Keys = new Dictionary<string, ConfigEnvironmentKey>();
+            Keys = new Dictionary<string, StreamedEnvironmentKey>();
         }
 
         /// <inheritdoc />
@@ -225,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Services
                     Keys.Remove(deletion.Key);
 
             foreach (var change in environmentKeysModified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
-                Keys[change.Key] = new ConfigEnvironmentKey
+                Keys[change.Key] = new StreamedEnvironmentKey
                 {
                     Key = change.Key,
                     Value = change.Value,
@@ -243,7 +99,7 @@ namespace Bechtle.A365.ConfigService.Services
                                           .Where(action => action.Type == ConfigKeyActionType.Set)
                                           .ToDictionary(
                                               action => action.Key,
-                                              action => new ConfigEnvironmentKey
+                                              action => new StreamedEnvironmentKey
                                               {
                                                   Key = action.Key,
                                                   Value = action.Value,
@@ -271,20 +127,62 @@ namespace Bechtle.A365.ConfigService.Services
             Created = true;
         }
 
+        private List<StreamedEnvironmentKeyPath> GenerateKeyPaths()
+        {
+            var roots = new List<StreamedEnvironmentKeyPath>();
+
+            foreach (var (key, _) in Keys.OrderBy(k => k.Key))
+            {
+                var parts = key.Split('/');
+
+                var rootPart = parts.First();
+                var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
+
+                if (root is null)
+                    roots.Add(new StreamedEnvironmentKeyPath
+                    {
+                        Path = rootPart,
+                        Parent = null,
+                        FullPath = rootPart,
+                        Children = new List<StreamedEnvironmentKeyPath>()
+                    });
+
+                var current = root;
+
+                foreach (var part in parts.Skip(1))
+                {
+                    var next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (next is null)
+                        current.Children.Add(new StreamedEnvironmentKeyPath
+                        {
+                            Path = part,
+                            Parent = current,
+                            Children = new List<StreamedEnvironmentKeyPath>(),
+                            FullPath = current.FullPath + '/' + part
+                        });
+
+                    current = next;
+                }
+            }
+
+            return roots;
+        }
+
         /// <inheritdoc />
         public override void ApplySnapshot(StreamedObjectSnapshot snapshot)
         {
             if (snapshot.DataType != GetType().Name)
                 return;
 
-            var snapshotData = JsonSerializer.Deserialize<StreamedEnvironment>(snapshot.Data);
+            var other = JsonSerializer.Deserialize<StreamedEnvironment>(snapshot.Data);
 
             CurrentVersion = snapshot.Version;
-            Created = snapshotData.Created;
-            Deleted = snapshotData.Deleted;
-            Identifier = snapshotData.Identifier;
-            IsDefault = snapshotData.IsDefault;
-            Keys = snapshotData.Keys;
+            Created = other.Created;
+            Deleted = other.Deleted;
+            Identifier = other.Identifier;
+            IsDefault = other.IsDefault;
+            Keys = other.Keys;
         }
 
         /// <summary>
@@ -327,7 +225,7 @@ namespace Bechtle.A365.ConfigService.Services
         /// </summary>
         /// <param name="keysToRemove"></param>
         /// <returns></returns>
-        public IResult DeleteKeys(IReadOnlyList<string> keysToRemove)
+        public IResult DeleteKeys(ICollection<string> keysToRemove)
         {
             if (keysToRemove is null || !keysToRemove.Any())
                 return Result.Error("null or empty list given", ErrorCode.InvalidData);
@@ -335,7 +233,7 @@ namespace Bechtle.A365.ConfigService.Services
             if (keysToRemove.Any(k => !Keys.ContainsKey(k)))
                 return Result.Error("not all keys could be found in target environment", ErrorCode.NotFound);
 
-            var removedKeys = new Dictionary<string, ConfigEnvironmentKey>(keysToRemove.Count);
+            var removedKeys = new Dictionary<string, StreamedEnvironmentKey>(keysToRemove.Count);
             try
             {
                 foreach (var deletedKey in keysToRemove)
@@ -367,13 +265,13 @@ namespace Bechtle.A365.ConfigService.Services
         /// </summary>
         /// <param name="keysToAdd"></param>
         /// <returns></returns>
-        public IResult UpdateKeys(IReadOnlyList<ConfigEnvironmentKey> keysToAdd)
+        public IResult UpdateKeys(ICollection<StreamedEnvironmentKey> keysToAdd)
         {
             if (keysToAdd is null || !keysToAdd.Any())
                 return Result.Error("null or empty list given", ErrorCode.InvalidData);
 
             var addedKeys = new List<ConfigEnvironmentKey>();
-            var updatedKeys = new Dictionary<string, ConfigEnvironmentKey>();
+            var updatedKeys = new Dictionary<string, StreamedEnvironmentKey>();
 
             try
             {
@@ -426,51 +324,14 @@ namespace Bechtle.A365.ConfigService.Services
         }
     }
 
-    public class StreamedObjectStore
+    public class StreamedEnvironmentKeyPath
     {
-        private readonly IEventStore _eventStore;
+        public string FullPath { get; set; } = string.Empty;
 
-        /// <inheritdoc />
-        public StreamedObjectStore(IEventStore eventStore)
-        {
-            _eventStore = eventStore;
-        }
+        public string Path { get; set; } = string.Empty;
 
-        public async Task<StreamedEnvironment> Get(EnvironmentIdentifier identifier)
-        {
-            var environment = new StreamedEnvironment(identifier);
+        public List<StreamedEnvironmentKeyPath> Children { get; set; } = new List<StreamedEnvironmentKeyPath>();
 
-            var latestSnapshot = GetSnapshot(identifier);
-
-            if (!(latestSnapshot is null))
-                environment.ApplySnapshot(latestSnapshot);
-
-            // @TODO: start streaming from latestSnapshot.Version
-            await _eventStore.ReplayEventsAsStream(tuple =>
-            {
-                var (recordedEvent, domainEvent) = tuple;
-
-                environment.ApplyEvent(new StreamedEvent
-                {
-                    Version = recordedEvent.EventNumber,
-                    DomainEvent = domainEvent
-                });
-
-                return true;
-            });
-
-            return environment;
-        }
-
-        private StreamedObjectSnapshot GetSnapshot(EnvironmentIdentifier identifier) => null;
-    }
-
-    public class StreamedObjectSnapshot
-    {
-        public string DataType { get; set; }
-
-        public long Version { get; set; }
-
-        public byte[] Data { get; set; }
+        public StreamedEnvironmentKeyPath Parent { get; set; } = null;
     }
 }
