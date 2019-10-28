@@ -5,11 +5,10 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -21,19 +20,25 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     {
         private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
-        private readonly ProjectionStoreContext _context;
+        private readonly IEventStore _eventStore;
+        private readonly IStreamedStore _streamedStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
+        private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc />
-        public EnvironmentProjectionStore(ProjectionStoreContext context,
+        public EnvironmentProjectionStore(IMemoryCache cache,
+                                          IConfiguration configuration,
+                                          IEventStore eventStore,
+                                          IStreamedStore streamedStore,
                                           ILogger<EnvironmentProjectionStore> logger,
-                                          IMemoryCache cache,
-                                          IConfiguration configuration)
+                                          IEnumerable<ICommandValidator> validators)
         {
-            _context = context;
             _logger = logger;
+            _validators = validators.ToList();
             _cache = cache;
             _configuration = configuration;
+            _eventStore = eventStore;
+            _streamedStore = streamedStore;
         }
 
         /// <inheritdoc />
@@ -45,15 +50,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                            CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore), nameof(GetAvailable), range),
                            async entry =>
                            {
-                               var dbResult = await _context.FullConfigEnvironments
-                                                            .OrderBy(s => s.Category)
-                                                            .ThenBy(s => s.Name)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
-                                                            .ToListAsync();
+                               var result = await _streamedStore.GetEnvironmentList();
 
-                               if (dbResult is null)
+                               if (result.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
@@ -61,48 +60,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
-                               return Result.Success<IList<EnvironmentIdentifier>>(dbResult.ToList());
+                               // TODO: refactor this
+                               return Result.Success<IList<EnvironmentIdentifier>>(result.Data.GetEnvironmentIdentifiers().ToList());
                            });
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve environments");
                 return Result.Error<IList<EnvironmentIdentifier>>("failed to retrieve environments", ErrorCode.DbQueryError);
-            }
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range)
-        {
-            try
-            {
-                return await _cache.GetOrCreateAsync(
-                           CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore), nameof(GetAvailable), category, range),
-                           async entry =>
-                           {
-                               var dbResult = await _context.FullConfigEnvironments
-                                                            .Where(s => s.Category == category)
-                                                            .OrderBy(s => s.Category)
-                                                            .ThenBy(s => s.Name)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .Select(s => new EnvironmentIdentifier(s.Category, s.Name))
-                                                            .ToListAsync();
-
-                               if (dbResult is null)
-                               {
-                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
-                                   return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
-                               }
-
-                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-                               return Result.Success<IList<EnvironmentIdentifier>>(dbResult.ToList());
-                           });
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "failed to retrieve environments");
-                return Result.Error<IList<EnvironmentIdentifier>>($"failed to retrieve environments in '{category}'", ErrorCode.DbQueryError);
             }
         }
 
@@ -122,31 +87,31 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                            async entry =>
                            {
                                key = Uri.UnescapeDataString(key ?? string.Empty);
+                               var envResult = await _streamedStore.GetEnvironment(identifier);
+                               if (envResult.IsError)
+                                   return Result.Error<IList<DtoConfigKeyCompletion>>(
+                                       "no environment found with (" +
+                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                                       $"{nameof(identifier.Name)}: {identifier.Name})",
+                                       ErrorCode.NotFound);
 
-                               var environmentKey =
-                                   await _context.ConfigEnvironments
-                                                 .Where(s => s.Category == identifier.Category && s.Name == identifier.Name)
-                                                 .Select(env => env.Id)
-                                                 .FirstOrDefaultAsync();
+                               var environment = envResult.Data;
 
-                               if (environmentKey == Guid.Empty)
-                               {
-                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
-                                   return Result.Error<IList<DtoConfigKeyCompletion>>("no environment found with (" +
-                                                                                      $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                                                                      $"{nameof(identifier.Name)}: {identifier.Name})",
-                                                                                      ErrorCode.NotFound);
-                               }
+                               var paths = environment.KeyPaths;
 
                                // send auto-completion data for all roots
                                if (string.IsNullOrWhiteSpace(key))
                                {
                                    entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-                                   return await CreateResult(await _context.FullAutoCompletePaths
-                                                                           .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                                                       p.ParentId == null)
-                                                                           .ToListAsync(),
-                                                             range);
+                                   return Result.Success<IList<DtoConfigKeyCompletion>>(
+                                       paths.Select(p => new DtoConfigKeyCompletion
+                                            {
+                                                HasChildren = p.Children.Any(),
+                                                FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                                                Completion = p.Path
+                                            })
+                                            .OrderBy(p => p.Completion)
+                                            .ToList());
                                }
 
                                var parts = new Queue<string>(key.Contains('/')
@@ -158,28 +123,32 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                // if the user is searching within the roots
                                if (!parts.Any())
                                {
-                                   var possibleRoots = await _context.FullAutoCompletePaths
-                                                                     .Include(c => c.Children)
-                                                                     .ThenInclude(c => c.Children)
-                                                                     .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                                                 p.ParentId == null &&
-                                                                                 p.Path.Contains(rootPart))
-                                                                     .ToListAsync();
+                                   var possibleRoots = paths.Where(p => p.Path.Contains(rootPart))
+                                                            .ToList();
 
                                    entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
-                                   return await (possibleRoots.Count == 1 && possibleRoots.First()
-                                                                                          .Path
-                                                                                          .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
-                                                     ? CreateResult(possibleRoots.First().Children, range)
-                                                     : CreateResult(possibleRoots, range));
+                                   // if there is only one possible root, and that one is matches what were searching for
+                                   // we're returning all paths directly below that one
+                                   var selectedRoots = possibleRoots.Count == 1
+                                                       && possibleRoots.First()
+                                                                       .Path
+                                                                       .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
+                                                           ? paths.First().Children
+                                                           : paths;
+
+                                   return Result.Success<IList<DtoConfigKeyCompletion>>(
+                                       selectedRoots.Select(p => new DtoConfigKeyCompletion
+                                                    {
+                                                        HasChildren = p.Children.Any(),
+                                                        FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                                                        Completion = p.Path
+                                                    })
+                                                    .OrderBy(p => p.Completion)
+                                                    .ToList());
                                }
 
-                               var root = await _context.FullAutoCompletePaths
-                                                        .Where(p => p.ConfigEnvironmentId == environmentKey &&
-                                                                    p.ParentId == null &&
-                                                                    p.Path == rootPart)
-                                                        .FirstOrDefaultAsync();
+                               var root = paths.FirstOrDefault(p => p.Path == rootPart);
 
                                if (root is null)
                                {
@@ -188,7 +157,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                       ErrorCode.NotFound);
                                }
 
-                               var result = await GetKeyAutoCompleteInternal(root, parts, range);
+                               var result = GetKeyAutoCompleteInternal(root, parts, range);
 
                                if (!result.IsError)
                                    entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
@@ -231,72 +200,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range)
-            => GetKeysInternal(new EnvironmentKeyQueryParameters
-                               {
-                                   Environment = identifier,
-                                   Range = range
-                               },
-                               item => new DtoConfigKey
-                               {
-                                   Key = item.Key,
-                                   Value = item.Value,
-                                   Description = item.Description,
-                                   Type = item.Type
-                               },
-                               item => item.Key,
-                               items => items);
-
-        /// <inheritdoc />
-        public Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier,
-                                                                      string filter,
-                                                                      QueryRange range)
-            => GetKeysInternal(new EnvironmentKeyQueryParameters
-                               {
-                                   Environment = identifier,
-                                   Filter = filter,
-                                   Range = range
-                               },
-                               item => new DtoConfigKey
-                               {
-                                   Key = item.Key,
-                                   Value = item.Value,
-                                   Description = item.Description,
-                                   Type = item.Type
-                               },
-                               item => item.Key,
-                               items => items);
-
-        /// <inheritdoc />
-        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range)
-            => GetKeysInternal(new EnvironmentKeyQueryParameters
-                               {
-                                   Environment = identifier,
-                                   Range = range
-                               },
-                               item => item,
-                               item => item.Key,
-                               keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
-                                                                                                      item => item.Value,
-                                                                                                      StringComparer.OrdinalIgnoreCase));
-
-        /// <inheritdoc />
-        public Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier,
-                                                                  string filter,
-                                                                  QueryRange range)
-            => GetKeysInternal(new EnvironmentKeyQueryParameters
-                               {
-                                   Environment = identifier,
-                                   Filter = filter,
-                                   Range = range
-                               },
-                               item => item,
-                               item => item.Key,
-                               keys => (IDictionary<string, string>) keys.ToImmutableSortedDictionary(item => item.Key,
-                                                                                                      item => item.Value,
-                                                                                                      StringComparer.OrdinalIgnoreCase));
-
-        /// <inheritdoc />
         public async Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters)
         {
             var result = await GetKeysInternal(parameters,
@@ -313,6 +216,110 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault)
+        {
+            var envResult = await _streamedStore.GetEnvironment(identifier);
+            if (envResult.IsError)
+                return envResult;
+
+            var environment = envResult.Data;
+
+            var createResult = environment.Create(isDefault);
+            if (createResult.IsError)
+                return createResult;
+
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> Delete(EnvironmentIdentifier identifier)
+        {
+            var envResult = await _streamedStore.GetEnvironment(identifier);
+            if (envResult.IsError)
+                return envResult;
+
+            var environment = envResult.Data;
+
+            var createResult = environment.Delete();
+            if (createResult.IsError)
+                return createResult;
+
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete)
+        {
+            var envResult = await _streamedStore.GetEnvironment(identifier);
+            if (envResult.IsError)
+                return envResult;
+
+            var environment = envResult.Data;
+
+            var result = environment.DeleteKeys(keysToDelete);
+            if (result.IsError)
+                return result;
+
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> UpdateKeys(EnvironmentIdentifier identifier, ICollection<DtoConfigKey> keys)
+        {
+            var envResult = await _streamedStore.GetEnvironment(identifier);
+            if (envResult.IsError)
+                return envResult;
+
+            var environment = envResult.Data;
+
+            var result = environment.UpdateKeys(keys.Select(dto => new StreamedEnvironmentKey
+            {
+                Description = dto.Description,
+                Type = dto.Type,
+                Version = 0,
+                Key = dto.Key,
+                Value = dto.Value
+            }).ToList());
+
+            if (result.IsError)
+                return result;
+
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
         }
 
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
@@ -333,72 +340,31 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <summary>
-        ///     retrieve all direct children for the given paths
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        private async Task CollectChildren(ConfigEnvironmentKeyPath path)
-        {
-            path.Children = await _context.AutoCompletePaths
-                                          .Include(p => p.Parent)
-                                          .Include(p => p.ConfigEnvironment)
-                                          .Where(p => p.ParentId == path.Id)
-                                          .OrderBy(p => p.Path)
-                                          .ToListAsync();
-        }
-
-        /// <summary>
-        ///     take the given paths - retrieve children if necessary - and return an them as DTOs + Result
-        /// </summary>
-        /// <param name="paths"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        private async Task<IResult<IList<DtoConfigKeyCompletion>>> CreateResult(IEnumerable<ConfigEnvironmentKeyPath> paths, QueryRange range)
-        {
-            var array = paths.ToArray();
-            foreach (var path in array)
-                if (path.Children is null)
-                    await CollectChildren(path);
-
-            return Result.Success<IList<DtoConfigKeyCompletion>>(
-                array.OrderBy(p => p.Path)
-                     .Skip(range.Offset)
-                     .Take(range.Length)
-                     .Select(p => new DtoConfigKeyCompletion
-                     {
-                         Completion = p.Path,
-                         FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
-                         HasChildren = p.Children.Any()
-                     })
-                     .ToList());
-        }
-
-        /// <summary>
         ///     walk the path given in <paramref name="parts" />, from <paramref name="root" /> and return the next possible values
         /// </summary>
         /// <param name="root"></param>
         /// <param name="parts"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        private async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoCompleteInternal(ConfigEnvironmentKeyPath root,
-                                                                                              IEnumerable<string> parts,
-                                                                                              QueryRange range)
+        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(StreamedEnvironmentKeyPath root,
+                                                                                  IEnumerable<string> parts,
+                                                                                  QueryRange range)
         {
-            var cacheKey = CacheUtilities.MakeCacheKey();
+            var cacheKey = CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
+                                                       nameof(GetKeyAutoCompleteInternal),
+                                                       root.FullPath);
 
             if (_cache.TryGetValue(cacheKey, out var cachedResult) &&
                 cachedResult is IResult<IList<DtoConfigKeyCompletion>> cachedTypedResult)
                 return cachedTypedResult;
 
             var current = root;
-            var result = new List<ConfigEnvironmentKeyPath>();
+            var result = new List<StreamedEnvironmentKeyPath>();
             var queue = new Queue<string>(parts);
 
             // try walking the given path to the deepest part, and return all options the user can take from here
             while (queue.TryDequeue(out var part))
             {
-                await CollectChildren(current);
-
                 if (string.IsNullOrWhiteSpace(part))
                 {
                     result = current.Children;
@@ -409,7 +375,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                 if (!(match is null))
                 {
-                    await CollectChildren(match);
                     current = match;
                     result = match.Children;
                     continue;
@@ -451,7 +416,15 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 return Result.Error<IList<DtoConfigKeyCompletion>>(logMsg, ErrorCode.NotFound);
             }
 
-            var actualResult = await CreateResult(result, range);
+            var actualResult = Result.Success<IList<DtoConfigKeyCompletion>>(
+                result.Select(p => new DtoConfigKeyCompletion
+                      {
+                          FullPath = p.FullPath,
+                          HasChildren = p.Children.Any(),
+                          Completion = p.Path
+                      })
+                      .OrderBy(p => p.Completion)
+                      .ToList());
 
             var entry = _cache.CreateEntry(cacheKey);
             entry.Value = actualResult;
@@ -469,22 +442,13 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="transform">final transformation applied to the result-set</param>
         /// <returns></returns>
         private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(EnvironmentKeyQueryParameters parameters,
-                                                                             Expression<Func<ConfigEnvironmentKey, TItem>> selector,
+                                                                             Expression<Func<StreamedEnvironmentKey, TItem>> selector,
                                                                              Func<TItem, string> keySelector,
                                                                              Func<IEnumerable<TItem>, TResult> transform)
             where TItem : class
         {
             try
             {
-                var envId = await _context.FullConfigEnvironments
-                                          .Where(s => s.Category == parameters.Environment.Category
-                                                      && s.Name == parameters.Environment.Name)
-                                          .Select(e => e.Id)
-                                          .FirstOrDefaultAsync();
-
-                if (envId == default)
-                    return Result.Error<TResult>($"no environment found with ({parameters.Environment})", ErrorCode.NotFound);
-
                 var keys = await _cache.GetOrCreateAsync(
                                CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
                                                            nameof(GetKeysInternal),
@@ -497,18 +461,25 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                            parameters.RemoveRoot),
                                async entry =>
                                {
-                                   var query = _context.ConfigEnvironmentKeys
-                                                       .Where(k => k.ConfigEnvironmentId == envId);
+                                   var envResult = await _streamedStore.GetEnvironment(parameters.Environment);
+                                   if (envResult.IsError)
+                                       return new List<TItem>();
+
+                                   var environment = envResult.Data;
+
+                                   var query = environment.Keys
+                                                          .Values
+                                                          .AsQueryable();
 
                                    if (!string.IsNullOrWhiteSpace(parameters.Filter))
                                        query = query.Where(k => k.Key.StartsWith(parameters.Filter));
 
                                    entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-                                   return await query.OrderBy(k => k.Key)
-                                                     .Skip(parameters.Range.Offset)
-                                                     .Take(parameters.Range.Length)
-                                                     .Select(selector)
-                                                     .ToListAsync();
+                                   return query.OrderBy(k => k.Key)
+                                               .Skip(parameters.Range.Offset)
+                                               .Take(parameters.Range.Length)
+                                               .Select(selector)
+                                               .ToList();
                                });
 
                 if (!string.IsNullOrWhiteSpace(parameters.PreferExactMatch))

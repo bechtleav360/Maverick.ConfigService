@@ -12,19 +12,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     public interface IEnvironmentProjectionStore
     {
         /// <summary>
-        ///     get a list of projected Environments
+        ///     get a list of all Environments
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
         Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range);
-
-        /// <summary>
-        ///     get a list of projected Environments within a category
-        /// </summary>
-        /// <param name="category"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<IResult<IList<EnvironmentIdentifier>>> GetAvailableInCategory(string category, QueryRange range);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
@@ -43,23 +35,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentKeyQueryParameters parameters);
 
         /// <summary>
-        ///     get the keys of an Environment as Objects
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, QueryRange range);
-
-        /// <summary>
-        ///     get the keys of an Environment as Objects
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="filter"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
-        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentIdentifier identifier, string filter, QueryRange range);
-
-        /// <summary>
         ///     get the keys of an Environment
         /// </summary>
         /// <param name="parameters"></param>
@@ -67,20 +42,34 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters);
 
         /// <summary>
-        ///     get the keys of an Environment
+        ///     create a new Environment with the given <see cref="EnvironmentIdentifier"/>
         /// </summary>
         /// <param name="identifier"></param>
-        /// <param name="range"></param>
+        /// <param name="isDefault"></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, QueryRange range);
+        Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault);
 
         /// <summary>
-        ///     get the keys of an Environment
+        ///     delete an existing Environment with the given <see cref="EnvironmentIdentifier"/>
         /// </summary>
         /// <param name="identifier"></param>
-        /// <param name="filter"></param>
-        /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentIdentifier identifier, string filter, QueryRange range);
+        Task<IResult> Delete(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     remove a number of keys from the given Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="keysToDelete"></param>
+        /// <returns></returns>
+        Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete);
+
+        /// <summary>
+        ///     add or update a number of keys in the given Environmenet
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        Task<IResult> UpdateKeys(EnvironmentIdentifier identifier, ICollection<DtoConfigKey> keys);
     }
 }

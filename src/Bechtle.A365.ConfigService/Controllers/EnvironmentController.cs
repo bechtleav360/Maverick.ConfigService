@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
-using Bechtle.A365.ConfigService.Services;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -22,30 +19,18 @@ namespace Bechtle.A365.ConfigService.Controllers
     [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class EnvironmentController : ControllerBase
     {
-        private readonly IEventHistoryService _eventHistory;
-        private readonly StreamedObjectStore _objectStore;
-        private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
-        private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
         public EnvironmentController(IServiceProvider provider,
                                      ILogger<EnvironmentController> logger,
                                      IProjectionStore store,
-                                     IEventStore eventStore,
-                                     IJsonTranslator translator,
-                                     IEnumerable<ICommandValidator> validators,
-                                     IEventHistoryService eventHistory,
-                                     StreamedObjectStore objectStore)
+                                     IJsonTranslator translator)
             : base(provider, logger)
         {
             _store = store;
-            _eventStore = eventStore;
             _translator = translator;
-            _eventHistory = eventHistory;
-            _objectStore = objectStore;
-            _validators = validators.ToArray();
         }
 
         /// <summary>
@@ -65,26 +50,9 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                // create DefaultEnvironment
-                var defaultEnvironment = await _objectStore.Get(new EnvironmentIdentifier(category, "Default"));
-                var result = defaultEnvironment.Create(true);
+                var result = await _store.Environments.Create(new EnvironmentIdentifier(category, name), false);
                 if (result.IsError)
                     return ProviderError(result);
-
-                var defaultEnvErrors = defaultEnvironment.Validate(_validators);
-                if (defaultEnvErrors.Any())
-                    return BadRequest(defaultEnvErrors.Values.SelectMany(_ => _));
-
-                await defaultEnvironment.WriteRecordedEvents(_eventStore);
-
-                // create requested environment
-                var environment = await _objectStore.Get(new EnvironmentIdentifier(category, name));
-
-                var envErrors = environment.Validate(_validators);
-                if (envErrors.Any())
-                    return BadRequest(envErrors.Values.SelectMany(_ => _));
-
-                await environment.WriteRecordedEvents(_eventStore);
 
                 return AcceptedAtAction(nameof(GetKeys),
                                         RouteUtilities.ControllerName<EnvironmentController>(),
@@ -121,17 +89,9 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var actions = keys.Select(ConfigKeyAction.Delete)
-                                  .ToArray();
-
-                var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                                       .ModifyKeys(actions);
-
-                var errors = domainObj.Validate(_validators);
-                if (errors.Any())
-                    return BadRequest(errors.Values.SelectMany(_ => _));
-
-                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
+                var result = await _store.Environments.DeleteKeys(new EnvironmentIdentifier(category, name), keys);
+                if (result.IsError)
+                    return ProviderError(result);
 
                 return AcceptedAtAction(nameof(GetKeys),
                                         RouteUtilities.ControllerName<EnvironmentController>(),
@@ -187,15 +147,16 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var environment = await _objectStore.Get(identifier);
-            var result = environment.Keys
-                                    .OrderBy(k => k.Key)
-                                    .Skip(range.Offset)
-                                    .Take(range.Length)
-                                    .Select(entry => entry.Value)
-                                    .ToDictionary(entry => entry.Key, entry => entry.Value);
+            var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = identifier,
+                Filter = filter,
+                PreferExactMatch = preferExactMatch,
+                Range = range,
+                RemoveRoot = root
+            });
 
-            return Ok(result);
+            return Result(result);
         }
 
         /// <summary>
@@ -312,20 +273,9 @@ namespace Bechtle.A365.ConfigService.Controllers
 
             try
             {
-                var actions = keys.Select(key => ConfigKeyAction.Set(key.Key,
-                                                                     key.Value,
-                                                                     key.Description,
-                                                                     key.Type))
-                                  .ToArray();
-
-                var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(category, name))
-                                                       .ModifyKeys(actions);
-
-                var errors = domainObj.Validate(_validators);
-                if (errors.Any())
-                    return BadRequest(errors.Values.SelectMany(_ => _));
-
-                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
+                var result = await _store.Environments.UpdateKeys(new EnvironmentIdentifier(category, name), keys);
+                if (result.IsError)
+                    return ProviderError(result);
 
                 return AcceptedAtAction(nameof(GetKeys),
                                         RouteUtilities.ControllerName<EnvironmentController>(),

@@ -11,6 +11,7 @@ using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Middleware;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
@@ -277,7 +278,8 @@ namespace Bechtle.A365.ConfigService
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
                     .AddScoped<IEventHistoryService, MemoryEventHistoryService>(_logger)
-                    .AddScoped<StreamedObjectStore>()
+                    .AddScoped<IStreamedStore, StreamedObjectStore>()
+                    .AddScoped<ISnapshotStore, DummySnapshotStore>()
                     .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
