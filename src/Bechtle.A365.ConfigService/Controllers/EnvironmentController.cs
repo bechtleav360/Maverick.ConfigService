@@ -67,6 +67,37 @@ namespace Bechtle.A365.ConfigService.Controllers
         }
 
         /// <summary>
+        ///     delete an existing Environment with the given Category + Name
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpDelete("{category}/{name}", Name = "DeleteEnvironment")]
+        public async Task<IActionResult> DeleteEnvironment(string category, string name)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+                return BadRequest($"{nameof(category)} is empty");
+
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest($"{nameof(name)} is empty");
+
+            try
+            {
+                var result = await _store.Environments.Delete(new EnvironmentIdentifier(category, name));
+                if (result.IsError)
+                    return ProviderError(result);
+
+                return Accepted();
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, $"failed to delete environment at ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to delete environment");
+            }
+        }
+
+        /// <summary>
         ///     delete keys from the environment
         /// </summary>
         /// <param name="category"></param>
