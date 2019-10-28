@@ -40,6 +40,22 @@
         };
 
         /// <summary>
+        ///     create a 'Error' result, with the provided <paramref name="message" /> and <paramref name="code" /> property,
+        ///     and an filled <see cref="Result{T}.Data" /> prop
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="code"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static IResult<T> Error<T>(string message, ErrorCode code, T data) => new Result<T>
+        {
+            Code = code,
+            Data = data,
+            IsError = true,
+            Message = message
+        };
+
+        /// <summary>
         ///     create a 'Success' result, with an empty <see cref="Result.Message" /> and <see cref="Result.Code" /> properties
         /// </summary>
         /// <returns></returns>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
@@ -328,7 +329,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 var json = _translator.ToJson(result.Data);
 
-                if (json is null)
+                if (json.ValueKind == JsonValueKind.Null)
                     return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
 
                 var version = await _store.Configurations.GetVersion(configId, when);

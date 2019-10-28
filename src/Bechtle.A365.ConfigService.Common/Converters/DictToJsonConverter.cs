@@ -8,10 +8,10 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public class DictToJsonConverter
     {
-        public static JsonDocument ToJson(IDictionary<string, string> dict, string separator)
+        public static JsonElement ToJson(IDictionary<string, string> dict, string separator)
         {
             if (!dict.Any())
-                return JsonDocument.Parse("{}");
+                return JsonDocument.Parse("null").RootElement;
 
             var root = ConvertToTree(dict, separator);
 
@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             }
 
             memoryStream.Position = 0;
-            return JsonDocument.Parse(memoryStream);
+            return JsonDocument.Parse(memoryStream).RootElement;
         }
 
         private static Node ConvertToTree(IDictionary<string, string> dict, string separator)

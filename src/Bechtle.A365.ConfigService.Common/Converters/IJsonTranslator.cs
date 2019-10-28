@@ -73,7 +73,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// </summary>
         /// <param name="dict"></param>
         /// <returns></returns>
-        JsonDocument ToJson(IDictionary<string, string> dict);
+        JsonElement ToJson(IDictionary<string, string> dict);
 
         /// <summary>
         ///     convert a dictionary of Paths=>Values to a JToken.
@@ -88,6 +88,6 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="dict"></param>
         /// <param name="separator"></param>
         /// <returns></returns>
-        JsonDocument ToJson(IDictionary<string, string> dict, string separator);
+        JsonElement ToJson(IDictionary<string, string> dict, string separator);
     }
 }

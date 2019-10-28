@@ -22,9 +22,9 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             => JsonToDictConverter.ToDict(json, separator, encodePath);
 
         /// <inheritdoc />
-        public JsonDocument ToJson(IDictionary<string, string> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
+        public JsonElement ToJson(IDictionary<string, string> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
 
         /// <inheritdoc />
-        public JsonDocument ToJson(IDictionary<string, string> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
+        public JsonElement ToJson(IDictionary<string, string> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
     }
 }

@@ -11,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Result as JSON
         /// </summary>
-        public JsonDocument Json { get; set; }
+        public JsonElement Json { get; set; }
 
         /// <summary>
         ///     Result as Key->Value Map

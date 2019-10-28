@@ -176,7 +176,7 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 var json = _translator.ToJson(result.Data);
 
-                if (json is null)
+                if (json.ValueKind == JsonValueKind.Null)
                     return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
 
                 return Ok(json);
