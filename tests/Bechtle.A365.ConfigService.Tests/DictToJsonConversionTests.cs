@@ -22,12 +22,11 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"Foo/Bar/Baz", "4711"}
             });
 
-            Assert.NotNull(translated);
             Assert.IsType<JsonDocument>(translated);
-            Assert.IsType<JsonElement>(translated.RootElement.GetProperty("Foo"));
-            Assert.IsType<JsonElement>(translated.RootElement.GetProperty("Foo").GetProperty("Bar"));
-            Assert.IsType<JsonElement>(translated.RootElement.GetProperty("Foo").GetProperty("Bar").GetProperty("Baz"));
-            Assert.Equal("4711", translated.RootElement.GetProperty("Foo").GetProperty("Bar").GetProperty("Baz").ToString());
+            Assert.IsType<JsonElement>(translated.GetProperty("Foo"));
+            Assert.IsType<JsonElement>(translated.GetProperty("Foo").GetProperty("Bar"));
+            Assert.IsType<JsonElement>(translated.GetProperty("Foo").GetProperty("Bar").GetProperty("Baz"));
+            Assert.Equal("4711", translated.GetProperty("Foo").GetProperty("Bar").GetProperty("Baz").ToString());
         }
 
         [Fact]
@@ -35,9 +34,8 @@ namespace Bechtle.A365.ConfigService.Tests
         {
             var translated = _translator.ToJson(new Dictionary<string, string>());
 
-            Assert.NotNull(translated);
             Assert.IsType<JsonDocument>(translated);
-            Assert.Empty(translated.RootElement.EnumerateObject());
+            Assert.Empty(translated.EnumerateObject());
         }
 
         [Fact]
@@ -49,10 +47,9 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"0001", "4711"}
             });
 
-            Assert.NotNull(translated);
             Assert.IsType<JsonDocument>(translated);
-            Assert.Equal("42", translated.RootElement[0].ToString());
-            Assert.Equal("4711", translated.RootElement[1].ToString());
+            Assert.Equal("42", translated[0].ToString());
+            Assert.Equal("4711", translated[1].ToString());
         }
 
         [Fact]
@@ -63,9 +60,8 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"Foo", "Bar"}
             });
 
-            Assert.NotNull(translated);
             Assert.IsType<JsonDocument>(translated);
-            Assert.Equal("Bar", translated.RootElement.GetProperty("Foo").ToString());
+            Assert.Equal("Bar", translated.GetProperty("Foo").ToString());
         }
     }
 }
