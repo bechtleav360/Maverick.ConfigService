@@ -4,10 +4,9 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
-using Microsoft.EntityFrameworkCore;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,19 +18,99 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     {
         private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
-        private readonly ProjectionStoreContext _context;
+        private readonly IList<ICommandValidator> _validators;
         private readonly ILogger<StructureProjectionStore> _logger;
+        private readonly IStreamedStore _streamedStore;
+        private readonly IEventStore _eventStore;
 
         /// <inheritdoc />
-        public StructureProjectionStore(ProjectionStoreContext context,
-                                        ILogger<StructureProjectionStore> logger,
+        public StructureProjectionStore(ILogger<StructureProjectionStore> logger,
+                                        IStreamedStore streamedStore,
+                                        IEventStore eventStore,
                                         IMemoryCache cache,
-                                        IConfiguration configuration)
+                                        IConfiguration configuration,
+                                        IEnumerable<ICommandValidator> validators)
         {
-            _context = context;
             _logger = logger;
+            _streamedStore = streamedStore;
+            _eventStore = eventStore;
             _cache = cache;
             _configuration = configuration;
+            _validators = validators.ToList();
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> Create(StructureIdentifier identifier,
+                                          IDictionary<string, string> keys,
+                                          IDictionary<string, string> variables)
+        {
+            var structResult = await _streamedStore.GetStructure(identifier);
+            if (structResult.IsError)
+                return structResult;
+
+            var structure = structResult.Data;
+
+            var result = structure.Create(keys, variables);
+            if (result.IsError)
+                return result;
+
+            var errors = structure.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await structure.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables)
+        {
+            var structResult = await _streamedStore.GetStructure(identifier);
+            if (structResult.IsError)
+                return structResult;
+
+            var structure = structResult.Data;
+
+            var updateResult = structure.ModifyVariables(variables);
+            if (updateResult.IsError)
+                return updateResult;
+
+            var errors = structure.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await structure.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> DeleteVariables(StructureIdentifier identifier, ICollection<string> variablesToDelete)
+        {
+            var structResult = await _streamedStore.GetStructure(identifier);
+            if (structResult.IsError)
+                return structResult;
+
+            var structure = structResult.Data;
+
+            var updateResult = structure.DeleteVariables(variablesToDelete);
+            if (updateResult.IsError)
+                return updateResult;
+
+            var errors = structure.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await structure.WriteRecordedEvents(_eventStore);
         }
 
         /// <inheritdoc />
@@ -45,23 +124,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.Structures
-                                                            .OrderBy(s => s.Name)
-                                                            .ThenByDescending(s => s.Version)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .Select(s => new StructureIdentifier(s.Name, s.Version))
-                                                            .ToListAsync();
-
-                               if (dbResult is null)
+                               var listResult = await _streamedStore.GetStructureList();
+                               if (listResult.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier>());
                                }
 
-                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
+                               var result = listResult.Data
+                                                      .GetIdentifiers()
+                                                      .OrderBy(s => s.Name)
+                                                      .ThenByDescending(s => s.Version)
+                                                      .Skip(range.Offset)
+                                                      .Take(range.Length)
+                                                      .ToList();
 
-                               return Result.Success<IList<StructureIdentifier>>(dbResult);
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
+                               return Result.Success<IList<StructureIdentifier>>(result);
                            });
             }
             catch (Exception e)
@@ -83,23 +162,24 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var versions = await _context.Structures
-                                                            .Where(s => s.Name == name)
-                                                            .OrderBy(s => s.Name)
-                                                            .ThenByDescending(s => s.Version)
-                                                            .Skip(range.Offset)
-                                                            .Take(range.Length)
-                                                            .Select(s => s.Version)
-                                                            .ToListAsync();
-
-                               if (versions is null)
+                               var listResult = await _streamedStore.GetStructureList();
+                               if (listResult.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Success<IList<int>>(new List<int>());
                                }
 
+                               var result = listResult.Data
+                                                      .GetIdentifiers()
+                                                      .Where(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                                                      .OrderByDescending(s => s.Version)
+                                                      .Skip(range.Offset)
+                                                      .Take(range.Length)
+                                                      .Select(s => s.Version)
+                                                      .ToList();
+
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-                               return Result.Success<IList<int>>(versions);
+                               return Result.Success<IList<int>>(result);
                            });
             }
             catch (Exception e)
@@ -122,11 +202,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                range),
                            async entry =>
                            {
-                               var dbResult = await _context.FullStructures
-                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name
-                                                                                      && s.Version == identifier.Version);
-
-                               if (dbResult is null)
+                               var structResult = await _streamedStore.GetStructure(identifier);
+                               if (structResult.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
@@ -136,13 +213,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                     ErrorCode.NotFound);
                                }
 
-                               var result = dbResult.Keys
-                                                    .OrderBy(k => k.Key)
-                                                    .Skip(range.Offset)
-                                                    .Take(range.Length)
-                                                    .ToImmutableSortedDictionary(k => k.Key,
-                                                                                 k => k.Value,
-                                                                                 StringComparer.OrdinalIgnoreCase);
+                               var result = structResult.Data
+                                                        .Keys
+                                                        .OrderBy(k => k.Key)
+                                                        .Skip(range.Offset)
+                                                        .Take(range.Length)
+                                                        .ToImmutableSortedDictionary(k => k.Key,
+                                                                                     k => k.Value,
+                                                                                     StringComparer.OrdinalIgnoreCase);
 
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
                                return Result.Success<IDictionary<string, string>>(result);
@@ -172,11 +250,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult = await _context.FullStructures
-                                                            .FirstOrDefaultAsync(s => s.Name == identifier.Name
-                                                                                      && s.Version == identifier.Version);
-
-                               if (dbResult is null)
+                               var structResult = await _streamedStore.GetStructure(identifier);
+                               if (structResult.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
@@ -186,13 +261,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                     ErrorCode.NotFound);
                                }
 
-                               var result = dbResult.Variables
-                                                    .OrderBy(v => v.Key)
-                                                    .Skip(range.Offset)
-                                                    .Take(range.Length)
-                                                    .ToImmutableSortedDictionary(k => k.Key,
-                                                                                 k => k.Value,
-                                                                                 StringComparer.OrdinalIgnoreCase);
+                               var result = structResult.Data
+                                                        .Variables
+                                                        .OrderBy(v => v.Key)
+                                                        .Skip(range.Offset)
+                                                        .Take(range.Length)
+                                                        .ToImmutableSortedDictionary(k => k.Key,
+                                                                                     k => k.Value,
+                                                                                     StringComparer.OrdinalIgnoreCase);
 
                                entry.SetDuration(CacheDuration.Short, _configuration, _logger);
                                return Result.Success<IDictionary<string, string>>(result);

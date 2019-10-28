@@ -5,24 +5,20 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
-    public class StreamedEnvironmentList : StreamedObject
+    public class StreamedStructureList : StreamedObject
     {
-        protected HashSet<EnvironmentIdentifier> Identifiers { get; set; } = new HashSet<EnvironmentIdentifier>();
+        protected HashSet<StructureIdentifier> Identifiers { get; set; } = new HashSet<StructureIdentifier>();
 
         /// <inheritdoc />
         protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
         {
             switch (streamedEvent.DomainEvent)
             {
-                case DefaultEnvironmentCreated created:
+                case StructureCreated created:
                     Identifiers.Add(created.Identifier);
                     return true;
 
-                case EnvironmentCreated created:
-                    Identifiers.Add(created.Identifier);
-                    return true;
-
-                case EnvironmentDeleted deleted:
+                case StructureDeleted deleted:
                     if (Identifiers.Contains(deleted.Identifier))
                         Identifiers.Remove(deleted.Identifier);
                     return true;
@@ -37,7 +33,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (snapshot.DataType != GetType().Name)
                 return;
 
-            var other = JsonSerializer.Deserialize<StreamedEnvironmentList>(snapshot.Data);
+            var other = JsonSerializer.Deserialize<StreamedStructureList>(snapshot.Data);
 
             Identifiers = other.Identifiers;
         }
@@ -46,6 +42,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     get a list of all active Environment-Identifiers
         /// </summary>
         /// <returns></returns>
-        public ICollection<EnvironmentIdentifier> GetIdentifiers() => Identifiers.ToList();
+        public ICollection<StructureIdentifier> GetIdentifiers() => Identifiers.ToList();
     }
 }

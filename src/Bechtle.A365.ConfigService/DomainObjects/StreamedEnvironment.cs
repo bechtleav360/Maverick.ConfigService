@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -270,7 +269,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (keysToAdd is null || !keysToAdd.Any())
                 return Result.Error("null or empty list given", ErrorCode.InvalidData);
 
-            var addedKeys = new List<ConfigEnvironmentKey>();
+            var addedKeys = new List<StreamedEnvironmentKey>();
             var updatedKeys = new Dictionary<string, StreamedEnvironmentKey>();
 
             try
@@ -315,23 +314,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             catch (Exception)
             {
                 foreach (var addedKey in addedKeys)
-                    Keys.Remove(addedKey.Key, out _);
+                    Keys.Remove(addedKey.Key);
                 foreach (var (key, value) in updatedKeys)
                     Keys[key] = value;
 
                 return Result.Error("could not update all keys in the environment", ErrorCode.Undefined);
             }
         }
-    }
-
-    public class StreamedEnvironmentKeyPath
-    {
-        public string FullPath { get; set; } = string.Empty;
-
-        public string Path { get; set; } = string.Empty;
-
-        public List<StreamedEnvironmentKeyPath> Children { get; set; } = new List<StreamedEnvironmentKeyPath>();
-
-        public StreamedEnvironmentKeyPath Parent { get; set; } = null;
     }
 }

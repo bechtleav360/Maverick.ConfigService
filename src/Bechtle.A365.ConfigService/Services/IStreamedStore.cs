@@ -10,5 +10,9 @@ namespace Bechtle.A365.ConfigService.Services
         Task<IResult<StreamedEnvironmentList>> GetEnvironmentList();
 
         Task<IResult<StreamedEnvironment>> GetEnvironment(EnvironmentIdentifier identifier);
+
+        Task<IResult<StreamedStructure>> GetStructure(StructureIdentifier identifier);
+
+        Task<IResult<StreamedStructureList>> GetStructureList();
     }
 }

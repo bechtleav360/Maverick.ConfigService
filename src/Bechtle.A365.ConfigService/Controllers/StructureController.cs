@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
-using Bechtle.A365.ConfigService.Services;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -23,27 +21,18 @@ namespace Bechtle.A365.ConfigService.Controllers
     [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class StructureController : ControllerBase
     {
-        private readonly IEventHistoryService _eventHistory;
-        private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
-        private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
         public StructureController(IServiceProvider provider,
                                    ILogger<StructureController> logger,
                                    IProjectionStore store,
-                                   IEventStore eventStore,
-                                   IJsonTranslator translator,
-                                   IEnumerable<ICommandValidator> validators,
-                                   IEventHistoryService eventHistory)
+                                   IJsonTranslator translator)
             : base(provider, logger)
         {
             _store = store;
-            _eventStore = eventStore;
             _translator = translator;
-            _eventHistory = eventHistory;
-            _validators = validators.ToArray();
         }
 
         /// <summary>
@@ -87,14 +76,9 @@ namespace Bechtle.A365.ConfigService.Controllers
                 var keys = _translator.ToDictionary(structure.Structure);
                 var variables = structure.Variables ?? new Dictionary<string, string>();
 
-                var domainObj = new ConfigStructure().IdentifiedBy(new StructureIdentifier(structure.Name, structure.Version))
-                                                     .Create(keys, variables);
-
-                var errors = domainObj.Validate(_validators);
-                if (errors.Any())
-                    return BadRequest(errors.Values.SelectMany(_ => _));
-
-                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
+                var result = await _store.Structures.Create(new StructureIdentifier(structure.Name, structure.Version), keys, variables);
+                if (result.IsError)
+                    return ProviderError(result);
 
                 return AcceptedAtAction(nameof(GetStructureKeys),
                                         RouteUtilities.ControllerName<StructureController>(),
@@ -315,17 +299,9 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var identifier = new StructureIdentifier(name, structureVersion);
 
-                var actions = variables.Select(ConfigKeyAction.Delete)
-                                       .ToArray();
-
-                var domainObj = new ConfigStructure().IdentifiedBy(identifier)
-                                                     .ModifyVariables(actions);
-
-                var errors = domainObj.Validate(_validators);
-                if (errors.Any())
-                    return BadRequest(errors.Values.SelectMany(_ => _));
-
-                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
+                var result = await _store.Structures.DeleteVariables(identifier, variables);
+                if (result.IsError)
+                    return ProviderError(result);
 
                 return AcceptedAtAction(nameof(GetVariables),
                                         RouteUtilities.ControllerName<StructureController>(),
@@ -364,17 +340,9 @@ namespace Bechtle.A365.ConfigService.Controllers
             {
                 var identifier = new StructureIdentifier(name, structureVersion);
 
-                var actions = changes.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
-                                     .ToArray();
-
-                var domainObj = new ConfigStructure().IdentifiedBy(identifier)
-                                                     .ModifyVariables(actions);
-
-                var errors = domainObj.Validate(_validators);
-                if (errors.Any())
-                    return BadRequest(errors.Values.SelectMany(_ => _));
-
-                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
+                var result = await _store.Structures.UpdateVariables(identifier, changes);
+                if (result.IsError)
+                    return ProviderError(result);
 
                 return AcceptedAtAction(nameof(GetVariables),
                                         RouteUtilities.ControllerName<StructureController>(),

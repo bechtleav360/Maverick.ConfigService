@@ -61,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
 
                                // TODO: refactor this
-                               return Result.Success<IList<EnvironmentIdentifier>>(result.Data.GetEnvironmentIdentifiers().ToList());
+                               return Result.Success<IList<EnvironmentIdentifier>>(result.Data.GetIdentifiers().ToList());
                            });
             }
             catch (Exception e)
