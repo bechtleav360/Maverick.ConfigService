@@ -7,7 +7,6 @@ using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
@@ -25,7 +24,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -224,40 +222,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().Protected)
-                    .AddDbContext<ProjectionStoreContext>(
-                        _logger,
-                        (provider, builder) =>
-                        {
-                            var settings = provider.GetService<ProjectionStorageConfiguration>();
-
-                            // @IMPORTANT: when handling additional cases here, don't forget to update the error-messages
-                            switch (settings.Backend)
-                            {
-                                case DbBackend.MsSql:
-                                    _logger.LogTrace("using MsSql database-backend");
-                                    builder.UseSqlServer(settings.ConnectionString);
-                                    break;
-
-                                case DbBackend.Postgres:
-                                    _logger.LogTrace("using PostgreSql database-backend");
-                                    builder.UseNpgsql(settings.ConnectionString);
-                                    break;
-
-                                // let's be explicit what happens for UNSET or NON-IMPLEMENTED backends
-                                // ReSharper disable once RedundantCaseLabel
-                                case DbBackend.None:
-                                default:
-                                    _logger.LogError($"Unsupported DbBackend: '{settings.Backend}'; " +
-                                                     $"change ProjectionStorage:Backend; " +
-                                                     $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
-                                    throw new ArgumentOutOfRangeException(nameof(settings.Backend),
-                                                                          $"Unsupported DbBackend: '{settings.Backend}'; " +
-                                                                          $"change ProjectionStorage:Backend; " +
-                                                                          $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
-                            }
-                        })
                     .AddScoped<IProjectionStore, ProjectionStore>(_logger)
-                    .AddScoped<IMetadataProjectionStore, MetadataProjectionStore>(_logger)
                     .AddScoped<IStructureProjectionStore, StructureProjectionStore>(_logger)
                     .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
                     .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)
@@ -277,7 +242,6 @@ namespace Bechtle.A365.ConfigService
                                                            provider.GetService<ILoggerFactory>());
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
-                    .AddScoped<IEventHistoryService, MemoryEventHistoryService>(_logger)
                     .AddScoped<IStreamedStore, StreamedObjectStore>()
                     .AddScoped<ISnapshotStore, DummySnapshotStore>()
                     .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)

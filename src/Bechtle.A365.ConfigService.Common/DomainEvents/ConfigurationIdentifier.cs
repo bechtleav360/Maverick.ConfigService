@@ -1,5 +1,4 @@
 ﻿using System;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -33,16 +32,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, other)) return true;
             return Equals(Environment, other.Environment) && Equals(Structure, other.Structure) && Version == other.Version;
         }
-
-        /// <summary>
-        ///     construct a new <see cref="ConfigurationIdentifier" /> from the values in the given <paramref name="projectedConfiguration" />
-        /// </summary>
-        /// <param name="projectedConfiguration"></param>
-        /// <returns></returns>
-        public static ConfigurationIdentifier From(ProjectedConfiguration projectedConfiguration)
-            => new ConfigurationIdentifier(EnvironmentIdentifier.From(projectedConfiguration.ConfigEnvironment),
-                                           StructureIdentifier.From(projectedConfiguration.Structure),
-                                           projectedConfiguration.Version);
 
         public static bool operator ==(ConfigurationIdentifier left, ConfigurationIdentifier right) => Equals(left, right);
 

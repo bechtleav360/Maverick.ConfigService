@@ -1,5 +1,4 @@
 ﻿using System;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -31,13 +30,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, other)) return true;
             return string.Equals(Category, other.Category, StringComparison.OrdinalIgnoreCase) && string.Equals(Name, other.Name);
         }
-
-        /// <summary>
-        ///     construct a new <see cref="EnvironmentIdentifier" /> from the values in the given <paramref name="environment" />
-        /// </summary>
-        /// <param name="environment"></param>
-        /// <returns></returns>
-        public static EnvironmentIdentifier From(ConfigEnvironment environment) => new EnvironmentIdentifier(environment?.Category, environment?.Name);
 
         public static bool operator ==(EnvironmentIdentifier left, EnvironmentIdentifier right) => Equals(left, right);
 

@@ -138,13 +138,17 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
 
                 if (root is null)
-                    roots.Add(new StreamedEnvironmentKeyPath
+                {
+                    root = new StreamedEnvironmentKeyPath
                     {
                         Path = rootPart,
                         Parent = null,
                         FullPath = rootPart,
                         Children = new List<StreamedEnvironmentKeyPath>()
-                    });
+                    };
+
+                    roots.Add(root);
+                }
 
                 var current = root;
 
@@ -153,13 +157,16 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     var next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
 
                     if (next is null)
-                        current.Children.Add(new StreamedEnvironmentKeyPath
+                    {
+                        next = new StreamedEnvironmentKeyPath
                         {
                             Path = part,
                             Parent = current,
                             Children = new List<StreamedEnvironmentKeyPath>(),
                             FullPath = current.FullPath + '/' + part
-                        });
+                        };
+                        current.Children.Add(next);
+                    }
 
                     current = next;
                 }
@@ -300,7 +307,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                 // all items that have actually been added to or changed in this environment are saved as event
                 // skipping those that may not be there anymore and reducing the Event-Size or skipping the event entirely
-                var recordedChanges = addedKeys.Concat(updatedKeys.Values).ToList();
+                // ---
+                // updatedKeys maps key => oldValue, so the old value can be restored if something goes wrong
+                // this means we have to get the current/new/overwritten state based on the updatedKeys.Keys
+                var recordedChanges = addedKeys.Concat(updatedKeys.Keys.Select(k => Keys[k]))
+                                               .ToList();
 
                 if (recordedChanges.Any())
                     CapturedDomainEvents.Add(
@@ -319,6 +330,39 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     Keys[key] = value;
 
                 return Result.Error("could not update all keys in the environment", ErrorCode.Undefined);
+            }
+        }
+
+        /// <summary>
+        ///     overwrite all existing keys with the ones in <paramref name="keysToImport"/>
+        /// </summary>
+        /// <param name="keysToImport"></param>
+        /// <returns></returns>
+        public IResult ImportKeys(ICollection<StreamedEnvironmentKey> keysToImport)
+        {
+            // copy dict as backup
+            var oldKeys = Keys.ToDictionary(_ => _.Key, _ => _.Value);
+
+            try
+            {
+                var newKeys = keysToImport.ToDictionary(k => k.Key, k => k);
+                Keys = newKeys;
+
+                CapturedDomainEvents.Add(new EnvironmentKeysImported(
+                                             Identifier,
+                                             newKeys.Values
+                                                    .OrderBy(k => k.Key)
+                                                    .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                                    .ToArray()));
+
+                return Result.Success();
+            }
+            catch (Exception)
+            {
+                // restore backup
+                Keys = oldKeys;
+
+                return Result.Error("could not import all keys into this environment", ErrorCode.Undefined);
             }
         }
 

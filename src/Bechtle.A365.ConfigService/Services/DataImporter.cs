@@ -1,37 +1,28 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
-using Bechtle.A365.ConfigService.Dto;
 using Bechtle.A365.ConfigService.Services.Stores;
-using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services
 {
     /// <inheritdoc />
     public class DataImporter : IDataImporter
     {
-        private readonly IEventHistoryService _eventHistory;
-        private readonly IMetrics _metrics;
-        private readonly ILogger _logger;
-        private readonly IEventStore _store;
+        private readonly IEventStore _eventStore;
+        private readonly IStreamedStore _streamedStore;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
-        public DataImporter(ILogger<DataImporter> logger,
-                            IEventStore store,
-                            IEnumerable<ICommandValidator> validators,
-                            IEventHistoryService eventHistory,
-                            IMetrics metrics)
+        public DataImporter(IEventStore eventStore,
+                            IStreamedStore streamedStore,
+                            IEnumerable<ICommandValidator> validators)
         {
-            _logger = logger;
-            _store = store;
-            _eventHistory = eventHistory;
-            _metrics = metrics;
+            _eventStore = eventStore;
+            _streamedStore = streamedStore;
             _validators = validators.ToArray();
         }
 
@@ -41,20 +32,27 @@ namespace Bechtle.A365.ConfigService.Services
             if (export is null)
                 return Result.Error($"{nameof(export)} must not be null", ErrorCode.InvalidData);
 
-            foreach (var environment in export.Environments)
+            foreach (var envExport in export.Environments)
             {
-                var domainObj = new ConfigEnvironment().IdentifiedBy(new EnvironmentIdentifier(environment.Category, environment.Name))
-                                                       .ImportKeys(environment.Keys
-                                                                              .Select(k => new DtoConfigKey
-                                                                              {
-                                                                                  Key = k.Key,
-                                                                                  Description = k.Description,
-                                                                                  Type = k.Type,
-                                                                                  Value = k.Value
-                                                                              }));
+                var identifier = new EnvironmentIdentifier(envExport.Category, envExport.Name);
 
+                var envResult = await _streamedStore.GetEnvironment(identifier);
+                if (envResult.IsError)
+                    return envResult;
 
-                var errors = domainObj.Validate(_validators);
+                var environment = envResult.Data;
+
+                environment.ImportKeys(envExport.Keys
+                                                .Select(k => new StreamedEnvironmentKey
+                                                {
+                                                    Key = k.Key,
+                                                    Description = k.Description,
+                                                    Type = k.Type,
+                                                    Value = k.Value
+                                                })
+                                                .ToList());
+
+                var errors = environment.Validate(_validators);
                 if (errors.Any())
                 {
                     var errorMessages = string.Join("\r\n", errors.Values
@@ -64,7 +62,9 @@ namespace Bechtle.A365.ConfigService.Services
                     return Result.Error($"data-validation failed; {errorMessages}", ErrorCode.ValidationFailed);
                 }
 
-                await domainObj.Save(_store, _eventHistory, _logger, _metrics);
+                var result = await environment.WriteRecordedEvents(_eventStore);
+                if (result.IsError)
+                    return result;
             }
 
             return Result.Success();

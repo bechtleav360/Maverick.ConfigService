@@ -1,5 +1,4 @@
 ﻿using System;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -31,13 +30,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, other)) return true;
             return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Version == other.Version;
         }
-
-        /// <summary>
-        ///     construct a new <see cref="StructureIdentifier" /> from the values in the given <paramref name="structure" />
-        /// </summary>
-        /// <param name="structure"></param>
-        /// <returns></returns>
-        public static StructureIdentifier From(Structure structure) => new StructureIdentifier(structure?.Name, structure?.Version ?? 0);
 
         public static bool operator ==(StructureIdentifier left, StructureIdentifier right) => Equals(left, right);
 

@@ -1,8 +1,5 @@
-﻿using System;
-using Bechtle.A365.ConfigService.Cli.Commands;
-using Bechtle.A365.ConfigService.Common.DbObjects;
+﻿using Bechtle.A365.ConfigService.Cli.Commands;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,8 +11,7 @@ namespace Bechtle.A365.ConfigService.Cli
         typeof(CompareCommand),
         typeof(ExportCommand),
         typeof(ImportCommand),
-        typeof(TestCommand),
-        typeof(MigrateCommand))]
+        typeof(TestCommand))]
     public class Program
     {
         public static int Main(string[] args)
@@ -32,33 +28,12 @@ namespace Bechtle.A365.ConfigService.Cli
 
         private static IServiceCollection ConfigureServicesInternal(IServiceCollection services = null)
         {
-            services = services ?? new ServiceCollection();
+            services ??= new ServiceCollection();
 
             services.AddSingleton(PhysicalConsole.Singleton)
                     // override how we get our ApplicationSettings to inject IConfiguration-data
                     .AddSingleton(p => p.GetService<IConfiguration>()?.Get<ApplicationSettings>() ?? new ApplicationSettings())
-                    .AddSingleton<IOutput, Output>()
-                    .AddDbContext<ProjectionStoreContext>(
-                        (provider, builder) =>
-                        {
-                            var appsettings = provider.GetService<ApplicationSettings>();
-
-                            switch (appsettings.DbType)
-                            {
-                                case DbBackend.MsSql:
-                                    builder.UseSqlServer(appsettings.ConnectionString,
-                                                         o => o.MigrationsAssembly("Bechtle.A365.ConfigService.Migrations"));
-                                    break;
-
-                                case DbBackend.Postgres:
-                                    builder.UseNpgsql(appsettings.ConnectionString,
-                                                      o => o.MigrationsAssembly("Bechtle.A365.ConfigService.Migrations"));
-                                    break;
-
-                                default:
-                                    throw new ArgumentOutOfRangeException();
-                            }
-                        });
+                    .AddSingleton<IOutput, Output>();
 
             return services;
         }
