@@ -321,5 +321,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return Result.Error("could not update all keys in the environment", ErrorCode.Undefined);
             }
         }
+
+        /// <summary>
+        ///     get the values of <see cref="Keys"/> as a simple <see cref="Dictionary{String,String}"/>
+        /// </summary>
+        /// <returns></returns>
+        public IDictionary<string, string> GetKeysAsDictionary() => Keys.Values.ToDictionary(e => e.Key, e => e.Value);
     }
 }

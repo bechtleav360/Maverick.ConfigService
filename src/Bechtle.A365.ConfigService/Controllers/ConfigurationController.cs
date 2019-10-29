@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
-using Bechtle.A365.ConfigService.Services;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -23,143 +21,18 @@ namespace Bechtle.A365.ConfigService.Controllers
     [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class ConfigurationController : ControllerBase
     {
-        private readonly IEventHistoryService _eventHistory;
-        private readonly IEventStore _eventStore;
         private readonly IProjectionStore _store;
         private readonly IJsonTranslator _translator;
-        private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
-                                       IEventStore eventStore,
                                        IProjectionStore store,
-                                       IJsonTranslator translator,
-                                       IEnumerable<ICommandValidator> validators,
-                                       IEventHistoryService eventHistory)
+                                       IJsonTranslator translator)
             : base(provider, logger)
         {
-            _eventStore = eventStore;
             _store = store;
             _translator = translator;
-            _eventHistory = eventHistory;
-            _validators = validators.ToArray();
-        }
-
-        /// <summary>
-        ///     create a new configuration for each combination of given Environment and available structure
-        /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
-        /// <param name="buildOptions"></param>
-        /// <returns></returns>
-        [HttpPost("{environmentCategory}/{environmentName}", Name = "BuildConfigurationsForAllStructures")]
-        public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
-                                                            [FromRoute] string environmentName,
-                                                            [FromBody] ConfigurationBuildOptions buildOptions)
-        {
-            var buildError = ValidateBuildOptions(buildOptions);
-            if (!(buildError is null))
-                return buildError;
-
-            var availableStructures = await _store.Structures.GetAvailable(QueryRange.All);
-            if (availableStructures.IsError)
-                return ProviderError(availableStructures);
-
-            var availableEnvironments = await _store.Environments.GetAvailable(QueryRange.All);
-            if (availableEnvironments.IsError)
-                return ProviderError(availableEnvironments);
-
-            var environment = availableEnvironments.Data
-                                                   .FirstOrDefault(e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase) &&
-                                                                        e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
-
-            if (environment is null)
-                return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
-
-            var envId = new EnvironmentIdentifier(environment.Category, environment.Name);
-
-            var domainObjects = availableStructures.Data
-                                                   .Select(id => new ConfigSnapshot().IdentifiedBy(id, envId)
-                                                                                     .ValidFrom(buildOptions?.ValidFrom)
-                                                                                     .ValidTo(buildOptions?.ValidTo)
-                                                                                     .Create())
-                                                   .ToList();
-
-            foreach (var domainObj in domainObjects)
-            {
-                var errors = domainObj.Validate(_validators);
-                if (errors.Any())
-                    return BadRequest(errors.Values.SelectMany(_ => _));
-            }
-
-            foreach (var domainObj in domainObjects)
-                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
-
-            return Accepted();
-        }
-
-        /// <summary>
-        ///     create a new configuration for each combination of given Environment and all versions of given Structure
-        /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
-        /// <param name="structureName"></param>
-        /// <param name="buildOptions"></param>
-        /// <returns></returns>
-        [HttpPost("{environmentCategory}/{environmentName}/{structureName}", Name = "BuildConfigurationsForAllVersionsOfStructure")]
-        public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
-                                                            [FromRoute] string environmentName,
-                                                            [FromRoute] string structureName,
-                                                            [FromBody] ConfigurationBuildOptions buildOptions)
-        {
-            var buildError = ValidateBuildOptions(buildOptions);
-            if (!(buildError is null))
-                return buildError;
-
-            var availableStructures = await _store.Structures.GetAvailable(QueryRange.All);
-            if (availableStructures.IsError)
-                return ProviderError(availableStructures);
-
-            var availableEnvironments = await _store.Environments.GetAvailable(QueryRange.All);
-            if (availableEnvironments.IsError)
-                return ProviderError(availableEnvironments);
-
-            var environment = availableEnvironments.Data
-                                                   .FirstOrDefault(e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase) &&
-                                                                        e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
-
-            if (environment is null)
-                return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
-
-            var envId = new EnvironmentIdentifier(environment.Category, environment.Name);
-
-            var structures = availableStructures.Data
-                                                .Where(s => s.Name.Equals(structureName))
-                                                .OrderBy(s => s.Version)
-                                                .Select(s => new StructureIdentifier(s.Name, s.Version))
-                                                .ToArray();
-
-            if (!structures.Any())
-                return NotFound($"no versions of structure '{structureName}' found");
-
-            var domainObjects = structures.Select(id => new ConfigSnapshot().IdentifiedBy(id, envId)
-                                                                            .ValidFrom(buildOptions?.ValidFrom)
-                                                                            .ValidTo(buildOptions?.ValidTo)
-                                                                            .Create())
-                                          .ToList();
-
-            foreach (var domainObj in domainObjects)
-            {
-                var errors = domainObj.Validate(_validators);
-                if (errors.Any())
-                    return BadRequest(errors.Values.SelectMany(_ => _));
-            }
-
-            foreach (var domainObj in domainObjects)
-                await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
-
-            return Accepted();
         }
 
         /// <summary>
@@ -197,8 +70,6 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (environment is null)
                 return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
 
-            var envId = new EnvironmentIdentifier(environment.Category, environment.Name);
-
             var structure = availableStructures.Data
                                                .FirstOrDefault(s => s.Name.Equals(structureName) &&
                                                                     s.Version == structureVersion);
@@ -206,18 +77,12 @@ namespace Bechtle.A365.ConfigService.Controllers
             if (structure is null)
                 return NotFound($"no versions of structure '{structureName}' found");
 
-            var structureId = new StructureIdentifier(structure.Name, structure.Version);
+            var result = await _store.Configurations.Build(new ConfigurationIdentifier(environment, structure, 0),
+                                                           buildOptions?.ValidFrom,
+                                                           buildOptions?.ValidTo);
 
-            var domainObj = new ConfigSnapshot().IdentifiedBy(structureId, envId)
-                                                .ValidFrom(buildOptions?.ValidFrom)
-                                                .ValidTo(buildOptions?.ValidTo)
-                                                .Create();
-
-            var errors = domainObj.Validate(_validators);
-            if (errors.Any())
-                return BadRequest(errors.Values.SelectMany(_ => _));
-
-            await domainObj.Save(_eventStore, _eventHistory, Logger, Metrics);
+            if (result.IsError)
+                return ProviderError(result);
 
             return AcceptedAtAction(
                 nameof(GetConfiguration),

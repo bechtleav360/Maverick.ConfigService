@@ -23,5 +23,13 @@ namespace Bechtle.A365.ConfigService.Services
         /// <inheritdoc />
         public Task<IResult<StreamedObjectSnapshot>> GetStructure(StructureIdentifier identifier)
             => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
+
+        /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetConfigurationList()
+            => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
+
+        /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetConfiguration(ConfigurationIdentifier identifier)
+            => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
     }
 }

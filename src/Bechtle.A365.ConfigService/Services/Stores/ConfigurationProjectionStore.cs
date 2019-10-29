@@ -5,10 +5,11 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DbObjects;
+using Bechtle.A365.ConfigService.Common.Compilation;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
-using Microsoft.EntityFrameworkCore;
+using Bechtle.A365.ConfigService.Parsing;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -20,19 +21,31 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     {
         private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
-        private readonly ProjectionStoreContext _context;
+        private readonly IStreamedStore _streamedStore;
+        private readonly IConfigurationCompiler _compiler;
+        private readonly IConfigurationParser _parser;
+        private readonly IJsonTranslator _translator;
+        private readonly IEventStore _eventStore;
         private readonly ILogger<ConfigurationProjectionStore> _logger;
 
         /// <inheritdoc />
-        public ConfigurationProjectionStore(ProjectionStoreContext context,
-                                            ILogger<ConfigurationProjectionStore> logger,
+        public ConfigurationProjectionStore(ILogger<ConfigurationProjectionStore> logger,
                                             IMemoryCache cache,
-                                            IConfiguration configuration)
+                                            IConfiguration configuration,
+                                            IStreamedStore streamedStore,
+                                            IConfigurationCompiler compiler,
+                                            IConfigurationParser parser,
+                                            IJsonTranslator translator,
+                                            IEventStore eventStore)
         {
-            _context = context;
             _logger = logger;
             _cache = cache;
             _configuration = configuration;
+            _streamedStore = streamedStore;
+            _compiler = compiler;
+            _parser = parser;
+            _translator = translator;
+            _eventStore = eventStore;
         }
 
         /// <inheritdoc />
@@ -47,29 +60,35 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
+                               var list = await _streamedStore.GetConfigurationList();
+                               if (list.IsError)
+                               {
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
+                               }
+
                                var utcWhen = when.ToUniversalTime();
                                var identifiers =
-                                   await _context.ProjectedConfigurations
-                                                 .Include(c => c.ConfigEnvironment)
-                                                 .Include(c => c.Structure)
-                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= utcWhen
-                                                             && (c.ValidTo ?? DateTime.MaxValue) >= utcWhen)
-                                                 .OrderBy(s => s.ConfigEnvironment.Category)
-                                                 .ThenBy(s => s.ConfigEnvironment.Name)
-                                                 .ThenBy(s => s.Structure.Name)
-                                                 .ThenByDescending(s => s.Structure.Version)
-                                                 .Skip(range.Offset)
-                                                 .Take(range.Length)
-                                                 .Select(s => ConfigurationIdentifier.From(s))
-                                                 .ToListAsync();
+                                   list.Data
+                                       .GetIdentifiers()
+                                       .Where(pair => (pair.Value.ValidFrom ?? DateTime.MinValue) <= utcWhen
+                                                      && (pair.Value.ValidTo ?? DateTime.MaxValue) >= utcWhen)
+                                       .OrderBy(pair => pair.Key.Environment.Category)
+                                       .ThenBy(pair => pair.Key.Environment.Name)
+                                       .ThenBy(pair => pair.Key.Structure.Name)
+                                       .ThenByDescending(s => s.Key.Structure.Version)
+                                       .Skip(range.Offset)
+                                       .Take(range.Length)
+                                       .Select(pair => pair.Key)
+                                       .ToList();
 
-                               entry.SetDuration(identifiers is null
-                                                     ? CacheDuration.None
-                                                     : CacheDuration.Medium,
+                               entry.SetDuration(identifiers.Any()
+                                                     ? CacheDuration.Medium
+                                                     : CacheDuration.None,
                                                  _configuration,
                                                  _logger);
 
-                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
+                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
                            });
             }
             catch (Exception e)
@@ -94,26 +113,37 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var identifiers =
-                                   await _context.ProjectedConfigurations
-                                                 .Include(c => c.ConfigEnvironment)
-                                                 .Include(c => c.Structure)
-                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
-                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                 .Where(c => c.ConfigEnvironment.Category == environment.Category
-                                                             && c.ConfigEnvironment.Name == environment.Name)
-                                                 .OrderBy(s => s.Structure.Name)
-                                                 .ThenByDescending(s => s.Structure.Version)
-                                                 .Skip(range.Offset)
-                                                 .Take(range.Length)
-                                                 .Select(s => ConfigurationIdentifier.From(s))
-                                                 .ToListAsync();
+                               var list = await _streamedStore.GetConfigurationList();
+                               if (list.IsError)
+                               {
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
+                               }
 
-                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
+                               var utcWhen = when.ToUniversalTime();
+                               var identifiers =
+                                   list.Data
+                                       .GetIdentifiers()
+                                       .Where(pair => (pair.Value.ValidFrom ?? DateTime.MinValue) <= utcWhen
+                                                      && (pair.Value.ValidTo ?? DateTime.MaxValue) >= utcWhen)
+                                       .Where(pair => pair.Key.Environment.Category == environment.Category
+                                                      && pair.Key.Environment.Name == environment.Name)
+                                       .OrderBy(pair => pair.Key.Environment.Category)
+                                       .ThenBy(pair => pair.Key.Environment.Name)
+                                       .ThenBy(pair => pair.Key.Structure.Name)
+                                       .ThenByDescending(s => s.Key.Structure.Version)
+                                       .Skip(range.Offset)
+                                       .Take(range.Length)
+                                       .Select(pair => pair.Key)
+                                       .ToList();
+
+                               entry.SetDuration(identifiers.Any()
+                                                     ? CacheDuration.Medium
+                                                     : CacheDuration.None,
                                                  _configuration,
                                                  _logger);
 
-                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
+                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
                            });
             }
             catch (Exception e)
@@ -138,26 +168,37 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var identifiers =
-                                   await _context.ProjectedConfigurations
-                                                 .Include(c => c.ConfigEnvironment)
-                                                 .Include(c => c.Structure)
-                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
-                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                 .Where(c => c.Structure.Name == structure.Name
-                                                             && c.Structure.Version == structure.Version)
-                                                 .OrderBy(s => s.ConfigEnvironment.Category)
-                                                 .ThenBy(s => s.ConfigEnvironment.Name)
-                                                 .Skip(range.Offset)
-                                                 .Take(range.Length)
-                                                 .Select(s => ConfigurationIdentifier.From (s))
-                                                 .ToListAsync();
+                               var list = await _streamedStore.GetConfigurationList();
+                               if (list.IsError)
+                               {
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
+                               }
 
-                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
+                               var utcWhen = when.ToUniversalTime();
+                               var identifiers =
+                                   list.Data
+                                       .GetIdentifiers()
+                                       .Where(pair => (pair.Value.ValidFrom ?? DateTime.MinValue) <= utcWhen
+                                                      && (pair.Value.ValidTo ?? DateTime.MaxValue) >= utcWhen)
+                                       .Where(pair => pair.Key.Structure.Name == structure.Name
+                                                      && pair.Key.Structure.Version == structure.Version)
+                                       .OrderBy(pair => pair.Key.Environment.Category)
+                                       .ThenBy(pair => pair.Key.Environment.Name)
+                                       .ThenBy(pair => pair.Key.Structure.Name)
+                                       .ThenByDescending(s => s.Key.Structure.Version)
+                                       .Skip(range.Offset)
+                                       .Take(range.Length)
+                                       .Select(pair => pair.Key)
+                                       .ToList();
+
+                               entry.SetDuration(identifiers.Any()
+                                                     ? CacheDuration.Medium
+                                                     : CacheDuration.None,
                                                  _configuration,
                                                  _logger);
 
-                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
+                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
                            });
             }
             catch (Exception e)
@@ -186,36 +227,23 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        when.Ticks),
                            async entry =>
                            {
-                               var dbResult =
-                                   await _context.ProjectedConfigurations
-                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
-                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                 .Where(c => c.ConfigEnvironment.Name == identifier.Environment.Name
-                                                             && c.ConfigEnvironment.Category == identifier.Environment.Category
-                                                             && c.Structure.Name == identifier.Structure.Name
-                                                             && c.Structure.Version == identifier.Structure.Version)
-                                                 .Select(c => c.ConfigurationJson)
-                                                 .FirstOrDefaultAsync();
-
-                               if (dbResult is null)
+                               var configuration = await _streamedStore.GetConfiguration(identifier);
+                               if (configuration.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<JsonElement>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
-                               try
-                               {
-                                   var result = JsonSerializer.Deserialize<JsonElement>(dbResult);
+                               await configuration.Data.Compile(_streamedStore, _compiler, _parser, _translator, _logger);
 
-                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-
-                                   return Result.Success(result);
-                               }
-                               catch (JsonException e)
+                               if (configuration.Data.Json is null)
                                {
-                                   _logger.LogError(e, "failed to parse projected Configuration-Json into token");
-                                   throw;
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   return Result.Error<JsonElement>($"no json-data found for configuration with id: {formattedParams}", ErrorCode.NotFound);
                                }
+
+                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
+                               return Result.Success(configuration.Data.Json.Value);
                            });
             }
             catch (Exception e)
@@ -248,35 +276,33 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult =
-                                   await _context.ProjectedConfigurations
-                                                 .Include(e => e.ConfigEnvironment)
-                                                 .Include(e => e.Structure)
-                                                 .Include(e => e.Keys)
-                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
-                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                 .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name
-                                                                           && c.ConfigEnvironment.Category == identifier.Environment.Category
-                                                                           && c.Structure.Name == identifier.Structure.Name
-                                                                           && c.Structure.Version == identifier.Structure.Version);
-
-                               if (dbResult is null)
+                               var configuration = await _streamedStore.GetConfiguration(identifier);
+                               if (configuration.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
-                                   return Result.Error<IDictionary<string, string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                                   return Result.Error<IDictionary<string, string>>(
+                                       $"no configuration found with id: {formattedParams}",
+                                       ErrorCode.NotFound);
                                }
 
-                               var result = dbResult.Keys
-                                                    .OrderBy(k => k.Key)
-                                                    .Skip(range.Offset)
-                                                    .Take(range.Length)
-                                                    .ToImmutableSortedDictionary(k => k.Key,
-                                                                                 k => k.Value,
-                                                                                 StringComparer.OrdinalIgnoreCase);
+                               await configuration.Data.Compile(_streamedStore, _compiler, _parser, _translator, _logger);
+
+                               if (configuration.Data.Keys is null || !configuration.Data.Keys.Any())
+                               {
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   return Result.Error<IDictionary<string, string>>(
+                                       $"no data found for configuration with id: {formattedParams}",
+                                       ErrorCode.NotFound);
+                               }
 
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-
-                               return Result.Success<IDictionary<string, string>>(result);
+                               return Result.Success<IDictionary<string, string>>(
+                                   configuration.Data
+                                                .Keys
+                                                .OrderBy(k => k.Key)
+                                                .Skip(range.Offset)
+                                                .Take(range.Length)
+                                                .ToImmutableSortedDictionary(k => k.Key, k => k.Value, StringComparer.OrdinalIgnoreCase));
                            });
             }
             catch (Exception e)
@@ -298,24 +324,31 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var identifiers = await _context.ProjectedConfigurations
-                                                               .Include(c => c.ConfigEnvironment)
-                                                               .Include(c => c.Structure)
-                                                               .Where(p => !p.UpToDate)
-                                                               .OrderBy(s => s.ConfigEnvironment.Category)
-                                                               .ThenBy(s => s.ConfigEnvironment.Name)
-                                                               .ThenBy(s => s.Structure.Name)
-                                                               .ThenByDescending(s => s.Structure.Version)
-                                                               .Skip(range.Offset)
-                                                               .Take(range.Length)
-                                                               .Select(s => ConfigurationIdentifier.From(s))
-                                                               .ToListAsync();
+                               var list = await _streamedStore.GetConfigurationList();
+                               if (list.IsError)
+                               {
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
+                               }
 
-                               entry.SetDuration(identifiers is null ? CacheDuration.None : CacheDuration.Medium,
+                               var identifiers =
+                                   list.Data
+                                       .GetStale()
+                                       .OrderBy(id => id.Environment.Category)
+                                       .ThenBy(id => id.Environment.Name)
+                                       .ThenBy(id => id.Structure.Name)
+                                       .ThenByDescending(id => id.Structure.Version)
+                                       .Skip(range.Offset)
+                                       .Take(range.Length)
+                                       .ToList();
+
+                               entry.SetDuration(identifiers.Any()
+                                                     ? CacheDuration.Medium
+                                                     : CacheDuration.None,
                                                  _configuration,
                                                  _logger);
 
-                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers ?? new List<ConfigurationIdentifier>());
+                               return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
                            });
             }
             catch (Exception e)
@@ -347,34 +380,28 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        range),
                            async entry =>
                            {
-                               var dbResult =
-                                   await _context.ProjectedConfigurations
-                                                 .Include(e => e.ConfigEnvironment)
-                                                 .Include(e => e.Structure)
-                                                 .Include(e => e.UsedConfigurationKeys)
-                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
-                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                 .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name
-                                                                           && c.ConfigEnvironment.Category == identifier.Environment.Category
-                                                                           && c.Structure.Name == identifier.Structure.Name
-                                                                           && c.Structure.Version == identifier.Structure.Version);
-
-                               if (dbResult is null)
+                               var configuration = await _streamedStore.GetConfiguration(identifier);
+                               if (configuration.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
-                               var result = dbResult.UsedConfigurationKeys
-                                                    .OrderBy(k => k.Key)
-                                                    .Skip(range.Offset)
-                                                    .Take(range.Length)
-                                                    .Select(usedKey => usedKey.Key)
-                                                    .ToArray();
+                               await configuration.Data.Compile(_streamedStore, _compiler, _parser, _translator, _logger);
+
+                               if (configuration.Data.UsedKeys is null || !configuration.Data.UsedKeys.Any())
+                               {
+                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
+                                   return Result.Error<IEnumerable<string>>($"no used-keys for configuration with id: {formattedParams}", ErrorCode.NotFound);
+                               }
 
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-
-                               return Result.Success<IEnumerable<string>>(result);
+                               return Result.Success<IEnumerable<string>>(configuration.Data
+                                                                                       .UsedKeys
+                                                                                       .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                                                                                       .Skip(range.Offset)
+                                                                                       .Take(range.Length)
+                                                                                       .ToArray());
                            });
             }
             catch (Exception e)
@@ -404,28 +431,15 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                        when.Ticks),
                            async entry =>
                            {
-                               var dbResult =
-                                   await _context.ProjectedConfigurations
-                                                 .Include(e => e.ConfigEnvironment)
-                                                 .Include(e => e.Structure)
-                                                 .Where(c => (c.ValidFrom ?? DateTime.MinValue) <= when
-                                                             && (c.ValidTo ?? DateTime.MaxValue) >= when)
-                                                 .FirstOrDefaultAsync(c => c.ConfigEnvironment.Name == identifier.Environment.Name
-                                                                           && c.ConfigEnvironment.Category == identifier.Environment.Category
-                                                                           && c.Structure.Name == identifier.Structure.Name
-                                                                           && c.Structure.Version == identifier.Structure.Version);
-
-                               if (dbResult is null)
+                               var configuration = await _streamedStore.GetConfiguration(identifier);
+                               if (configuration.IsError)
                                {
                                    entry.SetDuration(CacheDuration.None, _configuration, _logger);
                                    return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
                                }
 
-                               var result = dbResult.Version.ToString();
-
                                entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-
-                               return Result.Success(result);
+                               return Result.Success(configuration.Data.ConfigurationVersion.ToString());
                            });
             }
             catch (Exception e)
@@ -435,5 +449,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                             ErrorCode.DbQueryError);
             }
         }
+
+        /// <inheritdoc />
+        public async Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo) => throw new NotImplementedException();
     }
 }

@@ -32,5 +32,18 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <returns></returns>
         Task<IResult<StreamedObjectSnapshot>> GetStructure(StructureIdentifier identifier);
+
+        /// <summary>
+        ///     get the latest snapshot - if possible - of the <see cref="StreamedConfigurationList"/>
+        /// </summary>
+        /// <returns></returns>
+        Task<IResult<StreamedObjectSnapshot>> GetConfigurationList();
+
+        /// <summary>
+        ///     get the latest snapshot - if possible - of the given <see cref="StreamedConfiguration"/>
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<IResult<StreamedObjectSnapshot>> GetConfiguration(ConfigurationIdentifier identifier);
     }
 }
