@@ -49,9 +49,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 case ConfigurationBuilt built when built.Identifier == Identifier:
                     ValidFrom = built.ValidFrom;
                     ValidTo = built.ValidTo;
-                    ConfigurationVersion = (long) DateTime.UtcNow
-                                                          .Subtract(_unixEpoch)
-                                                          .TotalSeconds;
+                    ConfigurationVersion = (long) streamedEvent.UtcTime
+                                                               .Subtract(_unixEpoch)
+                                                               .TotalSeconds;
                     return true;
             }
 
