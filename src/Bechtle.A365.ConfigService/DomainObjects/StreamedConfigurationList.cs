@@ -56,6 +56,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Lookup = other.Lookup;
         }
 
+        // 10 for each Identifier, plus 5 for rest
+        /// <inheritdoc />
+        protected override long CalculateCacheSize()
+            => Lookup.Count * 25;
+
         /// <summary>
         ///     get a list of all active Environment-Identifiers
         /// </summary>

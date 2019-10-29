@@ -80,6 +80,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Keys = other.Keys;
         }
 
+        // use base-size of 12 for Created / Deleted / Identifier + amount of Keys and Variables
+        /// <inheritdoc />
+        protected override long CalculateCacheSize()
+            => 12
+               + Keys.Count
+               + Variables.Count;
+
         public IResult Create(IDictionary<string, string> keys, IDictionary<string, string> variables)
         {
             if (Created)

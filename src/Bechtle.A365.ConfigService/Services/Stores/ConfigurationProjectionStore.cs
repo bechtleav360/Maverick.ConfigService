@@ -24,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         private readonly IConfigurationParser _parser;
         private readonly IJsonTranslator _translator;
         private readonly IEventStore _eventStore;
+        private readonly IMemoryCache _memoryCache;
         private readonly IList<ICommandValidator> _validators;
         private readonly ILogger<ConfigurationProjectionStore> _logger;
 
@@ -34,6 +35,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                             IConfigurationParser parser,
                                             IJsonTranslator translator,
                                             IEventStore eventStore,
+                                            IMemoryCache memoryCache,
                                             IEnumerable<ICommandValidator> validators)
         {
             _logger = logger;
@@ -42,6 +44,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             _parser = parser;
             _translator = translator;
             _eventStore = eventStore;
+            _memoryCache = memoryCache;
             _validators = validators.ToList();
         }
 

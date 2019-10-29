@@ -136,6 +136,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
+        ///     calculate the size of this object - used to limit the objects kept in the memory-cache at the same time
+        /// </summary>
+        /// <returns>size of current object in abstract units</returns>
+        protected abstract long CalculateCacheSize();
+
+        /// <summary>
         ///     validate all recorded events with the given <see cref="ICommandValidator"/>
         /// </summary>
         /// <param name="validators"></param>

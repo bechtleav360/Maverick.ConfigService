@@ -175,6 +175,20 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return roots;
         }
 
+        private long CountGeneratedPaths()
+        {
+            var computedCost = 0;
+            var stack = new Stack<StreamedEnvironmentKeyPath>(_keyPaths);
+            while (stack.TryPop(out var item))
+            {
+                ++computedCost;
+                foreach (var child in item.Children)
+                    stack.Push(child);
+            }
+
+            return computedCost;
+        }
+
         /// <inheritdoc />
         public override void ApplySnapshot(StreamedObjectSnapshot snapshot)
         {
@@ -190,6 +204,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             IsDefault = other.IsDefault;
             Keys = other.Keys;
         }
+
+        // 10 for identifier, 5 for rest, each Key, each Path (recursively)
+        /// <inheritdoc />
+        protected override long CalculateCacheSize()
+            => 15
+               + Keys.Count
+               + CountGeneratedPaths();
 
         /// <summary>
         ///     flag this environment as existing, and create the appropriate events for that

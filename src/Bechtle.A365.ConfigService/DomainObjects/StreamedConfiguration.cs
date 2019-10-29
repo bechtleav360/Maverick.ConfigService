@@ -71,6 +71,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             ValidTo = other.ValidTo;
         }
 
+        // base cost of 15 (10 from Identifier, 5 for rest)
+        // count Keys twice (to estimate cost of Json)
+        // count each used key
+        /// <inheritdoc />
+        protected override long CalculateCacheSize()
+            => 15
+               + Keys.Count * 2
+               + UsedKeys.Count;
+
         /// <summary>
         ///     Compile the configuration that this object represents - subsequent calls will skip recompilation
         /// </summary>
