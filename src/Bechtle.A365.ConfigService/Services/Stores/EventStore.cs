@@ -108,14 +108,16 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
                                          int readSize = 64,
-                                         StreamDirection direction = StreamDirection.Forwards)
-            => ReplayEventsAsStream(_ => true, streamProcessor, readSize, direction);
+                                         StreamDirection direction = StreamDirection.Forwards,
+                                         long startIndex = -1)
+            => ReplayEventsAsStream(_ => true, streamProcessor, readSize, direction, startIndex);
 
         /// <inheritdoc />
         public async Task ReplayEventsAsStream(Func<RecordedEvent, bool> streamFilter,
                                                Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
                                                int readSize = 64,
-                                               StreamDirection direction = StreamDirection.Forwards)
+                                               StreamDirection direction = StreamDirection.Forwards,
+                                               long startIndex = -1)
         {
             // connect if we're not already connected
             Connect();
@@ -125,9 +127,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             // readSize must be below 4096
             readSize = Math.Min(readSize, 4096);
-            long currentPosition = direction == StreamDirection.Forwards
-                                       ? StreamPosition.Start
-                                       : StreamPosition.End;
+
+            // use either the given start-position (if startIndex positive or 0), or the Beginning (depending on Direction)
+            var currentPosition = startIndex >= 0
+                                      ? startIndex
+                                      : direction == StreamDirection.Forwards
+                                          ? StreamPosition.Start
+                                          : StreamPosition.End;
+
             var stream = _eventStoreConfiguration.Stream;
             bool continueReading;
 

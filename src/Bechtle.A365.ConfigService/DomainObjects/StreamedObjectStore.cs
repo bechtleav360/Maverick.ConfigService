@@ -155,7 +155,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 });
 
                 return true;
-            });
+            }, startIndex: streamedObject.CurrentVersion);
         }
     }
 }
