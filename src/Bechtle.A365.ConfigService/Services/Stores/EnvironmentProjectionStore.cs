@@ -6,11 +6,8 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Dto;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
@@ -18,25 +15,19 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     /// <inheritdoc />
     public class EnvironmentProjectionStore : IEnvironmentProjectionStore
     {
-        private readonly IMemoryCache _cache;
-        private readonly IConfiguration _configuration;
         private readonly IEventStore _eventStore;
         private readonly IStreamedStore _streamedStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
         private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc />
-        public EnvironmentProjectionStore(IMemoryCache cache,
-                                          IConfiguration configuration,
-                                          IEventStore eventStore,
+        public EnvironmentProjectionStore(IEventStore eventStore,
                                           IStreamedStore streamedStore,
                                           ILogger<EnvironmentProjectionStore> logger,
                                           IEnumerable<ICommandValidator> validators)
         {
             _logger = logger;
             _validators = validators.ToList();
-            _cache = cache;
-            _configuration = configuration;
             _eventStore = eventStore;
             _streamedStore = streamedStore;
         }
@@ -46,23 +37,12 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                return await _cache.GetOrCreateAsync(
-                           CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore), nameof(GetAvailable), range),
-                           async entry =>
-                           {
-                               var result = await _streamedStore.GetEnvironmentList();
+                var result = await _streamedStore.GetEnvironmentList();
 
-                               if (result.IsError)
-                               {
-                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
-                                   return Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>());
-                               }
-
-                               entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-
-                               // TODO: refactor this
-                               return Result.Success<IList<EnvironmentIdentifier>>(result.Data.GetIdentifiers().ToList());
-                           });
+                return Result.Success<IList<EnvironmentIdentifier>>(
+                    result.IsError
+                        ? new List<EnvironmentIdentifier>()
+                        : result.Data.GetIdentifiers().ToList());
             }
             catch (Exception e)
             {
@@ -78,92 +58,72 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                return await _cache.GetOrCreateAsync(
-                           CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
-                                                       nameof(GetKeyAutoComplete),
-                                                       identifier,
-                                                       key,
-                                                       range),
-                           async entry =>
-                           {
-                               key = Uri.UnescapeDataString(key ?? string.Empty);
-                               var envResult = await _streamedStore.GetEnvironment(identifier);
-                               if (envResult.IsError)
-                                   return Result.Error<IList<DtoConfigKeyCompletion>>(
-                                       "no environment found with (" +
-                                       $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                                       $"{nameof(identifier.Name)}: {identifier.Name})",
-                                       ErrorCode.NotFound);
+                key = Uri.UnescapeDataString(key ?? string.Empty);
+                var envResult = await _streamedStore.GetEnvironment(identifier);
+                if (envResult.IsError)
+                    return Result.Error<IList<DtoConfigKeyCompletion>>(
+                        "no environment found with (" +
+                        $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                        $"{nameof(identifier.Name)}: {identifier.Name})",
+                        ErrorCode.NotFound);
 
-                               var environment = envResult.Data;
+                var environment = envResult.Data;
+                var paths = environment.KeyPaths;
 
-                               var paths = environment.KeyPaths;
+                // send auto-completion data for all roots
+                if (string.IsNullOrWhiteSpace(key))
+                    return Result.Success<IList<DtoConfigKeyCompletion>>(
+                        paths.Select(p => new DtoConfigKeyCompletion
+                             {
+                                 HasChildren = p.Children.Any(),
+                                 FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                                 Completion = p.Path
+                             })
+                             .OrderBy(p => p.Completion)
+                             .ToList());
 
-                               // send auto-completion data for all roots
-                               if (string.IsNullOrWhiteSpace(key))
-                               {
-                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-                                   return Result.Success<IList<DtoConfigKeyCompletion>>(
-                                       paths.Select(p => new DtoConfigKeyCompletion
-                                            {
-                                                HasChildren = p.Children.Any(),
-                                                FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
-                                                Completion = p.Path
-                                            })
-                                            .OrderBy(p => p.Completion)
-                                            .ToList());
-                               }
+                var parts = new Queue<string>(key.Contains('/')
+                                                  ? key.Split('/')
+                                                  : new[] {key});
 
-                               var parts = new Queue<string>(key.Contains('/')
-                                                                 ? key.Split('/')
-                                                                 : new[] {key});
+                var rootPart = parts.Dequeue();
 
-                               var rootPart = parts.Dequeue();
+                // if the user is searching within the roots
+                if (!parts.Any())
+                {
+                    var possibleRoots = paths.Where(p => p.Path.Contains(rootPart))
+                                             .ToList();
 
-                               // if the user is searching within the roots
-                               if (!parts.Any())
-                               {
-                                   var possibleRoots = paths.Where(p => p.Path.Contains(rootPart))
-                                                            .ToList();
+                    // if there is only one possible root, and that one is matches what were searching for
+                    // we're returning all paths directly below that one
+                    var selectedRoots = possibleRoots.Count == 1
+                                        && possibleRoots.First()
+                                                        .Path
+                                                        .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
+                                            ? paths.First().Children
+                                            : paths;
 
-                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
+                    return Result.Success<IList<DtoConfigKeyCompletion>>(
+                        selectedRoots.Select(p => new DtoConfigKeyCompletion
+                                     {
+                                         HasChildren = p.Children.Any(),
+                                         FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                                         Completion = p.Path
+                                     })
+                                     .OrderBy(p => p.Completion)
+                                     .ToList());
+                }
 
-                                   // if there is only one possible root, and that one is matches what were searching for
-                                   // we're returning all paths directly below that one
-                                   var selectedRoots = possibleRoots.Count == 1
-                                                       && possibleRoots.First()
-                                                                       .Path
-                                                                       .Equals(rootPart, StringComparison.OrdinalIgnoreCase)
-                                                           ? paths.First().Children
-                                                           : paths;
+                var root = paths.FirstOrDefault(p => p.Path == rootPart);
 
-                                   return Result.Success<IList<DtoConfigKeyCompletion>>(
-                                       selectedRoots.Select(p => new DtoConfigKeyCompletion
-                                                    {
-                                                        HasChildren = p.Children.Any(),
-                                                        FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
-                                                        Completion = p.Path
-                                                    })
-                                                    .OrderBy(p => p.Completion)
-                                                    .ToList());
-                               }
+                if (root is null)
+                    return Result.Error<IList<DtoConfigKeyCompletion>>(
+                        $"key '{key}' is ambiguous, root does not match anything",
+                        ErrorCode.NotFound);
 
-                               var root = paths.FirstOrDefault(p => p.Path == rootPart);
+                var result = GetKeyAutoCompleteInternal(root, parts, range);
 
-                               if (root is null)
-                               {
-                                   entry.SetDuration(CacheDuration.None, _configuration, _logger);
-                                   return Result.Error<IList<DtoConfigKeyCompletion>>($"key '{key}' is ambiguous, root does not match anything",
-                                                                                      ErrorCode.NotFound);
-                               }
-
-                               var result = GetKeyAutoCompleteInternal(root, parts, range);
-
-                               if (!result.IsError)
-                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-
-                               return result;
-                           });
+                return result;
             }
             catch (Exception e)
             {
@@ -350,14 +310,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                                                                   IEnumerable<string> parts,
                                                                                   QueryRange range)
         {
-            var cacheKey = CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
-                                                       nameof(GetKeyAutoCompleteInternal),
-                                                       root.FullPath);
-
-            if (_cache.TryGetValue(cacheKey, out var cachedResult) &&
-                cachedResult is IResult<IList<DtoConfigKeyCompletion>> cachedTypedResult)
-                return cachedTypedResult;
-
             var current = root;
             var result = new List<StreamedEnvironmentKeyPath>();
             var queue = new Queue<string>(parts);
@@ -416,7 +368,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 return Result.Error<IList<DtoConfigKeyCompletion>>(logMsg, ErrorCode.NotFound);
             }
 
-            var actualResult = Result.Success<IList<DtoConfigKeyCompletion>>(
+            return Result.Success<IList<DtoConfigKeyCompletion>>(
                 result.Select(p => new DtoConfigKeyCompletion
                       {
                           FullPath = p.FullPath,
@@ -425,12 +377,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                       })
                       .OrderBy(p => p.Completion)
                       .ToList());
-
-            var entry = _cache.CreateEntry(cacheKey);
-            entry.Value = actualResult;
-            entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-
-            return actualResult;
         }
 
         /// <summary>
@@ -449,38 +395,24 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var keys = await _cache.GetOrCreateAsync(
-                               CacheUtilities.MakeCacheKey(nameof(EnvironmentProjectionStore),
-                                                           nameof(GetKeysInternal),
-                                                           typeof(TItem).FullName,
-                                                           typeof(TResult).FullName,
-                                                           parameters.Environment,
-                                                           parameters.Filter,
-                                                           parameters.PreferExactMatch,
-                                                           parameters.Range,
-                                                           parameters.RemoveRoot),
-                               async entry =>
-                               {
-                                   var envResult = await _streamedStore.GetEnvironment(parameters.Environment);
-                                   if (envResult.IsError)
-                                       return new List<TItem>();
+                var envResult = await _streamedStore.GetEnvironment(parameters.Environment);
+                if (envResult.IsError)
+                    return Result.Error<TResult>(envResult.Message, envResult.Code);
 
-                                   var environment = envResult.Data;
+                var environment = envResult.Data;
 
-                                   var query = environment.Keys
-                                                          .Values
-                                                          .AsQueryable();
+                var query = environment.Keys
+                                       .Values
+                                       .AsQueryable();
 
-                                   if (!string.IsNullOrWhiteSpace(parameters.Filter))
-                                       query = query.Where(k => k.Key.StartsWith(parameters.Filter));
+                if (!string.IsNullOrWhiteSpace(parameters.Filter))
+                    query = query.Where(k => k.Key.StartsWith(parameters.Filter));
 
-                                   entry.SetDuration(CacheDuration.Medium, _configuration, _logger);
-                                   return query.OrderBy(k => k.Key)
-                                               .Skip(parameters.Range.Offset)
-                                               .Take(parameters.Range.Length)
-                                               .Select(selector)
-                                               .ToList();
-                               });
+                var keys = query.OrderBy(k => k.Key)
+                                .Skip(parameters.Range.Offset)
+                                .Take(parameters.Range.Length)
+                                .Select(selector)
+                                .ToList();
 
                 if (!string.IsNullOrWhiteSpace(parameters.PreferExactMatch))
                     keys = ApplyPreferredExactFilter(keys, keySelector, parameters.PreferExactMatch).ToList();
