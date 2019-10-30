@@ -58,6 +58,11 @@
         /// <summary>
         ///     environment has already been deleted
         /// </summary>
-        EnvironmentAlreadyDeleted = 10
+        EnvironmentAlreadyDeleted = 10,
+
+        /// <summary>
+        ///     could not retrieve StreamedObject from EventStore
+        /// </summary>
+        FailedToRetrieveItem = 11
     }
 }

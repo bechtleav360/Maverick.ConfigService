@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services;
 using Bechtle.A365.ConfigService.Services.Stores;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -15,9 +16,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public abstract class StreamedObject
     {
-        private bool _eventsBeingDrained;
-
         private readonly object _eventLock = new object();
+        private bool _eventsBeingDrained;
 
         /// <summary>
         ///     Current Version-Number of this Object
@@ -30,18 +30,28 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         protected List<DomainEvent> CapturedDomainEvents { get; set; } = new List<DomainEvent>();
 
         /// <summary>
-        ///     apply a series of <see cref="StreamedEvent" /> to this object,
+        ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
+        /// </summary>
+        public abstract void ApplySnapshot(StreamedObjectSnapshot snapshot);
+
+        /// <summary>
+        ///     apply a single <see cref="StreamedEvent" /> to this object,
         ///     in order to modify its state to a more current one.
         /// </summary>
-        /// <param name="streamedEvents"></param>
-        public virtual void ApplyEvents(IEnumerable<StreamedEvent> streamedEvents)
-        {
-            if (streamedEvents is null)
-                return;
+        /// <param name="streamedEvent"></param>
+        protected abstract bool ApplyEventInternal(StreamedEvent streamedEvent);
 
-            foreach (var streamedEvent in streamedEvents)
-                ApplyEvent(streamedEvent);
-        }
+        /// <summary>
+        ///     calculate the size of this object - used to limit the objects kept in the memory-cache at the same time
+        /// </summary>
+        /// <returns>size of current object in abstract units</returns>
+        public abstract long CalculateCacheSize();
+
+        /// <summary>
+        ///     returns the <see cref="CacheItemPriority"/> for this specific object. Defaults to <see cref="CacheItemPriority.Low"/>
+        /// </summary>
+        /// <returns></returns>
+        public virtual CacheItemPriority GetCacheItemPriority() => CacheItemPriority.Low;
 
         /// <summary>
         ///     apply a single <see cref="StreamedEvent" /> to this object,
@@ -65,18 +75,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
-        ///     apply a single <see cref="StreamedEvent" /> to this object,
-        ///     in order to modify its state to a more current one.
-        /// </summary>
-        /// <param name="streamedEvent"></param>
-        protected abstract bool ApplyEventInternal(StreamedEvent streamedEvent);
-
-        /// <summary>
-        ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
-        /// </summary>
-        public abstract void ApplySnapshot(StreamedObjectSnapshot snapshot);
-
-        /// <summary>
         ///     create the current object as a new Snapshot
         /// </summary>
         /// <returns></returns>
@@ -88,19 +86,19 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         };
 
         /// <summary>
-        ///     Get a list of new events applied to this Object since its creation
+        ///     validate all recorded events with the given <see cref="ICommandValidator" />
         /// </summary>
+        /// <param name="validators"></param>
         /// <returns></returns>
-        public virtual DomainEvent[] GetRecordedEvents()
-        {
-            var retVal = new DomainEvent[CapturedDomainEvents.Count];
-            CapturedDomainEvents.CopyTo(retVal);
-
-            return retVal;
-        }
+        public IDictionary<DomainEvent, IList<IResult>> Validate(IList<ICommandValidator> validators)
+            => CapturedDomainEvents.ToDictionary(@event => @event,
+                                                 @event => (IList<IResult>) validators.Select(v => v.ValidateDomainEvent(@event))
+                                                                                      .ToList())
+                                   .Where(kvp => kvp.Value.Any(r => r.IsError))
+                                   .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         /// <summary>
-        ///     write the recorded events to the given <see cref="IEventStore"/>
+        ///     write the recorded events to the given <see cref="IEventStore" />
         /// </summary>
         /// <param name="store"></param>
         /// <returns></returns>
@@ -117,7 +115,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     _eventsBeingDrained = true;
                 }
 
-                await store.WriteEvents(CapturedDomainEvents);
+                CurrentVersion = await store.WriteEvents(CapturedDomainEvents);
                 CapturedDomainEvents.Clear();
 
                 return Result.Success();
@@ -134,23 +132,5 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 }
             }
         }
-
-        /// <summary>
-        ///     calculate the size of this object - used to limit the objects kept in the memory-cache at the same time
-        /// </summary>
-        /// <returns>size of current object in abstract units</returns>
-        protected abstract long CalculateCacheSize();
-
-        /// <summary>
-        ///     validate all recorded events with the given <see cref="ICommandValidator"/>
-        /// </summary>
-        /// <param name="validators"></param>
-        /// <returns></returns>
-        public IDictionary<DomainEvent, IList<IResult>> Validate(IList<ICommandValidator> validators)
-            => CapturedDomainEvents.ToDictionary(@event => @event,
-                                                 @event => (IList<IResult>) validators.Select(v => v.ValidateDomainEvent(@event))
-                                                                                      .ToList())
-                                   .Where(kvp => kvp.Value.Any(r => r.IsError))
-                                   .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 }

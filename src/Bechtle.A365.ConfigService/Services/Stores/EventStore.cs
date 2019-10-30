@@ -174,42 +174,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public async Task WriteEvent<T>(T domainEvent) where T : DomainEvent
-        {
-            // connect if we're not already connected
-            Connect();
-
-            _logger.LogDebug($"{nameof(WriteEvent)}('{domainEvent.GetType().Name}')");
-
-            var (data, metadata) = SerializeDomainEvent(domainEvent);
-
-            var eventData = new EventData(Guid.NewGuid(),
-                                          domainEvent.EventType,
-                                          false,
-                                          data,
-                                          metadata);
-
-            _logger.LogInformation("sending " +
-                                   $"EventId: '{eventData.EventId}'; " +
-                                   $"Type: '{eventData.Type}'; " +
-                                   $"IsJson: '{eventData.IsJson}'; " +
-                                   $"Data: {eventData.Data.Length} bytes; " +
-                                   $"Metadata: {eventData.Metadata.Length} bytes;");
-
-            var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.Stream,
-                                                               ExpectedVersion.Any,
-                                                               eventData);
-
-            _metrics.Measure.Counter.Increment(KnownMetrics.EventsWritten, domainEvent.EventType);
-
-            _logger.LogDebug($"sent event '{eventData.EventId}': " +
-                             $"NextExpectedVersion: {result.NextExpectedVersion}; " +
-                             $"CommitPosition: {result.LogPosition.CommitPosition}; " +
-                             $"PreparePosition: {result.LogPosition.PreparePosition};");
-        }
-
-        /// <inheritdoc />
-        public async Task WriteEvents(IList<DomainEvent> domainEvents)
+        public async Task<long> WriteEvents(IList<DomainEvent> domainEvents)
         {
             // connect if we're not already connected
             Connect();
@@ -248,6 +213,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                              $"NextExpectedVersion: {result.NextExpectedVersion}; " +
                              $"CommitPosition: {result.LogPosition.CommitPosition}; " +
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
+
+            return result.NextExpectedVersion;
         }
 
         private void Connect(bool reconnect = false)

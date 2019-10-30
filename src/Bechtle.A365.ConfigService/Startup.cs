@@ -206,7 +206,12 @@ namespace Bechtle.A365.ConfigService
             _logger.LogInformation("Registering App-Services");
 
             // setup services for DI
-            services.AddMemoryCache()
+            services.AddMemoryCache(options =>
+                    {
+                        // @TODO: make both of these configurable
+                        options.SizeLimit = 1 * 1024 * 1024 * 1024;
+                        options.CompactionPercentage = 0.10d;
+                    })
                     .AddStackExchangeRedisCache(options =>
                     {
                         var connectionString = Configuration.Get<ConfigServiceConfiguration>()?.MemoryCache?.Redis?.ConnectionString ?? string.Empty;

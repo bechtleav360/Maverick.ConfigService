@@ -178,10 +178,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private long CountGeneratedPaths()
         {
             var computedCost = 0;
-            var stack = new Stack<StreamedEnvironmentKeyPath>(_keyPaths);
+            var stack = _keyPaths is null
+                            ? new Stack<StreamedEnvironmentKeyPath>()
+                            : new Stack<StreamedEnvironmentKeyPath>(_keyPaths);
+
             while (stack.TryPop(out var item))
             {
-                ++computedCost;
+                computedCost += item.Path.Length;
+                computedCost += item.FullPath.Length;
+
                 foreach (var child in item.Children)
                     stack.Push(child);
             }
@@ -207,9 +212,16 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         // 10 for identifier, 5 for rest, each Key, each Path (recursively)
         /// <inheritdoc />
-        protected override long CalculateCacheSize()
-            => 15
-               + Keys.Count
+        public override long CalculateCacheSize()
+            => Identifier.Category.Length
+               + Identifier.Name.Length
+               + (Keys?.Sum(p => p.Key.Length
+                                 + p.Value.Description?.Length ?? 0
+                                 + p.Value.Key?.Length ?? 0
+                                 + p.Value.Type?.Length ?? 0
+                                 + p.Value.Value?.Length ?? 0
+                                 + 8 //p.Value.Version
+                  ) ?? 0)
                + CountGeneratedPaths();
 
         /// <summary>

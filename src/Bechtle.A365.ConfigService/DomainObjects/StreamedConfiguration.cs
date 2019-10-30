@@ -75,10 +75,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         // count Keys twice (to estimate cost of Json)
         // count each used key
         /// <inheritdoc />
-        protected override long CalculateCacheSize()
+        public override long CalculateCacheSize()
             => 15
-               + Keys.Count * 2
-               + UsedKeys.Count;
+               + (Keys?.Sum(p => p.Key.Length + p.Value.Length) * 2 ?? 0)
+               + (UsedKeys?.Sum(s => s.Length) ?? 0);
 
         /// <summary>
         ///     Compile the configuration that this object represents - subsequent calls will skip recompilation

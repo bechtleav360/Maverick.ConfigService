@@ -187,12 +187,12 @@ namespace Bechtle.A365.ConfigService.Controllers
 
                 var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
 
-                var result = await _store.Configurations.GetKeys(configId, when, QueryRange.All);
+                var result = await _store.Configurations.GetJson(configId, when);
 
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data);
+                var json = result.Data;
 
                 if (json.ValueKind == JsonValueKind.Null)
                     return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
