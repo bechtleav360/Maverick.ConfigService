@@ -6,8 +6,14 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
+    /// <summary>
+    ///     Helper-Domain-Object to access all built Configurations
+    /// </summary>
     public class StreamedConfigurationList : StreamedObject
     {
+        /// <summary>
+        ///     internal Lookup, to keep data for Configurations in
+        /// </summary>
         protected Dictionary<ConfigurationIdentifier, ConfigInformation> Lookup { get; set; }
             = new Dictionary<ConfigurationIdentifier, ConfigInformation>();
 

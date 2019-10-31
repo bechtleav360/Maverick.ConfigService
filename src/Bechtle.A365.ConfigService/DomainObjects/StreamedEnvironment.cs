@@ -7,22 +7,41 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
+    /// <summary>
+    ///     Domain-Object representing a Config-Environment which stores a set of Keys from which to build Configurations
+    /// </summary>
     public class StreamedEnvironment : StreamedObject
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
+        /// <summary>
+        ///     Flag indicating if this Environment has been created or not
+        /// </summary>
         public bool Created { get; protected set; }
 
+        /// <summary>
+        ///     Flag indicating if this Environment has been deleted or not
+        /// </summary>
         public bool Deleted { get; protected set; }
 
+        /// <inheritdoc cref="EnvironmentIdentifier"/>
         public EnvironmentIdentifier Identifier { get; protected set; }
 
+        /// <summary>
+        ///     Flag indicating if this is the Default-Environment of its Category
+        /// </summary>
         public bool IsDefault { get; protected set; }
 
+        /// <summary>
+        ///     Actual Data of this Environment
+        /// </summary>
         public Dictionary<string, StreamedEnvironmentKey> Keys { get; protected set; }
 
         private List<StreamedEnvironmentKeyPath> _keyPaths;
 
+        /// <summary>
+        ///     Trees of Paths that represent all Keys in the Environment
+        /// </summary>
         public List<StreamedEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
         /// <inheritdoc />

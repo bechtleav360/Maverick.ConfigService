@@ -5,8 +5,14 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
+    /// <summary>
+    ///     Helper-Domain-Object to access all available Environments
+    /// </summary>
     public class StreamedEnvironmentList : StreamedObject
     {
+        /// <summary>
+        ///     internal Lookup to keep track of Environments
+        /// </summary>
         protected HashSet<EnvironmentIdentifier> Identifiers { get; set; } = new HashSet<EnvironmentIdentifier>();
 
         /// <inheritdoc />

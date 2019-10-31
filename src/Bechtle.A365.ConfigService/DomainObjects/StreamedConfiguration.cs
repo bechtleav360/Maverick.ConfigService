@@ -13,24 +13,49 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
+    /// <summary>
+    ///     Domain-Object representing a Configuration built from a Structure and an Environment
+    /// </summary>
     public class StreamedConfiguration : StreamedObject
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
+        /// <inheritdoc cref="ConfigurationIdentifier"/>
         public ConfigurationIdentifier Identifier { get; protected set; }
 
+        /// <summary>
+        ///     flag indicating if this Configuration has been built or not
+        /// </summary>
         public bool Built { get; protected set; }
 
+        /// <summary>
+        ///     Starting-Time from which this Configuration is Valid
+        /// </summary>
         public DateTime? ValidFrom { get; protected set; }
 
+        /// <summary>
+        ///     End-Time until which this Configuration is Valid
+        /// </summary>
         public DateTime? ValidTo { get; protected set; }
 
+        /// <summary>
+        ///     Actual Data built from this Configuration, as Key=>Value pair
+        /// </summary>
         public IDictionary<string, string> Keys { get; protected set; }
 
+        /// <summary>
+        ///     Actual Data built from this Configuration, as JSON
+        /// </summary>
         public JsonElement? Json { get; protected set; }
 
+        /// <summary>
+        ///     List of Environment-Keys used to build this Configuration
+        /// </summary>
         public List<string> UsedKeys { get; protected set; }
 
+        /// <summary>
+        ///     Data-Version from which this Configuration was built
+        /// </summary>
         public long ConfigurationVersion { get; protected set; }
 
         /// <inheritdoc />

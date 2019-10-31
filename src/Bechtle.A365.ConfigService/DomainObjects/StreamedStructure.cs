@@ -7,16 +7,32 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
+    /// <summary>
+    ///     Domain-Object representing a Structure for a Configuration
+    /// </summary>
     public class StreamedStructure : StreamedObject
     {
+        /// <summary>
+        ///     Flag indicating if this Structure has been Created
+        /// </summary>
         public bool Created { get; protected set; }
 
+        /// <summary>
+        ///     Flag indicating if this Structure has been Deleted
+        /// </summary>
         public bool Deleted { get; protected set; }
 
+        /// <inheritdoc cref="StructureIdentifier"/>
         public StructureIdentifier Identifier { get; protected set; }
 
+        /// <summary>
+        ///     Dictionary containing all hard-coded Values and References to the Environment-Data
+        /// </summary>
         public Dictionary<string, string> Keys { get; protected set; }
 
+        /// <summary>
+        ///     Modifiable Variables that may be used inside the Structure during Compilation
+        /// </summary>
         public Dictionary<string, string> Variables { get; protected set; }
 
         /// <inheritdoc />
@@ -87,6 +103,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                + (Keys?.Sum(p => p.Key.Length + p.Value.Length) ?? 0)
                + (Variables?.Sum(p => p.Key.Length + p.Value.Length) ?? 0);
 
+        /// <summary>
+        ///     Mark this Object as Created, and record all events necessary for this action
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <param name="variables"></param>
+        /// <returns></returns>
         public IResult Create(IDictionary<string, string> keys, IDictionary<string, string> variables)
         {
             if (Created)
@@ -98,6 +120,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return Result.Success();
         }
 
+        /// <summary>
+        ///     Add or Update existing Variables, and record all events necessary for this action
+        /// </summary>
+        /// <param name="updatedKeys"></param>
+        /// <returns></returns>
         public IResult ModifyVariables(IDictionary<string, string> updatedKeys)
         {
             if (updatedKeys is null || !updatedKeys.Any())
@@ -149,6 +176,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
         }
 
+        /// <summary>
+        ///     Delete existing Variables, and record all events necessary for this action
+        /// </summary>
+        /// <param name="keysToRemove"></param>
+        /// <returns></returns>
         public IResult DeleteVariables(ICollection<string> keysToRemove)
         {
             if (keysToRemove is null || !keysToRemove.Any())
