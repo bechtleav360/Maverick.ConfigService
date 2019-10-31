@@ -4,13 +4,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using App.Metrics;
-using Bechtle.A365.ConfigService.Common.DbObjects;
 using Bechtle.A365.ConfigService.Common.Utilities;
-using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Projection.Extensions;
 using Bechtle.A365.ConfigService.Projection.Metrics;
 using Bechtle.A365.ConfigService.Projection.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -107,42 +104,7 @@ namespace Bechtle.A365.ConfigService.Projection
                                  .GetService<ILoggerFactory>()
                                  ?.CreateLogger(nameof(Program));
 
-            services.AddDbContext<ProjectionStoreContext>(
-                        logger, (provider, builder) =>
-                        {
-                            var settings = provider.GetService<ProjectionStorageConfiguration>();
-
-                            // @IMPORTANT: when handling additional cases here, don't forget to update the error-messages
-                            switch (settings.Backend)
-                            {
-                                case DbBackend.MsSql:
-                                    logger.LogDebug("using MsSql database-backend");
-                                    builder.UseSqlServer(settings.ConnectionString);
-                                    break;
-
-                                case DbBackend.Postgres:
-                                    logger.LogDebug("using PostgreSql database-backend");
-                                    builder.UseNpgsql(settings.ConnectionString);
-                                    break;
-
-                                case DbBackend.None:
-                                    logger.LogError("no DbBackend chosen; change ProjectionStorage:Backend; " +
-                                                    $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
-                                    throw new ArgumentOutOfRangeException(nameof(settings.Backend),
-                                                                          "no DbBackend chosen; change ProjectionStorage:Backend; " +
-                                                                          $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
-
-                                default:
-                                    logger.LogError($"Unsupported DbBackend: '{settings.Backend}'; " +
-                                                    $"change ProjectionStorage:Backend; " +
-                                                    $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
-                                    throw new ArgumentOutOfRangeException(nameof(settings.Backend),
-                                                                          $"Unsupported DbBackend: '{settings.Backend}'; " +
-                                                                          $"change ProjectionStorage:Backend; " +
-                                                                          $"set either {DbBackend.MsSql:G} or {DbBackend.Postgres:G} as Db-Backend");
-                            }
-                        })
-                    .AddCustomLogging(logger)
+            services.AddCustomLogging(logger)
                     .AddProjectionConfiguration(logger, context.Configuration)
                     .AddProjectionServices(logger)
                     .AddDomainEventServices(logger)
@@ -154,8 +116,7 @@ namespace Bechtle.A365.ConfigService.Projection
                     // add the service that should be run
                     .AddHostedService<StatusReporter>(logger)
                     .AddSingleton<IEventQueue, EventQueue>(logger)
-                    .AddHostedService<EventConverter>(logger)
-                    .AddHostedService<EventProjection>(logger);
+                    .AddHostedService<EventConverter>(logger);
         }
     }
 }

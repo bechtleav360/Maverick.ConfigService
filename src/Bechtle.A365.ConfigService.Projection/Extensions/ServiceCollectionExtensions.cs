@@ -6,8 +6,6 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Parsing;
-using Bechtle.A365.ConfigService.Projection.DataStorage;
-using Bechtle.A365.ConfigService.Projection.DomainEventHandlers;
 using Bechtle.A365.ConfigService.Projection.Services;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
@@ -41,18 +39,7 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         public static IServiceCollection AddDomainEventServices(this IServiceCollection services, ILogger logger)
             => services
                // add DomainEventConverter as generic class for IDomainEventConverter
-               .AddSingleton(logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
-               // register all IDomainEventHandlers
-               // IMPORTANT: this needs to be updated once new events are added
-               .AddScoped<IDomainEventHandler<DefaultEnvironmentCreated>, DefaultEnvironmentCreatedHandler>(logger)
-               .AddScoped<IDomainEventHandler<EnvironmentCreated>, EnvironmentCreatedHandler>(logger)
-               .AddScoped<IDomainEventHandler<EnvironmentDeleted>, EnvironmentDeletedHandler>(logger)
-               .AddScoped<IDomainEventHandler<EnvironmentKeysModified>, EnvironmentKeysModifiedHandler>(logger)
-               .AddScoped<IDomainEventHandler<EnvironmentKeysImported>, EnvironmentKeysImportedHandler>(logger)
-               .AddScoped<IDomainEventHandler<StructureCreated>, StructureCreatedHandler>(logger)
-               .AddScoped<IDomainEventHandler<StructureDeleted>, StructureDeletedHandler>(logger)
-               .AddScoped<IDomainEventHandler<StructureVariablesModified>, StructureVariablesModifiedHandler>(logger)
-               .AddScoped<IDomainEventHandler<ConfigurationBuilt>, ConfigurationBuiltHandler>(logger);
+               .AddSingleton(logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>));
 
         /// <summary>
         ///     add configuration as a whole, and parts of it
@@ -76,7 +63,6 @@ namespace Bechtle.A365.ConfigService.Projection.Extensions
         public static IServiceCollection AddProjectionServices(this IServiceCollection services, ILogger logger)
             => services.AddScoped<IConfigurationParser, AntlrConfigurationParser>(logger)
                        .AddScoped<IConfigurationCompiler, ConfigurationCompiler>(logger)
-                       .AddScoped<IConfigurationDatabase, ConfigurationDatabase>(logger)
                        .AddScoped<IJsonTranslator, JsonTranslator>(logger)
                        .AddTransient(logger, provider =>
                        {

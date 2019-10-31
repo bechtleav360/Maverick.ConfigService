@@ -6,7 +6,6 @@ using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
-using Bechtle.A365.ConfigService.Projection.DataStorage;
 using Bechtle.A365.ConfigService.Projection.Extensions;
 using Bechtle.A365.ConfigService.Projection.Metrics;
 using EventStore.ClientAPI;
@@ -77,21 +76,6 @@ namespace Bechtle.A365.ConfigService.Projection.Services
             var configuration = _serviceProvider.GetService<IConfiguration>();
             var config = configuration.Get<ProjectionConfiguration>();
 
-            long? latestEvent;
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                _logger.LogDebug("trying to open connection to Database");
-
-                var database = scope.ServiceProvider.GetService<IConfigurationDatabase>();
-                await database.Connect();
-
-                _logger.LogDebug("connected to database, retrieving latest projected event-id");
-
-                latestEvent = await database.GetLatestProjectedEventId();
-
-                _logger.LogDebug($"latest event-id retrieved: '{latestEvent}'");
-            }
-
             _logger.LogDebug("trying to open connection to EventStore");
 
             _eventStore = _serviceProvider.GetService<IEventStoreConnection>();
@@ -101,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Projection.Services
 
             _eventStore.SubscribeToStreamFrom(
                 config.EventStoreConnection.Stream,
-                latestEvent,
+                -1,
                 new CatchUpSubscriptionSettings(config.EventStoreConnection.MaxLiveQueueSize,
                                                 config.EventStoreConnection.ReadBatchSize,
                                                 false,
