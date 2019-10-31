@@ -108,15 +108,12 @@ namespace Bechtle.A365.ConfigService.Projection
                     .AddProjectionConfiguration(logger, context.Configuration)
                     .AddProjectionServices(logger)
                     .AddDomainEventServices(logger)
-                    .AddSingleton<IMetricService, ProjectionMetricService>(logger)
                     // register metrics-services
                     .AddSingleton<RabbitMetricsReporter>()
                     .AddMetrics(builder => ConfigureMetrics(context, builder))
                     .AddMetricsReportingHostedService()
                     // add the service that should be run
-                    .AddHostedService<StatusReporter>(logger)
-                    .AddSingleton<IEventQueue, EventQueue>(logger)
-                    .AddHostedService<EventConverter>(logger);
+                    .AddHostedService<SnapshotService>(logger);
         }
     }
 }
