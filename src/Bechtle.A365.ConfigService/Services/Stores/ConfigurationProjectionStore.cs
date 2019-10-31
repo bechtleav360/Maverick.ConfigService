@@ -9,7 +9,6 @@ using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Parsing;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
@@ -22,7 +21,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         private readonly IConfigurationParser _parser;
         private readonly IJsonTranslator _translator;
         private readonly IEventStore _eventStore;
-        private readonly IMemoryCache _memoryCache;
         private readonly IList<ICommandValidator> _validators;
         private readonly ILogger<ConfigurationProjectionStore> _logger;
 
@@ -33,7 +31,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                                             IConfigurationParser parser,
                                             IJsonTranslator translator,
                                             IEventStore eventStore,
-                                            IMemoryCache memoryCache,
                                             IEnumerable<ICommandValidator> validators)
         {
             _logger = logger;
@@ -42,7 +39,6 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             _parser = parser;
             _translator = translator;
             _eventStore = eventStore;
-            _memoryCache = memoryCache;
             _validators = validators.ToList();
         }
 

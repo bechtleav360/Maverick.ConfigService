@@ -5,7 +5,6 @@ using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Services.Stores;
@@ -22,17 +21,14 @@ namespace Bechtle.A365.ConfigService.Controllers
     public class ConfigurationController : ControllerBase
     {
         private readonly IProjectionStore _store;
-        private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
-                                       IProjectionStore store,
-                                       IJsonTranslator translator)
+                                       IProjectionStore store)
             : base(provider, logger)
         {
             _store = store;
-            _translator = translator;
         }
 
         /// <summary>
