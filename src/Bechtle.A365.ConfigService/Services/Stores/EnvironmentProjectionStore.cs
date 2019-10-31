@@ -376,6 +376,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                           Completion = p.Path
                       })
                       .OrderBy(p => p.Completion)
+                      .Skip(range.Offset)
+                      .Take(range.Length)
                       .ToList());
         }
 
