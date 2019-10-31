@@ -5,8 +5,14 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
+    /// <summary>
+    ///     Helper-Domain-Object to access all available Structures
+    /// </summary>
     public class StreamedStructureList : StreamedObject
     {
+        /// <summary>
+        ///     internal Lookup to keep track of Structures
+        /// </summary>
         protected HashSet<StructureIdentifier> Identifiers { get; set; } = new HashSet<StructureIdentifier>();
 
         /// <inheritdoc />

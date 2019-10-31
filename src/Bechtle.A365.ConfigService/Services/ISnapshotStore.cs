@@ -5,6 +5,9 @@ using Bechtle.A365.ConfigService.DomainObjects;
 
 namespace Bechtle.A365.ConfigService.Services
 {
+    /// <summary>
+    ///     Store, to retrieve Snapshots of <see cref="StreamedObject"/>
+    /// </summary>
     public interface ISnapshotStore
     {
         /// <summary>
