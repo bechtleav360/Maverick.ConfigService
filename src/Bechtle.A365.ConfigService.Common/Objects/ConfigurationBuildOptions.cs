@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Bechtle.A365.ConfigService.Dto
+namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     Options regarding how a Configuration is Built and how it is available after that

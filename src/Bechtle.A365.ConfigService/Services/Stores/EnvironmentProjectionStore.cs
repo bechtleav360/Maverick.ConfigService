@@ -6,8 +6,8 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
-using Bechtle.A365.ConfigService.Dto;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Services.Stores

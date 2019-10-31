@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 
-namespace Bechtle.A365.ConfigService.Dto
+namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     transfer-object containing information about a Configuration-Structure

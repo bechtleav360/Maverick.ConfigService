@@ -138,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <param name="sourceEnvironments"></param>
         /// <returns></returns>
         private IList<EnvironmentComparison> CompareEnvironments(EnvironmentExport targetEnvironment,
-                                                                 IDictionary<EnvironmentIdentifier, ConfigEnvironmentKey[]> sourceEnvironments)
+                                                                 IDictionary<EnvironmentIdentifier, DtoConfigKey[]> sourceEnvironments)
         {
             var comparisons = new List<EnvironmentComparison>();
 
@@ -170,7 +170,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                               // we add it to the list of deleted keys for review
                                               return targetEnvironment.Keys.All(tk => !tk.Key.Equals(sk.Key));
                                           }).ToList()
-                                          : new List<ConfigEnvironmentKey>();
+                                          : new List<DtoConfigKey>();
 
                     comparisons.Add(new EnvironmentComparison
                     {
@@ -201,9 +201,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="envIds"></param>
         /// <returns></returns>
-        private async Task<Dictionary<EnvironmentIdentifier, ConfigEnvironmentKey[]>> GetEnvironmentKeys(IEnumerable<EnvironmentIdentifier> envIds)
+        private async Task<Dictionary<EnvironmentIdentifier, DtoConfigKey[]>> GetEnvironmentKeys(IEnumerable<EnvironmentIdentifier> envIds)
         {
-            var results = new Dictionary<EnvironmentIdentifier, ConfigEnvironmentKey[]>();
+            var results = new Dictionary<EnvironmentIdentifier, DtoConfigKey[]>();
 
             try
             {
@@ -213,10 +213,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                                    .Get(new Uri(new Uri(ConfigServiceEndpoint),
                                                                 $"v1/environments/{target.Category}/{target.Name}/keys/objects"))
                                                    .ReceiveString()
-                                                   .ReceiveObject<List<ConfigEnvironmentKey>>();
+                                                   .ReceiveObject<List<DtoConfigKey>>();
 
                     if (request.HttpResponseMessage?.IsSuccessStatusCode == true)
-                        results.Add(target, (await request.Take<List<ConfigEnvironmentKey>>())?.ToArray());
+                        results.Add(target, (await request.Take<List<DtoConfigKey>>())?.ToArray());
                     else
                         Output.WriteErrorLine($"could not retrieve environment '{target}' for comparison");
                 }

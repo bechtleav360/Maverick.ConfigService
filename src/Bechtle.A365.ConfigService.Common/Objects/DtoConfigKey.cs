@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Dto
+﻿namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     transfer-object defining a Configuration-Key with additional metadata

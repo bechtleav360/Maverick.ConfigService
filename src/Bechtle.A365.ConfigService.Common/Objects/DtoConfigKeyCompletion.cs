@@ -1,4 +1,4 @@
-﻿namespace Bechtle.A365.ConfigService.Dto
+﻿namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     completion-data for a searched path
