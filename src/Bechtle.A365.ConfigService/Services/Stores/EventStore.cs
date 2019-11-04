@@ -189,7 +189,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
                 return new EventData(Guid.NewGuid(),
                                      e.EventType,
-                                     false,
+                                     true,
                                      data,
                                      metadata);
             }).ToList();
