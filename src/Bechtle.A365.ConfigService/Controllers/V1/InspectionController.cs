@@ -15,7 +15,7 @@ using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers
+namespace Bechtle.A365.ConfigService.Controllers.V1
 {
     /// <summary>
     ///     controller to inspect and analyze the current state of all stored Configuration-Data

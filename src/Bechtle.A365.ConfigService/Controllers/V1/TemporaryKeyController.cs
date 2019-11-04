@@ -12,7 +12,7 @@ using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers
+namespace Bechtle.A365.ConfigService.Controllers.V1
 {
     /// <inheritdoc />
     /// <summary>

@@ -10,7 +10,7 @@ using Bechtle.A365.ConfigService.Common.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Controllers
+namespace Bechtle.A365.ConfigService.Controllers.V1
 {
     /// <summary>
     ///     Controller responsible to read / write its own Configuration.
