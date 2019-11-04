@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Configuration;
+using Bechtle.A365.ConfigService.Services.Stores;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -15,20 +16,23 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
     /// </summary>
     public class NumberThresholdSnapshotTrigger : ISnapshotTrigger
     {
-        private readonly IEventStoreConnection _eventStore;
+        private readonly IEventStore _eventStore;
+        private readonly ISnapshotStore _snapshotStore;
         private readonly IConfiguration _configuration;
-        private readonly ProjectionConfiguration _projectionConfig;
+        private readonly ConfigServiceConfiguration _serviceConfig;
         private readonly ILogger _logger;
 
         /// <inheritdoc />
-        public NumberThresholdSnapshotTrigger(IEventStoreConnection eventStore,
+        public NumberThresholdSnapshotTrigger(IEventStore eventStore,
+                                              ISnapshotStore snapshotStore,
                                               IConfiguration configuration,
-                                              ProjectionConfiguration projectionConfig,
+                                              ConfigServiceConfiguration serviceConfig,
                                               ILogger<NumberThresholdSnapshotTrigger> logger)
         {
             _eventStore = eventStore;
+            _snapshotStore = snapshotStore;
             _configuration = configuration;
-            _projectionConfig = projectionConfig;
+            _serviceConfig = serviceConfig;
             _logger = logger;
         }
 
@@ -45,16 +49,12 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                _logger.LogDebug("connecting to EventStore");
-                await _eventStore.ConnectAsync();
-
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                _logger.LogDebug($"retrieving last event in '{_projectionConfig.EventStoreConnection.Stream}'");
-                var result = await _eventStore.ReadStreamEventsBackwardAsync(_projectionConfig.EventStoreConnection.Stream, StreamPosition.End, 1, true);
-                var lastEventNumber = result.LastEventNumber;
-                _logger.LogDebug($"last event in '{_projectionConfig.EventStoreConnection.Stream}': {lastEventNumber}");
+                _logger.LogDebug($"retrieving last event in '{_serviceConfig.EventStoreConnection.Stream}'");
+                var lastEventNumber = await _eventStore.GetCurrentEventNumber();
+                _logger.LogDebug($"last event in '{_serviceConfig.EventStoreConnection.Stream}': {lastEventNumber}");
 
                 if (cancellationToken.IsCancellationRequested)
                     return;
@@ -75,11 +75,7 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                await _eventStore.SubscribeToStreamAsync(
-                    _projectionConfig.EventStoreConnection.Stream,
-                    true,
-                    EventAppeared,
-                    SubscriptionDropped);
+                _eventStore.EventAppeared += EventStoreOnEventAppeared;
             }
             catch (Exception e)
             {
@@ -87,11 +83,11 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
             }
         }
 
-        private void SubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception e)
-            => _logger.LogInformation(e, $"subscription to {subscription.StreamId} has been dropped: {reason:G} {e.Message}");
-
-        private async Task EventAppeared(EventStoreSubscription subscription, ResolvedEvent reason)
+        // @TODO: see if this can be done without 'async void'
+        private async void EventStoreOnEventAppeared(object sender, (EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent) e)
         {
+            var (subscription, _) = e;
+
             var lastEventNumber = subscription.LastEventNumber ?? 0;
             _logger.LogDebug($"event received, EventNumber: {lastEventNumber}");
 
@@ -112,26 +108,19 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
                                    $"'{lastEventNumber - currentSnapshotEventNumber - threshold}'" +
                                    $"(lastEvent: {lastEventNumber}; currentSnapshot: {currentSnapshotEventNumber}; threshold: {threshold})");
 
-            try
-            {
-                _eventStore.Close();
-                _eventStore.Dispose();
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(e, "error while disposing of EventStore while triggering new Snapshot");
-            }
-
             SnapshotTriggered?.Invoke(this, EventArgs.Empty);
         }
 
-        private Task<long> GetCurrentSnapshotEventNumber() => Task.FromResult(0L);
+        private async Task<long> GetCurrentSnapshotEventNumber()
+        {
+            var result = await _snapshotStore.GetLatestSnapshotNumbers();
+            return result?.Data ?? 0;
+        }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            _eventStore?.Close();
-            _eventStore?.Dispose();
+            _eventStore.EventAppeared -= EventStoreOnEventAppeared;
         }
     }
 }

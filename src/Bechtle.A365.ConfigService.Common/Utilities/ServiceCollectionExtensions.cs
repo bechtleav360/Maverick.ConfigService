@@ -29,6 +29,15 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             return services.AddHostedService<THostedService>();
         }
 
+        public static IServiceCollection AddScoped<TService>(this IServiceCollection services, ILogger logger)
+            where TService : class
+        {
+            logger.LogServiceRegistration(ServiceLifetime.Scoped,
+                                          typeof(TService).GetFriendlyName());
+
+            return services.AddScoped<TService>();
+        }
+
         public static IServiceCollection AddScoped<TService, TImplementation>(this IServiceCollection services, ILogger logger)
             where TService : class
             where TImplementation : class, TService

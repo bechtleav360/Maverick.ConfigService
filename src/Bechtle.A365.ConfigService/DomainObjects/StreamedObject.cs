@@ -97,7 +97,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Identifier = GetSnapshotIdentifier(),
             Version = CurrentVersion,
             DataType = GetType().Name,
-            JsonData = JsonSerializer.Serialize(this, new JsonSerializerOptions
+            // using GetType to point the serializer to the ACTUAL class it needs to inspect
+            JsonData = JsonSerializer.Serialize(this, GetType(), new JsonSerializerOptions
             {
                 Converters =
                 {

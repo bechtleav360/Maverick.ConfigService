@@ -14,6 +14,7 @@ using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Middleware;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.ConfigService.Services.SnapshotTriggers;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
@@ -247,8 +248,13 @@ namespace Bechtle.A365.ConfigService
                                                            provider.GetService<ILoggerFactory>());
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
-                    .AddScoped<IStreamedStore, StreamedObjectStore>()
-                    .AddScoped<ISnapshotStore, DummySnapshotStore>()
+                    .AddScoped<IStreamedStore, StreamedObjectStore>(_logger)
+                    //.AddScoped<ISnapshotStore, DummySnapshotStore>(_logger)
+                    // once behinde the interface, once with direct access
+                    .AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
+                    .AddScoped<PostgresSnapshotStore>(_logger)
+                    .AddScoped<ISnapshotTrigger, NumberThresholdSnapshotTrigger>(_logger)
+                    .AddScoped<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
                     .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)

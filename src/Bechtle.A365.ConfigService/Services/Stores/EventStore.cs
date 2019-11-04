@@ -19,21 +19,19 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 namespace Bechtle.A365.ConfigService.Services.Stores
 {
     /// <inheritdoc cref="IEventStore" />
-    public class EventStore : IEventStore
+    public class EventStore : IEventStore, IDisposable
     {
-        /// <inheritdoc cref="Services.ConnectionState" />
-        public static ConnectionState ConnectionState { get; private set; } = ConnectionState.Disconnected;
-
         private readonly IConfiguration _configuration;
-        private readonly IMetrics _metrics;
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly ESLogger _eventStoreLogger;
         private readonly ILogger _logger;
+        private readonly IMetrics _metrics;
         private readonly IServiceProvider _provider;
 
         private IEventStoreConnection _eventStore;
         private EventStoreConnectionConfiguration _eventStoreConfiguration;
+        private EventStoreSubscription _eventSubscription;
 
         /// <inheritdoc />
         /// <param name="logger"></param>
@@ -58,6 +56,30 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             _metrics = metrics;
 
             ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
+        }
+
+        /// <inheritdoc cref="Services.ConnectionState" />
+        public static ConnectionState ConnectionState { get; private set; } = ConnectionState.Disconnected;
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _eventSubscription?.Dispose();
+            _eventStore?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public event EventHandler<(EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent)> EventAppeared;
+
+        /// <inheritdoc />
+        public async Task<long> GetCurrentEventNumber()
+        {
+            // connect if we're not already connected
+            Connect();
+
+            var result = await _eventStore.ReadStreamEventsBackwardAsync(_eventStoreConfiguration.Stream, StreamPosition.End, 1, true);
+
+            return result.LastEventNumber;
         }
 
         /// <inheritdoc />
@@ -235,6 +257,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                         _eventStore.Connected -= OnEventStoreConnected;
                         _eventStore.Disconnected -= OnEventStoreDisconnected;
                         _eventStore.Reconnecting -= OnEventStoreReconnecting;
+                        _eventSubscription?.Dispose();
                     }
 
                     _eventStore?.Dispose();
@@ -277,6 +300,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 try
                 {
                     _eventStore.ConnectAsync().RunSync();
+                    _eventSubscription = _eventStore.SubscribeToAllAsync(true, OnEventAppeared).RunSync();
                 }
                 catch (Exception e)
                 {
@@ -286,6 +310,12 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         private void OnConfigurationChanged() => Connect(true);
+
+        private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
+        {
+            EventAppeared?.Invoke(this, (Subscription: subscription, ResolvedEvent: resolvedEvent));
+            return Task.CompletedTask;
+        }
 
         private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args)
         {

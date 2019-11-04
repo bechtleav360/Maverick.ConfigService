@@ -36,5 +36,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public Task<IResult> SaveSnapshots(IList<StreamedObjectSnapshot> snapshots)
             => Task.FromResult(Result.Error(string.Empty, ErrorCode.Undefined));
+
+        /// <inheritdoc />
+        public Task<IResult<long>> GetLatestSnapshotNumbers()
+            => Task.FromResult(Result.Error<long>(string.Empty, ErrorCode.Undefined));
     }
 }

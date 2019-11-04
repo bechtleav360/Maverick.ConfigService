@@ -10,6 +10,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Exception = System.Exception;
 
 namespace Bechtle.A365.ConfigService.Services.Stores
 {
@@ -107,11 +108,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var oldSnapshots = await _context.Snapshots
-                                                 .Where(dbSnapshot => snapshots.Any(
-                                                            newSnapshot => dbSnapshot.DataType == newSnapshot.DataType
-                                                                           && dbSnapshot.Identifier == newSnapshot.Identifier))
-                                                 .ToListAsync();
+                var oldSnapshots = (await _context.Snapshots.ToListAsync())
+                                   .Where(dbSnapshot => snapshots.Any(
+                                              newSnapshot => dbSnapshot.DataType == newSnapshot.DataType
+                                                             && dbSnapshot.Identifier == newSnapshot.Identifier))
+                                   .ToList();
 
                 _context.Snapshots.RemoveRange(oldSnapshots);
 
@@ -140,11 +141,30 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             }
         }
 
+        /// <inheritdoc />
+        public async Task<IResult<long>> GetLatestSnapshotNumbers()
+        {
+            try
+            {
+                return Result.Success(await _context.Snapshots.MaxAsync(s => s.Version));
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "could not retrieve highest snapshot-number from Postgres");
+                return Result.Error<long>("could not retrieve highest snapshot-number from Postgres", ErrorCode.DbQueryError);
+            }
+        }
+
         /// <summary>
         ///     DbContext for <see cref="PostgresSnapshotStore"/>
         /// </summary>
         public class PostgresSnapshotContext : DbContext
         {
+            /// <inheritdoc />
+            public PostgresSnapshotContext(DbContextOptions options) : base(options)
+            {
+            }
+
             internal DbSet<PostgresSnapshot> Snapshots { get; set; }
         }
 

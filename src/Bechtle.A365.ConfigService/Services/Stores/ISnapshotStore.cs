@@ -57,5 +57,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="snapshots"></param>
         /// <returns></returns>
         Task<IResult> SaveSnapshots(IList<StreamedObjectSnapshot> snapshots);
+
+        /// <summary>
+        ///     get the highest event-number of the currently saved snapshots
+        /// </summary>
+        /// <returns></returns>
+        Task<IResult<long>> GetLatestSnapshotNumbers();
     }
 }

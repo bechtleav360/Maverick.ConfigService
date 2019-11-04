@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
 {
@@ -44,57 +45,70 @@ namespace Bechtle.A365.ConfigService.Services
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                _triggerTokenSource = new CancellationTokenSource();
-                var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _triggerTokenSource.Token);
-
-                _logger.LogDebug($"retrieving all instances of {nameof(ISnapshotTrigger)}");
-
-                _triggers.Clear();
-                _triggers.AddRange(_provider.GetServices<ISnapshotTrigger>());
-
-                foreach (var trigger in _triggers)
-                    trigger.SnapshotTriggered += OnSnapshotTriggered;
-
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                foreach (var trigger in _triggers)
-                    await trigger.Start(cancellationToken);
+                using var scope = _provider.CreateScope();
 
                 try
                 {
-                    // wait for OnSnapshotTriggered to fire and cancel _triggerTokenSource
-                    while (!linkedSource.IsCancellationRequested)
-                        await Task.Delay(TimeSpan.FromSeconds(10), linkedSource.Token);
-                }
-                // we catch TaskCanceled to evaluate which of the two has actually been cancelled
-                catch (TaskCanceledException)
-                {
+                    _triggerTokenSource = new CancellationTokenSource();
+                    var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _triggerTokenSource.Token);
+
+                    _logger.LogDebug($"retrieving all instances of {nameof(ISnapshotTrigger)}");
+
+                    _triggers.Clear();
+                    _triggers.AddRange(scope.ServiceProvider.GetServices<ISnapshotTrigger>());
+
+                    foreach (var trigger in _triggers)
+                        trigger.SnapshotTriggered += OnSnapshotTriggered;
+
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    foreach (var trigger in _triggers)
+                        await trigger.Start(cancellationToken);
+
+                    try
+                    {
+                        // wait for OnSnapshotTriggered to fire and cancel _triggerTokenSource
+                        while (!linkedSource.IsCancellationRequested)
+                            await Task.Delay(TimeSpan.FromSeconds(10), linkedSource.Token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        // we expect TaskCanceled to be thrown once OnSnapshotTriggered is fired
+                        // but we only care about the timer finishing
+                    }
+
                     // if the overall CT was cancelled we stop, otherwise we continue and loop
                     if (cancellationToken.IsCancellationRequested)
                         return;
+
+                    _logger.LogDebug("disposing all SnapshotTriggers");
+                    foreach (var trigger in _triggers)
+                        trigger.Dispose();
+
+                    var snapshots = await CreateSnapshots(scope.ServiceProvider, cancellationToken);
+                    await SaveSnapshots(scope.ServiceProvider, snapshots, cancellationToken);
                 }
-
-                _logger.LogDebug("disposing all SnapshotTriggers");
-                foreach (var trigger in _triggers)
-                    trigger.Dispose();
-
-                var snapshots = await CreateSnapshots(cancellationToken);
-                await SaveSnapshots(snapshots, cancellationToken);
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "error while running SnapshotService in background");
+                }
             }
         }
 
-        private async Task<IList<StreamedObjectSnapshot>> CreateSnapshots(CancellationToken cancellationToken)
+        private async Task<IList<StreamedObjectSnapshot>> CreateSnapshots(IServiceProvider provider, CancellationToken cancellationToken)
         {
-            return new List<StreamedObjectSnapshot>();
+            var kreator = provider.GetRequiredService<ISnapshotCreator>();
+
+            return await kreator.CreateAllSnapshots(cancellationToken);
         }
 
-        private async Task SaveSnapshots(IList<StreamedObjectSnapshot> snapshots, CancellationToken cancellationToken)
+        private async Task SaveSnapshots(IServiceProvider provider, IList<StreamedObjectSnapshot> snapshots, CancellationToken cancellationToken)
         {
             var stores = new List<ISnapshotStore>();
 
             if (_configuration.GetSection("SnapshotConfiguration:Stores:Postgres:Enabled").Get<bool>())
-                stores.Add(_provider.GetRequiredService<PostgresSnapshotStore>());
+                stores.Add(provider.GetRequiredService<PostgresSnapshotStore>());
 
             foreach (var store in stores)
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
@@ -55,6 +56,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Trees of Paths that represent all Keys in the Environment
         /// </summary>
+        [JsonIgnore]
         public List<StreamedEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
         /// <summary>
@@ -179,6 +181,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                                     .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
                                                     .ToArray()));
 
+                _keyPaths = null;
+
                 return Result.Success();
             }
             catch (Exception)
@@ -239,6 +243,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                             Identifier,
                             recordedChanges.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
                                            .ToArray()));
+
+                _keyPaths = null;
 
                 return Result.Success();
             }
@@ -398,6 +404,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                                                            .Subtract(_unixEpoch)
                                                                            .TotalSeconds
                                               });
+
+            _keyPaths = null;
         }
 
         private void HandleKeysModified(EnvironmentKeysModified environmentKeysModified)
@@ -417,6 +425,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                              .Subtract(_unixEpoch)
                                              .TotalSeconds
                 };
+
+            _keyPaths = null;
         }
     }
 }

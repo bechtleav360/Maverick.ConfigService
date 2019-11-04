@@ -12,6 +12,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
     public interface IEventStore
     {
         /// <summary>
+        ///     event triggered once a new Event has been received from EventStore
+        /// </summary>
+        event EventHandler<(EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent)> EventAppeared;
+
+        /// <summary>
         ///     replay all events and get the written DomainEvents
         /// </summary>
         /// <returns></returns>
@@ -52,5 +57,11 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="domainEvents"></param>
         /// <returns></returns>
         Task<long> WriteEvents(IList<DomainEvent> domainEvents);
+
+        /// <summary>
+        ///     get the EventNumber of the newest Event
+        /// </summary>
+        /// <returns></returns>
+        Task<long> GetCurrentEventNumber();
     }
 }
