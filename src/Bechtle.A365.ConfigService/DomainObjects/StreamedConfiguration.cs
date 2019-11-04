@@ -20,13 +20,39 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
-        /// <inheritdoc cref="ConfigurationIdentifier"/>
-        public ConfigurationIdentifier Identifier { get; protected set; }
+        /// <inheritdoc />
+        public StreamedConfiguration(ConfigurationIdentifier identifier)
+        {
+            Identifier = identifier;
+        }
 
         /// <summary>
         ///     flag indicating if this Configuration has been built or not
         /// </summary>
         public bool Built { get; protected set; }
+
+        /// <summary>
+        ///     Data-Version from which this Configuration was built
+        /// </summary>
+        public long ConfigurationVersion { get; protected set; }
+
+        /// <inheritdoc cref="ConfigurationIdentifier" />
+        public ConfigurationIdentifier Identifier { get; protected set; }
+
+        /// <summary>
+        ///     Actual Data built from this Configuration, as JSON
+        /// </summary>
+        public JsonElement? Json { get; protected set; }
+
+        /// <summary>
+        ///     Actual Data built from this Configuration, as Key=>Value pair
+        /// </summary>
+        public IDictionary<string, string> Keys { get; protected set; }
+
+        /// <summary>
+        ///     List of Environment-Keys used to build this Configuration
+        /// </summary>
+        public List<string> UsedKeys { get; protected set; }
 
         /// <summary>
         ///     Starting-Time from which this Configuration is Valid
@@ -39,59 +65,21 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public DateTime? ValidTo { get; protected set; }
 
         /// <summary>
-        ///     Actual Data built from this Configuration, as Key=>Value pair
+        ///     build this Configuration with the given time-parameters
         /// </summary>
-        public IDictionary<string, string> Keys { get; protected set; }
-
-        /// <summary>
-        ///     Actual Data built from this Configuration, as JSON
-        /// </summary>
-        public JsonElement? Json { get; protected set; }
-
-        /// <summary>
-        ///     List of Environment-Keys used to build this Configuration
-        /// </summary>
-        public List<string> UsedKeys { get; protected set; }
-
-        /// <summary>
-        ///     Data-Version from which this Configuration was built
-        /// </summary>
-        public long ConfigurationVersion { get; protected set; }
-
-        /// <inheritdoc />
-        public StreamedConfiguration(ConfigurationIdentifier identifier)
+        /// <param name="validFrom"></param>
+        /// <param name="validTo"></param>
+        /// <returns></returns>
+        public IResult Build(DateTime? validFrom, DateTime? validTo)
         {
-            Identifier = identifier;
-        }
+            ValidFrom = validFrom;
+            ValidTo = validTo;
+            Built = false;
+            Keys = new Dictionary<string, string>();
+            Json = null;
+            CapturedDomainEvents.Add(new ConfigurationBuilt(Identifier, validFrom, validTo));
 
-        /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case ConfigurationBuilt built when built.Identifier == Identifier:
-                    ValidFrom = built.ValidFrom;
-                    ValidTo = built.ValidTo;
-                    ConfigurationVersion = (long) streamedEvent.UtcTime
-                                                               .Subtract(_unixEpoch)
-                                                               .TotalSeconds;
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override void ApplySnapshot(StreamedObjectSnapshot snapshot)
-        {
-            if (snapshot.DataType != GetType().Name)
-                return;
-
-            var other = JsonSerializer.Deserialize<StreamedConfiguration>(snapshot.Data);
-
-            Identifier = other.Identifier;
-            ValidFrom = other.ValidFrom;
-            ValidTo = other.ValidTo;
+            return Result.Success();
         }
 
         // base cost of 15 (10 from Identifier, 5 for rest)
@@ -161,22 +149,35 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
         }
 
-        /// <summary>
-        ///     build this Configuration with the given time-parameters
-        /// </summary>
-        /// <param name="validFrom"></param>
-        /// <param name="validTo"></param>
-        /// <returns></returns>
-        public IResult Build(DateTime? validFrom, DateTime? validTo)
+        /// <inheritdoc />
+        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
         {
-            ValidFrom = validFrom;
-            ValidTo = validTo;
-            Built = false;
-            Keys = new Dictionary<string, string>();
-            Json = null;
-            CapturedDomainEvents.Add(new ConfigurationBuilt(Identifier, validFrom, validTo));
+            switch (streamedEvent.DomainEvent)
+            {
+                case ConfigurationBuilt built when built.Identifier == Identifier:
+                    ValidFrom = built.ValidFrom;
+                    ValidTo = built.ValidTo;
+                    ConfigurationVersion = (long) streamedEvent.UtcTime
+                                                               .Subtract(_unixEpoch)
+                                                               .TotalSeconds;
+                    return true;
+            }
 
-            return Result.Success();
+            return false;
         }
+
+        /// <inheritdoc />
+        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        {
+            if (!(streamedObject is StreamedConfiguration other))
+                return;
+
+            Identifier = other.Identifier;
+            ValidFrom = other.ValidFrom;
+            ValidTo = other.ValidTo;
+        }
+
+        /// <inheritdoc />
+        protected override string GetSnapshotIdentifier() => Identifier.ToString();
     }
 }

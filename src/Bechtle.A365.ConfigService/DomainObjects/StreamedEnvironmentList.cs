@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -14,6 +13,16 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     internal Lookup to keep track of Environments
         /// </summary>
         protected HashSet<EnvironmentIdentifier> Identifiers { get; set; } = new HashSet<EnvironmentIdentifier>();
+
+        /// <inheritdoc />
+        public override long CalculateCacheSize()
+            => Identifiers?.Count * 10 ?? 0;
+
+        /// <summary>
+        ///     get a list of all active Environment-Identifiers
+        /// </summary>
+        /// <returns></returns>
+        public ICollection<EnvironmentIdentifier> GetIdentifiers() => Identifiers.ToList();
 
         /// <inheritdoc />
         protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
@@ -38,24 +47,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public override void ApplySnapshot(StreamedObjectSnapshot snapshot)
+        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
-            if (snapshot.DataType != GetType().Name)
+            if (!(streamedObject is StreamedEnvironmentList other))
                 return;
-
-            var other = JsonSerializer.Deserialize<StreamedEnvironmentList>(snapshot.Data);
 
             Identifiers = other.Identifiers;
         }
-
-        /// <inheritdoc />
-        public override long CalculateCacheSize()
-            => Identifiers?.Count * 10 ?? 0;
-
-        /// <summary>
-        ///     get a list of all active Environment-Identifiers
-        /// </summary>
-        /// <returns></returns>
-        public ICollection<EnvironmentIdentifier> GetIdentifiers() => Identifiers.ToList();
     }
 }

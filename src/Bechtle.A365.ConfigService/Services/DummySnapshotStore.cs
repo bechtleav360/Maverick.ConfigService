@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
@@ -31,5 +32,9 @@ namespace Bechtle.A365.ConfigService.Services
         /// <inheritdoc />
         public Task<IResult<StreamedObjectSnapshot>> GetConfiguration(ConfigurationIdentifier identifier)
             => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
+
+        /// <inheritdoc />
+        public Task<IResult> SaveSnapshots(IList<StreamedObjectSnapshot> snapshots)
+            => Task.FromResult(Result.Error(string.Empty, ErrorCode.Undefined));
     }
 }

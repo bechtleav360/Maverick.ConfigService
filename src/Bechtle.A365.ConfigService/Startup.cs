@@ -254,7 +254,8 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)
                     .AddSingleton(_logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
-                    .AddHostedService<TemporaryKeyCleanupService>(_logger);
+                    .AddHostedService<TemporaryKeyCleanupService>(_logger)
+                    .AddHostedService<SnapshotService>(_logger);
 
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");

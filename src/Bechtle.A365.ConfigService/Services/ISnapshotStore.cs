@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
@@ -48,5 +49,12 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="identifier"></param>
         /// <returns></returns>
         Task<IResult<StreamedObjectSnapshot>> GetConfiguration(ConfigurationIdentifier identifier);
+
+        /// <summary>
+        ///     save the given <see cref="StreamedObjectSnapshot"/> to the configured Store
+        /// </summary>
+        /// <param name="snapshots"></param>
+        /// <returns></returns>
+        Task<IResult> SaveSnapshots(IList<StreamedObjectSnapshot> snapshots);
     }
 }

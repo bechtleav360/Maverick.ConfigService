@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
@@ -12,29 +11,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class StreamedStructure : StreamedObject
     {
-        /// <summary>
-        ///     Flag indicating if this Structure has been Created
-        /// </summary>
-        public bool Created { get; protected set; }
-
-        /// <summary>
-        ///     Flag indicating if this Structure has been Deleted
-        /// </summary>
-        public bool Deleted { get; protected set; }
-
-        /// <inheritdoc cref="StructureIdentifier"/>
-        public StructureIdentifier Identifier { get; protected set; }
-
-        /// <summary>
-        ///     Dictionary containing all hard-coded Values and References to the Environment-Data
-        /// </summary>
-        public Dictionary<string, string> Keys { get; protected set; }
-
-        /// <summary>
-        ///     Modifiable Variables that may be used inside the Structure during Compilation
-        /// </summary>
-        public Dictionary<string, string> Variables { get; protected set; }
-
         /// <inheritdoc />
         public StreamedStructure(StructureIdentifier identifier)
         {
@@ -53,48 +29,28 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Keys = new Dictionary<string, string>();
         }
 
-        /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case StructureCreated created when created.Identifier == Identifier:
-                    Created = true;
-                    Keys = created.Keys;
-                    Variables = created.Variables;
-                    return true;
+        /// <summary>
+        ///     Flag indicating if this Structure has been Created
+        /// </summary>
+        public bool Created { get; protected set; }
 
-                case StructureDeleted deleted when deleted.Identifier == Identifier:
-                    Deleted = true;
-                    return true;
+        /// <summary>
+        ///     Flag indicating if this Structure has been Deleted
+        /// </summary>
+        public bool Deleted { get; protected set; }
 
-                case StructureVariablesModified modified when modified.Identifier == Identifier:
-                    foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
-                        if (Keys.ContainsKey(deletion.Key))
-                            Keys.Remove(deletion.Key);
+        /// <inheritdoc cref="StructureIdentifier" />
+        public StructureIdentifier Identifier { get; protected set; }
 
-                    foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
-                        Keys[change.Key] = change.Value;
-                    return true;
-            }
+        /// <summary>
+        ///     Dictionary containing all hard-coded Values and References to the Environment-Data
+        /// </summary>
+        public Dictionary<string, string> Keys { get; protected set; }
 
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override void ApplySnapshot(StreamedObjectSnapshot snapshot)
-        {
-            if (snapshot.DataType != GetType().Name)
-                return;
-
-            var other = JsonSerializer.Deserialize<StreamedStructure>(snapshot.Data);
-
-            CurrentVersion = snapshot.Version;
-            Created = other.Created;
-            Deleted = other.Deleted;
-            Identifier = other.Identifier;
-            Keys = other.Keys;
-        }
+        /// <summary>
+        ///     Modifiable Variables that may be used inside the Structure during Compilation
+        /// </summary>
+        public Dictionary<string, string> Variables { get; protected set; }
 
         // use base-size of 12 for Created / Deleted / Identifier + amount of Keys and Variables
         /// <inheritdoc />
@@ -118,62 +74,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             CapturedDomainEvents.Add(new StructureCreated(Identifier, keys, variables));
 
             return Result.Success();
-        }
-
-        /// <summary>
-        ///     Add or Update existing Variables, and record all events necessary for this action
-        /// </summary>
-        /// <param name="updatedKeys"></param>
-        /// <returns></returns>
-        public IResult ModifyVariables(IDictionary<string, string> updatedKeys)
-        {
-            if (updatedKeys is null || !updatedKeys.Any())
-                return Result.Error("null or empty variables given", ErrorCode.InvalidData);
-
-            // record all new keys to remove in case of exception
-            var recordedAdditions = new List<string>();
-
-            // maps key to old value - to revert back in case of exception
-            var recordedUpdates = new Dictionary<string, string>();
-
-            try
-            {
-                foreach (var (key, value) in updatedKeys)
-                {
-                    if (Variables.ContainsKey(key))
-                    {
-                        recordedUpdates[key] = Variables[key];
-                        Variables[key] = value;
-                    }
-                    else
-                    {
-                        recordedAdditions.Add(key);
-                        Variables[key] = value;
-                    }
-                }
-
-                // all items that have actually been added to or changed in this structure are saved as event
-                // skipping those that may not be there anymore and reducing the Event-Size or skipping the event entirely
-                var recordedChanges = recordedAdditions.Concat(updatedKeys.Keys).ToList();
-
-                if (recordedChanges.Any())
-                    CapturedDomainEvents.Add(
-                        new StructureVariablesModified(
-                            Identifier,
-                            recordedChanges.Select(k => ConfigKeyAction.Set(k, Variables[k]))
-                                           .ToArray()));
-
-                return Result.Success();
-            }
-            catch (Exception)
-            {
-                foreach (var addedKey in recordedAdditions)
-                    Variables.Remove(addedKey);
-                foreach (var (key, value) in recordedUpdates)
-                    Variables[key] = value;
-
-                return Result.Error("could not update all variables for this Structure", ErrorCode.Undefined);
-            }
         }
 
         /// <summary>
@@ -216,5 +116,102 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return Result.Error("could not remove all variables from the structure", ErrorCode.Undefined);
             }
         }
+
+        /// <summary>
+        ///     Add or Update existing Variables, and record all events necessary for this action
+        /// </summary>
+        /// <param name="updatedKeys"></param>
+        /// <returns></returns>
+        public IResult ModifyVariables(IDictionary<string, string> updatedKeys)
+        {
+            if (updatedKeys is null || !updatedKeys.Any())
+                return Result.Error("null or empty variables given", ErrorCode.InvalidData);
+
+            // record all new keys to remove in case of exception
+            var recordedAdditions = new List<string>();
+
+            // maps key to old value - to revert back in case of exception
+            var recordedUpdates = new Dictionary<string, string>();
+
+            try
+            {
+                foreach (var (key, value) in updatedKeys)
+                    if (Variables.ContainsKey(key))
+                    {
+                        recordedUpdates[key] = Variables[key];
+                        Variables[key] = value;
+                    }
+                    else
+                    {
+                        recordedAdditions.Add(key);
+                        Variables[key] = value;
+                    }
+
+                // all items that have actually been added to or changed in this structure are saved as event
+                // skipping those that may not be there anymore and reducing the Event-Size or skipping the event entirely
+                var recordedChanges = recordedAdditions.Concat(updatedKeys.Keys).ToList();
+
+                if (recordedChanges.Any())
+                    CapturedDomainEvents.Add(
+                        new StructureVariablesModified(
+                            Identifier,
+                            recordedChanges.Select(k => ConfigKeyAction.Set(k, Variables[k]))
+                                           .ToArray()));
+
+                return Result.Success();
+            }
+            catch (Exception)
+            {
+                foreach (var addedKey in recordedAdditions)
+                    Variables.Remove(addedKey);
+                foreach (var (key, value) in recordedUpdates)
+                    Variables[key] = value;
+
+                return Result.Error("could not update all variables for this Structure", ErrorCode.Undefined);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
+        {
+            switch (streamedEvent.DomainEvent)
+            {
+                case StructureCreated created when created.Identifier == Identifier:
+                    Created = true;
+                    Keys = created.Keys;
+                    Variables = created.Variables;
+                    return true;
+
+                case StructureDeleted deleted when deleted.Identifier == Identifier:
+                    Deleted = true;
+                    return true;
+
+                case StructureVariablesModified modified when modified.Identifier == Identifier:
+                    foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
+                        if (Keys.ContainsKey(deletion.Key))
+                            Keys.Remove(deletion.Key);
+
+                    foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
+                        Keys[change.Key] = change.Value;
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
+        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        {
+            if (!(streamedObject is StreamedStructure other))
+                return;
+
+            Created = other.Created;
+            Deleted = other.Deleted;
+            Identifier = other.Identifier;
+            Keys = other.Keys;
+        }
+
+        /// <inheritdoc />
+        protected override string GetSnapshotIdentifier() => Identifier.ToString();
     }
 }

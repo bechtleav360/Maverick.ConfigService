@@ -1,7 +1,7 @@
 ﻿namespace Bechtle.A365.ConfigService.DomainObjects
 {
     /// <summary>
-    ///     All Metadata used to represent a single Key inside a <see cref="StreamedEnvironment"/>
+    ///     All Metadata used to represent a single Key inside a <see cref="StreamedEnvironment" />
     /// </summary>
     public class StreamedEnvironmentKey
     {

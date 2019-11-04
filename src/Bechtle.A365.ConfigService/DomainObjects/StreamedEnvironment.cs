@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
@@ -14,35 +13,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
-        /// <summary>
-        ///     Flag indicating if this Environment has been created or not
-        /// </summary>
-        public bool Created { get; protected set; }
-
-        /// <summary>
-        ///     Flag indicating if this Environment has been deleted or not
-        /// </summary>
-        public bool Deleted { get; protected set; }
-
-        /// <inheritdoc cref="EnvironmentIdentifier"/>
-        public EnvironmentIdentifier Identifier { get; protected set; }
-
-        /// <summary>
-        ///     Flag indicating if this is the Default-Environment of its Category
-        /// </summary>
-        public bool IsDefault { get; protected set; }
-
-        /// <summary>
-        ///     Actual Data of this Environment
-        /// </summary>
-        public Dictionary<string, StreamedEnvironmentKey> Keys { get; protected set; }
-
         private List<StreamedEnvironmentKeyPath> _keyPaths;
-
-        /// <summary>
-        ///     Trees of Paths that represent all Keys in the Environment
-        /// </summary>
-        public List<StreamedEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
         /// <inheritdoc />
         public StreamedEnvironment(EnvironmentIdentifier identifier)
@@ -63,171 +34,33 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Keys = new Dictionary<string, StreamedEnvironmentKey>();
         }
 
-        /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case DefaultEnvironmentCreated created when created.Identifier == Identifier:
-                    HandleDefaultCreated();
-                    return true;
+        /// <summary>
+        ///     Flag indicating if this Environment has been created or not
+        /// </summary>
+        public bool Created { get; protected set; }
 
-                case EnvironmentCreated created when created.Identifier == Identifier:
-                    HandleCreated();
-                    return true;
+        /// <summary>
+        ///     Flag indicating if this Environment has been deleted or not
+        /// </summary>
+        public bool Deleted { get; protected set; }
 
-                case EnvironmentDeleted deleted when deleted.Identifier == Identifier:
-                    HandleDeleted();
-                    return true;
+        /// <inheritdoc cref="EnvironmentIdentifier" />
+        public EnvironmentIdentifier Identifier { get; protected set; }
 
-                case EnvironmentKeysImported imported when imported.Identifier == Identifier:
-                    HandleKeysImported(imported);
-                    return true;
+        /// <summary>
+        ///     Flag indicating if this is the Default-Environment of its Category
+        /// </summary>
+        public bool IsDefault { get; protected set; }
 
-                case EnvironmentKeysModified modified when modified.Identifier == Identifier:
-                    HandleKeysModified(modified);
-                    return true;
-            }
+        /// <summary>
+        ///     Trees of Paths that represent all Keys in the Environment
+        /// </summary>
+        public List<StreamedEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
-            return false;
-        }
-
-        private void HandleKeysModified(EnvironmentKeysModified environmentKeysModified)
-        {
-            foreach (var deletion in environmentKeysModified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
-                if (Keys.ContainsKey(deletion.Key))
-                    Keys.Remove(deletion.Key);
-
-            foreach (var change in environmentKeysModified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
-                Keys[change.Key] = new StreamedEnvironmentKey
-                {
-                    Key = change.Key,
-                    Value = change.Value,
-                    Type = change.ValueType,
-                    Description = change.Description,
-                    Version = (long) DateTime.UtcNow
-                                             .Subtract(_unixEpoch)
-                                             .TotalSeconds
-                };
-        }
-
-        private void HandleKeysImported(EnvironmentKeysImported environmentKeysImported)
-        {
-            Keys = environmentKeysImported.ModifiedKeys
-                                          .Where(action => action.Type == ConfigKeyActionType.Set)
-                                          .ToDictionary(
-                                              action => action.Key,
-                                              action => new StreamedEnvironmentKey
-                                              {
-                                                  Key = action.Key,
-                                                  Value = action.Value,
-                                                  Type = action.ValueType,
-                                                  Description = action.Description,
-                                                  Version = (long) DateTime.UtcNow
-                                                                           .Subtract(_unixEpoch)
-                                                                           .TotalSeconds
-                                              });
-        }
-
-        private void HandleDeleted()
-        {
-            Deleted = true;
-        }
-
-        private void HandleCreated()
-        {
-            Created = true;
-        }
-
-        private void HandleDefaultCreated()
-        {
-            IsDefault = true;
-            Created = true;
-        }
-
-        private List<StreamedEnvironmentKeyPath> GenerateKeyPaths()
-        {
-            var roots = new List<StreamedEnvironmentKeyPath>();
-
-            foreach (var (key, _) in Keys.OrderBy(k => k.Key))
-            {
-                var parts = key.Split('/');
-
-                var rootPart = parts.First();
-                var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
-
-                if (root is null)
-                {
-                    root = new StreamedEnvironmentKeyPath
-                    {
-                        Path = rootPart,
-                        Parent = null,
-                        FullPath = rootPart,
-                        Children = new List<StreamedEnvironmentKeyPath>()
-                    };
-
-                    roots.Add(root);
-                }
-
-                var current = root;
-
-                foreach (var part in parts.Skip(1))
-                {
-                    var next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
-
-                    if (next is null)
-                    {
-                        next = new StreamedEnvironmentKeyPath
-                        {
-                            Path = part,
-                            Parent = current,
-                            Children = new List<StreamedEnvironmentKeyPath>(),
-                            FullPath = current.FullPath + '/' + part
-                        };
-                        current.Children.Add(next);
-                    }
-
-                    current = next;
-                }
-            }
-
-            return roots;
-        }
-
-        private long CountGeneratedPaths()
-        {
-            var computedCost = 0;
-            var stack = _keyPaths is null
-                            ? new Stack<StreamedEnvironmentKeyPath>()
-                            : new Stack<StreamedEnvironmentKeyPath>(_keyPaths);
-
-            while (stack.TryPop(out var item))
-            {
-                computedCost += item.Path.Length;
-                computedCost += item.FullPath.Length;
-
-                foreach (var child in item.Children)
-                    stack.Push(child);
-            }
-
-            return computedCost;
-        }
-
-        /// <inheritdoc />
-        public override void ApplySnapshot(StreamedObjectSnapshot snapshot)
-        {
-            if (snapshot.DataType != GetType().Name)
-                return;
-
-            var other = JsonSerializer.Deserialize<StreamedEnvironment>(snapshot.Data);
-
-            CurrentVersion = snapshot.Version;
-            Created = other.Created;
-            Deleted = other.Deleted;
-            Identifier = other.Identifier;
-            IsDefault = other.IsDefault;
-            Keys = other.Keys;
-        }
+        /// <summary>
+        ///     Actual Data of this Environment
+        /// </summary>
+        public Dictionary<string, StreamedEnvironmentKey> Keys { get; protected set; }
 
         // 10 for identifier, 5 for rest, each Key, each Path (recursively)
         /// <inheritdoc />
@@ -319,74 +152,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
-        ///     add new, or change some of the held keys, and create the appropriate events for that
+        ///     get the values of <see cref="Keys" /> as a simple <see cref="Dictionary{String,String}" />
         /// </summary>
-        /// <param name="keysToAdd"></param>
         /// <returns></returns>
-        public IResult UpdateKeys(ICollection<StreamedEnvironmentKey> keysToAdd)
-        {
-            if (keysToAdd is null || !keysToAdd.Any())
-                return Result.Error("null or empty list given", ErrorCode.InvalidData);
-
-            var addedKeys = new List<StreamedEnvironmentKey>();
-            var updatedKeys = new Dictionary<string, StreamedEnvironmentKey>();
-
-            try
-            {
-                foreach (var newEntry in keysToAdd)
-                {
-                    if (Keys.ContainsKey(newEntry.Key))
-                    {
-                        var oldEntry = Keys[newEntry.Key];
-                        if (oldEntry.Description == newEntry.Description
-                            && oldEntry.Type == newEntry.Type
-                            && oldEntry.Value == newEntry.Value)
-                        {
-                            // if the key and all metadata is same before and after the change,
-                            // we might as well skip this change altogether
-                            continue;
-                        }
-
-                        updatedKeys.Add(newEntry.Key, Keys[newEntry.Key]);
-                        Keys[newEntry.Key] = newEntry;
-                    }
-                    else
-                    {
-                        addedKeys.Add(newEntry);
-                        Keys.Add(newEntry.Key, newEntry);
-                    }
-                }
-
-                // all items that have actually been added to or changed in this environment are saved as event
-                // skipping those that may not be there anymore and reducing the Event-Size or skipping the event entirely
-                // ---
-                // updatedKeys maps key => oldValue, so the old value can be restored if something goes wrong
-                // this means we have to get the current/new/overwritten state based on the updatedKeys.Keys
-                var recordedChanges = addedKeys.Concat(updatedKeys.Keys.Select(k => Keys[k]))
-                                               .ToList();
-
-                if (recordedChanges.Any())
-                    CapturedDomainEvents.Add(
-                        new EnvironmentKeysModified(
-                            Identifier,
-                            recordedChanges.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
-                                           .ToArray()));
-
-                return Result.Success();
-            }
-            catch (Exception)
-            {
-                foreach (var addedKey in addedKeys)
-                    Keys.Remove(addedKey.Key);
-                foreach (var (key, value) in updatedKeys)
-                    Keys[key] = value;
-
-                return Result.Error("could not update all keys in the environment", ErrorCode.Undefined);
-            }
-        }
+        public IDictionary<string, string> GetKeysAsDictionary() => Keys.Values.ToDictionary(e => e.Key, e => e.Value);
 
         /// <summary>
-        ///     overwrite all existing keys with the ones in <paramref name="keysToImport"/>
+        ///     overwrite all existing keys with the ones in <paramref name="keysToImport" />
         /// </summary>
         /// <param name="keysToImport"></param>
         /// <returns></returns>
@@ -419,9 +191,232 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
-        ///     get the values of <see cref="Keys"/> as a simple <see cref="Dictionary{String,String}"/>
+        ///     add new, or change some of the held keys, and create the appropriate events for that
         /// </summary>
+        /// <param name="keysToAdd"></param>
         /// <returns></returns>
-        public IDictionary<string, string> GetKeysAsDictionary() => Keys.Values.ToDictionary(e => e.Key, e => e.Value);
+        public IResult UpdateKeys(ICollection<StreamedEnvironmentKey> keysToAdd)
+        {
+            if (keysToAdd is null || !keysToAdd.Any())
+                return Result.Error("null or empty list given", ErrorCode.InvalidData);
+
+            var addedKeys = new List<StreamedEnvironmentKey>();
+            var updatedKeys = new Dictionary<string, StreamedEnvironmentKey>();
+
+            try
+            {
+                foreach (var newEntry in keysToAdd)
+                    if (Keys.ContainsKey(newEntry.Key))
+                    {
+                        var oldEntry = Keys[newEntry.Key];
+                        if (oldEntry.Description == newEntry.Description
+                            && oldEntry.Type == newEntry.Type
+                            && oldEntry.Value == newEntry.Value)
+                            // if the key and all metadata is same before and after the change,
+                            // we might as well skip this change altogether
+                            continue;
+
+                        updatedKeys.Add(newEntry.Key, Keys[newEntry.Key]);
+                        Keys[newEntry.Key] = newEntry;
+                    }
+                    else
+                    {
+                        addedKeys.Add(newEntry);
+                        Keys.Add(newEntry.Key, newEntry);
+                    }
+
+                // all items that have actually been added to or changed in this environment are saved as event
+                // skipping those that may not be there anymore and reducing the Event-Size or skipping the event entirely
+                // ---
+                // updatedKeys maps key => oldValue, so the old value can be restored if something goes wrong
+                // this means we have to get the current/new/overwritten state based on the updatedKeys.Keys
+                var recordedChanges = addedKeys.Concat(updatedKeys.Keys.Select(k => Keys[k]))
+                                               .ToList();
+
+                if (recordedChanges.Any())
+                    CapturedDomainEvents.Add(
+                        new EnvironmentKeysModified(
+                            Identifier,
+                            recordedChanges.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                           .ToArray()));
+
+                return Result.Success();
+            }
+            catch (Exception)
+            {
+                foreach (var addedKey in addedKeys)
+                    Keys.Remove(addedKey.Key);
+                foreach (var (key, value) in updatedKeys)
+                    Keys[key] = value;
+
+                return Result.Error("could not update all keys in the environment", ErrorCode.Undefined);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
+        {
+            switch (streamedEvent.DomainEvent)
+            {
+                case DefaultEnvironmentCreated created when created.Identifier == Identifier:
+                    HandleDefaultCreated();
+                    return true;
+
+                case EnvironmentCreated created when created.Identifier == Identifier:
+                    HandleCreated();
+                    return true;
+
+                case EnvironmentDeleted deleted when deleted.Identifier == Identifier:
+                    HandleDeleted();
+                    return true;
+
+                case EnvironmentKeysImported imported when imported.Identifier == Identifier:
+                    HandleKeysImported(imported);
+                    return true;
+
+                case EnvironmentKeysModified modified when modified.Identifier == Identifier:
+                    HandleKeysModified(modified);
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
+        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        {
+            if (!(streamedObject is StreamedEnvironment other))
+                return;
+
+            Created = other.Created;
+            Deleted = other.Deleted;
+            Identifier = other.Identifier;
+            IsDefault = other.IsDefault;
+            Keys = other.Keys;
+        }
+
+        /// <inheritdoc />
+        protected override string GetSnapshotIdentifier() => Identifier.ToString();
+
+        private long CountGeneratedPaths()
+        {
+            var computedCost = 0;
+            var stack = _keyPaths is null
+                            ? new Stack<StreamedEnvironmentKeyPath>()
+                            : new Stack<StreamedEnvironmentKeyPath>(_keyPaths);
+
+            while (stack.TryPop(out var item))
+            {
+                computedCost += item.Path.Length;
+                computedCost += item.FullPath.Length;
+
+                foreach (var child in item.Children)
+                    stack.Push(child);
+            }
+
+            return computedCost;
+        }
+
+        private List<StreamedEnvironmentKeyPath> GenerateKeyPaths()
+        {
+            var roots = new List<StreamedEnvironmentKeyPath>();
+
+            foreach (var (key, _) in Keys.OrderBy(k => k.Key))
+            {
+                var parts = key.Split('/');
+
+                var rootPart = parts.First();
+                var root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
+
+                if (root is null)
+                {
+                    root = new StreamedEnvironmentKeyPath
+                    {
+                        Path = rootPart,
+                        Parent = null,
+                        FullPath = rootPart,
+                        Children = new List<StreamedEnvironmentKeyPath>()
+                    };
+
+                    roots.Add(root);
+                }
+
+                var current = root;
+
+                foreach (var part in parts.Skip(1))
+                {
+                    var next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (next is null)
+                    {
+                        next = new StreamedEnvironmentKeyPath
+                        {
+                            Path = part,
+                            Parent = current,
+                            Children = new List<StreamedEnvironmentKeyPath>(),
+                            FullPath = current.FullPath + '/' + part
+                        };
+                        current.Children.Add(next);
+                    }
+
+                    current = next;
+                }
+            }
+
+            return roots;
+        }
+
+        private void HandleCreated()
+        {
+            Created = true;
+        }
+
+        private void HandleDefaultCreated()
+        {
+            IsDefault = true;
+            Created = true;
+        }
+
+        private void HandleDeleted()
+        {
+            Deleted = true;
+        }
+
+        private void HandleKeysImported(EnvironmentKeysImported environmentKeysImported)
+        {
+            Keys = environmentKeysImported.ModifiedKeys
+                                          .Where(action => action.Type == ConfigKeyActionType.Set)
+                                          .ToDictionary(
+                                              action => action.Key,
+                                              action => new StreamedEnvironmentKey
+                                              {
+                                                  Key = action.Key,
+                                                  Value = action.Value,
+                                                  Type = action.ValueType,
+                                                  Description = action.Description,
+                                                  Version = (long) DateTime.UtcNow
+                                                                           .Subtract(_unixEpoch)
+                                                                           .TotalSeconds
+                                              });
+        }
+
+        private void HandleKeysModified(EnvironmentKeysModified environmentKeysModified)
+        {
+            foreach (var deletion in environmentKeysModified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
+                if (Keys.ContainsKey(deletion.Key))
+                    Keys.Remove(deletion.Key);
+
+            foreach (var change in environmentKeysModified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
+                Keys[change.Key] = new StreamedEnvironmentKey
+                {
+                    Key = change.Key,
+                    Value = change.Value,
+                    Type = change.ValueType,
+                    Description = change.Description,
+                    Version = (long) DateTime.UtcNow
+                                             .Subtract(_unixEpoch)
+                                             .TotalSeconds
+                };
+        }
     }
 }

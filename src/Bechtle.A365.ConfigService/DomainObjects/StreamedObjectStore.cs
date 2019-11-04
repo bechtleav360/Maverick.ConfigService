@@ -17,9 +17,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     public class StreamedObjectStore : IStreamedStore
     {
         private readonly IEventStore _eventStore;
-        private readonly ISnapshotStore _snapshotStore;
-        private readonly IMemoryCache _memoryCache;
         private readonly ILogger<StreamedObjectStore> _logger;
+        private readonly IMemoryCache _memoryCache;
+        private readonly ISnapshotStore _snapshotStore;
 
         /// <inheritdoc />
         public StreamedObjectStore(IEventStore eventStore,

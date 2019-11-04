@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -14,6 +13,16 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     internal Lookup to keep track of Structures
         /// </summary>
         protected HashSet<StructureIdentifier> Identifiers { get; set; } = new HashSet<StructureIdentifier>();
+
+        /// <inheritdoc />
+        public override long CalculateCacheSize()
+            => Identifiers?.Count * 10 ?? 0;
+
+        /// <summary>
+        ///     get a list of all active Environment-Identifiers
+        /// </summary>
+        /// <returns></returns>
+        public ICollection<StructureIdentifier> GetIdentifiers() => Identifiers.ToList();
 
         /// <inheritdoc />
         protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
@@ -34,24 +43,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public override void ApplySnapshot(StreamedObjectSnapshot snapshot)
+        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
-            if (snapshot.DataType != GetType().Name)
+            if (!(streamedObject is StreamedStructureList other))
                 return;
-
-            var other = JsonSerializer.Deserialize<StreamedStructureList>(snapshot.Data);
 
             Identifiers = other.Identifiers;
         }
-
-        /// <inheritdoc />
-        public override long CalculateCacheSize()
-            => Identifiers?.Count * 10 ?? 0;
-
-        /// <summary>
-        ///     get a list of all active Environment-Identifiers
-        /// </summary>
-        /// <returns></returns>
-        public ICollection<StructureIdentifier> GetIdentifiers() => Identifiers.ToList();
     }
 }

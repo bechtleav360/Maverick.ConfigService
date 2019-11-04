@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Serialization;
 using Bechtle.A365.ConfigService.Services;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Caching.Memory;
@@ -30,9 +32,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         protected List<DomainEvent> CapturedDomainEvents { get; set; } = new List<DomainEvent>();
 
         /// <summary>
-        ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
+        ///     calculate the size of this object - used to limit the objects kept in the memory-cache at the same time
         /// </summary>
-        public abstract void ApplySnapshot(StreamedObjectSnapshot snapshot);
+        /// <returns>size of current object in abstract units</returns>
+        public abstract long CalculateCacheSize();
 
         /// <summary>
         ///     apply a single <see cref="StreamedEvent" /> to this object,
@@ -42,16 +45,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         protected abstract bool ApplyEventInternal(StreamedEvent streamedEvent);
 
         /// <summary>
-        ///     calculate the size of this object - used to limit the objects kept in the memory-cache at the same time
+        ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
+        ///     actual copy-actions take place here
         /// </summary>
-        /// <returns>size of current object in abstract units</returns>
-        public abstract long CalculateCacheSize();
-
-        /// <summary>
-        ///     returns the <see cref="CacheItemPriority"/> for this specific object. Defaults to <see cref="CacheItemPriority.Low"/>
-        /// </summary>
-        /// <returns></returns>
-        public virtual CacheItemPriority GetCacheItemPriority() => CacheItemPriority.Low;
+        protected abstract void ApplySnapshotInternal(StreamedObject streamedObject);
 
         /// <summary>
         ///     apply a single <see cref="StreamedEvent" /> to this object,
@@ -75,15 +72,46 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
+        ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
+        /// </summary>
+        public virtual void ApplySnapshot(StreamedObjectSnapshot snapshot)
+        {
+            var actualType = GetType();
+
+            if (snapshot.DataType != actualType.Name)
+                return;
+
+            var other = JsonSerializer.Deserialize(snapshot.JsonData, actualType) as StreamedObject;
+
+            CurrentVersion = snapshot.Version;
+
+            ApplySnapshotInternal(other);
+        }
+
+        /// <summary>
         ///     create the current object as a new Snapshot
         /// </summary>
         /// <returns></returns>
         public virtual StreamedObjectSnapshot CreateSnapshot() => new StreamedObjectSnapshot
         {
+            Identifier = GetSnapshotIdentifier(),
             Version = CurrentVersion,
-            Data = JsonSerializer.SerializeToUtf8Bytes(this),
-            DataType = GetType().Name
+            DataType = GetType().Name,
+            JsonData = JsonSerializer.Serialize(this, new JsonSerializerOptions
+            {
+                Converters =
+                {
+                    new JsonIsoDateConverter(),
+                    new JsonStringEnumConverter()
+                }
+            })
         };
+
+        /// <summary>
+        ///     returns the <see cref="CacheItemPriority" /> for this specific object. Defaults to <see cref="CacheItemPriority.Low" />
+        /// </summary>
+        /// <returns></returns>
+        public virtual CacheItemPriority GetCacheItemPriority() => CacheItemPriority.Low;
 
         /// <summary>
         ///     validate all recorded events with the given <see cref="ICommandValidator" />
@@ -132,5 +160,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 }
             }
         }
+
+        /// <summary>
+        ///     retrieve a generic identifier to tie a snapshot to this object
+        /// </summary>
+        /// <returns></returns>
+        protected virtual string GetSnapshotIdentifier() => GetType().Name;
     }
 }
