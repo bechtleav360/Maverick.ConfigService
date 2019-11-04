@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -221,7 +222,6 @@ namespace Bechtle.A365.ConfigService
 
                         options.Configuration = connectionString;
                     })
-                    .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddScoped(_logger, provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
@@ -249,13 +249,30 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
                     .AddScoped<IStreamedStore, StreamedObjectStore>()
                     .AddScoped<ISnapshotStore, DummySnapshotStore>()
+                    .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)
                     .AddSingleton(_logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
                     .AddHostedService<TemporaryKeyCleanupService>(_logger)
-                    .AddHostedService<SnapshotService>(_logger);
+                    .AddHostedService<SnapshotService>(_logger)
+                    .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(_logger, (provider, builder) =>
+                    {
+                        var storeEnabled = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres:Enabled").Get<bool>();
+
+                        _logger.LogTrace($"{nameof(PostgresSnapshotStore)} enabled as SnapshotStore: {storeEnabled}");
+
+                        if (!storeEnabled)
+                            return;
+
+                        var connectionString = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres:ConnectionString").Get<string>();
+
+                        if (string.IsNullOrWhiteSpace(connectionString))
+                            _logger.LogError("store is enabled, but SnapshotConfiguration:Stores:Postgres:ConnectionString is empty");
+                        else
+                            builder.UseNpgsql(connectionString);
+                    });
 
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");
