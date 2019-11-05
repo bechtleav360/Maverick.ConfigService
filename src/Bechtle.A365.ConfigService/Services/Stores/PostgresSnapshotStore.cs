@@ -54,6 +54,14 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         public Task<IResult<StreamedObjectSnapshot>> GetConfiguration(ConfigurationIdentifier identifier)
             => GetInternal(nameof(StreamedConfiguration), identifier.ToString());
 
+        /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier) where T : StreamedObject
+            => GetInternal(typeof(T).Name, identifier);
+
+        /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier)
+            => GetInternal(dataType, identifier);
+
         /// <summary>
         ///     get the first snapshot that first the given <paramref name="name"/>. used when both DataType and Identifier have the same value
         /// </summary>
@@ -146,7 +154,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                return Result.Success(await _context.Snapshots.MaxAsync(s => s.Version));
+                return Result.Success(await _context.Snapshots
+                                                    .Select(s => s.Version)
+                                                    .MaxAsync());
             }
             catch (Exception e)
             {

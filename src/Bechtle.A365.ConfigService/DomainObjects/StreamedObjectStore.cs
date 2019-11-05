@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<StreamedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, long maxVersion)
-            => GetStreamedObjectInternal(new StreamedConfiguration(identifier), maxVersion, identifier.ToString());
+            => GetStreamedObjectInternal(new StreamedConfiguration(identifier), identifier.ToString(), maxVersion, identifier.ToString());
 
         /// <inheritdoc />
         public Task<IResult<StreamedConfigurationList>> GetConfigurationList()
@@ -46,7 +46,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<StreamedConfigurationList>> GetConfigurationList(long maxVersion)
-            => GetStreamedObjectInternal(new StreamedConfigurationList(), maxVersion, nameof(StreamedConfigurationList));
+            => GetStreamedObjectInternal(new StreamedConfigurationList(), nameof(StreamedConfigurationList), maxVersion, nameof(StreamedConfigurationList));
 
         /// <inheritdoc />
         public Task<IResult<StreamedEnvironment>> GetEnvironment(EnvironmentIdentifier identifier)
@@ -54,7 +54,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<StreamedEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, long maxVersion)
-            => GetStreamedObjectInternal(new StreamedEnvironment(identifier), maxVersion, identifier.ToString());
+            => GetStreamedObjectInternal(new StreamedEnvironment(identifier), identifier.ToString(), maxVersion, identifier.ToString());
 
         /// <inheritdoc />
         public Task<IResult<StreamedEnvironmentList>> GetEnvironmentList()
@@ -62,7 +62,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<StreamedEnvironmentList>> GetEnvironmentList(long maxVersion)
-            => GetStreamedObjectInternal(new StreamedEnvironmentList(), maxVersion, nameof(StreamedEnvironmentList));
+            => GetStreamedObjectInternal(new StreamedEnvironmentList(), nameof(StreamedEnvironmentList), maxVersion, nameof(StreamedEnvironmentList));
 
         /// <inheritdoc />
         public Task<IResult<StreamedStructure>> GetStructure(StructureIdentifier identifier)
@@ -70,7 +70,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<StreamedStructure>> GetStructure(StructureIdentifier identifier, long maxVersion)
-            => GetStreamedObjectInternal(new StreamedStructure(identifier), maxVersion, identifier.ToString());
+            => GetStreamedObjectInternal(new StreamedStructure(identifier), identifier.ToString(), maxVersion, identifier.ToString());
 
         /// <inheritdoc />
         public Task<IResult<StreamedStructureList>> GetStructureList()
@@ -78,28 +78,32 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<StreamedStructureList>> GetStructureList(long maxVersion)
-            => GetStreamedObjectInternal(new StreamedStructureList(), maxVersion, nameof(StreamedStructureList));
+            => GetStreamedObjectInternal(new StreamedStructureList(), nameof(StreamedStructureList), maxVersion, nameof(StreamedStructureList));
 
-        private async Task<IResult<T>> GetStreamedObjectInternal<T>(T streamedObject, long maxVersion, string cacheKey) where T : StreamedObject
+        private async Task<IResult<T>> GetStreamedObjectInternal<T>(T streamedObject,
+                                                                    string identifier,
+                                                                    long maxVersion,
+                                                                    string cacheKey)
+            where T : StreamedObject
         {
             try
             {
                 if (_memoryCache.TryGetValue(cacheKey, out T cachedInstance))
                     return Result.Success(cachedInstance);
 
-                var latestSnapshot = await _snapshotStore.GetStructureList();
+                var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier);
 
                 if (!latestSnapshot.IsError)
                     streamedObject.ApplySnapshot(latestSnapshot.Data);
 
                 await StreamObjectToVersion(streamedObject, maxVersion);
 
-                var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
-
                 var size = streamedObject.CalculateCacheSize();
                 var priority = streamedObject.GetCacheItemPriority();
 
                 _logger.LogInformation($"item cached: priority={priority}; size={size}; key={cacheKey}");
+
+                var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
 
                 _memoryCache.Set(cacheKey,
                                  streamedObject,
