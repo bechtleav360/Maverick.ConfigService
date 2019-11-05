@@ -139,6 +139,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 Keys = compilationResult.CompiledConfiguration;
                 Json = translator.ToJson(Keys);
                 UsedKeys = compilationResult.GetUsedKeys().ToList();
+                Built = true;
 
                 return Result.Success();
             }
@@ -175,6 +176,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Identifier = other.Identifier;
             ValidFrom = other.ValidFrom;
             ValidTo = other.ValidTo;
+            Built = other.Built;
+            Json = other.Json;
+            Keys = other.Keys;
+            UsedKeys = other.UsedKeys;
+            ConfigurationVersion = other.ConfigurationVersion;
         }
 
         /// <inheritdoc />

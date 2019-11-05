@@ -27,6 +27,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Deleted = false;
             Identifier = new StructureIdentifier(identifier.Name, identifier.Version);
             Keys = new Dictionary<string, string>();
+            Variables = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -209,6 +210,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Deleted = other.Deleted;
             Identifier = other.Identifier;
             Keys = other.Keys;
+            Variables = other.Variables;
         }
 
         /// <inheritdoc />
