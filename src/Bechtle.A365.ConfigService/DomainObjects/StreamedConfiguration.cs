@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
@@ -42,7 +41,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Actual Data built from this Configuration, as JSON
         /// </summary>
-        public JsonElement? Json { get; protected set; }
+        public string Json { get; protected set; }
 
         /// <summary>
         ///     Actual Data built from this Configuration, as Key=>Value pair
@@ -137,7 +136,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     parser);
 
                 Keys = compilationResult.CompiledConfiguration;
-                Json = translator.ToJson(Keys);
+                Json = translator.ToJson(Keys).ToString();
                 UsedKeys = compilationResult.GetUsedKeys().ToList();
                 Built = true;
 

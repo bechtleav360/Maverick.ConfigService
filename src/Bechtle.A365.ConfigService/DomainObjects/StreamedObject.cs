@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
+using System.Reflection;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -10,7 +10,8 @@ using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
+using Newtonsoft.Json.Serialization;
+using JsonProperty = Newtonsoft.Json.Serialization.JsonProperty;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -87,7 +88,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 Converters = {new StringEnumConverter(), new IsoDateTimeConverter()},
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                ContractResolver = new CustomContractResolver()
             }) as StreamedObject;
 
             CurrentVersion = snapshot.Version;
@@ -108,7 +110,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 DataType = GetType().Name,
                 JsonData = JsonConvert.SerializeObject(this, GetType(), new JsonSerializerSettings
                 {
-                    Converters = {new StringEnumConverter(), new IsoDateTimeConverter(), new SystemJsonConverter()},
+                    Converters = {new StringEnumConverter(), new IsoDateTimeConverter()},
                     DateFormatHandling = DateFormatHandling.IsoDateFormat,
                     DateTimeZoneHandling = DateTimeZoneHandling.Utc,
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
@@ -177,24 +179,18 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         protected virtual string GetSnapshotIdentifier() => GetType().Name;
 
-        /// <summary>
-        ///     Converter that uses <see cref="JsonElement.ToString"/> to serialize <see cref="JsonElement"/>
-        /// </summary>
-        private class SystemJsonConverter : JsonConverter
+        private class CustomContractResolver : DefaultContractResolver
         {
-            /// <inheritdoc />
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
             {
-                if (value is JsonElement json)
-                    writer.WriteRawValue(json.ToString());
+                var prop = base.CreateProperty(member, memberSerialization);
+
+                if (!prop.Writable)
+                    if (member is PropertyInfo property)
+                        prop.Writable = property.GetSetMethod(true) != null;
+
+                return prop;
             }
-
-            /// <inheritdoc />
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-                => throw new NotImplementedException();
-
-            /// <inheritdoc />
-            public override bool CanConvert(Type objectType) => objectType == typeof(JsonElement) || objectType == typeof(JsonElement?);
         }
     }
 }

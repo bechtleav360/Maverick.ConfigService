@@ -170,7 +170,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 if (configuration.Data.Json is null)
                     return Result.Error<JsonElement>($"no json-data found for configuration with id: {formattedParams}", ErrorCode.NotFound);
 
-                return Result.Success(configuration.Data.Json.Value);
+                var jsonElement = JsonDocument.Parse(configuration.Data.Json);
+
+                return Result.Success(jsonElement.RootElement);
             }
             catch (Exception e)
             {
