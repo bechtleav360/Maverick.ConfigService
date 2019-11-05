@@ -29,7 +29,7 @@ namespace Bechtle.A365.ConfigService.Middleware
         /// <param name="context"></param>
         /// <returns></returns>
         // ReSharper disable once UnusedMember.Global
-        public async Task Invoke(HttpContext context)
+        public Task Invoke(HttpContext context)
         {
             //Copy AuthenticationHeader to ASP.NET HttpContext item variable
             CopyHeaderPropertiesToLog(context, AuthenticationHeader, () => string.Empty);
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Middleware
                 return Task.CompletedTask;
             }, context);
 
-            await _next(context);
+            return _next(context);
         }
 
         private void CopyHeaderPropertiesToLog(HttpContext context, string propertyName, Func<string> defaultValue)
