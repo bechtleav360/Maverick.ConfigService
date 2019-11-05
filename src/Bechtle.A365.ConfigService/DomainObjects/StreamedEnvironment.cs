@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
@@ -56,7 +55,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Trees of Paths that represent all Keys in the Environment
         /// </summary>
-        [JsonIgnore]
         public List<StreamedEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
         /// <summary>

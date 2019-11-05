@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Common.Serialization;
 using Bechtle.A365.ConfigService.Services;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -81,7 +82,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (snapshot.DataType != actualType.Name)
                 return;
 
-            var other = JsonSerializer.Deserialize(snapshot.JsonData, actualType) as StreamedObject;
+            var other = JsonConvert.DeserializeObject(snapshot.JsonData, actualType, new JsonSerializerSettings
+            {
+                Converters = {new StringEnumConverter(), new IsoDateTimeConverter()},
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            }) as StreamedObject;
 
             CurrentVersion = snapshot.Version;
 
@@ -92,21 +99,23 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     create the current object as a new Snapshot
         /// </summary>
         /// <returns></returns>
-        public virtual StreamedObjectSnapshot CreateSnapshot() => new StreamedObjectSnapshot
+        public virtual StreamedObjectSnapshot CreateSnapshot()
         {
-            Identifier = GetSnapshotIdentifier(),
-            Version = CurrentVersion,
-            DataType = GetType().Name,
-            // using GetType to point the serializer to the ACTUAL class it needs to inspect
-            JsonData = JsonSerializer.Serialize(this, GetType(), new JsonSerializerOptions
+            var snapshot = new StreamedObjectSnapshot
             {
-                Converters =
+                Identifier = GetSnapshotIdentifier(),
+                Version = CurrentVersion,
+                DataType = GetType().Name,
+                JsonData = JsonConvert.SerializeObject(this, GetType(), new JsonSerializerSettings
                 {
-                    new JsonIsoDateConverter(),
-                    new JsonStringEnumConverter()
-                }
-            })
-        };
+                    Converters = {new StringEnumConverter(), new IsoDateTimeConverter(), new SystemJsonConverter()},
+                    DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                    DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                })
+            };
+            return snapshot;
+        }
 
         /// <summary>
         ///     returns the <see cref="CacheItemPriority" /> for this specific object. Defaults to <see cref="CacheItemPriority.Low" />
@@ -167,5 +176,25 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <returns></returns>
         protected virtual string GetSnapshotIdentifier() => GetType().Name;
+
+        /// <summary>
+        ///     Converter that uses <see cref="JsonElement.ToString"/> to serialize <see cref="JsonElement"/>
+        /// </summary>
+        private class SystemJsonConverter : JsonConverter
+        {
+            /// <inheritdoc />
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                if (value is JsonElement json)
+                    writer.WriteRawValue(json.ToString());
+            }
+
+            /// <inheritdoc />
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+                => throw new NotImplementedException();
+
+            /// <inheritdoc />
+            public override bool CanConvert(Type objectType) => objectType == typeof(JsonElement) || objectType == typeof(JsonElement?);
+        }
     }
 }

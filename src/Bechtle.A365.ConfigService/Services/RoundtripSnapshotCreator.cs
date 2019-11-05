@@ -2,8 +2,11 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common.Compilation;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ConfigService.Services.Stores;
 using EventStore.ClientAPI;
 
@@ -15,11 +18,23 @@ namespace Bechtle.A365.ConfigService.Services
     public class RoundtripSnapshotCreator : ISnapshotCreator
     {
         private readonly IEventStore _eventStore;
+        private readonly IConfigurationParser _parser;
+        private readonly IConfigurationCompiler _compiler;
+        private readonly IJsonTranslator _translator;
+        private readonly IStreamedStore _streamedStore;
 
         /// <inheritdoc />
-        public RoundtripSnapshotCreator(IEventStore eventStore)
+        public RoundtripSnapshotCreator(IEventStore eventStore,
+                                        IConfigurationParser parser,
+                                        IConfigurationCompiler compiler,
+                                        IJsonTranslator translator,
+                                        IStreamedStore streamedStore)
         {
             _eventStore = eventStore;
+            _parser = parser;
+            _compiler = compiler;
+            _translator = translator;
+            _streamedStore = streamedStore;
         }
 
         /// <inheritdoc />
@@ -28,6 +43,9 @@ namespace Bechtle.A365.ConfigService.Services
             var streamedObjects = new List<StreamedObject>();
 
             await _eventStore.ReplayEventsAsStream(tuple => StreamProcessor(tuple, streamedObjects));
+
+            foreach (var config in streamedObjects.OfType<StreamedConfiguration>())
+                await config.Compile(_streamedStore, _compiler, _parser, _translator);
 
             return streamedObjects.Select(o => o.CreateSnapshot()).ToList();
         }
