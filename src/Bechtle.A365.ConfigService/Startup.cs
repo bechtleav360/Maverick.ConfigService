@@ -146,65 +146,16 @@ namespace Bechtle.A365.ConfigService
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
-            _logger.LogInformation("registering MVC-Middleware with metrics-support");
+            RegisterMvc(services);
+            RegisterVersioning(services);
+            RegisterSwagger(services);
+            RegisterAuthentication(services);
+            RegisterDiServices(services);
+            RegisterHealthEndpoints(services);
+        }
 
-            // setup MVC
-            services.AddMvc()
-                    .AddMetrics()
-                    .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-
-            _logger.LogInformation("registering API-Version support");
-
-            // setup API-Versioning and Swagger
-            services.AddApiVersioning(options =>
-                    {
-                        options.AssumeDefaultVersionWhenUnspecified = true;
-                        options.DefaultApiVersion = new ApiVersion(0, 0);
-                        options.ReportApiVersions = true;
-                    })
-                    .AddVersionedApiExplorer(options =>
-                    {
-                        options.AssumeDefaultVersionWhenUnspecified = true;
-                        options.DefaultApiVersion = new ApiVersion(0, 0);
-                        options.GroupNameFormat = "'v'VVV";
-                        options.SubstituteApiVersionInUrl = true;
-                    });
-
-            _logger.LogInformation("registering Swagger");
-
-            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>()
-                    .AddSwaggerGen(options =>
-                    {
-                        options.CustomSchemaIds(t => t.FullName);
-                        options.OperationFilter<SwaggerDefaultValues>();
-
-                        var ass = Assembly.GetEntryAssembly();
-                        if (!(ass is null))
-                            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{ass.GetName().Name}.xml"));
-                    });
-
-            _logger.LogInformation("Registering Authentication-Services");
-
-            if (!_environment.EnvironmentName.Equals("docker", StringComparison.OrdinalIgnoreCase))
-            {
-                // Cert-Based Authentication - if enabled
-                services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
-                        .AddCertificate(options =>
-                        {
-                            options.Events = new CertificateAuthenticationEvents
-                            {
-                                OnAuthenticationFailed = context => context.HttpContext
-                                                                           .RequestServices
-                                                                           .GetService<ICertificateValidator>()
-                                                                           .Fail(context),
-                                OnValidateCertificate = context => context.HttpContext
-                                                                          .RequestServices
-                                                                          .GetService<ICertificateValidator>()
-                                                                          .Validate(context)
-                            };
-                        });
-            }
-
+        private void RegisterDiServices(IServiceCollection services)
+        {
             _logger.LogInformation("Registering App-Services");
 
             // setup services for DI
@@ -250,7 +201,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
                     .AddScoped<IStreamedStore, StreamedObjectStore>(_logger)
                     //.AddScoped<ISnapshotStore, DummySnapshotStore>(_logger)
-                    // once behinde the interface, once with direct access
+                    // once behind the interface, once with direct access
                     .AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
                     .AddScoped<PostgresSnapshotStore>(_logger)
                     .AddScoped<ISnapshotTrigger, NumberThresholdSnapshotTrigger>(_logger)
@@ -279,7 +230,20 @@ namespace Bechtle.A365.ConfigService
                         else
                             builder.UseNpgsql(connectionString);
                     });
+        }
 
+        private void RegisterMvc(IServiceCollection services)
+        {
+            _logger.LogInformation("registering MVC-Middleware with metrics-support");
+
+            // setup MVC
+            services.AddMvc()
+                    .AddMetrics()
+                    .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+        }
+
+        private void RegisterHealthEndpoints(IServiceCollection services)
+        {
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");
 
@@ -320,6 +284,67 @@ namespace Bechtle.A365.ConfigService
                     }
                 });
             });
+        }
+
+        private void RegisterAuthentication(IServiceCollection services)
+        {
+            if (!_environment.EnvironmentName.Equals("docker", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Registering Authentication-Services");
+
+                // Cert-Based Authentication - if enabled
+                services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
+                        .AddCertificate(options =>
+                        {
+                            options.Events = new CertificateAuthenticationEvents
+                            {
+                                OnAuthenticationFailed = context => context.HttpContext
+                                                                           .RequestServices
+                                                                           .GetService<ICertificateValidator>()
+                                                                           .Fail(context),
+                                OnValidateCertificate = context => context.HttpContext
+                                                                          .RequestServices
+                                                                          .GetService<ICertificateValidator>()
+                                                                          .Validate(context)
+                            };
+                        });
+            }
+        }
+
+        private void RegisterSwagger(IServiceCollection services)
+        {
+            _logger.LogInformation("registering Swagger");
+
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>()
+                    .AddSwaggerGen(options =>
+                    {
+                        options.CustomSchemaIds(t => t.FullName);
+                        options.OperationFilter<SwaggerDefaultValues>();
+
+                        var ass = Assembly.GetEntryAssembly();
+                        if (!(ass is null))
+                            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{ass.GetName().Name}.xml"));
+                    });
+        }
+
+        private void RegisterVersioning(IServiceCollection services)
+        {
+            _logger.LogInformation("registering API-Version support");
+
+            // setup API-Versioning and Swagger
+            services.AddApiVersioning(options =>
+                    {
+                        options.AssumeDefaultVersionWhenUnspecified = true;
+                        options.DefaultApiVersion = new ApiVersion(0, 0);
+                        options.ReportApiVersions = true;
+                    })
+                    .AddVersionedApiExplorer(options =>
+                    {
+                        options.AssumeDefaultVersionWhenUnspecified = true;
+                        options.DefaultApiVersion = new ApiVersion(0, 0);
+                        options.GroupNameFormat = "'v'VVV";
+                        options.SubstituteApiVersionInUrl = true;
+                    });
         }
     }
 }
