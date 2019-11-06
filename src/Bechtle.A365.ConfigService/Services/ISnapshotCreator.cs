@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.DomainObjects;
-using Bechtle.A365.ConfigService.Services.Stores;
 
 namespace Bechtle.A365.ConfigService.Services
 {
@@ -12,10 +11,18 @@ namespace Bechtle.A365.ConfigService.Services
     public interface ISnapshotCreator
     {
         /// <summary>
-        ///     get snapshots of all DomainObjects found in the current <see cref="IEventStore"/>
+        ///     get snapshots of all DomainObjects
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task<IList<StreamedObjectSnapshot>> CreateAllSnapshots(CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     create incremental snapshots for all given <paramref name="streamedObjects"/>
+        /// </summary>
+        /// <param name="streamedObjects"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<IList<StreamedObjectSnapshot>> CreateSnapshots(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken);
     }
 }

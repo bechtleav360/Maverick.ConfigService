@@ -204,7 +204,7 @@ namespace Bechtle.A365.ConfigService
                     // once behind the interface, once with direct access
                     .AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
                     .AddScoped<PostgresSnapshotStore>(_logger)
-                    .AddScoped<ISnapshotTrigger, NumberThresholdSnapshotTrigger>(_logger)
+                    .AddScoped<NumberThresholdSnapshotTrigger>(_logger)
                     .AddScoped<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
                     .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)

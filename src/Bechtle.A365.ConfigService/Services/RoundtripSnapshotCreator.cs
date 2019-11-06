@@ -44,8 +44,22 @@ namespace Bechtle.A365.ConfigService.Services
 
             await _eventStore.ReplayEventsAsStream(tuple => StreamProcessor(tuple, streamedObjects));
 
+            return await CreateSnapshotsInternal(streamedObjects, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<IList<StreamedObjectSnapshot>> CreateSnapshots(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken)
+            => CreateSnapshotsInternal(streamedObjects, cancellationToken);
+
+        private async Task<IList<StreamedObjectSnapshot>> CreateSnapshotsInternal(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken)
+        {
             foreach (var config in streamedObjects.OfType<StreamedConfiguration>())
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    return new List<StreamedObjectSnapshot>();
+
                 await config.Compile(_streamedStore, _compiler, _parser, _translator);
+            }
 
             return streamedObjects.Select(o => o.CreateSnapshot()).ToList();
         }
