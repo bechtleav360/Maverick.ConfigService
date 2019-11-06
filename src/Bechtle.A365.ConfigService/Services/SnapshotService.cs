@@ -120,21 +120,25 @@ namespace Bechtle.A365.ConfigService.Services
 
             _logger.LogDebug($"retrieving all instances of {nameof(ISnapshotTrigger)}");
 
-            var triggerConfig = _configuration.GetSection("SnapshotConfiguration:Triggers").Get<Dictionary<string, TriggerConfiguration>>();
+            var triggerConfigSection = _configuration.GetSection("SnapshotConfiguration:Triggers");
+            var triggerConfig = triggerConfigSection.Get<Dictionary<string, TriggerConfiguration>>();
 
             _logger.LogDebug($"found ISnapshotTrigger-Configs for '{triggerConfig.Count}' triggers ({string.Join(", ", triggerConfig.Keys)})");
 
             // map the trigger-configs to actual new instances if possible
-            var triggers = triggerConfig.Select((pair, i) =>
+            var triggers = triggerConfig.Select(pair =>
             {
                 var (name, config) = pair;
                 var triggerInstance = pair.Value.Type switch
                 {
                     "Timer" => provider.GetRequiredService<NumberThresholdSnapshotTrigger>(),
                     "EventLag" => provider.GetRequiredService<NumberThresholdSnapshotTrigger>(),
-                    _ => throw new ArgumentOutOfRangeException($"SnapshotConfiguration:Triggers:{i}:Type",
-                                                               $"SnapshotConfiguration:Triggers:{i}:Type; '{config.Type}' is not supported")
+                    _ => throw new ArgumentOutOfRangeException($"SnapshotConfiguration:Triggers:{name}:Type",
+                                                               $"SnapshotConfiguration:Triggers:{name}:Type; '{config.Type}' is not supported")
                 };
+
+                // pass the instances "Trigger" section to the actual instance
+                triggerInstance.Configure(triggerConfigSection.GetSection($"{name}:Trigger"));
 
                 return (Name: name, Instance: (ISnapshotTrigger) triggerInstance);
             }).ToList();

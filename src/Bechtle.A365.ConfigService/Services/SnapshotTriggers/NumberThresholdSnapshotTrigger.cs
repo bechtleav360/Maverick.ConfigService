@@ -18,26 +18,31 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
     {
         private readonly IEventStore _eventStore;
         private readonly ISnapshotStore _snapshotStore;
-        private readonly IConfiguration _configuration;
         private readonly ConfigServiceConfiguration _serviceConfig;
         private readonly ILogger _logger;
+
+        private IConfiguration _configuration;
 
         /// <inheritdoc />
         public NumberThresholdSnapshotTrigger(IEventStore eventStore,
                                               ISnapshotStore snapshotStore,
-                                              IConfiguration configuration,
                                               ConfigServiceConfiguration serviceConfig,
                                               ILogger<NumberThresholdSnapshotTrigger> logger)
         {
             _eventStore = eventStore;
             _snapshotStore = snapshotStore;
-            _configuration = configuration;
             _serviceConfig = serviceConfig;
             _logger = logger;
         }
 
         /// <inheritdoc />
         public event EventHandler SnapshotTriggered;
+
+        /// <inheritdoc />
+        public void Configure(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         /// <inheritdoc />
         public async Task Start(CancellationToken cancellationToken)
@@ -63,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
                 var currentSnapshotEventNumber = await GetCurrentSnapshotEventNumber();
                 _logger.LogDebug($"event-number of last Snapshot: {currentSnapshotEventNumber}");
 
-                var threshold = _configuration.GetSection("SnapshotConfiguration:Triggers:NumberThreshold:Threshold").Get<long>();
+                var threshold = _configuration.GetSection("Max").Get<long>();
                 _logger.LogDebug($"resolved threshold: {threshold}");
 
                 if (lastEventNumber - currentSnapshotEventNumber > threshold)
@@ -95,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
             var currentSnapshotEventNumber = await GetCurrentSnapshotEventNumber();
             _logger.LogDebug($"event-number of last Snapshot: {currentSnapshotEventNumber}");
 
-            var threshold = _configuration.GetSection("SnapshotConfiguration:Triggers:NumberThreshold:Threshold").Get<long>();
+            var threshold = _configuration.GetSection("Max").Get<long>();
             _logger.LogDebug($"resolved threshold: {threshold}");
 
             if (lastEventNumber - currentSnapshotEventNumber > threshold)
