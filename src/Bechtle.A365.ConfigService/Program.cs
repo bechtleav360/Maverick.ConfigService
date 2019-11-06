@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using App.Metrics;
 using App.Metrics.Formatters;
+using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Utilities;
@@ -84,13 +85,13 @@ namespace Bechtle.A365.ConfigService
                     ServerCertificate = certificate
                 };
 
-                // var inDocker = bool.Parse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "false");
-                // if (!inDocker)
-                // {
-                //     logger.LogInformation("Not running in docker, adding client certificate validation");
-                //     connectionOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
-                //     connectionOptions.ClientCertificateValidation = CertificateValidator.DisableChannelValidation;
-                // }
+                var inDocker = bool.Parse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "false");
+                if (!inDocker)
+                {
+                    logger.LogInformation("Not running in docker, adding client certificate validation");
+                    connectionOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
+                    connectionOptions.ClientCertificateValidation = CertificateValidator.DisableChannelValidation;
+                }
 
                 logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
 
