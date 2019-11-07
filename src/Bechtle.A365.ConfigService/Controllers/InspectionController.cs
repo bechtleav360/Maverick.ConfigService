@@ -122,14 +122,108 @@ namespace Bechtle.A365.ConfigService.Controllers
         /// <summary>
         ///     inspect the given structure for possible errors or unreachable references
         /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <returns></returns>
+        [HttpPost("structure/compile/{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
+        public async Task<IActionResult> InspectStructure([FromRoute] string environmentCategory,
+                                                          [FromRoute] string environmentName,
+                                                          [FromRoute] string structureName,
+                                                          [FromRoute] int structureVersion)
+        {
+            if (string.IsNullOrWhiteSpace(environmentCategory))
+                return BadRequest("no environment-category given");
+
+            if (string.IsNullOrWhiteSpace(environmentName))
+                return BadRequest("no environment-name given");
+
+            if (string.IsNullOrWhiteSpace(structureName))
+                return BadRequest("no structure-name was given");
+
+            if (structureVersion <= 0)
+                return BadRequest("structure-version invalid");
+
+            var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structId = new StructureIdentifier(structureName, structureVersion);
+
+            var envKeysResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            {
+                Environment = envId,
+                Range = QueryRange.All
+            });
+
+            if (envKeysResult.IsError)
+                return ProviderError(envKeysResult);
+
+            var envKeys = envKeysResult.Data;
+
+            IDictionary<string, string> structKeys;
+            IDictionary<string, string> structVars;
+
+            try
+            {
+                var keyResult = await _store.Structures.GetKeys(structId, QueryRange.All);
+                if (keyResult.IsError)
+                    return ProviderError(keyResult);
+
+                var varResult = await _store.Structures.GetVariables(structId, QueryRange.All);
+                if (varResult.IsError)
+                    return ProviderError(varResult);
+
+                structKeys = keyResult.Data;
+                structVars = varResult.Data;
+            }
+            catch (Exception e)
+            {
+                Logger.LogWarning(e, "could not retrieve structure-data or -variables");
+                return BadRequest("could not retrieve structure-data or -variables");
+            }
+
+            CompilationResult compilationResult;
+
+            try
+            {
+                compilationResult = _compiler.Compile(
+                    new EnvironmentCompilationInfo
+                    {
+                        Keys = envKeys,
+                        Name = envId.ToString()
+                    },
+                    new StructureCompilationInfo
+                    {
+                        Name = structureName,
+                        Keys = structKeys,
+                        Variables = structVars
+                    },
+                    _parser);
+            }
+            catch (Exception e)
+            {
+                Logger.LogWarning(e, $"structure could not be inspected in context of '{envId}'; compilation failed");
+                return Ok(new StructureInspectionResult
+                {
+                    CompilationSuccessful = false
+                });
+            }
+
+            var result = AnalyzeCompilation(compilationResult);
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        ///     inspect the given structure for possible errors or unreachable references
+        /// </summary>
         /// <param name="structure"></param>
         /// <param name="environmentCategory"></param>
         /// <param name="environmentName"></param>
         /// <returns></returns>
         [HttpPost("structure/compile/{environmentCategory}/{environmentName}")]
-        public async Task<IActionResult> InspectStructure([FromRoute] string environmentCategory,
-                                                          [FromRoute] string environmentName,
-                                                          [FromBody] DtoStructure structure)
+        public async Task<IActionResult> InspectUploadedStructure([FromRoute] string environmentCategory,
+                                                                  [FromRoute] string environmentName,
+                                                                  [FromBody] DtoStructure structure)
         {
             if (string.IsNullOrWhiteSpace(environmentCategory))
                 return BadRequest("no environment-category given");
