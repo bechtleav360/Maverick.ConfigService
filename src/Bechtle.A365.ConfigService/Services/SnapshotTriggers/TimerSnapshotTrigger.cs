@@ -58,8 +58,10 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
             // creating snapshots in sub-minute resolution is not necessary
             var schedule = CrontabSchedule.Parse(interval, new CrontabSchedule.ParseOptions {IncludingSeconds = false});
 
+            // calculate next interval and
+            // account for inaccuracy of Timer by adding another second on top
             var nextOccurrence = schedule.GetNextOccurrence(DateTime.UtcNow);
-            var sleepTime = nextOccurrence - DateTime.UtcNow;
+            var sleepTime = nextOccurrence - DateTime.UtcNow + TimeSpan.FromSeconds(1);
 
             _logger.LogInformation($"using interval '{interval}' the next occurence / trigger is at '{nextOccurrence:O}' - sleeping for {sleepTime:c}");
 

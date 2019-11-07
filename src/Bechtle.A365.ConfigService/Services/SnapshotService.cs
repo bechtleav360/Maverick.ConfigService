@@ -27,7 +27,7 @@ namespace Bechtle.A365.ConfigService.Services
         private readonly List<ISnapshotTrigger> _incrementalTriggers;
 
         private CancellationTokenSource _completeTriggerTokenSource;
-        private CancellationTokenSource _incrementalTokenSource;
+        private CancellationTokenSource _incrementalTriggerTokenSource;
 
         /// <inheritdoc />
         public SnapshotService(IServiceProvider provider,
@@ -55,10 +55,10 @@ namespace Bechtle.A365.ConfigService.Services
                 try
                 {
                     _completeTriggerTokenSource = new CancellationTokenSource();
-                    _incrementalTokenSource = new CancellationTokenSource();
+                    _incrementalTriggerTokenSource = new CancellationTokenSource();
                     var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
                                                                                        _completeTriggerTokenSource.Token,
-                                                                                       _incrementalTokenSource.Token);
+                                                                                       _incrementalTriggerTokenSource.Token);
 
                     await CreateTriggers(cancellationToken, provider);
 
@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Services
 
                     var kreator = provider.GetRequiredService<ISnapshotCreator>();
 
-                    if (_incrementalTokenSource.Token.IsCancellationRequested)
+                    if (_incrementalTriggerTokenSource.Token.IsCancellationRequested)
                     {
                         _logger.LogDebug("incremental-snapshot has been triggered");
 
@@ -129,10 +129,10 @@ namespace Bechtle.A365.ConfigService.Services
             var triggers = triggerConfig.Select(pair =>
             {
                 var (name, config) = pair;
-                var triggerInstance = pair.Value.Type switch
+                ISnapshotTrigger triggerInstance = pair.Value.Type switch
                 {
-                    "Timer" => provider.GetRequiredService<NumberThresholdSnapshotTrigger>(),
-                    "EventLag" => provider.GetRequiredService<NumberThresholdSnapshotTrigger>(),
+                    "Timer" => provider.GetRequiredService<TimerSnapshotTrigger>() as ISnapshotTrigger,
+                    "EventLag" => provider.GetRequiredService<NumberThresholdSnapshotTrigger>() as ISnapshotTrigger,
                     _ => throw new ArgumentOutOfRangeException($"SnapshotConfiguration:Triggers:{name}:Type",
                                                                $"SnapshotConfiguration:Triggers:{name}:Type; '{config.Type}' is not supported")
                 };
@@ -140,12 +140,12 @@ namespace Bechtle.A365.ConfigService.Services
                 // pass the instances "Trigger" section to the actual instance
                 triggerInstance.Configure(triggerConfigSection.GetSection($"{name}:Trigger"));
 
-                return (Name: name, Instance: (ISnapshotTrigger) triggerInstance);
+                return (Name: name, Instance: triggerInstance);
             }).ToList();
 
             // get trigger=>snapshot associations, to map them later
-            var completeAssociations = _configuration.GetSection("SnapshotConfiguration:Snapshots:Complete").Get<string[]>();
-            var incrementalAssociations = _configuration.GetSection("SnapshotConfiguration:Snapshots:Incremental").Get<string[]>();
+            var completeAssociations = _configuration.GetSection("SnapshotConfiguration:Snapshots:Complete").Get<string[]>() ?? new string[0];
+            var incrementalAssociations = _configuration.GetSection("SnapshotConfiguration:Snapshots:Incremental").Get<string[]>() ?? new string[0];
 
             // define as functions so i don't have to write so much duplicated code, or compress it until it's unreadable
             bool SearchTriggerAssociation(string association)
@@ -171,7 +171,7 @@ namespace Bechtle.A365.ConfigService.Services
             _logger.LogCritical($"incremental snapshot has been triggered by {sender.GetType().Name}");
 
             // cancel the token, to signal ExecuteAsync to continue its work
-            _completeTriggerTokenSource.Cancel();
+            _incrementalTriggerTokenSource.Cancel();
         }
 
         private void OnCompleteSnapshotTriggered(object sender, EventArgs e)
