@@ -108,11 +108,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (Built)
                 return Result.Success();
 
-            var envResult = await store.GetEnvironment(Identifier.Environment, CurrentVersion);
+            var envResult = await store.GetStreamedObject(new StreamedEnvironment(Identifier.Environment),
+                                                          Identifier.Environment.ToString(),
+                                                          CurrentVersion);
             if (envResult.IsError)
                 return envResult;
 
-            var structResult = await store.GetStructure(Identifier.Structure, CurrentVersion);
+            var structResult = await store.GetStreamedObject(new StreamedStructure(Identifier.Structure),
+                                                             Identifier.Structure.ToString(),
+                                                             CurrentVersion);
             if (structResult.IsError)
                 return structResult;
 

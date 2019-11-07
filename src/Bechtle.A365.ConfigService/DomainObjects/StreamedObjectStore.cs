@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -33,52 +32,20 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public Task<IResult<StreamedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier)
-            => GetConfiguration(identifier, long.MaxValue);
+        public Task<IResult<T>> GetStreamedObject<T>() where T : StreamedObject, new()
+            => GetStreamedObject<T>(long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<StreamedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, long maxVersion)
-            => GetStreamedObjectInternal(new StreamedConfiguration(identifier), identifier.ToString(), maxVersion, identifier.ToString());
+        public Task<IResult<T>> GetStreamedObject<T>(long maxVersion) where T : StreamedObject, new()
+            => GetStreamedObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name);
 
         /// <inheritdoc />
-        public Task<IResult<StreamedConfigurationList>> GetConfigurationList()
-            => GetConfigurationList(long.MaxValue);
+        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier) where T : StreamedObject
+            => GetStreamedObject(streamedObject, identifier, long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<StreamedConfigurationList>> GetConfigurationList(long maxVersion)
-            => GetStreamedObjectInternal(new StreamedConfigurationList(), nameof(StreamedConfigurationList), maxVersion, nameof(StreamedConfigurationList));
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedEnvironment>> GetEnvironment(EnvironmentIdentifier identifier)
-            => GetEnvironment(identifier, long.MaxValue);
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, long maxVersion)
-            => GetStreamedObjectInternal(new StreamedEnvironment(identifier), identifier.ToString(), maxVersion, identifier.ToString());
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedEnvironmentList>> GetEnvironmentList()
-            => GetEnvironmentList(long.MaxValue);
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedEnvironmentList>> GetEnvironmentList(long maxVersion)
-            => GetStreamedObjectInternal(new StreamedEnvironmentList(), nameof(StreamedEnvironmentList), maxVersion, nameof(StreamedEnvironmentList));
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedStructure>> GetStructure(StructureIdentifier identifier)
-            => GetStructure(identifier, long.MaxValue);
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedStructure>> GetStructure(StructureIdentifier identifier, long maxVersion)
-            => GetStreamedObjectInternal(new StreamedStructure(identifier), identifier.ToString(), maxVersion, identifier.ToString());
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedStructureList>> GetStructureList()
-            => GetStructureList(long.MaxValue);
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedStructureList>> GetStructureList(long maxVersion)
-            => GetStreamedObjectInternal(new StreamedStructureList(), nameof(StreamedStructureList), maxVersion, nameof(StreamedStructureList));
+        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier, long maxVersion) where T : StreamedObject
+            => GetStreamedObjectInternal(streamedObject, identifier, maxVersion, identifier);
 
         private async Task<IResult<T>> GetStreamedObjectInternal<T>(T streamedObject,
                                                                     string identifier,

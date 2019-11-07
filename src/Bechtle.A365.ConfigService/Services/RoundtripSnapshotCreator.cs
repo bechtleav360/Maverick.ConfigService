@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bechtle.A365.Common.Utilities.Extensions;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -48,8 +49,12 @@ namespace Bechtle.A365.ConfigService.Services
         }
 
         /// <inheritdoc />
-        public Task<IList<StreamedObjectSnapshot>> CreateSnapshots(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken)
-            => CreateSnapshotsInternal(streamedObjects, cancellationToken);
+        public async Task<IList<StreamedObjectSnapshot>> CreateIncrementalSnapshots(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken)
+        {
+            await _eventStore.ReplayEventsAsStream(tuple => StreamProcessor(tuple, streamedObjects));
+
+            return await CreateSnapshotsInternal(streamedObjects, cancellationToken);
+        }
 
         private async Task<IList<StreamedObjectSnapshot>> CreateSnapshotsInternal(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken)
         {
@@ -64,7 +69,7 @@ namespace Bechtle.A365.ConfigService.Services
             return streamedObjects.Select(o => o.CreateSnapshot()).ToList();
         }
 
-        private bool StreamProcessor((RecordedEvent, DomainEvent) tuple, List<StreamedObject> streamedObjects)
+        private bool StreamProcessor((RecordedEvent, DomainEvent) tuple, IList<StreamedObject> streamedObjects)
         {
             var (recordedEvent, domainEvent) = tuple;
 
@@ -94,7 +99,7 @@ namespace Bechtle.A365.ConfigService.Services
                     break;
 
                 case EnvironmentDeleted deleted:
-                    streamedObjects.RemoveAll(o => o is StreamedEnvironment e && e.Identifier == deleted.Identifier);
+                    streamedObjects.RemoveRange(streamedObjects.Where(o => o is StreamedEnvironment e && e.Identifier == deleted.Identifier));
                     break;
 
                 case StructureCreated created:
@@ -103,7 +108,7 @@ namespace Bechtle.A365.ConfigService.Services
                     break;
 
                 case StructureDeleted deleted:
-                    streamedObjects.RemoveAll(o => o is StreamedStructure s && s.Identifier == deleted.Identifier);
+                    streamedObjects.RemoveRange(streamedObjects.Where(o => o is StreamedStructure e && e.Identifier == deleted.Identifier));
                     break;
             }
 

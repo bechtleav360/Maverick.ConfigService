@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var result = await _streamedStore.GetEnvironmentList();
+                var result = await _streamedStore.GetStreamedObject<StreamedEnvironmentList>();
 
                 return Result.Success<IList<EnvironmentIdentifier>>(
                     result.IsError
@@ -59,7 +59,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             try
             {
                 key = Uri.UnescapeDataString(key ?? string.Empty);
-                var envResult = await _streamedStore.GetEnvironment(identifier);
+                var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
                 if (envResult.IsError)
                     return Result.Error<IList<DtoConfigKeyCompletion>>(
                         "no environment found with (" +
@@ -181,7 +181,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public async Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault)
         {
-            var envResult = await _streamedStore.GetEnvironment(identifier);
+            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -205,7 +205,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public async Task<IResult> Delete(EnvironmentIdentifier identifier)
         {
-            var envResult = await _streamedStore.GetEnvironment(identifier);
+            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -229,7 +229,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public async Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete)
         {
-            var envResult = await _streamedStore.GetEnvironment(identifier);
+            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -253,7 +253,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public async Task<IResult> UpdateKeys(EnvironmentIdentifier identifier, ICollection<DtoConfigKey> keys)
         {
-            var envResult = await _streamedStore.GetEnvironment(identifier);
+            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -397,7 +397,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var envResult = await _streamedStore.GetEnvironment(parameters.Environment);
+                var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(parameters.Environment), parameters.Environment.ToString());
                 if (envResult.IsError)
                     return Result.Error<TResult>(envResult.Message, envResult.Code);
 

@@ -89,10 +89,9 @@ namespace Bechtle.A365.ConfigService.Services
                     {
                         _logger.LogDebug("incremental-snapshot has been triggered");
 
-                        // @TODO: ask *someone* for all currently-available DomainObjects - may even be limited to previous snapshots
-                        var existingDomainObjects = new List<StreamedObject>();
+                        var objectsToSave = new List<StreamedObject>();
 
-                        var snapshots = await kreator.CreateSnapshots(existingDomainObjects, cancellationToken);
+                        var snapshots = await kreator.CreateIncrementalSnapshots(objectsToSave, cancellationToken);
                         await SaveSnapshots(provider, snapshots, cancellationToken);
                     }
                     else if (_completeTriggerTokenSource.Token.IsCancellationRequested)

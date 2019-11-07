@@ -36,7 +36,7 @@ namespace Bechtle.A365.ConfigService.Services
             {
                 var identifier = new EnvironmentIdentifier(envExport.Category, envExport.Name);
 
-                var envResult = await _streamedStore.GetEnvironment(identifier);
+                var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
                 if (envResult.IsError)
                     return envResult;
 

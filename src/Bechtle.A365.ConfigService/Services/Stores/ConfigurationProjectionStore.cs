@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Parsing;
 using Microsoft.Extensions.Logging;
 
@@ -47,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var list = await _streamedStore.GetConfigurationList();
+                var list = await _streamedStore.GetStreamedObject<StreamedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -82,7 +83,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var list = await _streamedStore.GetConfigurationList();
+                var list = await _streamedStore.GetStreamedObject<StreamedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -119,7 +120,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var list = await _streamedStore.GetConfigurationList();
+                var list = await _streamedStore.GetStreamedObject<StreamedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -161,7 +162,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             try
             {
-                var configuration = await _streamedStore.GetConfiguration(identifier);
+                var configuration = await _streamedStore.GetStreamedObject(new StreamedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<JsonElement>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
@@ -196,7 +197,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             try
             {
-                var configuration = await _streamedStore.GetConfiguration(identifier);
+                var configuration = await _streamedStore.GetStreamedObject(new StreamedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<IDictionary<string, string>>(
                         $"no configuration found with id: {formattedParams}",
@@ -230,7 +231,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
-                var list = await _streamedStore.GetConfigurationList();
+                var list = await _streamedStore.GetStreamedObject<StreamedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -268,7 +269,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             try
             {
-                var configuration = await _streamedStore.GetConfiguration(identifier);
+                var configuration = await _streamedStore.GetStreamedObject(new StreamedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
@@ -304,7 +305,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
             try
             {
-                var configuration = await _streamedStore.GetConfiguration(identifier);
+                var configuration = await _streamedStore.GetStreamedObject(new StreamedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
@@ -321,7 +322,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <inheritdoc />
         public async Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo)
         {
-            var configResult = await _streamedStore.GetConfiguration(identifier);
+            var configResult = await _streamedStore.GetStreamedObject(new StreamedConfiguration(identifier), identifier.ToString());
             if (configResult.IsError)
                 return configResult;
 
