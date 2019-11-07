@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.Controllers
     /// <summary>
     ///     controller to inspect and analyze the current state of all stored Configuration-Data
     /// </summary>
-    [Route("inspect")]
+    [Route(ApiBaseRoute + "inspect")]
     [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class InspectionController : ControllerBase
     {
