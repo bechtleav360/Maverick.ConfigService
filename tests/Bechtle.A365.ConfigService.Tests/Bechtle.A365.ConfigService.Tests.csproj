@@ -29,7 +29,6 @@
     <ProjectReference Include="..\..\src\Bechtle.A365.ConfigService\Bechtle.A365.ConfigService.csproj" />
     <ProjectReference Include="..\..\src\Bechtle.A365.ConfigService.Common\Bechtle.A365.ConfigService.Common.csproj" />
     <ProjectReference Include="..\..\src\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj" />
-    <ProjectReference Include="..\..\src\Bechtle.A365.ConfigService.Projection\Bechtle.A365.ConfigService.Projection.csproj" />
   </ItemGroup>
 
 </Project>
