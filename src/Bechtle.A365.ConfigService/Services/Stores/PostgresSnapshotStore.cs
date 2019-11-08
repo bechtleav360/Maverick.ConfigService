@@ -6,7 +6,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -31,44 +30,12 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetEnvironmentList()
-            => GetInternal(nameof(StreamedEnvironmentList));
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetEnvironment(EnvironmentIdentifier identifier)
-            => GetInternal(nameof(StreamedEnvironment), identifier.ToString());
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetStructureList()
-            => GetInternal(nameof(StreamedStructureList));
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetStructure(StructureIdentifier identifier)
-            => GetInternal(nameof(StreamedStructure), identifier.ToString());
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetConfigurationList()
-            => GetInternal(nameof(StreamedConfigurationList));
-
-        /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetConfiguration(ConfigurationIdentifier identifier)
-            => GetInternal(nameof(StreamedConfiguration), identifier.ToString());
-
-        /// <inheritdoc />
         public Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier) where T : StreamedObject
             => GetInternal(typeof(T).Name, identifier);
 
         /// <inheritdoc />
         public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier)
             => GetInternal(dataType, identifier);
-
-        /// <summary>
-        ///     get the first snapshot that first the given <paramref name="name"/>. used when both DataType and Identifier have the same value
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        private Task<IResult<StreamedObjectSnapshot>> GetInternal(string name)
-            => GetInternal(s => s.DataType == name && s.Identifier == name);
 
         /// <summary>
         ///     get the first snapshot that fits the given <paramref name="dataType"/> and <paramref name="identifier"/>
