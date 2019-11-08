@@ -121,6 +121,10 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
+                // if no entries exist, we might as well be at Event#0
+                if (!await _context.Snapshots.AnyAsync())
+                    return Result.Success(0L);
+
                 return Result.Success(await _context.Snapshots
                                                     .Select(s => s.Version)
                                                     .MaxAsync());
