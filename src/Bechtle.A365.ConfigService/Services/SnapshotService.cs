@@ -130,14 +130,10 @@ namespace Bechtle.A365.ConfigService.Services
             // get trigger=>snapshot associations, to map them later
             var completeAssociations = _configuration.GetSection("SnapshotConfiguration:Snapshots:Complete").Get<string[]>() ?? new string[0];
 
-            // define as functions so it's clear whats happening, and not have to compress it down too much
-            bool SearchTriggerAssociation(string association)
-                => triggers.Any(tuple => tuple.Name.Equals(association, StringComparison.OrdinalIgnoreCase));
-
-            ISnapshotTrigger GetTriggerInstance(string association)
-                => triggers.First(tuple => tuple.Name.Equals(association, StringComparison.OrdinalIgnoreCase)).Instance;
-
-            _completeTriggers.AddRange(completeAssociations.Where(SearchTriggerAssociation).Select(GetTriggerInstance));
+            _completeTriggers.AddRange(
+                completeAssociations.Where(ass => triggers.Any(tuple => tuple.Name.Equals(ass, StringComparison.OrdinalIgnoreCase)))
+                                    .Select(ass => triggers.First(tuple => tuple.Name.Equals(ass, StringComparison.OrdinalIgnoreCase))
+                                                           .Instance));
 
             foreach (var trigger in _completeTriggers)
                 trigger.SnapshotTriggered += OnCompleteSnapshotTriggered;
