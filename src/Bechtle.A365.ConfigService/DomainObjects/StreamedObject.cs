@@ -146,6 +146,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             try
             {
+                // if we don't have anything to store, we return immediately
+                if (!CapturedDomainEvents.Any())
+                    return Result.Success();
+
                 // take lock and see if another instance may already drain this queue
                 lock (_eventLock)
                 {
