@@ -143,7 +143,7 @@ namespace Bechtle.A365.ConfigService.Services
 
         private void OnCompleteSnapshotTriggered(object sender, EventArgs e)
         {
-            _logger.LogCritical($"complete snapshot has been triggered by {sender.GetType().Name}");
+            _logger.LogInformation($"complete snapshot has been triggered by {sender.GetType().Name}");
 
             // cancel the token, to signal ExecuteAsync to continue its work
             _completeTriggerTokenSource.Cancel();
