@@ -58,6 +58,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 if (_memoryCache.TryGetValue(cacheKey, out T cachedInstance))
                     return Result.Success(cachedInstance);
 
+                // @TODO: snapshot should be at or below maxVersion
                 var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier);
 
                 if (!latestSnapshot.IsError)
@@ -95,7 +96,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private async Task StreamObjectToVersion(StreamedObject streamedObject, long maxVersion)
         {
-            // @TODO: start streaming from latestSnapshot.Version
+            // skip streaming entirely if the object is at or above the desired version
+            if (streamedObject.CurrentVersion >= maxVersion)
+                return;
+
             await _eventStore.ReplayEventsAsStream(tuple =>
             {
                 var (recordedEvent, domainEvent) = tuple;
