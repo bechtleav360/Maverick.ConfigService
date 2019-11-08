@@ -24,10 +24,8 @@ namespace Bechtle.A365.ConfigService.Services
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
         private readonly List<ISnapshotTrigger> _completeTriggers;
-        private readonly List<ISnapshotTrigger> _incrementalTriggers;
 
         private CancellationTokenSource _completeTriggerTokenSource;
-        private CancellationTokenSource _incrementalTriggerTokenSource;
 
         /// <inheritdoc />
         public SnapshotService(IServiceProvider provider,
@@ -39,7 +37,6 @@ namespace Bechtle.A365.ConfigService.Services
             _configuration = configuration;
             _logger = logger;
             _completeTriggers = new List<ISnapshotTrigger>();
-            _incrementalTriggers = new List<ISnapshotTrigger>();
         }
 
         /// <inheritdoc />
@@ -55,10 +52,7 @@ namespace Bechtle.A365.ConfigService.Services
                 try
                 {
                     _completeTriggerTokenSource = new CancellationTokenSource();
-                    _incrementalTriggerTokenSource = new CancellationTokenSource();
-                    var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                                                                                       _completeTriggerTokenSource.Token,
-                                                                                       _incrementalTriggerTokenSource.Token);
+                    var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _completeTriggerTokenSource.Token);
 
                     await CreateTriggers(cancellationToken, provider);
 
@@ -76,29 +70,20 @@ namespace Bechtle.A365.ConfigService.Services
 
                     // if we pass the previous block something has happened, and we should clean up before continuing
                     _logger.LogDebug("disposing all SnapshotTriggers");
-                    foreach (var trigger in _completeTriggers.Concat(_incrementalTriggers))
+                    foreach (var trigger in _completeTriggers)
                         trigger.Dispose();
 
                     // if the overall CT was cancelled we stop, otherwise we continue and loop
                     if (cancellationToken.IsCancellationRequested)
                         return;
 
-                    var kreator = provider.GetRequiredService<ISnapshotCreator>();
-
-                    if (_incrementalTriggerTokenSource.Token.IsCancellationRequested)
+                    if (_completeTriggerTokenSource.Token.IsCancellationRequested)
                     {
-                        _logger.LogDebug("incremental-snapshot has been triggered");
+                        _logger.LogDebug("complete snapshot has been triggered");
 
-                        var objectsToSave = new List<StreamedObject>();
-
-                        var snapshots = await kreator.CreateIncrementalSnapshots(objectsToSave, cancellationToken);
-                        await SaveSnapshots(provider, snapshots, cancellationToken);
-                    }
-                    else if (_completeTriggerTokenSource.Token.IsCancellationRequested)
-                    {
-                        _logger.LogDebug("complete-snapshot has been triggered");
-
+                        var kreator = provider.GetRequiredService<ISnapshotCreator>();
                         var snapshots = await kreator.CreateAllSnapshots(cancellationToken);
+
                         await SaveSnapshots(provider, snapshots, cancellationToken);
                     }
                     else
@@ -115,7 +100,6 @@ namespace Bechtle.A365.ConfigService.Services
         private Task CreateTriggers(CancellationToken cancellationToken, IServiceProvider provider)
         {
             _completeTriggers.Clear();
-            _incrementalTriggers.Clear();
 
             _logger.LogDebug($"retrieving all instances of {nameof(ISnapshotTrigger)}");
 
@@ -144,9 +128,8 @@ namespace Bechtle.A365.ConfigService.Services
 
             // get trigger=>snapshot associations, to map them later
             var completeAssociations = _configuration.GetSection("SnapshotConfiguration:Snapshots:Complete").Get<string[]>() ?? new string[0];
-            var incrementalAssociations = _configuration.GetSection("SnapshotConfiguration:Snapshots:Incremental").Get<string[]>() ?? new string[0];
 
-            // define as functions so i don't have to write so much duplicated code, or compress it until it's unreadable
+            // define as functions so it's clear whats happening, and not have to compress it down too much
             bool SearchTriggerAssociation(string association)
                 => triggers.Any(tuple => tuple.Name.Equals(association, StringComparison.OrdinalIgnoreCase));
 
@@ -154,23 +137,11 @@ namespace Bechtle.A365.ConfigService.Services
                 => triggers.First(tuple => tuple.Name.Equals(association, StringComparison.OrdinalIgnoreCase)).Instance;
 
             _completeTriggers.AddRange(completeAssociations.Where(SearchTriggerAssociation).Select(GetTriggerInstance));
-            _incrementalTriggers.AddRange(incrementalAssociations.Where(SearchTriggerAssociation).Select(GetTriggerInstance));
 
             foreach (var trigger in _completeTriggers)
                 trigger.SnapshotTriggered += OnCompleteSnapshotTriggered;
 
-            foreach (var trigger in _incrementalTriggers)
-                trigger.SnapshotTriggered += OnIncrementalSnapshotTriggered;
-
-            return Task.WhenAll(_completeTriggers.Concat(_incrementalTriggers).Select(t => t.Start(cancellationToken)));
-        }
-
-        private void OnIncrementalSnapshotTriggered(object sender, EventArgs e)
-        {
-            _logger.LogCritical($"incremental snapshot has been triggered by {sender.GetType().Name}");
-
-            // cancel the token, to signal ExecuteAsync to continue its work
-            _incrementalTriggerTokenSource.Cancel();
+            return Task.WhenAll(_completeTriggers.Select(t => t.Start(cancellationToken)));
         }
 
         private void OnCompleteSnapshotTriggered(object sender, EventArgs e)
