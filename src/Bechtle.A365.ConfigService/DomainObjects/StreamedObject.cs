@@ -157,6 +157,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                 CurrentVersion = await store.WriteEvents(CapturedDomainEvents);
                 CapturedDomainEvents.Clear();
+                IncrementalSnapshotService.QueueSnapshot(CreateSnapshot());
 
                 return Result.Success();
             }

@@ -10,20 +10,19 @@ using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Services
 {
     /// <summary>
-    ///     Service responsible for managing all available instances of <see cref="ISnapshotTrigger"/>,
-    ///     and calling <see cref="ISnapshotStore"/> to save the created snapshots when required
+    ///     Service responsible for managing all available instances of <see cref="ISnapshotTrigger" />,
+    ///     and calling <see cref="ISnapshotStore" /> to save the created snapshots when required
     /// </summary>
     public class SnapshotService : HostedService
     {
-        private readonly IServiceProvider _provider;
+        private readonly List<ISnapshotTrigger> _completeTriggers;
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
-        private readonly List<ISnapshotTrigger> _completeTriggers;
+        private readonly IServiceProvider _provider;
 
         private CancellationTokenSource _completeTriggerTokenSource;
 
@@ -87,8 +86,10 @@ namespace Bechtle.A365.ConfigService.Services
                         await SaveSnapshots(provider, snapshots, cancellationToken);
                     }
                     else
+                    {
                         _logger.LogWarning("SnapshotTrigger-wait-loop has been cancelled " +
                                            "without triggering one of the three tokens - unknown behaviour");
+                    }
                 }
                 catch (Exception e)
                 {
@@ -112,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Services
             var triggers = triggerConfig.Select(pair =>
             {
                 var (name, config) = pair;
-                ISnapshotTrigger triggerInstance = pair.Value.Type switch
+                var triggerInstance = pair.Value.Type switch
                 {
                     "Timer" => provider.GetRequiredService<TimerSnapshotTrigger>() as ISnapshotTrigger,
                     "EventLag" => provider.GetRequiredService<NumberThresholdSnapshotTrigger>() as ISnapshotTrigger,
@@ -152,11 +153,6 @@ namespace Bechtle.A365.ConfigService.Services
             _completeTriggerTokenSource.Cancel();
         }
 
-        private class TriggerConfiguration
-        {
-            public string Type { get; set; }
-        }
-
         private async Task SaveSnapshots(IServiceProvider provider, IList<StreamedObjectSnapshot> snapshots, CancellationToken cancellationToken)
         {
             var stores = new List<ISnapshotStore>();
@@ -171,6 +167,11 @@ namespace Bechtle.A365.ConfigService.Services
 
                 await store.SaveSnapshots(snapshots);
             }
+        }
+
+        private class TriggerConfiguration
+        {
+            public string Type { get; set; }
         }
     }
 }

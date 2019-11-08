@@ -215,6 +215,7 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton(_logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
                     .AddHostedService<TemporaryKeyCleanupService>(_logger)
                     .AddHostedService<SnapshotService>(_logger)
+                    .AddHostedService<IncrementalSnapshotService>(_logger)
                     .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(_logger, (provider, builder) =>
                     {
                         var storeEnabled = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres:Enabled").Get<bool>();
