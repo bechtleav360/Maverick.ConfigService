@@ -22,6 +22,20 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     {
         private readonly object _eventLock = new object();
         private bool _eventsBeingDrained;
+        private IDictionary<Type, Func<StreamedEvent, bool>> _handlerMapping;
+
+        /// <summary>
+        ///     cache for <see cref="GetEventApplicationMapping"/> using <see cref="_handlerMapping"/>
+        /// </summary>
+        protected IDictionary<Type, Func<StreamedEvent, bool>> HandlerMapping => _handlerMapping ??= GetEventApplicationMapping();
+
+        /// <summary>
+        ///     get a list of all DomainEvent-Types that this StreamedObject handles while Streaming
+        /// </summary>
+        /// <returns></returns>
+        public ICollection<string> GetHandledEvents() => HandlerMapping.Keys
+                                                                       .Select(t => t.Name)
+                                                                       .ToList();
 
         /// <summary>
         ///     Current Version-Number of this Object
@@ -38,13 +52,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <returns>size of current object in abstract units</returns>
         public abstract long CalculateCacheSize();
-
-        /// <summary>
-        ///     apply a single <see cref="StreamedEvent" /> to this object,
-        ///     in order to modify its state to a more current one.
-        /// </summary>
-        /// <param name="streamedEvent"></param>
-        protected abstract bool ApplyEventInternal(StreamedEvent streamedEvent);
 
         /// <summary>
         ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
@@ -69,7 +76,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (streamedEvent.Version <= CurrentVersion)
                 return;
 
-            if (ApplyEventInternal(streamedEvent))
+            // if there is a handler for the given DomainEvent, call if
+            // if that handler returns true we know the event was meant for this object and
+            // we can update CurrentVersion
+            if (HandlerMapping.TryGetValue(streamedEvent.DomainEvent.GetType(), out var handler)
+                && handler.Invoke(streamedEvent))
                 CurrentVersion = streamedEvent.Version;
         }
 
@@ -177,6 +188,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 }
             }
         }
+
+        /// <summary>
+        ///     get a mapping of <see cref="DomainEvent"/> to EventHandler. this mapping is used to evaluate all applied events
+        /// </summary>
+        /// <returns></returns>
+        protected abstract IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping();
 
         /// <summary>
         ///     retrieve a generic identifier to tie a snapshot to this object

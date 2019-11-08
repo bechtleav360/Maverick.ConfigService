@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -100,23 +101,27 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (streamedObject.CurrentVersion >= maxVersion)
                 return;
 
-            await _eventStore.ReplayEventsAsStream(tuple =>
-            {
-                var (recordedEvent, domainEvent) = tuple;
+            var handledEvents = streamedObject.GetHandledEvents();
 
-                // stop at the designated max-version
-                if (recordedEvent.EventNumber > maxVersion)
-                    return false;
-
-                streamedObject.ApplyEvent(new StreamedEvent
+            await _eventStore.ReplayEventsAsStream(
+                @event => handledEvents.Contains(@event.EventType),
+                tuple =>
                 {
-                    UtcTime = recordedEvent.Created.ToUniversalTime(),
-                    Version = recordedEvent.EventNumber,
-                    DomainEvent = domainEvent
-                });
+                    var (recordedEvent, domainEvent) = tuple;
 
-                return true;
-            }, startIndex: streamedObject.CurrentVersion);
+                    // stop at the designated max-version
+                    if (recordedEvent.EventNumber > maxVersion)
+                        return false;
+
+                    streamedObject.ApplyEvent(new StreamedEvent
+                    {
+                        UtcTime = recordedEvent.Created.ToUniversalTime(),
+                        Version = recordedEvent.EventNumber,
+                        DomainEvent = domainEvent
+                    });
+
+                    return true;
+                }, startIndex: streamedObject.CurrentVersion);
         }
     }
 }

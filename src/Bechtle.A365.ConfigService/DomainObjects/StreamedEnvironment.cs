@@ -258,35 +258,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case DefaultEnvironmentCreated created when created.Identifier == Identifier:
-                    HandleDefaultCreated();
-                    return true;
-
-                case EnvironmentCreated created when created.Identifier == Identifier:
-                    HandleCreated();
-                    return true;
-
-                case EnvironmentDeleted deleted when deleted.Identifier == Identifier:
-                    HandleDeleted();
-                    return true;
-
-                case EnvironmentKeysImported imported when imported.Identifier == Identifier:
-                    HandleKeysImported(imported);
-                    return true;
-
-                case EnvironmentKeysModified modified when modified.Identifier == Identifier:
-                    HandleKeysModified(modified);
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
         protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
             if (!(streamedObject is StreamedEnvironment other))
@@ -298,6 +269,17 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             IsDefault = other.IsDefault;
             Keys = other.Keys;
         }
+
+        /// <inheritdoc />
+        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<StreamedEvent, bool>>
+            {
+                {typeof(DefaultEnvironmentCreated), HandleDefaultEnvironmentCreatedEvent},
+                {typeof(EnvironmentCreated), HandleEnvironmentCreatedEvent},
+                {typeof(EnvironmentDeleted), HandleEnvironmentDeletedEvent},
+                {typeof(EnvironmentKeysImported), HandleEnvironmentKeysImportedEvent},
+                {typeof(EnvironmentKeysModified), HandleEnvironmentKeysModifiedEvent}
+            };
 
         /// <inheritdoc />
         protected override string GetSnapshotIdentifier() => Identifier.ToString();
@@ -370,49 +352,68 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return roots;
         }
 
-        private void HandleCreated()
+        private bool HandleDefaultEnvironmentCreatedEvent(StreamedEvent streamedEvent)
         {
-            Created = true;
-        }
+            if (!(streamedEvent.DomainEvent is EnvironmentCreated created) || created.Identifier != Identifier)
+                return false;
 
-        private void HandleDefaultCreated()
-        {
             IsDefault = true;
             Created = true;
+            return true;
         }
 
-        private void HandleDeleted()
+        private bool HandleEnvironmentCreatedEvent(StreamedEvent streamedEvent)
         {
+            if (!(streamedEvent.DomainEvent is DefaultEnvironmentCreated created) || created.Identifier != Identifier)
+                return false;
+
+            Created = true;
+            return true;
+        }
+
+        private bool HandleEnvironmentDeletedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is EnvironmentDeleted deleted) || deleted.Identifier != Identifier)
+                return false;
+
             Deleted = true;
+            return true;
         }
 
-        private void HandleKeysImported(EnvironmentKeysImported environmentKeysImported)
+        private bool HandleEnvironmentKeysImportedEvent(StreamedEvent streamedEvent)
         {
-            Keys = environmentKeysImported.ModifiedKeys
-                                          .Where(action => action.Type == ConfigKeyActionType.Set)
-                                          .ToDictionary(
-                                              action => action.Key,
-                                              action => new StreamedEnvironmentKey
-                                              {
-                                                  Key = action.Key,
-                                                  Value = action.Value,
-                                                  Type = action.ValueType,
-                                                  Description = action.Description,
-                                                  Version = (long) DateTime.UtcNow
-                                                                           .Subtract(_unixEpoch)
-                                                                           .TotalSeconds
-                                              });
+            if (!(streamedEvent.DomainEvent is EnvironmentKeysImported imported) || imported.Identifier != Identifier)
+                return false;
+
+            Keys = imported.ModifiedKeys
+                           .Where(action => action.Type == ConfigKeyActionType.Set)
+                           .ToDictionary(
+                               action => action.Key,
+                               action => new StreamedEnvironmentKey
+                               {
+                                   Key = action.Key,
+                                   Value = action.Value,
+                                   Type = action.ValueType,
+                                   Description = action.Description,
+                                   Version = (long) DateTime.UtcNow
+                                                            .Subtract(_unixEpoch)
+                                                            .TotalSeconds
+                               });
 
             _keyPaths = null;
+            return true;
         }
 
-        private void HandleKeysModified(EnvironmentKeysModified environmentKeysModified)
+        private bool HandleEnvironmentKeysModifiedEvent(StreamedEvent streamedEvent)
         {
-            foreach (var deletion in environmentKeysModified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
+            if (!(streamedEvent.DomainEvent is EnvironmentKeysModified modified) || modified.Identifier != Identifier)
+                return false;
+
+            foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
                 if (Keys.ContainsKey(deletion.Key))
                     Keys.Remove(deletion.Key);
 
-            foreach (var change in environmentKeysModified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
+            foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
                 Keys[change.Key] = new StreamedEnvironmentKey
                 {
                     Key = change.Key,
@@ -425,6 +426,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 };
 
             _keyPaths = null;
+            return true;
         }
     }
 }

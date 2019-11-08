@@ -173,34 +173,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case StructureCreated created when created.Identifier == Identifier:
-                    Created = true;
-                    Keys = created.Keys;
-                    Variables = created.Variables;
-                    return true;
-
-                case StructureDeleted deleted when deleted.Identifier == Identifier:
-                    Deleted = true;
-                    return true;
-
-                case StructureVariablesModified modified when modified.Identifier == Identifier:
-                    foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
-                        if (Keys.ContainsKey(deletion.Key))
-                            Keys.Remove(deletion.Key);
-
-                    foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
-                        Keys[change.Key] = change.Value;
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
         protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
             if (!(streamedObject is StreamedStructure other))
@@ -214,6 +186,50 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
+        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<StreamedEvent, bool>>
+            {
+                {typeof(StructureCreated), HandleStructureCreatedEvent},
+                {typeof(StructureDeleted), HandleStructureDeletedEvent},
+                {typeof(StructureVariablesModified), HandleStructureVariablesModifiedEvent}
+            };
+
+        /// <inheritdoc />
         protected override string GetSnapshotIdentifier() => Identifier.ToString();
+
+        private bool HandleStructureCreatedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is StructureCreated created) || created.Identifier != Identifier)
+                return false;
+
+            Created = true;
+            Keys = created.Keys;
+            Variables = created.Variables;
+            return true;
+        }
+
+        private bool HandleStructureDeletedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is StructureDeleted deleted) || deleted.Identifier != Identifier)
+                return false;
+
+            Deleted = true;
+            return true;
+        }
+
+        private bool HandleStructureVariablesModifiedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is StructureVariablesModified modified) || modified.Identifier != Identifier)
+                return false;
+
+            foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
+                if (Keys.ContainsKey(deletion.Key))
+                    Keys.Remove(deletion.Key);
+
+            foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
+                Keys[change.Key] = change.Value;
+
+            return true;
+        }
     }
 }

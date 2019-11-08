@@ -154,23 +154,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case ConfigurationBuilt built when built.Identifier == Identifier:
-                    ValidFrom = built.ValidFrom;
-                    ValidTo = built.ValidTo;
-                    ConfigurationVersion = (long) streamedEvent.UtcTime
-                                                               .Subtract(_unixEpoch)
-                                                               .TotalSeconds;
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
         protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
             if (!(streamedObject is StreamedConfiguration other))
@@ -187,6 +170,26 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
+        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<StreamedEvent, bool>>
+            {
+                {typeof(ConfigurationBuilt), HandleConfigurationBuiltEvent}
+            };
+
+        /// <inheritdoc />
         protected override string GetSnapshotIdentifier() => Identifier.ToString();
+
+        private bool HandleConfigurationBuiltEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is ConfigurationBuilt built) || built.Identifier != Identifier)
+                return false;
+
+            ValidFrom = built.ValidFrom;
+            ValidTo = built.ValidTo;
+            ConfigurationVersion = (long) streamedEvent.UtcTime
+                                                       .Subtract(_unixEpoch)
+                                                       .TotalSeconds;
+            return true;
+        }
     }
 }

@@ -46,46 +46,70 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             => Lookup.ContainsKey(identifier) && Lookup[identifier].Stale;
 
         /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case ConfigurationBuilt built:
-                    Lookup[built.Identifier] = new ConfigInformation
-                    {
-                        Identifier = built.Identifier,
-                        Stale = false,
-                        ValidFrom = built.ValidFrom,
-                        ValidTo = built.ValidTo
-                    };
-                    return true;
-
-                case EnvironmentKeysImported imported:
-                    foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == imported.Identifier))
-                        info.Stale = true;
-                    return true;
-
-                case EnvironmentKeysModified modified:
-                    foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == modified.Identifier))
-                        info.Stale = true;
-                    return true;
-
-                case StructureVariablesModified modified:
-                    foreach (var (_, info) in Lookup.Where(l => l.Value.UsedStructure == modified.Identifier))
-                        info.Stale = true;
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
         protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
             if (!(streamedObject is StreamedConfigurationList other))
                 return;
 
             Lookup = other.Lookup;
+        }
+
+        /// <inheritdoc />
+        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<StreamedEvent, bool>>
+            {
+                {typeof(ConfigurationBuilt), HandleConfigurationBuiltEvent},
+                {typeof(EnvironmentKeysImported), HandleEnvironmentKeysImportedEvent},
+                {typeof(EnvironmentKeysModified), HandleEnvironmentKeysModifiedEvent},
+                {typeof(StructureVariablesModified), HandleStructureVariablesModifiedEvent}
+            };
+
+        private bool HandleConfigurationBuiltEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is ConfigurationBuilt built))
+                return false;
+
+            Lookup[built.Identifier] = new ConfigInformation
+            {
+                Identifier = built.Identifier,
+                Stale = false,
+                ValidFrom = built.ValidFrom,
+                ValidTo = built.ValidTo
+            };
+            return true;
+        }
+
+        private bool HandleEnvironmentKeysImportedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is EnvironmentKeysImported imported))
+                return false;
+
+            foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == imported.Identifier))
+                info.Stale = true;
+
+            return true;
+        }
+
+        private bool HandleEnvironmentKeysModifiedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is EnvironmentKeysModified modified1))
+                return false;
+
+            foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == modified1.Identifier))
+                info.Stale = true;
+
+            return true;
+        }
+
+        private bool HandleStructureVariablesModifiedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is StructureVariablesModified modified2))
+                return false;
+
+            foreach (var (_, info) in Lookup.Where(l => l.Value.UsedStructure == modified2.Identifier))
+                info.Stale = true;
+
+            return true;
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
@@ -25,30 +26,39 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public ICollection<StructureIdentifier> GetIdentifiers() => Identifiers.ToList();
 
         /// <inheritdoc />
-        protected override bool ApplyEventInternal(StreamedEvent streamedEvent)
-        {
-            switch (streamedEvent.DomainEvent)
-            {
-                case StructureCreated created:
-                    Identifiers.Add(created.Identifier);
-                    return true;
-
-                case StructureDeleted deleted:
-                    if (Identifiers.Contains(deleted.Identifier))
-                        Identifiers.Remove(deleted.Identifier);
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
         protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
             if (!(streamedObject is StreamedStructureList other))
                 return;
 
             Identifiers = other.Identifiers;
+        }
+
+        /// <inheritdoc />
+        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<StreamedEvent, bool>>
+            {
+                {typeof(StructureCreated), HandleStructureCreatedEvent},
+                {typeof(StructureDeleted), HandleStructureDeletedEvent}
+            };
+
+        private bool HandleStructureCreatedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is StructureCreated created))
+                return false;
+
+            Identifiers.Add(created.Identifier);
+            return true;
+        }
+
+        private bool HandleStructureDeletedEvent(StreamedEvent streamedEvent)
+        {
+            if (!(streamedEvent.DomainEvent is StructureDeleted deleted))
+                return false;
+
+            if (Identifiers.Contains(deleted.Identifier))
+                Identifiers.Remove(deleted.Identifier);
+            return true;
         }
     }
 }
