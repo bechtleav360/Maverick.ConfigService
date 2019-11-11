@@ -32,8 +32,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="direction"></param>
         /// <param name="startIndex"></param>
         /// <returns></returns>
-        Task ReplayEventsAsStream(Func<RecordedEvent, bool> streamFilter,
-                                  Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+        Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEventMetadata Metadata), bool> streamFilter,
+                                  Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                   int readSize = 64,
                                   StreamDirection direction = StreamDirection.Forwards,
                                   long startIndex = -1);
@@ -46,7 +46,7 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         /// <param name="direction"></param>
         /// <param name="startIndex"></param>
         /// <returns></returns>
-        Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+        Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                   int readSize = 64,
                                   StreamDirection direction = StreamDirection.Forwards,
                                   long startIndex = -1);

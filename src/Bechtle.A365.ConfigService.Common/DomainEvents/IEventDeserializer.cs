@@ -5,5 +5,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public interface IEventDeserializer
     {
         bool ToDomainEvent(ResolvedEvent resolvedEvent, out DomainEvent domainEvent);
+
+        bool ToMetadata(ResolvedEvent resolvedEvent, out DomainEventMetadata metadata);
     }
 }

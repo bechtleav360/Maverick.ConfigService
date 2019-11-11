@@ -71,6 +71,14 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         }
 
+        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        {
+            Filters =
+            {
+                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
+            }
+        };
+
         private bool CompareDictionaries(IDictionary<string, string> left, IDictionary<string, string> right)
             => Equals(left, right) ||
                left.Count == right.Count &&

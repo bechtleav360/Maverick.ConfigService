@@ -42,17 +42,39 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 {
                     var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
 
-                    domainEvent = serializer.Deserialize(resolvedEvent.OriginalEvent.Data, resolvedEvent.OriginalEvent.Metadata);
+                    domainEvent = serializer.DeserializeInstance(resolvedEvent.OriginalEvent.Data);
                     return true;
                 }
                 catch (Exception e)
                 {
-                    Logger.LogWarning($"could not deserialize data in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}': {e}");
+                    Logger.LogWarning(e, $"could not deserialize data in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}'");
                 }
             }
 
             Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
             domainEvent = null;
+            return false;
+        }
+
+        public bool ToMetadata(ResolvedEvent resolvedEvent, out DomainEventMetadata metadata)
+        {
+            if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
+            {
+                try
+                {
+                    var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
+
+                    metadata = serializer.DeserializeMetadata(resolvedEvent.OriginalEvent.Metadata);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Logger.LogWarning(e, $"could not deserialize metadata in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}'");
+                }
+            }
+
+            Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
+            metadata = null;
             return false;
         }
     }

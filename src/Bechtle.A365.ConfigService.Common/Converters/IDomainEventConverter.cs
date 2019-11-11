@@ -4,13 +4,17 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public interface IDomainEventConverter
     {
-        DomainEvent Deserialize(byte[] data, byte[] metadata);
+        DomainEvent DeserializeInstance(byte[] data);
+
         (byte[] Data, byte[] Metadata) Serialize(DomainEvent domainEvent);
+
+        DomainEventMetadata DeserializeMetadata(byte[] metadata);
     }
 
     public interface IDomainEventConverter<T> : IDomainEventConverter where T : DomainEvent
     {
-        new T Deserialize(byte[] data, byte[] metadata);
+        new T DeserializeInstance(byte[] data);
+
         (byte[] Data, byte[] Metadata) Serialize(T domainEvent);
     }
 }

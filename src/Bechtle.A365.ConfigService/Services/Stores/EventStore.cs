@@ -128,15 +128,15 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         }
 
         /// <inheritdoc />
-        public Task ReplayEventsAsStream(Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+        public Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                          int readSize = 64,
                                          StreamDirection direction = StreamDirection.Forwards,
                                          long startIndex = -1)
             => ReplayEventsAsStream(_ => true, streamProcessor, readSize, direction, startIndex);
 
         /// <inheritdoc />
-        public async Task ReplayEventsAsStream(Func<RecordedEvent, bool> streamFilter,
-                                               Func<(RecordedEvent, DomainEvent), bool> streamProcessor,
+        public async Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEventMetadata Metadata), bool> streamFilter,
+                                               Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                                int readSize = 64,
                                                StreamDirection direction = StreamDirection.Forwards,
                                                long startIndex = -1)
@@ -177,7 +177,8 @@ namespace Bechtle.A365.ConfigService.Services.Stores
                 // send events to streamProcessor
                 // return from function if we receive 'false' or if streamProcessor is empty
                 if (slice.Events
-                         .Where(e => streamFilter(e.Event))
+                         .Where(e => _eventDeserializer.ToMetadata(e, out var metadata)
+                                     && streamFilter((RecordedEvent: e.Event, Metadata: metadata)))
                          .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
                                           ? (RecordedEvent: e.Event, Success: true, DomainEvent: @event)
                                           : (RecordedEvent: e.Event, Success: false, DomainEvent: null))

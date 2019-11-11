@@ -41,5 +41,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentDeleted, strict);
 
         public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;
+
+        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        {
+            Filters =
+            {
+                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
+            }
+        };
     }
 }

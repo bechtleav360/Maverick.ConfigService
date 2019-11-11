@@ -53,5 +53,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return ((Identifier != null ? Identifier.GetHashCode() : 0) * 397) ^ (ModifiedKeys != null ? ModifiedKeys.GetHashCode() : 0);
             }
         }
+
+        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        {
+            Filters =
+            {
+                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
+            }
+        };
     }
 }

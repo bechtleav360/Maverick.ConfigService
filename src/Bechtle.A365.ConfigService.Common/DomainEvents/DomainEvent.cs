@@ -12,6 +12,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 
         public abstract bool Equals(DomainEvent other, bool strict);
 
+        public abstract DomainEventMetadata GetMetadata();
+
         public static string GetEventType<T>() where T : DomainEvent => typeof(T).Name;
 
         public static string GetEventType(Type domainEventType)

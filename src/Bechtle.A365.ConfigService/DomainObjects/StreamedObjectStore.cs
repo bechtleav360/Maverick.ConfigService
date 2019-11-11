@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Services.Stores;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<T>> GetStreamedObject<T>(long maxVersion) where T : StreamedObject, new()
-            => GetStreamedObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name);
+            => GetStreamedObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name, false);
 
         /// <inheritdoc />
         public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier) where T : StreamedObject
@@ -46,12 +46,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier, long maxVersion) where T : StreamedObject
-            => GetStreamedObjectInternal(streamedObject, identifier, maxVersion, identifier);
+            => GetStreamedObjectInternal(streamedObject, identifier, maxVersion, identifier, true);
 
         private async Task<IResult<T>> GetStreamedObjectInternal<T>(T streamedObject,
                                                                     string identifier,
                                                                     long maxVersion,
-                                                                    string cacheKey)
+                                                                    string cacheKey,
+                                                                    bool useMetadataFilter)
             where T : StreamedObject
         {
             try
@@ -65,7 +66,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 if (!latestSnapshot.IsError)
                     streamedObject.ApplySnapshot(latestSnapshot.Data);
 
-                await StreamObjectToVersion(streamedObject, maxVersion);
+                await StreamObjectToVersion(streamedObject, maxVersion, identifier, useMetadataFilter);
 
                 var size = streamedObject.CalculateCacheSize();
                 var priority = streamedObject.GetCacheItemPriority();
@@ -95,7 +96,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
         }
 
-        private async Task StreamObjectToVersion(StreamedObject streamedObject, long maxVersion)
+        private async Task StreamObjectToVersion(StreamedObject streamedObject, long maxVersion, string identifier, bool useMetadataFilter)
         {
             // skip streaming entirely if the object is at or above the desired version
             if (streamedObject.CurrentVersion >= maxVersion)
@@ -104,7 +105,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             var handledEvents = streamedObject.GetHandledEvents();
 
             await _eventStore.ReplayEventsAsStream(
-                @event => handledEvents.Contains(@event.EventType),
+                tuple =>
+                {
+                    var (recordedEvent, metadata) = tuple;
+
+                    if (useMetadataFilter && metadata[KnownDomainEventMetadata.Identifier].Equals(identifier))
+                        return true;
+
+                    return handledEvents.Contains(recordedEvent.EventType);
+                },
                 tuple =>
                 {
                     var (recordedEvent, domainEvent) = tuple;
