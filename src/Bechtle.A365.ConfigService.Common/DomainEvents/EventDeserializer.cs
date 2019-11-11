@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Bechtle.A365.ConfigService.Common.Converters;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Logging;
@@ -58,6 +59,14 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 
         public bool ToMetadata(ResolvedEvent resolvedEvent, out DomainEventMetadata metadata)
         {
+            if (resolvedEvent.OriginalEvent.Metadata?.Any() != true)
+            {
+                Logger.LogWarning($"no metadata saved in event '{resolvedEvent.OriginalEvent.EventId}' " +
+                                  $"of type '{resolvedEvent.OriginalEvent.EventType}'");
+                metadata = new DomainEventMetadata();
+                return true;
+            }
+
             if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
             {
                 try
