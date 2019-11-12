@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"Foo/Bar/Baz", "4711"}
             });
 
-            Assert.IsType<JsonDocument>(translated);
+            Assert.IsType<JsonElement>(translated);
             Assert.IsType<JsonElement>(translated.GetProperty("Foo"));
             Assert.IsType<JsonElement>(translated.GetProperty("Foo").GetProperty("Bar"));
             Assert.IsType<JsonElement>(translated.GetProperty("Foo").GetProperty("Bar").GetProperty("Baz"));
@@ -34,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Tests
         {
             var translated = _translator.ToJson(new Dictionary<string, string>());
 
-            Assert.IsType<JsonDocument>(translated);
+            Assert.IsType<JsonElement>(translated);
             Assert.Empty(translated.EnumerateObject());
         }
 
@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"0001", "4711"}
             });
 
-            Assert.IsType<JsonDocument>(translated);
+            Assert.IsType<JsonElement>(translated);
             Assert.Equal("42", translated[0].ToString());
             Assert.Equal("4711", translated[1].ToString());
         }
@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 {"Foo", "Bar"}
             });
 
-            Assert.IsType<JsonDocument>(translated);
+            Assert.IsType<JsonElement>(translated);
             Assert.Equal("Bar", translated.GetProperty("Foo").ToString());
         }
     }
