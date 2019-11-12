@@ -205,7 +205,6 @@ namespace Bechtle.A365.ConfigService
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
                     .AddScoped<IStreamedStore, StreamedObjectStore>(_logger)
-                    //.AddScoped<ISnapshotStore, DummySnapshotStore>(_logger)
                     // once behind the interface, once with direct access
                     .AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
                     .AddScoped<PostgresSnapshotStore>(_logger)
