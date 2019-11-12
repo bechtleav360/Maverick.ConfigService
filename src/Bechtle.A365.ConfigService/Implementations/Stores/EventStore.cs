@@ -11,7 +11,6 @@ using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 // god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is essentially a core component of the eco-system
@@ -337,10 +336,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _metrics.Measure.Counter.Increment(KnownMetrics.EventStoreReconnected);
             ConnectionState = ConnectionState.Reconnecting;
         }
-
-        private (byte[] Data, byte[] Metadata) SerializeDomainEvent<T>(T domainEvent) where T : DomainEvent
-            => _provider.GetService<IDomainEventConverter<T>>()
-                        .Serialize(domainEvent);
 
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent(DomainEvent domainEvent)
             => ((IDomainEventConverter) _provider.GetService(typeof(IDomainEventConverter<>).MakeGenericType(domainEvent.GetType())))
