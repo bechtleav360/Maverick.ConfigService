@@ -161,9 +161,14 @@ namespace Bechtle.A365.ConfigService
             // setup services for DI
             services.AddMemoryCache(options =>
                     {
-                        // @TODO: make both of these configurable
-                        options.SizeLimit = 1 * 1024 * 1024 * 1024;
-                        options.CompactionPercentage = 0.10d;
+                        var sizeInMb = Configuration.GetSection("MemoryCache:Local:SizeLimitInMb").Get<long>();
+                        var sizeLimit = sizeInMb * 1024 * 1024;
+                        var compactionPercentage = Configuration.GetSection("MemoryCache:Local:CompactionPercentage").Get<double>();
+
+                        _logger.LogInformation($"configuring IMemoryCache, SizeLimit='{sizeLimit}', CompactionPercentage='{compactionPercentage}'");
+
+                        options.SizeLimit = sizeLimit;
+                        options.CompactionPercentage = compactionPercentage;
                     })
                     .AddStackExchangeRedisCache(options =>
                     {
