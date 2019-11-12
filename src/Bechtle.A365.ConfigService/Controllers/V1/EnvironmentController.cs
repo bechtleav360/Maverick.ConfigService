@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -187,7 +188,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 RemoveRoot = root
             });
 
-            return Result(result);
+            return result.IsError
+                       ? ProviderError(result)
+                       : Ok(result.Data.ToImmutableSortedDictionary());
         }
 
         /// <summary>
