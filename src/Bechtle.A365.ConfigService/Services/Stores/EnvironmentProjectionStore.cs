@@ -440,6 +440,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
+                if (!root.EndsWith('/'))
+                    root += '/';
+
                 // if every item passes the check for the same root
                 // project each item into a new dict with the modified Key
                 if (keys.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
@@ -467,6 +470,9 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         {
             try
             {
+                if (!root.EndsWith('/'))
+                    root += '/';
+
                 var keyList = keys.ToList();
 
                 // if every item passes the check for the same root
