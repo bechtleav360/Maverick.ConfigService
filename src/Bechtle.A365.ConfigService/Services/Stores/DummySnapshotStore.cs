@@ -13,7 +13,15 @@ namespace Bechtle.A365.ConfigService.Services.Stores
             => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
 
         /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier, long maxVersion) where T : StreamedObject
+            => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
+
+        /// <inheritdoc />
         public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier)
+            => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
+
+        /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier, long maxVersion)
             => Task.FromResult(Result.Error<StreamedObjectSnapshot>(string.Empty, ErrorCode.Undefined));
 
         /// <inheritdoc />

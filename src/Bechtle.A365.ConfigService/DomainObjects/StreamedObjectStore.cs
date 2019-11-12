@@ -60,8 +60,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 if (_memoryCache.TryGetValue(cacheKey, out T cachedInstance))
                     return Result.Success(cachedInstance);
 
-                // @TODO: snapshot should be at or below maxVersion
-                var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier);
+                var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
 
                 if (!latestSnapshot.IsError)
                     streamedObject.ApplySnapshot(latestSnapshot.Data);

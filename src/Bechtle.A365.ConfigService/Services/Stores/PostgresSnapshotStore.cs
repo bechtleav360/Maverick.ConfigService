@@ -31,32 +31,44 @@ namespace Bechtle.A365.ConfigService.Services.Stores
 
         /// <inheritdoc />
         public Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier) where T : StreamedObject
-            => GetInternal(typeof(T).Name, identifier);
+            => GetInternal(typeof(T).Name, identifier, long.MaxValue);
+
+        /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier, long maxVersion) where T : StreamedObject
+            => GetInternal(typeof(T).Name, identifier, maxVersion);
 
         /// <inheritdoc />
         public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier)
-            => GetInternal(dataType, identifier);
+            => GetInternal(dataType, identifier, long.MaxValue);
+
+        /// <inheritdoc />
+        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier, long maxVersion)
+            => GetInternal(dataType, identifier, maxVersion);
 
         /// <summary>
         ///     get the first snapshot that fits the given <paramref name="dataType"/> and <paramref name="identifier"/>
         /// </summary>
         /// <param name="dataType"></param>
         /// <param name="identifier"></param>
+        /// <param name="maxVersion"></param>
         /// <returns></returns>
-        private Task<IResult<StreamedObjectSnapshot>> GetInternal(string dataType, string identifier)
-            => GetInternal(s => s.DataType == dataType && s.Identifier == identifier);
+        private Task<IResult<StreamedObjectSnapshot>> GetInternal(string dataType, string identifier, long maxVersion)
+            => GetInternal(s => s.DataType == dataType && s.Identifier == identifier, maxVersion);
 
         /// <summary>
         ///     filter all snapshots based on the given <paramref name="filter"/>, and convert the first one to <see cref="StreamedObjectSnapshot"/>
         /// </summary>
         /// <param name="filter"></param>
+        /// <param name="maxVersion"></param>
         /// <returns></returns>
-        private async Task<IResult<StreamedObjectSnapshot>> GetInternal(Expression<Func<PostgresSnapshot, bool>> filter)
+        private async Task<IResult<StreamedObjectSnapshot>> GetInternal(Expression<Func<PostgresSnapshot, bool>> filter, long maxVersion)
         {
             try
             {
                 var result = await _context.Snapshots
                                            .Where(filter)
+                                           .Where(snapshot => snapshot.Version <= maxVersion)
+                                           .OrderByDescending(snapshot => snapshot.Version)
                                            .FirstOrDefaultAsync();
 
                 if (result is null)

@@ -20,12 +20,30 @@ namespace Bechtle.A365.ConfigService.Services.Stores
         Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier) where T : StreamedObject;
 
         /// <summary>
+        ///     get the latest snapshot - if possible - of the given StreamedObject
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="identifier"></param>
+        /// <param name="maxVersion"></param>
+        /// <returns></returns>
+        Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier, long maxVersion) where T : StreamedObject;
+
+        /// <summary>
         ///     get the latest snapshot - if possible - with the given parameters
         /// </summary>
         /// <param name="dataType"></param>
         /// <param name="identifier"></param>
         /// <returns></returns>
         Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier);
+
+        /// <summary>
+        ///     get the latest snapshot - if possible - with the given parameters
+        /// </summary>
+        /// <param name="dataType"></param>
+        /// <param name="identifier"></param>
+        /// <param name="maxVersion"></param>
+        /// <returns></returns>
+        Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier, long maxVersion);
 
         /// <summary>
         ///     save the given <see cref="StreamedObjectSnapshot"/> to the configured Store
