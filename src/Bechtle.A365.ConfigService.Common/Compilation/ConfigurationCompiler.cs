@@ -124,7 +124,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
 
             if (string.IsNullOrEmpty(value))
-                return new[] {(context.CurrentKey, string.Empty)};
+                return new[] {(context.CurrentKey, value)};
 
             if (context.RecursionLevel > KeyRecursionLimit)
             {

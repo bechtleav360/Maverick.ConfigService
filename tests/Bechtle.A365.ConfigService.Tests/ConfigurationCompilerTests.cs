@@ -11,9 +11,6 @@ namespace Bechtle.A365.ConfigService.Tests
     // using ReadOnlyDictionaries to ensure the compiler can't write to the given collections
     public class ConfigurationCompilerTests
     {
-        private readonly IConfigurationCompiler _compiler;
-        private readonly IConfigurationParser _parser;
-
         public ConfigurationCompilerTests()
         {
             _compiler = new ConfigurationCompiler(
@@ -23,6 +20,9 @@ namespace Bechtle.A365.ConfigService.Tests
 
             _parser = new AntlrConfigurationParser();
         }
+
+        private readonly IConfigurationCompiler _compiler;
+        private readonly IConfigurationParser _parser;
 
         /// <summary>
         ///     resolve a reference to a complex result (object)
@@ -273,6 +273,40 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         /// <summary>
+        ///     references to null will be replaced empty string for safety
+        /// </summary>
+        [Fact]
+        public void DirectReferenceErasesNull()
+        {
+            var env = new EnvironmentCompilationInfo
+            {
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"C", null},
+                    {"D", ""}
+                })
+            };
+
+            var structure = new StructureCompilationInfo
+            {
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{C}}"},
+                    {"B", "{{D}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
+
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
+
+            Assert.NotNull(compiled);
+
+            Assert.Equal(2, compiled.Count);
+            Assert.Equal(string.Empty, compiled["A"]);
+            Assert.Equal(string.Empty, compiled["B"]);
+        }
+
+        /// <summary>
         ///     don't fail when there is nothing to do
         /// </summary>
         [Fact]
@@ -293,6 +327,42 @@ namespace Bechtle.A365.ConfigService.Tests
 
             Assert.NotNull(compiled);
             Assert.Empty(compiled);
+        }
+
+        /// <summary>
+        ///     compile environment-values that have null as value, and preserve them in the output
+        /// </summary>
+        [Fact]
+        public void SectionCompilationPreservesNull()
+        {
+            var env = new EnvironmentCompilationInfo
+            {
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"SectionWithNull/First", null},
+                    {"SectionWithNull/Second", null},
+                    {"D", ""}
+                })
+            };
+
+            var structure = new StructureCompilationInfo
+            {
+                Keys = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>
+                {
+                    {"A", "{{SectionWithNull/*}}"},
+                    {"B", "{{D}}"}
+                }),
+                Variables = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())
+            };
+
+            var compiled = _compiler.Compile(env, structure, _parser).CompiledConfiguration;
+
+            Assert.NotNull(compiled);
+
+            Assert.Equal(3, compiled.Count);
+            Assert.Null(compiled["A/First"]);
+            Assert.Null(compiled["A/Second"]);
+            Assert.Equal(string.Empty, compiled["B"]);
         }
     }
 }
