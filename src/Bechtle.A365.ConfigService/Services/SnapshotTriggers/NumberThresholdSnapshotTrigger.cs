@@ -88,7 +88,6 @@ namespace Bechtle.A365.ConfigService.Services.SnapshotTriggers
             }
         }
 
-        // @TODO: see if this can be done without 'async void'
         private async void EventStoreOnEventAppeared(object sender, (EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent) e)
         {
             var (subscription, _) = e;
