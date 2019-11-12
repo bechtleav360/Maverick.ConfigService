@@ -16,13 +16,5 @@ namespace Bechtle.A365.ConfigService.Services
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task<IList<StreamedObjectSnapshot>> CreateAllSnapshots(CancellationToken cancellationToken);
-
-        /// <summary>
-        ///     create incremental snapshots for available items
-        /// </summary>
-        /// <param name="streamedObjects"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        Task<IList<StreamedObjectSnapshot>> CreateIncrementalSnapshots(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken);
     }
 }
