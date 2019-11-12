@@ -11,11 +11,13 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Implementations;
+using Bechtle.A365.ConfigService.Implementations.SnapshotTriggers;
+using Bechtle.A365.ConfigService.Implementations.Stores;
+using Bechtle.A365.ConfigService.Interfaces;
+using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Middleware;
 using Bechtle.A365.ConfigService.Parsing;
-using Bechtle.A365.ConfigService.Services;
-using Bechtle.A365.ConfigService.Services.SnapshotTriggers;
-using Bechtle.A365.ConfigService.Services.Stores;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Maverick.Core.Health.Builder;
@@ -35,7 +37,7 @@ using Microsoft.Extensions.Primitives;
 using NLog.Web;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
-using CertificateValidator = Bechtle.A365.ConfigService.Services.CertificateValidator;
+using CertificateValidator = Bechtle.A365.ConfigService.Implementations.CertificateValidator;
 using ESLogger = EventStore.ClientAPI.ILogger;
 
 namespace Bechtle.A365.ConfigService
@@ -212,7 +214,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<NumberThresholdSnapshotTrigger>(_logger)
                     .AddScoped<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
                     .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
-                    .AddSingleton<IEventStore, Services.Stores.EventStore>(_logger)
+                    .AddSingleton<IEventStore, Implementations.Stores.EventStore>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)
@@ -264,7 +266,7 @@ namespace Bechtle.A365.ConfigService
                 {
                     try
                     {
-                        return Services.Stores.EventStore.ConnectionState switch
+                        return Implementations.Stores.EventStore.ConnectionState switch
                         {
                             ConnectionState.Connected => new ServiceStatus("EventStore.Connection", ServiceState.Green),
                             ConnectionState.Reconnecting => new ServiceStatus("EventStore.Connection", ServiceState.Yellow)

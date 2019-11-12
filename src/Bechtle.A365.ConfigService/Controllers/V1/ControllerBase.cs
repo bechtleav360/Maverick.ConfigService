@@ -3,7 +3,7 @@ using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Services;
+using Bechtle.A365.ConfigService.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
