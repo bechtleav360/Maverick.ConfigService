@@ -78,6 +78,13 @@ namespace Bechtle.A365.ConfigService
             Context = KnownMetricContexts.EventStore
         };
 
+        public static readonly CounterOptions EventsFiltered = new CounterOptions
+        {
+            Name = "DomainEvents Filtered before Deserialization",
+            MeasurementUnit = Unit.Events,
+            Context = KnownMetricContexts.EventStore
+        };
+
         public static readonly CounterOptions EventsWrittenPrevented = new CounterOptions
         {
             Name = "DomainEvents Written (Prevented)",

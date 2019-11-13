@@ -175,22 +175,28 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 _metrics.Measure.Counter.Increment(KnownMetrics.EventsRead, slice.Events.Length);
 
-                // send events to streamProcessor
-                // return from function if we receive 'false' or if streamProcessor is empty
-                if (slice.Events
-                         .Where(e => _eventDeserializer.ToMetadata(e, out var metadata)
-                                     && streamFilter((RecordedEvent: e.Event, Metadata: metadata)))
-                         .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
-                                          ? (RecordedEvent: e.Event, Success: true, DomainEvent: @event)
-                                          : (RecordedEvent: e.Event, Success: false, DomainEvent: null))
-                         .Where(t => t.Success)
-                         .Select(t => (t.RecordedEvent, t.DomainEvent))
-                         .Any(eventTuple =>
-                         {
-                             _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, eventTuple.DomainEvent.EventType);
-                             return !streamProcessor.Invoke(eventTuple);
-                         }))
-                    return;
+                foreach (var item in slice.Events)
+                {
+                    // if we can't deserialize the metadata and execute the filter on it we skip this event entirely
+                    if (_eventDeserializer.ToMetadata(item, out var metadata)
+                        && !streamFilter((RecordedEvent: item.Event, Metadata: metadata)))
+                    {
+                        _metrics.Measure.Counter.Increment(KnownMetrics.EventsFiltered, item.Event.EventType);
+                        continue;
+                    }
+
+                    if (!_eventDeserializer.ToDomainEvent(item, out var domainEvent))
+                    {
+                        _logger.LogWarning($"event {item.Event.EventId}#{item.Event.EventNumber} could not be deserialized");
+                        continue;
+                    }
+
+                    _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, domainEvent.EventType);
+
+                    // stop streaming events once streamProcessor returns false
+                    if (!streamProcessor.Invoke((item.Event, domainEvent)))
+                        return;
+                }
 
                 currentPosition = slice.NextEventNumber;
                 continueReading = !slice.IsEndOfStream;
