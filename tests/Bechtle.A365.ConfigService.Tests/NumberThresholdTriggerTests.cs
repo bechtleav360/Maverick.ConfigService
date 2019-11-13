@@ -17,6 +17,30 @@ namespace Bechtle.A365.ConfigService.Tests
     public class NumberThresholdTriggerTests
     {
         [Fact]
+        public void ConfigureWithEmptySection()
+        {
+            var provider = new ServiceCollection()
+                           .AddLogging()
+                           .AddSingleton<NumberThresholdSnapshotTrigger>()
+                           .AddSingleton(new Mock<IEventStore>(MockBehavior.Strict).Object)
+                           .AddSingleton(new Mock<ISnapshotStore>(MockBehavior.Strict).Object)
+                           .AddSingleton(new ConfigServiceConfiguration
+                           {
+                               EventStoreConnection = new EventStoreConnectionConfiguration
+                               {
+                                   ConnectionName = "UnitTest",
+                                   MaxLiveQueueSize = 8,
+                                   ReadBatchSize = 64,
+                                   Stream = "ConfigStream",
+                                   Uri = "tcp://admin:changeit@localhost:2113"
+                               }
+                           })
+                           .BuildServiceProvider();
+
+            Assert.NotNull(provider.GetRequiredService<NumberThresholdSnapshotTrigger>());
+        }
+
+        [Fact]
         public void CreateInstance()
         {
             var provider = new ServiceCollection()
@@ -43,30 +67,6 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
-        public void ConfigureWithEmptySection()
-        {
-            var provider = new ServiceCollection()
-                           .AddLogging()
-                           .AddSingleton<NumberThresholdSnapshotTrigger>()
-                           .AddSingleton(new Mock<IEventStore>(MockBehavior.Strict).Object)
-                           .AddSingleton(new Mock<ISnapshotStore>(MockBehavior.Strict).Object)
-                           .AddSingleton(new ConfigServiceConfiguration
-                           {
-                               EventStoreConnection = new EventStoreConnectionConfiguration
-                               {
-                                   ConnectionName = "UnitTest",
-                                   MaxLiveQueueSize = 8,
-                                   ReadBatchSize = 64,
-                                   Stream = "ConfigStream",
-                                   Uri = "tcp://admin:changeit@localhost:2113"
-                               }
-                           })
-                           .BuildServiceProvider();
-
-            Assert.NotNull(provider.GetRequiredService<NumberThresholdSnapshotTrigger>());
-        }
-
-        [Fact]
         public void DisposeObject()
         {
             var provider = new ServiceCollection()
@@ -90,49 +90,6 @@ namespace Bechtle.A365.ConfigService.Tests
             var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();
 
             instance.Dispose();
-        }
-
-        [Fact]
-        public async Task StartInstanceWithoutActionRequired()
-        {
-            var esMock = new Mock<IEventStore>(MockBehavior.Strict);
-            esMock.Setup(e => e.GetCurrentEventNumber())
-                  .ReturnsAsync(0)
-                  .Verifiable("Current EventNumber was not retrieved");
-
-            esMock.SetupAdd(e => e.EventAppeared += It.IsAny<EventHandler<(EventStoreSubscription, ResolvedEvent)>>())
-                  .Verifiable("EventStore.EventAppeared was not subscribed");
-
-            var ssMock = new Mock<ISnapshotStore>(MockBehavior.Strict);
-
-            ssMock.Setup(s => s.GetLatestSnapshotNumbers())
-                  .ReturnsAsync(Result.Success(0L))
-                  .Verifiable("Latest Snapshot was not retrieved");
-
-            var provider = new ServiceCollection()
-                           .AddLogging()
-                           .AddSingleton<NumberThresholdSnapshotTrigger>()
-                           .AddSingleton(esMock.Object)
-                           .AddSingleton(ssMock.Object)
-                           .AddSingleton(new ConfigServiceConfiguration
-                           {
-                               EventStoreConnection = new EventStoreConnectionConfiguration
-                               {
-                                   ConnectionName = "UnitTest",
-                                   MaxLiveQueueSize = 8,
-                                   ReadBatchSize = 64,
-                                   Stream = "ConfigStream",
-                                   Uri = "tcp://admin:changeit@localhost:2113"
-                               }
-                           })
-                           .BuildServiceProvider();
-
-            var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();
-
-            instance.Configure(new ConfigurationBuilder().Build());
-            await instance.Start(CancellationToken.None);
-
-            esMock.Verify();
         }
 
         [Fact]
@@ -178,6 +135,49 @@ namespace Bechtle.A365.ConfigService.Tests
                 handler => instance.SnapshotTriggered += handler,
                 handler => instance.SnapshotTriggered -= handler,
                 () => instance.Start(CancellationToken.None));
+
+            esMock.Verify();
+        }
+
+        [Fact]
+        public async Task StartInstanceWithoutActionRequired()
+        {
+            var esMock = new Mock<IEventStore>(MockBehavior.Strict);
+            esMock.Setup(e => e.GetCurrentEventNumber())
+                  .ReturnsAsync(0)
+                  .Verifiable("Current EventNumber was not retrieved");
+
+            esMock.SetupAdd(e => e.EventAppeared += It.IsAny<EventHandler<(EventStoreSubscription, ResolvedEvent)>>())
+                  .Verifiable("EventStore.EventAppeared was not subscribed");
+
+            var ssMock = new Mock<ISnapshotStore>(MockBehavior.Strict);
+
+            ssMock.Setup(s => s.GetLatestSnapshotNumbers())
+                  .ReturnsAsync(Result.Success(0L))
+                  .Verifiable("Latest Snapshot was not retrieved");
+
+            var provider = new ServiceCollection()
+                           .AddLogging()
+                           .AddSingleton<NumberThresholdSnapshotTrigger>()
+                           .AddSingleton(esMock.Object)
+                           .AddSingleton(ssMock.Object)
+                           .AddSingleton(new ConfigServiceConfiguration
+                           {
+                               EventStoreConnection = new EventStoreConnectionConfiguration
+                               {
+                                   ConnectionName = "UnitTest",
+                                   MaxLiveQueueSize = 8,
+                                   ReadBatchSize = 64,
+                                   Stream = "ConfigStream",
+                                   Uri = "tcp://admin:changeit@localhost:2113"
+                               }
+                           })
+                           .BuildServiceProvider();
+
+            var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();
+
+            instance.Configure(new ConfigurationBuilder().Build());
+            await instance.Start(CancellationToken.None);
 
             esMock.Verify();
         }
