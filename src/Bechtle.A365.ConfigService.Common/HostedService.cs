@@ -56,7 +56,5 @@ namespace Bechtle.A365.ConfigService.Common
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         protected abstract Task ExecuteAsync(CancellationToken cancellationToken);
-
-        protected IServiceScope GetNewScope() => _serviceProvider.CreateScope();
     }
 }

@@ -205,7 +205,6 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped(_logger, provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
-                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().ProjectionStorage)
                     .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().Protected)
                     .AddScoped<IProjectionStore, ProjectionStore>(_logger)
                     .AddScoped<IStructureProjectionStore, StructureProjectionStore>(_logger)
@@ -272,7 +271,6 @@ namespace Bechtle.A365.ConfigService
 
                 builder.ServiceName = "ConfigService";
                 builder.AnalyseInternalServices = true;
-                builder.RedStatusWhenDatabaseChecks(DatabaseType.MSSQL, config.ProjectionStorage.ConnectionString);
                 builder.YellowStatuswWhenCheck("EventStore", () =>
                 {
                     try

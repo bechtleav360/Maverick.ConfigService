@@ -43,13 +43,6 @@ namespace Bechtle.A365.ConfigService
             Context = KnownMetricContexts.EventStore
         };
 
-        public static readonly CounterOptions EventStatusRetrieved = new CounterOptions
-        {
-            Name = "DomainEvent-History-Status Retrieved",
-            MeasurementUnit = Unit.Custom("Kinds"),
-            Context = KnownMetricContexts.EventHistoryStatus
-        };
-
         public static readonly CounterOptions EventStoreConnected = new CounterOptions
         {
             Name = "EventStore Connection established",
@@ -81,13 +74,6 @@ namespace Bechtle.A365.ConfigService
         public static readonly CounterOptions EventsWritten = new CounterOptions
         {
             Name = "DomainEvents Written",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventStore
-        };
-
-        public static readonly CounterOptions EventsWrittenPrevented = new CounterOptions
-        {
-            Name = "DomainEvents Written (Prevented)",
             MeasurementUnit = Unit.Events,
             Context = KnownMetricContexts.EventStore
         };

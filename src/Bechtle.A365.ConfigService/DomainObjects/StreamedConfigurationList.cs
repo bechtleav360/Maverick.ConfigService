@@ -37,14 +37,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                                                   .Select(e => e.Identifier)
                                                                   .ToList();
 
-        /// <summary>
-        ///     get the Staleness-Information for the given <see cref="ConfigurationIdentifier" />
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
-        public bool IsStale(ConfigurationIdentifier identifier)
-            => Lookup.ContainsKey(identifier) && Lookup[identifier].Stale;
-
         /// <inheritdoc />
         protected override void ApplySnapshotInternal(StreamedObject streamedObject)
         {
