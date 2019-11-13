@@ -104,6 +104,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 _context.Snapshots.RemoveRange(oldSnapshots);
 
+                var snapshotBatchVersion = snapshots.Max(s => s.Version);
+
                 _context.SaveChanges();
 
                 _context.Snapshots.AddRange(snapshots.Select(s => new PostgresSnapshot
@@ -111,7 +113,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Identifier = s.Identifier,
                     Version = s.Version,
                     DataType = s.DataType,
-                    JsonData = s.JsonData
+                    JsonData = s.JsonData,
+                    MetaVersion = snapshotBatchVersion
                 }));
 
                 _context.SaveChanges();
@@ -139,8 +142,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Success(0L);
 
                 return Result.Success(await _context.Snapshots
-                                                    .Select(s => s.Version)
-                                                    .MaxAsync());
+                                                    .Select(s => s.MetaVersion)
+                                                    .MinAsync());
             }
             catch (Exception e)
             {
@@ -175,6 +178,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             public string JsonData { get; set; }
 
             public long Version { get; set; }
+
+            public long MetaVersion { get; set; }
         }
     }
 }
