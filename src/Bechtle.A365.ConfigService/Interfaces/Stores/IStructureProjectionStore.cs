@@ -17,17 +17,9 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="keys"></param>
         /// <param name="variables"></param>
         /// <returns></returns>
-        Task<IResult> Create(StructureIdentifier identifier, 
-                             IDictionary<string,string> keys,
-                             IDictionary<string,string> variables);
-
-        /// <summary>
-        ///     Update / Set a set of Variables to the given values for the given Structure
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="variables"></param>
-        /// <returns></returns>
-        Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables);
+        Task<IResult> Create(StructureIdentifier identifier,
+                             IDictionary<string, string> keys,
+                             IDictionary<string, string> variables);
 
         /// <summary>
         ///     delete a set of variables from the current Structure
@@ -67,5 +59,13 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="range"></param>
         /// <returns></returns>
         Task<IResult<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier, QueryRange range);
+
+        /// <summary>
+        ///     Update / Set a set of Variables to the given values for the given Structure
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="variables"></param>
+        /// <returns></returns>
+        Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables);
     }
 }

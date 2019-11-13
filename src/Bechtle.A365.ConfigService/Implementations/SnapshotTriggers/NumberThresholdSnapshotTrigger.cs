@@ -12,15 +12,15 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
 {
     /// <summary>
-    ///     <see cref="ISnapshotTrigger"/> that triggers once a threshold of DomainEvents,
+    ///     <see cref="ISnapshotTrigger" /> that triggers once a threshold of DomainEvents,
     ///     that haven't been saved in a snapshot, has been reached
     /// </summary>
     public class NumberThresholdSnapshotTrigger : ISnapshotTrigger
     {
         private readonly IEventStore _eventStore;
-        private readonly ISnapshotStore _snapshotStore;
-        private readonly ConfigServiceConfiguration _serviceConfig;
         private readonly ILogger _logger;
+        private readonly ConfigServiceConfiguration _serviceConfig;
+        private readonly ISnapshotStore _snapshotStore;
 
         private IConfiguration _configuration;
 
@@ -37,13 +37,19 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
         }
 
         /// <inheritdoc />
-        public event EventHandler<EventArgs> SnapshotTriggered;
+        public void Dispose()
+        {
+            _eventStore.EventAppeared -= EventStoreOnEventAppeared;
+        }
 
         /// <inheritdoc />
         public void Configure(IConfiguration configuration)
         {
             _configuration = configuration;
         }
+
+        /// <inheritdoc />
+        public event EventHandler<EventArgs> SnapshotTriggered;
 
         /// <inheritdoc />
         public async Task Start(CancellationToken cancellationToken)
@@ -104,6 +110,12 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
                 TriggerSnapshot(lastEventNumber, currentSnapshotEventNumber, threshold);
         }
 
+        private async Task<long> GetCurrentSnapshotEventNumber()
+        {
+            var result = await _snapshotStore.GetLatestSnapshotNumbers();
+            return result?.Data ?? 0;
+        }
+
         private void TriggerSnapshot(long lastEventNumber, long currentSnapshotEventNumber, long threshold)
         {
             _logger.LogInformation($"triggering '{nameof(SnapshotTriggered)}' event because threshold has already been crossed by " +
@@ -111,18 +123,6 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
                                    $"(lastEvent: {lastEventNumber}; currentSnapshot: {currentSnapshotEventNumber}; threshold: {threshold})");
 
             SnapshotTriggered?.Invoke(this, EventArgs.Empty);
-        }
-
-        private async Task<long> GetCurrentSnapshotEventNumber()
-        {
-            var result = await _snapshotStore.GetLatestSnapshotNumbers();
-            return result?.Data ?? 0;
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            _eventStore.EventAppeared -= EventStoreOnEventAppeared;
         }
     }
 }

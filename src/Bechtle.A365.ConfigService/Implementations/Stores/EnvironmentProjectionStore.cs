@@ -18,8 +18,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public class EnvironmentProjectionStore : IEnvironmentProjectionStore
     {
         private readonly IEventStore _eventStore;
-        private readonly IStreamedStore _streamedStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
+        private readonly IStreamedStore _streamedStore;
         private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc />
@@ -32,6 +32,78 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _validators = validators.ToList();
             _eventStore = eventStore;
             _streamedStore = streamedStore;
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault)
+        {
+            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+            if (envResult.IsError)
+                return envResult;
+
+            var environment = envResult.Data;
+
+            var createResult = environment.Create(isDefault);
+            if (createResult.IsError)
+                return createResult;
+
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> Delete(EnvironmentIdentifier identifier)
+        {
+            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+            if (envResult.IsError)
+                return envResult;
+
+            var environment = envResult.Data;
+
+            var createResult = environment.Delete();
+            if (createResult.IsError)
+                return createResult;
+
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete)
+        {
+            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+            if (envResult.IsError)
+                return envResult;
+
+            var environment = envResult.Data;
+
+            var result = environment.DeleteKeys(keysToDelete);
+            if (result.IsError)
+                return result;
+
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
         }
 
         /// <inheritdoc />
@@ -178,78 +250,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
 
             return result;
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault)
-        {
-            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            var environment = envResult.Data;
-
-            var createResult = environment.Create(isDefault);
-            if (createResult.IsError)
-                return createResult;
-
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult> Delete(EnvironmentIdentifier identifier)
-        {
-            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            var environment = envResult.Data;
-
-            var createResult = environment.Delete();
-            if (createResult.IsError)
-                return createResult;
-
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete)
-        {
-            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            var environment = envResult.Data;
-
-            var result = environment.DeleteKeys(keysToDelete);
-            if (result.IsError)
-                return result;
-
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
         }
 
         /// <inheritdoc />

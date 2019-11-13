@@ -12,7 +12,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using JsonProperty = Newtonsoft.Json.Serialization.JsonProperty;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -26,19 +25,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private IDictionary<Type, Func<StreamedEvent, bool>> _handlerMapping;
 
         /// <summary>
-        ///     cache for <see cref="GetEventApplicationMapping"/> using <see cref="_handlerMapping"/>
-        /// </summary>
-        protected IDictionary<Type, Func<StreamedEvent, bool>> HandlerMapping => _handlerMapping ??= GetEventApplicationMapping();
-
-        /// <summary>
-        ///     get a list of all DomainEvent-Types that this StreamedObject handles while Streaming
-        /// </summary>
-        /// <returns></returns>
-        public ICollection<string> GetHandledEvents() => HandlerMapping.Keys
-                                                                       .Select(t => t.Name)
-                                                                       .ToList();
-
-        /// <summary>
         ///     Current Version-Number of this Object
         /// </summary>
         public long CurrentVersion { get; protected set; } = -1;
@@ -47,6 +33,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     List of Captured, Successful events applied to this Object
         /// </summary>
         protected List<DomainEvent> CapturedDomainEvents { get; set; } = new List<DomainEvent>();
+
+        /// <summary>
+        ///     cache for <see cref="GetEventApplicationMapping" /> using <see cref="_handlerMapping" />
+        /// </summary>
+        protected IDictionary<Type, Func<StreamedEvent, bool>> HandlerMapping => _handlerMapping ??= GetEventApplicationMapping();
 
         /// <summary>
         ///     calculate the size of this object - used to limit the objects kept in the memory-cache at the same time
@@ -59,6 +50,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     actual copy-actions take place here
         /// </summary>
         protected abstract void ApplySnapshotInternal(StreamedObject streamedObject);
+
+        /// <summary>
+        ///     get a mapping of <see cref="DomainEvent" /> to EventHandler. this mapping is used to evaluate all applied events
+        /// </summary>
+        /// <returns></returns>
+        protected abstract IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping();
 
         /// <summary>
         ///     apply a single <see cref="StreamedEvent" /> to this object,
@@ -138,6 +135,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public virtual CacheItemPriority GetCacheItemPriority() => CacheItemPriority.Low;
 
         /// <summary>
+        ///     get a list of all DomainEvent-Types that this StreamedObject handles while Streaming
+        /// </summary>
+        /// <returns></returns>
+        public ICollection<string> GetHandledEvents() => HandlerMapping.Keys
+                                                                       .Select(t => t.Name)
+                                                                       .ToList();
+
+        /// <summary>
         ///     validate all recorded events with the given <see cref="ICommandValidator" />
         /// </summary>
         /// <param name="validators"></param>
@@ -189,12 +194,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 }
             }
         }
-
-        /// <summary>
-        ///     get a mapping of <see cref="DomainEvent"/> to EventHandler. this mapping is used to evaluate all applied events
-        /// </summary>
-        /// <returns></returns>
-        protected abstract IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping();
 
         /// <summary>
         ///     retrieve a generic identifier to tie a snapshot to this object

@@ -47,8 +47,8 @@ namespace Bechtle.A365.ConfigService
     /// </summary>
     public class Startup
     {
-        private readonly ILogger<Startup> _logger;
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<Startup> _logger;
 
         /// <inheritdoc />
         /// <param name="configuration"></param>
@@ -86,14 +86,10 @@ namespace Bechtle.A365.ConfigService
                 _logger.LogInformation("skipping authentication-hooks");
 
             if (env.IsDevelopment())
-            {
                 app.Configure(a => a.UseDeveloperExceptionPage(), _ => _logger.LogInformation("adding Development Exception-Handler"));
-            }
             else
-            {
                 app.Configure(a => a.UseHsts(), _ => _logger.LogInformation("adding HSTS"))
                    .Configure(a => a.UseHttpsRedirection(), _ => _logger.LogInformation("adding HTTPS-Redirect"));
-            }
 
             app.Configure(a => a.ApplicationServices.SetupNLogServiceLocator(), _ => _logger.LogInformation("finishing NLog configuration"))
                .Configure(a => a.UseMiddleware<LoggingMiddleware>(), _ => _logger.LogInformation("adding Correlation-Logging-Middleware"))
@@ -154,6 +150,31 @@ namespace Bechtle.A365.ConfigService
             RegisterAuthentication(services);
             RegisterDiServices(services);
             RegisterHealthEndpoints(services);
+        }
+
+        private void RegisterAuthentication(IServiceCollection services)
+        {
+            if (!_environment.EnvironmentName.Equals("docker", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Registering Authentication-Services");
+
+                // Cert-Based Authentication - if enabled
+                services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
+                        .AddCertificate(options =>
+                        {
+                            options.Events = new CertificateAuthenticationEvents
+                            {
+                                OnAuthenticationFailed = context => context.HttpContext
+                                                                           .RequestServices
+                                                                           .GetService<ICertificateValidator>()
+                                                                           .Fail(context),
+                                OnValidateCertificate = context => context.HttpContext
+                                                                          .RequestServices
+                                                                          .GetService<ICertificateValidator>()
+                                                                          .Validate(context)
+                            };
+                        });
+            }
         }
 
         private void RegisterDiServices(IServiceCollection services)
@@ -240,16 +261,6 @@ namespace Bechtle.A365.ConfigService
                     });
         }
 
-        private void RegisterMvc(IServiceCollection services)
-        {
-            _logger.LogInformation("registering MVC-Middleware with metrics-support");
-
-            // setup MVC
-            services.AddMvc()
-                    .AddMetrics()
-                    .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-        }
-
         private void RegisterHealthEndpoints(IServiceCollection services)
         {
             _logger.LogInformation("Registering Health Endpoint");
@@ -294,29 +305,14 @@ namespace Bechtle.A365.ConfigService
             });
         }
 
-        private void RegisterAuthentication(IServiceCollection services)
+        private void RegisterMvc(IServiceCollection services)
         {
-            if (!_environment.EnvironmentName.Equals("docker", StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogInformation("Registering Authentication-Services");
+            _logger.LogInformation("registering MVC-Middleware with metrics-support");
 
-                // Cert-Based Authentication - if enabled
-                services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme)
-                        .AddCertificate(options =>
-                        {
-                            options.Events = new CertificateAuthenticationEvents
-                            {
-                                OnAuthenticationFailed = context => context.HttpContext
-                                                                           .RequestServices
-                                                                           .GetService<ICertificateValidator>()
-                                                                           .Fail(context),
-                                OnValidateCertificate = context => context.HttpContext
-                                                                          .RequestServices
-                                                                          .GetService<ICertificateValidator>()
-                                                                          .Validate(context)
-                            };
-                        });
-            }
+            // setup MVC
+            services.AddMvc()
+                    .AddMetrics()
+                    .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
         }
 
         private void RegisterSwagger(IServiceCollection services)

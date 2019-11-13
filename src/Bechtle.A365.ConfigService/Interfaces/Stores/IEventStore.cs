@@ -17,6 +17,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         event EventHandler<(EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent)> EventAppeared;
 
         /// <summary>
+        ///     get the EventNumber of the newest Event
+        /// </summary>
+        /// <returns></returns>
+        Task<long> GetCurrentEventNumber();
+
+        /// <summary>
         ///     read the Event-History as a stream and execute an action for each event,
         ///     filtering out events that do not match <paramref name="streamFilter" />
         /// </summary>
@@ -51,11 +57,5 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="domainEvents"></param>
         /// <returns></returns>
         Task<long> WriteEvents(IList<DomainEvent> domainEvents);
-
-        /// <summary>
-        ///     get the EventNumber of the newest Event
-        /// </summary>
-        /// <returns></returns>
-        Task<long> GetCurrentEventNumber();
     }
 }

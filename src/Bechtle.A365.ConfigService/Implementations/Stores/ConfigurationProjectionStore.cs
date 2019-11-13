@@ -19,13 +19,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc />
     public class ConfigurationProjectionStore : IConfigurationProjectionStore
     {
-        private readonly IStreamedStore _streamedStore;
         private readonly IConfigurationCompiler _compiler;
-        private readonly IConfigurationParser _parser;
-        private readonly IJsonTranslator _translator;
         private readonly IEventStore _eventStore;
-        private readonly IList<ICommandValidator> _validators;
         private readonly ILogger<ConfigurationProjectionStore> _logger;
+        private readonly IConfigurationParser _parser;
+        private readonly IStreamedStore _streamedStore;
+        private readonly IJsonTranslator _translator;
+        private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc />
         public ConfigurationProjectionStore(ILogger<ConfigurationProjectionStore> logger,
@@ -43,6 +43,30 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _translator = translator;
             _eventStore = eventStore;
             _validators = validators.ToList();
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo)
+        {
+            var configResult = await _streamedStore.GetStreamedObject(new StreamedConfiguration(identifier), identifier.ToString());
+            if (configResult.IsError)
+                return configResult;
+
+            var configuration = configResult.Data;
+
+            var buildResult = configuration.Build(validFrom, validTo);
+            if (buildResult.IsError)
+                return buildResult;
+
+            var errors = configuration.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await configuration.WriteRecordedEvents(_eventStore);
         }
 
         /// <inheritdoc />
@@ -319,30 +343,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error<string>($"failed to retrieve used environment keys for id: {formattedParams}: {e}",
                                             ErrorCode.DbQueryError);
             }
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo)
-        {
-            var configResult = await _streamedStore.GetStreamedObject(new StreamedConfiguration(identifier), identifier.ToString());
-            if (configResult.IsError)
-                return configResult;
-
-            var configuration = configResult.Data;
-
-            var buildResult = configuration.Build(validFrom, validTo);
-            if (buildResult.IsError)
-                return buildResult;
-
-            var errors = configuration.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await configuration.WriteRecordedEvents(_eventStore);
         }
     }
 }

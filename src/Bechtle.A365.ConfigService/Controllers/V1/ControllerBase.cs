@@ -41,14 +41,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         protected IRegionEncryptionCertProvider EncryptionCertProvider;
 
         /// <summary>
+        ///     <see cref="IMetrics" /> to record various application-specific metrics
+        /// </summary>
+        protected IMetrics Metrics;
+
+        /// <summary>
         ///     IServiceProvider for late service retrieval
         /// </summary>
         protected IServiceProvider Provider;
-
-        /// <summary>
-        ///     <see cref="IMetrics"/> to record various application-specific metrics
-        /// </summary>
-        protected IMetrics Metrics;
 
         /// <inheritdoc />
         /// <param name="provider"></param>

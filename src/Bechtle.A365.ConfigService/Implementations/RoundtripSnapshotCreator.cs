@@ -15,15 +15,15 @@ using EventStore.ClientAPI;
 namespace Bechtle.A365.ConfigService.Implementations
 {
     /// <summary>
-    ///     implementation of <see cref="ISnapshotCreator"/> that will always do a complete roundtrip through all events in a given <see cref="IEventStore"/>
+    ///     implementation of <see cref="ISnapshotCreator" /> that will always do a complete roundtrip through all events in a given <see cref="IEventStore" />
     /// </summary>
     public class RoundtripSnapshotCreator : ISnapshotCreator
     {
+        private readonly IConfigurationCompiler _compiler;
         private readonly IEventStore _eventStore;
         private readonly IConfigurationParser _parser;
-        private readonly IConfigurationCompiler _compiler;
-        private readonly IJsonTranslator _translator;
         private readonly IStreamedStore _streamedStore;
+        private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
         public RoundtripSnapshotCreator(IEventStore eventStore,

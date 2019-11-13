@@ -66,11 +66,9 @@ namespace Bechtle.A365.ConfigService
 
                 X509Certificate2 certificate = null;
                 if (Path.GetExtension(settings.Certificate) == "pfx")
-                {
                     certificate = settings.Password is null
                                       ? new X509Certificate2(settings.Certificate)
                                       : new X509Certificate2(settings.Certificate, settings.Password);
-                }
 
                 var certpath = Environment.GetEnvironmentVariable("ASPNETCORE_SSLCERT_PATH");
                 if (!string.IsNullOrEmpty(certpath) || Path.GetExtension(settings.Certificate) == "crt")

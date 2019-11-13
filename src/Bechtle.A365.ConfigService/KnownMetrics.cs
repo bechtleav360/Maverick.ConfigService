@@ -22,9 +22,23 @@ namespace Bechtle.A365.ConfigService
             Context = KnownMetricContexts.ConversionCalls
         };
 
+        public static readonly CounterOptions EventsFiltered = new CounterOptions
+        {
+            Name = "DomainEvents Filtered before Deserialization",
+            MeasurementUnit = Unit.Events,
+            Context = KnownMetricContexts.EventStore
+        };
+
         public static readonly CounterOptions EventsRead = new CounterOptions
         {
             Name = "DomainEvents Read",
+            MeasurementUnit = Unit.Events,
+            Context = KnownMetricContexts.EventStore
+        };
+
+        public static readonly CounterOptions EventsStreamed = new CounterOptions
+        {
+            Name = "DomainEvents Streamed",
             MeasurementUnit = Unit.Events,
             Context = KnownMetricContexts.EventStore
         };
@@ -34,13 +48,6 @@ namespace Bechtle.A365.ConfigService
             Name = "DomainEvent-History-Status Retrieved",
             MeasurementUnit = Unit.Custom("Kinds"),
             Context = KnownMetricContexts.EventHistoryStatus
-        };
-
-        public static readonly CounterOptions EventsStreamed = new CounterOptions
-        {
-            Name = "DomainEvents Streamed",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventStore
         };
 
         public static readonly CounterOptions EventStoreConnected = new CounterOptions
@@ -78,13 +85,6 @@ namespace Bechtle.A365.ConfigService
             Context = KnownMetricContexts.EventStore
         };
 
-        public static readonly CounterOptions EventsFiltered = new CounterOptions
-        {
-            Name = "DomainEvents Filtered before Deserialization",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventStore
-        };
-
         public static readonly CounterOptions EventsWrittenPrevented = new CounterOptions
         {
             Name = "DomainEvents Written (Prevented)",
@@ -110,14 +110,15 @@ namespace Bechtle.A365.ConfigService
     internal static class KnownMetricContexts
     {
         private static readonly string Generics = "Application";
-        private static readonly string Internals = "Application.Internals";
-
         public static readonly string ConnectionInfos = $"{Generics}.ConnectionInfos";
+        private static readonly string Internals = "Application.Internals";
         public static readonly string ConversionCalls = $"{Internals}.Conversions";
-        public static readonly string EventStore = $"{Generics}.EventStore";
-        public static readonly string Exceptions = $"{Generics}.Errors";
-        public static readonly string TemporaryKeys = $"{Generics}.TemporaryKeys";
         public static readonly string EventHistoryStatus = $"{Generics}.EventHistoryStatus";
+        public static readonly string EventStore = $"{Generics}.EventStore";
         public static readonly string EventValidation = $"{Generics}.EventValidation";
+        public static readonly string Exceptions = $"{Generics}.Errors";
+
+
+        public static readonly string TemporaryKeys = $"{Generics}.TemporaryKeys";
     }
 }

@@ -15,10 +15,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc />
     public class StructureProjectionStore : IStructureProjectionStore
     {
-        private readonly IList<ICommandValidator> _validators;
+        private readonly IEventStore _eventStore;
         private readonly ILogger<StructureProjectionStore> _logger;
         private readonly IStreamedStore _streamedStore;
-        private readonly IEventStore _eventStore;
+        private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc />
         public StructureProjectionStore(ILogger<StructureProjectionStore> logger,
@@ -46,30 +46,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var result = structure.Create(keys, variables);
             if (result.IsError)
                 return result;
-
-            var errors = structure.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await structure.WriteRecordedEvents(_eventStore);
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables)
-        {
-            var structResult = await _streamedStore.GetStreamedObject(new StreamedStructure(identifier), identifier.ToString());
-            if (structResult.IsError)
-                return structResult;
-
-            var structure = structResult.Data;
-
-            var updateResult = structure.ModifyVariables(variables);
-            if (updateResult.IsError)
-                return updateResult;
 
             var errors = structure.Validate(_validators);
             if (errors.Any())
@@ -229,6 +205,30 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})",
                     ErrorCode.DbQueryError);
             }
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables)
+        {
+            var structResult = await _streamedStore.GetStreamedObject(new StreamedStructure(identifier), identifier.ToString());
+            if (structResult.IsError)
+                return structResult;
+
+            var structure = structResult.Data;
+
+            var updateResult = structure.ModifyVariables(variables);
+            if (updateResult.IsError)
+                return updateResult;
+
+            var errors = structure.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await structure.WriteRecordedEvents(_eventStore);
         }
     }
 }

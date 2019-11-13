@@ -13,6 +13,15 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     public interface IConfigurationProjectionStore
     {
         /// <summary>
+        ///     build a new Configuration with the given Environment and Structure, valid in the given time-frame
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="validFrom"></param>
+        /// <param name="validTo"></param>
+        /// <returns></returns>
+        Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo);
+
+        /// <summary>
         ///     get a list of available projected Configurations
         /// </summary>
         /// <param name="when"></param>
@@ -78,14 +87,5 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <returns></returns>
         Task<IResult<string>> GetVersion(ConfigurationIdentifier identifier, DateTime when);
-
-        /// <summary>
-        ///     build a new Configuration with the given Environment and Structure, valid in the given time-frame
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="validFrom"></param>
-        /// <param name="validTo"></param>
-        /// <returns></returns>
-        Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo);
     }
 }

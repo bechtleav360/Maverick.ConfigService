@@ -5,19 +5,19 @@ using Bechtle.A365.ConfigService.DomainObjects;
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
     /// <summary>
-    ///     Store to retrieve the latest available Version of a <see cref="StreamedObject"/>
+    ///     Store to retrieve the latest available Version of a <see cref="StreamedObject" />
     /// </summary>
     public interface IStreamedStore
     {
         /// <summary>
-        ///     get the latest version of a simple <see cref="StreamedObject"/>
+        ///     get the latest version of a simple <see cref="StreamedObject" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         Task<IResult<T>> GetStreamedObject<T>() where T : StreamedObject, new();
 
         /// <summary>
-        ///     get the latest version of a simple <see cref="StreamedObject"/>, up to <paramref name="maxVersion"/>
+        ///     get the latest version of a simple <see cref="StreamedObject" />, up to <paramref name="maxVersion" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="maxVersion">inclusive upper Version-Limit</param>
@@ -25,8 +25,8 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult<T>> GetStreamedObject<T>(long maxVersion) where T : StreamedObject, new();
 
         /// <summary>
-        ///     stream the given <see cref="StreamedObject"/> to its latest version,
-        ///     identified by <paramref name="identifier"/>
+        ///     stream the given <see cref="StreamedObject" /> to its latest version,
+        ///     identified by <paramref name="identifier" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="streamedObject"></param>
@@ -35,8 +35,8 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier) where T : StreamedObject;
 
         /// <summary>
-        ///     stream the given <see cref="StreamedObject"/> to its latest version,
-        ///     identified by <paramref name="identifier"/>, up to <paramref name="maxVersion"/>
+        ///     stream the given <see cref="StreamedObject" /> to its latest version,
+        ///     identified by <paramref name="identifier" />, up to <paramref name="maxVersion" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="streamedObject"></param>

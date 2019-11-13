@@ -13,6 +13,29 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     public interface IEnvironmentProjectionStore
     {
         /// <summary>
+        ///     create a new Environment with the given <see cref="EnvironmentIdentifier" />
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="isDefault"></param>
+        /// <returns></returns>
+        Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault);
+
+        /// <summary>
+        ///     delete an existing Environment with the given <see cref="EnvironmentIdentifier" />
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<IResult> Delete(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     remove a number of keys from the given Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="keysToDelete"></param>
+        /// <returns></returns>
+        Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete);
+
+        /// <summary>
         ///     get a list of all Environments
         /// </summary>
         /// <param name="range"></param>
@@ -41,29 +64,6 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="parameters"></param>
         /// <returns></returns>
         Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters);
-
-        /// <summary>
-        ///     create a new Environment with the given <see cref="EnvironmentIdentifier"/>
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="isDefault"></param>
-        /// <returns></returns>
-        Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault);
-
-        /// <summary>
-        ///     delete an existing Environment with the given <see cref="EnvironmentIdentifier"/>
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
-        Task<IResult> Delete(EnvironmentIdentifier identifier);
-
-        /// <summary>
-        ///     remove a number of keys from the given Environment
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="keysToDelete"></param>
-        /// <returns></returns>
-        Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete);
 
         /// <summary>
         ///     add or update a number of keys in the given Environmenet
