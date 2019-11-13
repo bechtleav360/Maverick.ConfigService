@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -150,6 +151,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return Result.Error("could not remove all keys from the environment", ErrorCode.Undefined);
             }
         }
+
+        /// <inheritdoc />
+        public override CacheItemPriority GetCacheItemPriority() => CacheItemPriority.Normal;
 
         /// <summary>
         ///     get the values of <see cref="Keys" /> as a simple <see cref="Dictionary{String,String}" />

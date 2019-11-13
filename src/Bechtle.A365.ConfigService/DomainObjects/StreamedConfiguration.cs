@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Parsing;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -152,6 +153,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return Result.Error($"failed to compile configuration: {e.Message}", ErrorCode.InvalidData);
             }
         }
+
+        /// <inheritdoc />
+        public override CacheItemPriority GetCacheItemPriority() => CacheItemPriority.High;
 
         /// <inheritdoc />
         protected override void ApplySnapshotInternal(StreamedObject streamedObject)
