@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
         }
 
         /// <inheritdoc />
-        public event EventHandler SnapshotTriggered;
+        public event EventHandler<EventArgs> SnapshotTriggered;
 
         /// <inheritdoc />
         public void Configure(IConfiguration configuration)
@@ -52,9 +52,6 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
 
             try
             {
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
                 if (cancellationToken.IsCancellationRequested)
                     return;
 

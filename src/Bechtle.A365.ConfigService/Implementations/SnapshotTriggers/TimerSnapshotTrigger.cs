@@ -39,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
         }
 
         /// <inheritdoc />
-        public event EventHandler SnapshotTriggered;
+        public event EventHandler<EventArgs> SnapshotTriggered;
 
         /// <inheritdoc />
         public async Task Start(CancellationToken cancellationToken)

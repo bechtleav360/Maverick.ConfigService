@@ -14,7 +14,7 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <summary>
         ///     event that is triggered once the component decides it's time for new snapshots
         /// </summary>
-        event EventHandler SnapshotTriggered;
+        event EventHandler<EventArgs> SnapshotTriggered;
 
         /// <summary>
         ///     pass the instance-configuration to the actual instance
