@@ -16,13 +16,6 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// </summary>
         event EventHandler<(EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent)> EventAppeared;
 
-        // @TODO: remove this method, it uses too much memory compared to ReplayEventsAsStream
-        /// <summary>
-        ///     replay all events and get the written DomainEvents
-        /// </summary>
-        /// <returns></returns>
-        Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents(StreamDirection direction = StreamDirection.Forwards);
-
         /// <summary>
         ///     read the Event-History as a stream and execute an action for each event,
         ///     filtering out events that do not match <paramref name="streamFilter" />

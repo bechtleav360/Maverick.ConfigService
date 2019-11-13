@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {

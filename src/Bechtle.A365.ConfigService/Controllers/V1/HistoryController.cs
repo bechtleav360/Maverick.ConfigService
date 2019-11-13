@@ -38,40 +38,43 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> BlameEnvironment([FromRoute] string category,
                                                           [FromRoute] string name)
         {
-            var events = (await _eventStore.ReplayEvents()).ToArray();
-
             var blameData = new Dictionary<string, KeyRevision>();
 
-            foreach (var (recordedEvent, domainEvent) in events)
-            {
-                // we only care about events that modify environment-keys
-                if (!(domainEvent is EnvironmentKeysModified keysModified))
-                    continue;
+            var comparisonEnvId = new EnvironmentIdentifier(category, name).ToString();
 
-                if (!keysModified.Identifier.Category.Equals(category, StringComparison.InvariantCultureIgnoreCase) ||
-                    !keysModified.Identifier.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
-                    continue;
+            await _eventStore.ReplayEventsAsStream(
+                t => t.RecordedEvent.EventType.Equals(nameof(EnvironmentKeysModified))
+                     && t.Metadata[KnownDomainEventMetadata.Identifier].Equals(comparisonEnvId,
+                                                                               StringComparison.OrdinalIgnoreCase),
+                tuple =>
+                {
+                    var (recordedEvent, domainEvent) = tuple;
 
-                foreach (var action in keysModified.ModifiedKeys)
-                    switch (action.Type)
-                    {
-                        case ConfigKeyActionType.Set:
-                            blameData[action.Key] = new KeyRevision
-                            {
-                                DateTime = recordedEvent.Created,
-                                Value = action.Value
-                            };
-                            break;
+                    if (!(domainEvent is EnvironmentKeysModified keysModified))
+                        return true;
 
-                        case ConfigKeyActionType.Delete:
-                            if (blameData.ContainsKey(action.Key))
-                                blameData.Remove(action.Key);
-                            break;
+                    foreach (var action in keysModified.ModifiedKeys)
+                        switch (action.Type)
+                        {
+                            case ConfigKeyActionType.Set:
+                                blameData[action.Key] = new KeyRevision
+                                {
+                                    DateTime = recordedEvent.Created,
+                                    Value = action.Value
+                                };
+                                break;
 
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-            }
+                            case ConfigKeyActionType.Delete:
+                                if (blameData.ContainsKey(action.Key))
+                                    blameData.Remove(action.Key);
+                                break;
+
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+
+                    return true;
+                });
 
             return Ok(blameData);
         }
@@ -92,55 +95,57 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (!(key is null))
                 key = Uri.UnescapeDataString(key);
 
-            var events = (await _eventStore.ReplayEvents()).ToArray();
-
+            var comparisonEnvId = new EnvironmentIdentifier(category, name).ToString();
             var history = new Dictionary<string, KeyHistory>();
 
-            foreach (var (recordedEvent, domainEvent) in events)
-            {
-                // we only care about events that modify environment-keys
-                if (!(domainEvent is EnvironmentKeysModified keysModified))
-                    continue;
-
-                if (!keysModified.Identifier.Category.Equals(category, StringComparison.InvariantCultureIgnoreCase) ||
-                    !keysModified.Identifier.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
-                    continue;
-
-                foreach (var action in keysModified.ModifiedKeys)
+            await _eventStore.ReplayEventsAsStream(
+                t => t.RecordedEvent.EventType.Equals(nameof(EnvironmentKeysModified))
+                     && t.Metadata[KnownDomainEventMetadata.Identifier].Equals(comparisonEnvId,
+                                                                               StringComparison.OrdinalIgnoreCase),
+                tuple =>
                 {
-                    // if key is set - ignore all keys that don't match with what we're given
-                    if (!(key is null) &&
-                        !action.Key.StartsWith(key, StringComparison.InvariantCultureIgnoreCase))
-                        continue;
+                    var (recordedEvent, domainEvent) = tuple;
 
-                    if (!history.ContainsKey(action.Key))
-                        history[action.Key] = new KeyHistory(action.Key);
+                    if (!(domainEvent is EnvironmentKeysModified keysModified))
+                        return true;
 
-                    switch (action.Type)
+                    foreach (var action in keysModified.ModifiedKeys)
                     {
-                        case ConfigKeyActionType.Set:
-                            history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
-                            {
-                                Type = ConfigKeyActionType.Set,
-                                DateTime = recordedEvent.Created,
-                                Value = action.Value
-                            });
-                            break;
+                        // if key is set - ignore all keys that don't match with what we're given
+                        if (!(key is null) &&
+                            !action.Key.StartsWith(key, StringComparison.InvariantCultureIgnoreCase))
+                            continue;
 
-                        case ConfigKeyActionType.Delete:
-                            history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
-                            {
-                                Type = ConfigKeyActionType.Delete,
-                                DateTime = recordedEvent.Created,
-                                Value = action.Value
-                            });
-                            break;
+                        if (!history.ContainsKey(action.Key))
+                            history[action.Key] = new KeyHistory(action.Key);
 
-                        default:
-                            throw new ArgumentOutOfRangeException();
+                        switch (action.Type)
+                        {
+                            case ConfigKeyActionType.Set:
+                                history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
+                                {
+                                    Type = ConfigKeyActionType.Set,
+                                    DateTime = recordedEvent.Created,
+                                    Value = action.Value
+                                });
+                                break;
+
+                            case ConfigKeyActionType.Delete:
+                                history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
+                                {
+                                    Type = ConfigKeyActionType.Delete,
+                                    DateTime = recordedEvent.Created,
+                                    Value = action.Value
+                                });
+                                break;
+
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
                     }
-                }
-            }
+
+                    return true;
+                });
 
             return Ok(history.Values.OrderBy(r => r.Key));
         }

@@ -84,51 +84,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<(RecordedEvent, DomainEvent)>> ReplayEvents(StreamDirection direction = StreamDirection.Forwards)
-        {
-            // connect if we're not already connected
-            Connect();
-
-            // readSize must be below 4096
-            var readSize = 512;
-            long currentPosition = direction == StreamDirection.Forwards
-                                       ? StreamPosition.Start
-                                       : StreamPosition.End;
-            var stream = _eventStoreConfiguration.Stream;
-            var allEvents = new List<(RecordedEvent, DomainEvent)>();
-            bool continueReading;
-
-            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read, " +
-                             (direction == StreamDirection.Forwards ? "forwards from the start" : "backwards from the end"));
-
-            do
-            {
-                var slice = await (direction == StreamDirection.Forwards
-                                       ? _eventStore.ReadStreamEventsForwardAsync(stream, currentPosition, readSize, true)
-                                       : _eventStore.ReadStreamEventsBackwardAsync(stream, currentPosition, readSize, true));
-
-                _logger.LogDebug($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
-
-                _metrics.Measure.Counter.Increment(KnownMetrics.EventsRead, slice.Events.Length);
-
-                allEvents.AddRange(
-                    slice.Events
-                         .Select(e => _eventDeserializer.ToDomainEvent(e, out var @event)
-                                          ? (RecordedEvent: e.Event, Success: true, DomainEvent: @event)
-                                          : (RecordedEvent: e.Event, Success: false, DomainEvent: null))
-                         .Where(t => t.Success)
-                         .Select(t => (t.RecordedEvent, t.DomainEvent)));
-
-                currentPosition = slice.NextEventNumber;
-                continueReading = !slice.IsEndOfStream;
-            } while (continueReading);
-
-            _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, allEvents.Count);
-
-            return allEvents;
-        }
-
-        /// <inheritdoc />
         public Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                          int readSize = 64,
                                          StreamDirection direction = StreamDirection.Forwards,
