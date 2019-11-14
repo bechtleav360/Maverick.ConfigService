@@ -176,6 +176,23 @@ namespace Bechtle.A365.ConfigService
             }
         }
 
+        private void RegisterDatabaseContexts(IServiceCollection services)
+        {
+            var postgresSection = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres");
+            if (postgresSection.GetSection("Enabled").Get<bool>())
+                services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
+                        .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
+                            _logger,
+                            (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
+
+            var mssqlSection = Configuration.GetSection("SnapshotConfiguration:Stores:MsSql");
+            if (mssqlSection.GetSection("Enabled").Get<bool>())
+                services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
+                        .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
+                            _logger,
+                            (provider, builder) => { builder.UseSqlServer(mssqlSection.GetSection("ConnectionString").Get<string>()); });
+        }
+
         private void RegisterDiServices(IServiceCollection services)
         {
             _logger.LogInformation("Registering App-Services");
@@ -226,9 +243,6 @@ namespace Bechtle.A365.ConfigService
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
                     .AddScoped<IStreamedStore, DomainObjectStore>(_logger)
-                    // once behind the interface, once with direct access
-                    .AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
-                    .AddScoped<PostgresSnapshotStore>(_logger)
                     .AddScoped<TimerSnapshotTrigger>(_logger)
                     .AddScoped<NumberThresholdSnapshotTrigger>(_logger)
                     .AddScoped<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
@@ -240,23 +254,9 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton(_logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
                     .AddHostedService<TemporaryKeyCleanupService>(_logger)
                     .AddHostedService<SnapshotService>(_logger)
-                    .AddHostedService<IncrementalSnapshotService>(_logger)
-                    .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(_logger, (provider, builder) =>
-                    {
-                        var storeEnabled = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres:Enabled").Get<bool>();
+                    .AddHostedService<IncrementalSnapshotService>(_logger);
 
-                        _logger.LogTrace($"{nameof(PostgresSnapshotStore)} enabled as SnapshotStore: {storeEnabled}");
-
-                        if (!storeEnabled)
-                            return;
-
-                        var connectionString = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres:ConnectionString").Get<string>();
-
-                        if (string.IsNullOrWhiteSpace(connectionString))
-                            _logger.LogError("store is enabled, but SnapshotConfiguration:Stores:Postgres:ConnectionString is empty");
-                        else
-                            builder.UseNpgsql(connectionString);
-                    });
+            RegisterDatabaseContexts(services);
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)

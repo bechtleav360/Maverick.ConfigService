@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.SnapshotTriggers;
-using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Configuration;
@@ -152,10 +151,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task SaveSnapshots(IServiceProvider provider, IList<DomainObjectSnapshot> snapshots, CancellationToken cancellationToken)
         {
-            var stores = new List<ISnapshotStore>();
-
-            if (_configuration.GetSection("SnapshotConfiguration:Stores:Postgres:Enabled").Get<bool>())
-                stores.Add(provider.GetRequiredService<PostgresSnapshotStore>());
+            var stores = provider.GetServices<ISnapshotStore>();
 
             foreach (var store in stores)
             {
