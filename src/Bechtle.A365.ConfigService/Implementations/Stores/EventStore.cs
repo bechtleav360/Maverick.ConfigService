@@ -132,9 +132,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 foreach (var item in slice.Events)
                 {
-                    // if we can't deserialize the metadata and execute the filter on it we skip this event entirely
-                    if (_eventDeserializer.ToMetadata(item, out var metadata)
-                        && !streamFilter((RecordedEvent: item.Event, Metadata: metadata)))
+                    // initialize to default value if we can't deserialize successfully
+                    if (!_eventDeserializer.ToMetadata(item, out var metadata))
+                        metadata = new DomainEventMetadata();
+
+                    // skip this event entirely if filter evaluates to false
+                    if (!streamFilter((RecordedEvent: item.Event, Metadata: metadata)))
                     {
                         _metrics.Measure.Counter.Increment(KnownMetrics.EventsFiltered, item.Event.EventType);
                         continue;
