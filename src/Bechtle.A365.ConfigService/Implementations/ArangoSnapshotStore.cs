@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations
@@ -20,16 +21,16 @@ namespace Bechtle.A365.ConfigService.Implementations
         private const string ConfigBasePath = "SnapshotConfiguration:Stores:Arango";
         private readonly IConfiguration _configuration;
 
-        private readonly ArangoHttpClient _httpClient;
+        private readonly HttpClient _httpClient;
         private readonly ILogger<ArangoSnapshotStore> _logger;
         private bool _collectionCreated;
 
         /// <inheritdoc />
-        public ArangoSnapshotStore(ArangoHttpClient httpClient,
+        public ArangoSnapshotStore(IHttpClientFactory factory,
                                    IConfiguration configuration,
                                    ILogger<ArangoSnapshotStore> logger)
         {
-            _httpClient = httpClient;
+            _httpClient = factory.CreateClient("Arango");
             _configuration = configuration;
             _logger = logger;
         }

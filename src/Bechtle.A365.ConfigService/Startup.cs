@@ -311,19 +311,20 @@ namespace Bechtle.A365.ConfigService
 
             var arangoSection = Configuration.GetSection("SnapshotConfiguration:Stores:Arango");
             if (arangoSection.GetSection("Enabled").Get<bool>())
-                services.AddScoped<ISnapshotStore, ArangoSnapshotStore>().AddHttpClient<ArangoHttpClient>((provider, client) =>
-                {
-                    var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
+                services.AddScoped<ISnapshotStore, ArangoSnapshotStore>()
+                        .AddHttpClient("Arango", (provider, client) =>
+                        {
+                            var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
 
-                    var rawUri = config.GetSection("Uri").Get<string>();
-                    if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
-                    {
-                        _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango='{rawUri}'");
-                        return;
-                    }
+                            var rawUri = config.GetSection("Uri").Get<string>();
+                            if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
+                            {
+                                _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango='{rawUri}'");
+                                return;
+                            }
 
-                    client.BaseAddress = arangoUri;
-                });
+                            client.BaseAddress = arangoUri;
+                        });
         }
 
         private void RegisterSwagger(IServiceCollection services)
