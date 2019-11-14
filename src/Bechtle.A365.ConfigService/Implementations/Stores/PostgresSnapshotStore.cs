@@ -50,23 +50,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier) where T : StreamedObject
+        public Task<IResult<DomainObjectSnapshot>> GetSnapshot<T>(string identifier) where T : DomainObject
             => GetInternal(typeof(T).Name, identifier, long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot<T>(string identifier, long maxVersion) where T : StreamedObject
+        public Task<IResult<DomainObjectSnapshot>> GetSnapshot<T>(string identifier, long maxVersion) where T : DomainObject
             => GetInternal(typeof(T).Name, identifier, maxVersion);
 
         /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier)
+        public Task<IResult<DomainObjectSnapshot>> GetSnapshot(string dataType, string identifier)
             => GetInternal(dataType, identifier, long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<StreamedObjectSnapshot>> GetSnapshot(string dataType, string identifier, long maxVersion)
+        public Task<IResult<DomainObjectSnapshot>> GetSnapshot(string dataType, string identifier, long maxVersion)
             => GetInternal(dataType, identifier, maxVersion);
 
         /// <inheritdoc />
-        public async Task<IResult> SaveSnapshots(IList<StreamedObjectSnapshot> snapshots)
+        public async Task<IResult> SaveSnapshots(IList<DomainObjectSnapshot> snapshots)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -114,16 +114,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="identifier"></param>
         /// <param name="maxVersion"></param>
         /// <returns></returns>
-        private Task<IResult<StreamedObjectSnapshot>> GetInternal(string dataType, string identifier, long maxVersion)
+        private Task<IResult<DomainObjectSnapshot>> GetInternal(string dataType, string identifier, long maxVersion)
             => GetInternal(s => s.DataType == dataType && s.Identifier == identifier, maxVersion);
 
         /// <summary>
-        ///     filter all snapshots based on the given <paramref name="filter" />, and convert the first one to <see cref="StreamedObjectSnapshot" />
+        ///     filter all snapshots based on the given <paramref name="filter" />, and convert the first one to <see cref="DomainObjectSnapshot" />
         /// </summary>
         /// <param name="filter"></param>
         /// <param name="maxVersion"></param>
         /// <returns></returns>
-        private async Task<IResult<StreamedObjectSnapshot>> GetInternal(Expression<Func<PostgresSnapshot, bool>> filter, long maxVersion)
+        private async Task<IResult<DomainObjectSnapshot>> GetInternal(Expression<Func<PostgresSnapshot, bool>> filter, long maxVersion)
         {
             try
             {
@@ -134,9 +134,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                            .FirstOrDefaultAsync();
 
                 if (result is null)
-                    return Result.Error<StreamedObjectSnapshot>("could not retrieve snapshot from Postgres", ErrorCode.DbQueryError);
+                    return Result.Error<DomainObjectSnapshot>("could not retrieve snapshot from Postgres", ErrorCode.DbQueryError);
 
-                return Result.Success(new StreamedObjectSnapshot
+                return Result.Success(new DomainObjectSnapshot
                 {
                     Identifier = result.Identifier,
                     Version = result.Version,
@@ -147,7 +147,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             catch (Exception e)
             {
                 _logger.LogWarning(e, "could not retrieve snapshot from Postgres");
-                return Result.Error<StreamedObjectSnapshot>("could not retrieve snapshot from Postgres", ErrorCode.DbQueryError);
+                return Result.Error<DomainObjectSnapshot>("could not retrieve snapshot from Postgres", ErrorCode.DbQueryError);
             }
         }
 

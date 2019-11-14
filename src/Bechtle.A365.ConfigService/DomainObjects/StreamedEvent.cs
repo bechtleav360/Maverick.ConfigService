@@ -4,7 +4,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
     /// <summary>
-    ///     Data used by a <see cref="StreamedObject" /> to update its own Information to the desired State
+    ///     Data used by a <see cref="DomainObject" /> to update its own Information to the desired State
     /// </summary>
     public class StreamedEvent
     {

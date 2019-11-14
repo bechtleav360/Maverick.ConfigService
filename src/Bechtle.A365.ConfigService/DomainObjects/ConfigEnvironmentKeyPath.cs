@@ -5,12 +5,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Node inside a Tree of Paths to represent Environment-Data
     /// </summary>
-    public class StreamedEnvironmentKeyPath
+    public class ConfigEnvironmentKeyPath
     {
         /// <summary>
         ///     List of Children that may come after this
         /// </summary>
-        public List<StreamedEnvironmentKeyPath> Children { get; set; } = new List<StreamedEnvironmentKeyPath>();
+        public List<ConfigEnvironmentKeyPath> Children { get; set; } = new List<ConfigEnvironmentKeyPath>();
 
         /// <summary>
         ///     Full Path including Parents
@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Reference to Parent-Node
         /// </summary>
-        public StreamedEnvironmentKeyPath Parent { get; set; } = null;
+        public ConfigEnvironmentKeyPath Parent { get; set; } = null;
 
         /// <summary>
         ///     last Path-Component of this Node

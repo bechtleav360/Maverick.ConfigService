@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Domain-Object representing a Configuration built from a Structure and an Environment
     /// </summary>
-    public class StreamedConfiguration : StreamedObject
+    public class StreamedConfiguration : DomainObject
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
@@ -109,13 +109,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (Built)
                 return Result.Success();
 
-            var envResult = await store.GetStreamedObject(new StreamedEnvironment(Identifier.Environment),
+            var envResult = await store.GetStreamedObject(new ConfigEnvironment(Identifier.Environment),
                                                           Identifier.Environment.ToString(),
                                                           CurrentVersion);
             if (envResult.IsError)
                 return envResult;
 
-            var structResult = await store.GetStreamedObject(new StreamedStructure(Identifier.Structure),
+            var structResult = await store.GetStreamedObject(new ConfigStructure(Identifier.Structure),
                                                              Identifier.Structure.ToString(),
                                                              CurrentVersion);
             if (structResult.IsError)
@@ -158,9 +158,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public override CacheItemPriority GetCacheItemPriority() => CacheItemPriority.High;
 
         /// <inheritdoc />
-        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        protected override void ApplySnapshotInternal(DomainObject domainObject)
         {
-            if (!(streamedObject is StreamedConfiguration other))
+            if (!(domainObject is StreamedConfiguration other))
                 return;
 
             Identifier = other.Identifier;

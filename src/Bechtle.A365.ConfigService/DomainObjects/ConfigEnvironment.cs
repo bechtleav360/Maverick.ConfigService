@@ -10,14 +10,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Domain-Object representing a Config-Environment which stores a set of Keys from which to build Configurations
     /// </summary>
-    public class StreamedEnvironment : StreamedObject
+    public class ConfigEnvironment : DomainObject
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
-        private List<StreamedEnvironmentKeyPath> _keyPaths;
+        private List<ConfigEnvironmentKeyPath> _keyPaths;
 
         /// <inheritdoc />
-        public StreamedEnvironment(EnvironmentIdentifier identifier)
+        public ConfigEnvironment(EnvironmentIdentifier identifier)
         {
             if (identifier is null)
                 throw new ArgumentNullException(nameof(identifier));
@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Deleted = false;
             Identifier = new EnvironmentIdentifier(identifier.Category, identifier.Name);
             IsDefault = false;
-            Keys = new Dictionary<string, StreamedEnvironmentKey>();
+            Keys = new Dictionary<string, ConfigEnvironmentKey>();
         }
 
         /// <summary>
@@ -56,12 +56,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Trees of Paths that represent all Keys in the Environment
         /// </summary>
-        public List<StreamedEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
+        public List<ConfigEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
         /// <summary>
         ///     Actual Data of this Environment
         /// </summary>
-        public Dictionary<string, StreamedEnvironmentKey> Keys { get; protected set; }
+        public Dictionary<string, ConfigEnvironmentKey> Keys { get; protected set; }
 
         // 10 for identifier, 5 for rest, each Key, each Path (recursively)
         /// <inheritdoc />
@@ -125,7 +125,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (keysToRemove.Any(k => !Keys.ContainsKey(k)))
                 return Result.Error("not all keys could be found in target environment", ErrorCode.NotFound);
 
-            var removedKeys = new Dictionary<string, StreamedEnvironmentKey>(keysToRemove.Count);
+            var removedKeys = new Dictionary<string, ConfigEnvironmentKey>(keysToRemove.Count);
             try
             {
                 foreach (var deletedKey in keysToRemove)
@@ -166,7 +166,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <param name="keysToImport"></param>
         /// <returns></returns>
-        public IResult ImportKeys(ICollection<StreamedEnvironmentKey> keysToImport)
+        public IResult ImportKeys(ICollection<ConfigEnvironmentKey> keysToImport)
         {
             // copy dict as backup
             var oldKeys = Keys.ToDictionary(_ => _.Key, _ => _.Value);
@@ -201,13 +201,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <param name="keysToAdd"></param>
         /// <returns></returns>
-        public IResult UpdateKeys(ICollection<StreamedEnvironmentKey> keysToAdd)
+        public IResult UpdateKeys(ICollection<ConfigEnvironmentKey> keysToAdd)
         {
             if (keysToAdd is null || !keysToAdd.Any())
                 return Result.Error("null or empty list given", ErrorCode.InvalidData);
 
-            var addedKeys = new List<StreamedEnvironmentKey>();
-            var updatedKeys = new Dictionary<string, StreamedEnvironmentKey>();
+            var addedKeys = new List<ConfigEnvironmentKey>();
+            var updatedKeys = new Dictionary<string, ConfigEnvironmentKey>();
 
             try
             {
@@ -262,9 +262,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        protected override void ApplySnapshotInternal(DomainObject domainObject)
         {
-            if (!(streamedObject is StreamedEnvironment other))
+            if (!(domainObject is ConfigEnvironment other))
                 return;
 
             Created = other.Created;
@@ -292,8 +292,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             var computedCost = 0;
             var stack = _keyPaths is null
-                            ? new Stack<StreamedEnvironmentKeyPath>()
-                            : new Stack<StreamedEnvironmentKeyPath>(_keyPaths);
+                            ? new Stack<ConfigEnvironmentKeyPath>()
+                            : new Stack<ConfigEnvironmentKeyPath>(_keyPaths);
 
             while (stack.TryPop(out var item))
             {
@@ -307,9 +307,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return computedCost;
         }
 
-        private List<StreamedEnvironmentKeyPath> GenerateKeyPaths()
+        private List<ConfigEnvironmentKeyPath> GenerateKeyPaths()
         {
-            var roots = new List<StreamedEnvironmentKeyPath>();
+            var roots = new List<ConfigEnvironmentKeyPath>();
 
             foreach (var (key, _) in Keys.OrderBy(k => k.Key))
             {
@@ -320,12 +320,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                 if (root is null)
                 {
-                    root = new StreamedEnvironmentKeyPath
+                    root = new ConfigEnvironmentKeyPath
                     {
                         Path = rootPart,
                         Parent = null,
                         FullPath = rootPart,
-                        Children = new List<StreamedEnvironmentKeyPath>()
+                        Children = new List<ConfigEnvironmentKeyPath>()
                     };
 
                     roots.Add(root);
@@ -339,11 +339,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                     if (next is null)
                     {
-                        next = new StreamedEnvironmentKeyPath
+                        next = new ConfigEnvironmentKeyPath
                         {
                             Path = part,
                             Parent = current,
-                            Children = new List<StreamedEnvironmentKeyPath>(),
+                            Children = new List<ConfigEnvironmentKeyPath>(),
                             FullPath = current.FullPath + '/' + part
                         };
                         current.Children.Add(next);
@@ -393,7 +393,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                            .Where(action => action.Type == ConfigKeyActionType.Set)
                            .ToDictionary(
                                action => action.Key,
-                               action => new StreamedEnvironmentKey
+                               action => new ConfigEnvironmentKey
                                {
                                    Key = action.Key,
                                    Value = action.Value,
@@ -418,7 +418,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     Keys.Remove(deletion.Key);
 
             foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
-                Keys[change.Key] = new StreamedEnvironmentKey
+                Keys[change.Key] = new ConfigEnvironmentKey
                 {
                     Key = change.Key,
                     Value = change.Value,

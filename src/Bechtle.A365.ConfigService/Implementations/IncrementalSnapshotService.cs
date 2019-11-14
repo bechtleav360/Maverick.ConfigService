@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,9 +12,9 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// <summary>
     ///     service to save incremental snapshots asynchronously to a <see cref="ISnapshotStore" />
     /// </summary>
-    public class IncrementalSnapshotService : HostedService
+    public class IncrementalSnapshotService : HostedServiceBase
     {
-        private static readonly ConcurrentQueue<StreamedObjectSnapshot> IncrementalSnapshotQueue = new ConcurrentQueue<StreamedObjectSnapshot>();
+        private static readonly ConcurrentQueue<DomainObjectSnapshot> IncrementalSnapshotQueue = new ConcurrentQueue<DomainObjectSnapshot>();
         private readonly ILogger<IncrementalSnapshotService> _logger;
         private readonly IServiceProvider _serviceProvider;
 
@@ -32,7 +31,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         ///     queue the given Snapshot for future storage
         /// </summary>
         /// <param name="snapshot"></param>
-        public static void QueueSnapshot(StreamedObjectSnapshot snapshot)
+        public static void QueueSnapshot(DomainObjectSnapshot snapshot)
         {
             IncrementalSnapshotQueue.Enqueue(snapshot);
         }

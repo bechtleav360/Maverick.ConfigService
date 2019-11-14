@@ -37,14 +37,14 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 var identifier = new EnvironmentIdentifier(envExport.Category, envExport.Name);
 
-                var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+                var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
                 if (envResult.IsError)
                     return envResult;
 
                 var environment = envResult.Data;
 
                 environment.ImportKeys(envExport.Keys
-                                                .Select(k => new StreamedEnvironmentKey
+                                                .Select(k => new ConfigEnvironmentKey
                                                 {
                                                     Key = k.Key,
                                                     Description = k.Description,

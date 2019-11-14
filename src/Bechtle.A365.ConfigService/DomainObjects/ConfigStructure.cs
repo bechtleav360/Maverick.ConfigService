@@ -9,10 +9,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Domain-Object representing a Structure for a Configuration
     /// </summary>
-    public class StreamedStructure : StreamedObject
+    public class ConfigStructure : DomainObject
     {
         /// <inheritdoc />
-        public StreamedStructure(StructureIdentifier identifier)
+        public ConfigStructure(StructureIdentifier identifier)
         {
             if (identifier is null)
                 throw new ArgumentNullException(nameof(identifier));
@@ -173,9 +173,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        protected override void ApplySnapshotInternal(DomainObject domainObject)
         {
-            if (!(streamedObject is StreamedStructure other))
+            if (!(domainObject is ConfigStructure other))
                 return;
 
             Created = other.Created;

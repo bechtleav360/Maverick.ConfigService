@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                           IDictionary<string, string> keys,
                                           IDictionary<string, string> variables)
         {
-            var structResult = await _streamedStore.GetStreamedObject(new StreamedStructure(identifier), identifier.ToString());
+            var structResult = await _streamedStore.GetStreamedObject(new ConfigStructure(identifier), identifier.ToString());
             if (structResult.IsError)
                 return structResult;
 
@@ -61,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> DeleteVariables(StructureIdentifier identifier, ICollection<string> variablesToDelete)
         {
-            var structResult = await _streamedStore.GetStreamedObject(new StreamedStructure(identifier), identifier.ToString());
+            var structResult = await _streamedStore.GetStreamedObject(new ConfigStructure(identifier), identifier.ToString());
             if (structResult.IsError)
                 return structResult;
 
@@ -87,7 +87,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var listResult = await _streamedStore.GetStreamedObject<StreamedStructureList>();
+                var listResult = await _streamedStore.GetStreamedObject<ConfigStructureList>();
                 if (listResult.IsError)
                     return Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier>());
 
@@ -113,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var listResult = await _streamedStore.GetStreamedObject<StreamedStructureList>();
+                var listResult = await _streamedStore.GetStreamedObject<ConfigStructureList>();
                 if (listResult.IsError)
                     return Result.Success<IList<int>>(new List<int>());
 
@@ -140,7 +140,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var structResult = await _streamedStore.GetStreamedObject(new StreamedStructure(identifier), identifier.ToString());
+                var structResult = await _streamedStore.GetStreamedObject(new ConfigStructure(identifier), identifier.ToString());
                 if (structResult.IsError)
                     return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                      $"{nameof(identifier.Name)}: {identifier.Name}; " +
@@ -176,7 +176,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var structResult = await _streamedStore.GetStreamedObject(new StreamedStructure(identifier), identifier.ToString());
+                var structResult = await _streamedStore.GetStreamedObject(new ConfigStructure(identifier), identifier.ToString());
                 if (structResult.IsError)
                     return Result.Error<IDictionary<string, string>>("no structure found with (" +
                                                                      $"{nameof(identifier.Name)}: {identifier.Name}; " +
@@ -210,7 +210,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables)
         {
-            var structResult = await _streamedStore.GetStreamedObject(new StreamedStructure(identifier), identifier.ToString());
+            var structResult = await _streamedStore.GetStreamedObject(new ConfigStructure(identifier), identifier.ToString());
             if (structResult.IsError)
                 return structResult;
 

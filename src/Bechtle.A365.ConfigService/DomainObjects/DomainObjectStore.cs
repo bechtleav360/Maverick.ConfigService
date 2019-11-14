@@ -13,18 +13,18 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     default ObjectStore using <see cref="IEventStore" /> and <see cref="ISnapshotStore" /> for retrieving Objects
     /// </summary>
-    public class StreamedObjectStore : IStreamedStore
+    public class DomainObjectStore : IStreamedStore
     {
         private readonly IEventStore _eventStore;
-        private readonly ILogger<StreamedObjectStore> _logger;
+        private readonly ILogger<DomainObjectStore> _logger;
         private readonly IMemoryCache _memoryCache;
         private readonly ISnapshotStore _snapshotStore;
 
         /// <inheritdoc />
-        public StreamedObjectStore(IEventStore eventStore,
+        public DomainObjectStore(IEventStore eventStore,
                                    ISnapshotStore snapshotStore,
                                    IMemoryCache memoryCache,
-                                   ILogger<StreamedObjectStore> logger)
+                                   ILogger<DomainObjectStore> logger)
         {
             _eventStore = eventStore;
             _snapshotStore = snapshotStore;
@@ -33,19 +33,19 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>() where T : StreamedObject, new()
+        public Task<IResult<T>> GetStreamedObject<T>() where T : DomainObject, new()
             => GetStreamedObject<T>(long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>(long maxVersion) where T : StreamedObject, new()
+        public Task<IResult<T>> GetStreamedObject<T>(long maxVersion) where T : DomainObject, new()
             => GetStreamedObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name, false);
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier) where T : StreamedObject
+        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier) where T : DomainObject
             => GetStreamedObject(streamedObject, identifier, long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier, long maxVersion) where T : StreamedObject
+        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier, long maxVersion) where T : DomainObject
             => GetStreamedObjectInternal(streamedObject, identifier, maxVersion, identifier, true);
 
         private async Task<IResult<T>> GetStreamedObjectInternal<T>(T streamedObject,
@@ -53,7 +53,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                                                     long maxVersion,
                                                                     string cacheKey,
                                                                     bool useMetadataFilter)
-            where T : StreamedObject
+            where T : DomainObject
         {
             try
             {
@@ -95,13 +95,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
         }
 
-        private async Task StreamObjectToVersion(StreamedObject streamedObject, long maxVersion, string identifier, bool useMetadataFilter)
+        private async Task StreamObjectToVersion(DomainObject domainObject, long maxVersion, string identifier, bool useMetadataFilter)
         {
             // skip streaming entirely if the object is at or above the desired version
-            if (streamedObject.CurrentVersion >= maxVersion)
+            if (domainObject.CurrentVersion >= maxVersion)
                 return;
 
-            var handledEvents = streamedObject.GetHandledEvents();
+            var handledEvents = domainObject.GetHandledEvents();
 
             await _eventStore.ReplayEventsAsStream(
                 tuple =>
@@ -121,7 +121,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     if (recordedEvent.EventNumber > maxVersion)
                         return false;
 
-                    streamedObject.ApplyEvent(new StreamedEvent
+                    domainObject.ApplyEvent(new StreamedEvent
                     {
                         UtcTime = recordedEvent.Created.ToUniversalTime(),
                         Version = recordedEvent.EventNumber,
@@ -129,7 +129,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     });
 
                     return true;
-                }, startIndex: streamedObject.CurrentVersion);
+                }, startIndex: domainObject.CurrentVersion);
         }
     }
 }

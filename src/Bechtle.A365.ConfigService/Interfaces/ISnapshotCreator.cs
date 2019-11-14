@@ -15,6 +15,6 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<IList<StreamedObjectSnapshot>> CreateAllSnapshots(CancellationToken cancellationToken);
+        Task<IList<DomainObjectSnapshot>> CreateAllSnapshots(CancellationToken cancellationToken);
     }
 }

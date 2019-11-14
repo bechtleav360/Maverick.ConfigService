@@ -20,7 +20,6 @@ using Bechtle.A365.ConfigService.Middleware;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
-using Bechtle.A365.Maverick.Core.Health.Builder;
 using Bechtle.A365.Maverick.Core.Health.Extensions;
 using Bechtle.A365.Maverick.Core.Health.Model;
 using Microsoft.AspNetCore.Builder;
@@ -226,7 +225,7 @@ namespace Bechtle.A365.ConfigService
                                                            provider.GetService<ILoggerFactory>());
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
-                    .AddScoped<IStreamedStore, StreamedObjectStore>(_logger)
+                    .AddScoped<IStreamedStore, DomainObjectStore>(_logger)
                     // once behind the interface, once with direct access
                     .AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
                     .AddScoped<PostgresSnapshotStore>(_logger)

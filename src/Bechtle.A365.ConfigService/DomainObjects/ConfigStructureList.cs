@@ -8,7 +8,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Helper-Domain-Object to access all available Structures
     /// </summary>
-    public class StreamedStructureList : StreamedObject
+    public class ConfigStructureList : DomainObject
     {
         /// <summary>
         ///     internal Lookup to keep track of Structures
@@ -26,9 +26,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public ICollection<StructureIdentifier> GetIdentifiers() => Identifiers.ToList();
 
         /// <inheritdoc />
-        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        protected override void ApplySnapshotInternal(DomainObject domainObject)
         {
-            if (!(streamedObject is StreamedStructureList other))
+            if (!(domainObject is ConfigStructureList other))
                 return;
 
             Identifiers = other.Identifiers;

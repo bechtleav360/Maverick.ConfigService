@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void QueueSnapshot()
         {
-            IncrementalSnapshotService.QueueSnapshot(new StreamedObjectSnapshot());
+            IncrementalSnapshotService.QueueSnapshot(new DomainObjectSnapshot());
         }
 
         [Fact]
@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Tests
         {
             var ssMock = new Mock<ISnapshotStore>(MockBehavior.Strict);
 
-            ssMock.Setup(s => s.SaveSnapshots(It.IsAny<IList<StreamedObjectSnapshot>>()))
+            ssMock.Setup(s => s.SaveSnapshots(It.IsAny<IList<DomainObjectSnapshot>>()))
                   .ReturnsAsync(Result.Success);
 
             var provider = new ServiceCollection()
@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Tests
         {
             var ssMock = new Mock<ISnapshotStore>(MockBehavior.Strict);
 
-            ssMock.Setup(s => s.SaveSnapshots(It.IsAny<IList<StreamedObjectSnapshot>>()))
+            ssMock.Setup(s => s.SaveSnapshots(It.IsAny<IList<DomainObjectSnapshot>>()))
                   .ReturnsAsync(Result.Success)
                   .Verifiable("SaveSnapshots was never called");
 
@@ -83,7 +83,7 @@ namespace Bechtle.A365.ConfigService.Tests
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             await instance.StartAsync(cts.Token);
 
-            IncrementalSnapshotService.QueueSnapshot(new StreamedObjectSnapshot
+            IncrementalSnapshotService.QueueSnapshot(new DomainObjectSnapshot
             {
                 Identifier = "Snapshot1",
                 DataType = "Test-Snapshot",

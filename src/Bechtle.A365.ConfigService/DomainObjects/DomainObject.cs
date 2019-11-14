@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     base-class for all Event-Store-Streamed objects
     /// </summary>
-    public abstract class StreamedObject
+    public abstract class DomainObject
     {
         private readonly object _eventLock = new object();
         private bool _eventsBeingDrained;
@@ -49,7 +49,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
         ///     actual copy-actions take place here
         /// </summary>
-        protected abstract void ApplySnapshotInternal(StreamedObject streamedObject);
+        protected abstract void ApplySnapshotInternal(DomainObject domainObject);
 
         /// <summary>
         ///     get a mapping of <see cref="DomainEvent" /> to EventHandler. this mapping is used to evaluate all applied events
@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     apply a snapshot to this object, overriding the current values with the ones from the snapshot.
         /// </summary>
-        public virtual void ApplySnapshot(StreamedObjectSnapshot snapshot)
+        public virtual void ApplySnapshot(DomainObjectSnapshot snapshot)
         {
             var actualType = GetType();
 
@@ -99,7 +99,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 DateTimeZoneHandling = DateTimeZoneHandling.Utc,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 ContractResolver = new CustomContractResolver()
-            }) as StreamedObject;
+            }) as DomainObject;
 
             CurrentVersion = snapshot.Version;
 
@@ -110,9 +110,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     create the current object as a new Snapshot
         /// </summary>
         /// <returns></returns>
-        public virtual StreamedObjectSnapshot CreateSnapshot()
+        public virtual DomainObjectSnapshot CreateSnapshot()
         {
-            var snapshot = new StreamedObjectSnapshot
+            var snapshot = new DomainObjectSnapshot
             {
                 Identifier = GetSnapshotIdentifier(),
                 Version = CurrentVersion,
@@ -135,7 +135,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public virtual CacheItemPriority GetCacheItemPriority() => CacheItemPriority.Low;
 
         /// <summary>
-        ///     get a list of all DomainEvent-Types that this StreamedObject handles while Streaming
+        ///     get a list of all DomainEvent-Types that this DomainObject handles while Streaming
         /// </summary>
         /// <returns></returns>
         public ICollection<string> GetHandledEvents() => HandlerMapping.Keys

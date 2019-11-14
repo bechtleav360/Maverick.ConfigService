@@ -8,7 +8,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Helper-Domain-Object to access all available Environments
     /// </summary>
-    public class StreamedEnvironmentList : StreamedObject
+    public class ConfigEnvironmentList : DomainObject
     {
         /// <summary>
         ///     internal Lookup to keep track of Environments
@@ -26,9 +26,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public ICollection<EnvironmentIdentifier> GetIdentifiers() => Identifiers.ToList();
 
         /// <inheritdoc />
-        protected override void ApplySnapshotInternal(StreamedObject streamedObject)
+        protected override void ApplySnapshotInternal(DomainObject domainObject)
         {
-            if (!(streamedObject is StreamedEnvironmentList other))
+            if (!(domainObject is ConfigEnvironmentList other))
                 return;
 
             Identifiers = other.Identifiers;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.SnapshotTriggers;
 using Bechtle.A365.ConfigService.Implementations.Stores;
@@ -19,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     ///     Service responsible for managing all available instances of <see cref="ISnapshotTrigger" />,
     ///     and calling <see cref="ISnapshotStore" /> to save the created snapshots when required
     /// </summary>
-    public class SnapshotService : HostedService
+    public class SnapshotService : HostedServiceBase
     {
         private readonly List<ISnapshotTrigger> _completeTriggers;
         private readonly IConfiguration _configuration;
@@ -151,7 +150,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             _completeTriggerTokenSource.Cancel();
         }
 
-        private async Task SaveSnapshots(IServiceProvider provider, IList<StreamedObjectSnapshot> snapshots, CancellationToken cancellationToken)
+        private async Task SaveSnapshots(IServiceProvider provider, IList<DomainObjectSnapshot> snapshots, CancellationToken cancellationToken)
         {
             var stores = new List<ISnapshotStore>();
 

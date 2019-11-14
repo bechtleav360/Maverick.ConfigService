@@ -40,21 +40,21 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         /// <inheritdoc />
-        public async Task<IList<StreamedObjectSnapshot>> CreateAllSnapshots(CancellationToken cancellationToken)
+        public async Task<IList<DomainObjectSnapshot>> CreateAllSnapshots(CancellationToken cancellationToken)
         {
-            var streamedObjects = new List<StreamedObject>();
+            var streamedObjects = new List<DomainObject>();
 
             await _eventStore.ReplayEventsAsStream(tuple => StreamProcessor(tuple, streamedObjects));
 
             return await CreateSnapshotsInternal(streamedObjects, cancellationToken);
         }
 
-        private async Task<IList<StreamedObjectSnapshot>> CreateSnapshotsInternal(IList<StreamedObject> streamedObjects, CancellationToken cancellationToken)
+        private async Task<IList<DomainObjectSnapshot>> CreateSnapshotsInternal(IList<DomainObject> streamedObjects, CancellationToken cancellationToken)
         {
             foreach (var config in streamedObjects.OfType<StreamedConfiguration>())
             {
                 if (cancellationToken.IsCancellationRequested)
-                    return new List<StreamedObjectSnapshot>();
+                    return new List<DomainObjectSnapshot>();
 
                 await config.Compile(_streamedStore, _compiler, _parser, _translator);
             }
@@ -62,7 +62,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return streamedObjects.Select(o => o.CreateSnapshot()).ToList();
         }
 
-        private bool StreamProcessor((RecordedEvent, DomainEvent) tuple, IList<StreamedObject> streamedObjects)
+        private bool StreamProcessor((RecordedEvent, DomainEvent) tuple, IList<DomainObject> streamedObjects)
         {
             var (recordedEvent, domainEvent) = tuple;
 
@@ -82,30 +82,30 @@ namespace Bechtle.A365.ConfigService.Implementations
                     break;
 
                 case DefaultEnvironmentCreated created:
-                    if (streamedObjects.OfType<StreamedEnvironment>().FirstOrDefault(o => o.Identifier == created.Identifier) is null)
-                        streamedObjects.Add(new StreamedEnvironment(created.Identifier));
+                    if (streamedObjects.OfType<ConfigEnvironment>().FirstOrDefault(o => o.Identifier == created.Identifier) is null)
+                        streamedObjects.Add(new ConfigEnvironment(created.Identifier));
                     break;
 
                 case EnvironmentCreated created:
-                    if (streamedObjects.OfType<StreamedEnvironment>().FirstOrDefault(o => o.Identifier == created.Identifier) is null)
-                        streamedObjects.Add(new StreamedEnvironment(created.Identifier));
+                    if (streamedObjects.OfType<ConfigEnvironment>().FirstOrDefault(o => o.Identifier == created.Identifier) is null)
+                        streamedObjects.Add(new ConfigEnvironment(created.Identifier));
                     break;
 
                 case EnvironmentDeleted deleted:
-                    streamedObjects.RemoveRange(streamedObjects.Where(o => o is StreamedEnvironment e && e.Identifier == deleted.Identifier));
+                    streamedObjects.RemoveRange(streamedObjects.Where(o => o is ConfigEnvironment e && e.Identifier == deleted.Identifier));
                     break;
 
                 case StructureCreated created:
-                    if (streamedObjects.OfType<StreamedStructure>().FirstOrDefault(o => o.Identifier == created.Identifier) is null)
-                        streamedObjects.Add(new StreamedStructure(created.Identifier));
+                    if (streamedObjects.OfType<ConfigStructure>().FirstOrDefault(o => o.Identifier == created.Identifier) is null)
+                        streamedObjects.Add(new ConfigStructure(created.Identifier));
                     break;
 
                 case StructureDeleted deleted:
-                    streamedObjects.RemoveRange(streamedObjects.Where(o => o is StreamedStructure e && e.Identifier == deleted.Identifier));
+                    streamedObjects.RemoveRange(streamedObjects.Where(o => o is ConfigStructure e && e.Identifier == deleted.Identifier));
                     break;
             }
 
-            // apply every event to every StreamedObject - they should dismiss them if the event doesn't fit
+            // apply every event to every DomainObject - they should dismiss them if the event doesn't fit
             foreach (var streamedObject in streamedObjects)
                 streamedObject.ApplyEvent(streamedEvent);
 

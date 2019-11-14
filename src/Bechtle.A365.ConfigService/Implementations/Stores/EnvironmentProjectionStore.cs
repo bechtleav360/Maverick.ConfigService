@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -61,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> Delete(EnvironmentIdentifier identifier)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -111,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var result = await _streamedStore.GetStreamedObject<StreamedEnvironmentList>();
+                var result = await _streamedStore.GetStreamedObject<ConfigEnvironmentList>();
 
                 return Result.Success<IList<EnvironmentIdentifier>>(
                     result.IsError
@@ -133,7 +133,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 key = Uri.UnescapeDataString(key ?? string.Empty);
-                var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+                var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
                 if (envResult.IsError)
                     return Result.Error<IList<DtoConfigKeyCompletion>>(
                         "no environment found with (" +
@@ -255,13 +255,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> UpdateKeys(EnvironmentIdentifier identifier, ICollection<DtoConfigKey> keys)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(identifier), identifier.ToString());
+            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
             var environment = envResult.Data;
 
-            var result = environment.UpdateKeys(keys.Select(dto => new StreamedEnvironmentKey
+            var result = environment.UpdateKeys(keys.Select(dto => new ConfigEnvironmentKey
             {
                 Description = dto.Description,
                 Type = dto.Type,
@@ -308,12 +308,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="parts"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(StreamedEnvironmentKeyPath root,
+        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(ConfigEnvironmentKeyPath root,
                                                                                   IEnumerable<string> parts,
                                                                                   QueryRange range)
         {
             var current = root;
-            var result = new List<StreamedEnvironmentKeyPath>();
+            var result = new List<ConfigEnvironmentKeyPath>();
             var queue = new Queue<string>(parts);
 
             // try walking the given path to the deepest part, and return all options the user can take from here
@@ -392,14 +392,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="transform">final transformation applied to the result-set</param>
         /// <returns></returns>
         private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(EnvironmentKeyQueryParameters parameters,
-                                                                             Expression<Func<StreamedEnvironmentKey, TItem>> selector,
+                                                                             Expression<Func<ConfigEnvironmentKey, TItem>> selector,
                                                                              Func<TItem, string> keySelector,
                                                                              Func<IEnumerable<TItem>, TResult> transform)
             where TItem : class
         {
             try
             {
-                var envResult = await _streamedStore.GetStreamedObject(new StreamedEnvironment(parameters.Environment), parameters.Environment.ToString());
+                var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(parameters.Environment), parameters.Environment.ToString());
                 if (envResult.IsError)
                     return Result.Error<TResult>(envResult.Message, envResult.Code);
 
