@@ -176,23 +176,6 @@ namespace Bechtle.A365.ConfigService
             }
         }
 
-        private void RegisterDatabaseContexts(IServiceCollection services)
-        {
-            var postgresSection = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres");
-            if (postgresSection.GetSection("Enabled").Get<bool>())
-                services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
-                        .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
-                            _logger,
-                            (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
-
-            var mssqlSection = Configuration.GetSection("SnapshotConfiguration:Stores:MsSql");
-            if (mssqlSection.GetSection("Enabled").Get<bool>())
-                services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
-                        .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
-                            _logger,
-                            (provider, builder) => { builder.UseSqlServer(mssqlSection.GetSection("ConnectionString").Get<string>()); });
-        }
-
         private void RegisterDiServices(IServiceCollection services)
         {
             _logger.LogInformation("Registering App-Services");
@@ -256,7 +239,7 @@ namespace Bechtle.A365.ConfigService
                     .AddHostedService<SnapshotService>(_logger)
                     .AddHostedService<IncrementalSnapshotService>(_logger);
 
-            RegisterDatabaseContexts(services);
+            RegisterSnapshotStores(services);
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)
@@ -308,6 +291,39 @@ namespace Bechtle.A365.ConfigService
             services.AddMvc()
                     .AddMetrics()
                     .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+        }
+
+        private void RegisterSnapshotStores(IServiceCollection services)
+        {
+            var postgresSection = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres");
+            if (postgresSection.GetSection("Enabled").Get<bool>())
+                services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
+                        .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
+                            _logger,
+                            (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
+
+            var mssqlSection = Configuration.GetSection("SnapshotConfiguration:Stores:MsSql");
+            if (mssqlSection.GetSection("Enabled").Get<bool>())
+                services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
+                        .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
+                            _logger,
+                            (provider, builder) => { builder.UseSqlServer(mssqlSection.GetSection("ConnectionString").Get<string>()); });
+
+            var arangoSection = Configuration.GetSection("SnapshotConfiguration:Stores:Arango");
+            if (arangoSection.GetSection("Enabled").Get<bool>())
+                services.AddScoped<ISnapshotStore, ArangoSnapshotStore>().AddHttpClient<ArangoHttpClient>((provider, client) =>
+                {
+                    var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
+
+                    var rawUri = config.GetSection("Uri").Get<string>();
+                    if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
+                    {
+                        _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango='{rawUri}'");
+                        return;
+                    }
+
+                    client.BaseAddress = arangoUri;
+                });
         }
 
         private void RegisterSwagger(IServiceCollection services)
