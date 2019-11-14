@@ -82,7 +82,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             new ConfigurationCheck(),
             new SwaggerAvailabilityCheck(),
             new EventStoreConnectionCheck(),
-            new DatabaseCheck(), 
         };
     }
 }
