@@ -266,8 +266,6 @@ namespace Bechtle.A365.ConfigService
 
             services.AddHealth(builder =>
             {
-                var config = Configuration.Get<ConfigServiceConfiguration>();
-
                 builder.ServiceName = "ConfigService";
                 builder.AnalyseInternalServices = true;
                 builder.YellowStatuswWhenCheck("EventStore", () =>
