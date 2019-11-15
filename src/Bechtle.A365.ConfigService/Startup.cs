@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common;
@@ -319,11 +321,23 @@ namespace Bechtle.A365.ConfigService
                             var rawUri = config.GetSection("Uri").Get<string>();
                             if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
                             {
-                                _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango='{rawUri}'");
+                                _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango:Uri='{rawUri}'");
                                 return;
                             }
 
                             client.BaseAddress = arangoUri;
+
+                            var user = config.GetSection("User").Get<string>();
+                            var password = config.GetSection("Password").Get<string>();
+
+                            if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
+                            {
+                                _logger.LogWarning("unable to locate User / Password (SnapshotConfiguration:Stores:Arango:[User|Password])");
+                                return;
+                            }
+
+                            client.DefaultRequestHeaders.Authorization =
+                                new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
                         });
         }
 

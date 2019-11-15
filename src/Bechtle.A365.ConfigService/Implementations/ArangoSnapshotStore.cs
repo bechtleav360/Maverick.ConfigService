@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations
@@ -23,15 +24,18 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private readonly HttpClient _httpClient;
         private readonly ILogger<ArangoSnapshotStore> _logger;
+        private readonly IJsonTranslator _translator;
         private bool _collectionCreated;
 
         /// <inheritdoc />
         public ArangoSnapshotStore(IHttpClientFactory factory,
                                    IConfiguration configuration,
+                                   IJsonTranslator translator,
                                    ILogger<ArangoSnapshotStore> logger)
         {
             _httpClient = factory.CreateClient("Arango");
             _configuration = configuration;
+            _translator = translator;
             _logger = logger;
         }
 
@@ -62,40 +66,30 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             await EnsureCollectionCreated();
 
-            var json = JsonSerializer.Serialize(snapshots);
+            var groupNum = 1;
+            const int groupSize = 8;
+            var i = 0;
 
-            var response = await _httpClient.PostAsync($"_api/document/{collection}", new StringContent(json, Encoding.UTF8, "application/json"));
+            _logger.LogDebug($"separating '{snapshots.Count}' snapshots into batches of up to '{groupSize}' items");
 
-            if (!response.IsSuccessStatusCode)
+            var groups = snapshots.GroupBy(_ =>
             {
-                _logger.LogWarning($"couldn't save snapshots to arango; {response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
-                return Result.Error($"arango-collection ({collection}) could not be updated " +
-                                    $"{response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}",
-                                    ErrorCode.DbQueryError);
-            }
+                if (i++ <= groupSize)
+                    return groupNum;
 
-            try
+                i = 0;
+                ++groupNum;
+                return groupNum;
+            }).ToList();
+
+            _logger.LogDebug($"separated '{snapshots.Count}' snapshots into '{groupNum}' batches of up to '{groupSize}' items");
+
+            foreach (var group in groups)
             {
-                await using var responseStream = await response.Content.ReadAsStreamAsync();
-                var responseObject = await JsonSerializer.DeserializeAsync<JsonElement>(responseStream);
-
-                if (responseObject.TryGetProperty("error", out var error) && !error.GetBoolean())
-                {
-                    _logger.LogDebug("arango-response seems to be an error");
-
-                    responseObject.TryGetProperty("errorMessage", out var errorMessage);
-                    responseObject.TryGetProperty("errorNum", out var errorNum);
-                    responseObject.TryGetProperty("code", out var code);
-
-                    return Result.Error($"arango-collection ({collection}) couldn't be updated: " +
-                                        $"Code='{code}'; ErrorNum='{errorNum}'; ErrorMessage='{errorMessage}'",
-                                        ErrorCode.DbUpdateError);
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(e, "couldn't read response from arango");
-                return Result.Error("couldn't read response from arango", ErrorCode.DbUpdateError);
+                _logger.LogDebug($"saving snapshot-group {group.Key} with {group.Count()} items");
+                var result = await SaveSnapshotsInternal(group.ToList(), collection);
+                if (result.IsError)
+                    return result;
             }
 
             return Result.Success();
@@ -110,13 +104,21 @@ namespace Bechtle.A365.ConfigService.Implementations
             if (!TryGetCollectionName(out var collection))
                 return false;
 
-            var response = await _httpClient.GetAsync($"_api/collection/{collection}");
+            try
+            {
+                var response = await _httpClient.GetAsync($"_api/collection/{collection}");
 
-            if (response.IsSuccessStatusCode)
-                return true;
+                if (response.IsSuccessStatusCode)
+                    return true;
 
-            _logger.LogWarning($"couldn't get infos about collection '{collection}' from arango; " +
-                               $"{response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
+                _logger.LogWarning($"couldn't get infos about collection '{collection}' from arango; " +
+                                   $"{response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, $"couldn't determine if collection '{collection}' exists");
+            }
+
             return false;
         }
 
@@ -141,7 +143,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             try
             {
-                var collectionDefinition = _configuration.GetSection($"{ConfigBasePath}:Collection").Get<JsonElement>().ToString();
+                var collectionDefinition = SectionToJson($"{ConfigBasePath}:Collection").ToString();
 
                 if (_logger.IsEnabled(LogLevel.Information))
                     _logger.LogInformation($"autoCreating arango-collection: {collectionDefinition}");
@@ -160,15 +162,17 @@ namespace Bechtle.A365.ConfigService.Implementations
                 }
 
                 await using var responseStream = await response.Content.ReadAsStreamAsync();
-                var responseObject = await JsonSerializer.DeserializeAsync<JsonElement>(responseStream);
 
-                if (responseObject.TryGetProperty("error", out var error) && !error.GetBoolean())
+                var jsonDoc = await JsonDocument.ParseAsync(responseStream);
+                var element = jsonDoc.RootElement;
+
+                if (element.TryGetProperty("error", out var error) && error.GetBoolean())
                 {
                     _logger.LogDebug("arango-response seems to be an error");
 
-                    responseObject.TryGetProperty("errorMessage", out var errorMessage);
-                    responseObject.TryGetProperty("errorNum", out var errorNum);
-                    responseObject.TryGetProperty("code", out var code);
+                    element.TryGetProperty("errorMessage", out var errorMessage);
+                    element.TryGetProperty("errorNum", out var errorNum);
+                    element.TryGetProperty("code", out var code);
 
                     _logger.LogInformation($"arango-collection couldn't be created: Code='{code}'; ErrorNum='{errorNum}'; ErrorMessage='{errorMessage}'");
                 }
@@ -184,6 +188,35 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private Task<IResult<DomainObjectSnapshot>> GetSnapshotInternal(string dataType, string identifier, long maxVersion)
             => Task.FromResult(Result.Error<DomainObjectSnapshot>(string.Empty, ErrorCode.Undefined));
+
+        private async Task<IResult> SaveSnapshotsInternal(IList<DomainObjectSnapshot> snapshots, string collection)
+        {
+            var json = JsonSerializer.Serialize(snapshots);
+
+            var response = await _httpClient.PostAsync($"_api/document/{collection}", new StringContent(json, Encoding.UTF8, "application/json"));
+
+            if (response.IsSuccessStatusCode)
+                return Result.Success();
+
+            _logger.LogWarning($"couldn't save snapshots to arango; {response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
+            return Result.Error($"arango-collection ({collection}) could not be updated " +
+                                $"{response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}",
+                                ErrorCode.DbQueryError);
+        }
+
+        private JsonElement SectionToJson(string basePath)
+        {
+            var items = new Dictionary<string, string>();
+            var stack = new Stack<IConfigurationSection>(_configuration.GetSection(basePath).GetChildren());
+            while (stack.TryPop(out var item))
+            {
+                items[item.Path.Substring(basePath.Length + 1)] = item.Value;
+                foreach (var child in item.GetChildren())
+                    stack.Push(child);
+            }
+
+            return _translator.ToJson(items, ":");
+        }
 
         /// <summary>
         ///     try to get the Collection.Name from this Stores Configuration
