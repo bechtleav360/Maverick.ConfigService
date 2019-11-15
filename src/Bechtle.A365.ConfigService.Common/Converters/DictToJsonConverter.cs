@@ -70,7 +70,12 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             {
                 if (!node.Children.Any())
                 {
-                    jsonStream.WriteStringValue(node.Value);
+                    if (long.TryParse(node.Value, out var l))
+                        jsonStream.WriteNumberValue(l);
+                    else if (double.TryParse(node.Value, out var d))
+                        jsonStream.WriteNumberValue(d);
+                    else
+                        jsonStream.WriteStringValue(node.Value);
                 }
                 else if (node.Children.All(c => int.TryParse(c.Name, out _)))
                 {
@@ -79,7 +84,14 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                     foreach (var child in node.Children.OrderBy(c => c.Name))
                     {
                         if (child.Children.Count == 0)
-                            jsonStream.WriteStringValue(child.Value);
+                        {
+                            if (long.TryParse(child.Value, out var l))
+                                jsonStream.WriteNumberValue(l);
+                            else if (double.TryParse(child.Value, out var d))
+                                jsonStream.WriteNumberValue(d);
+                            else
+                                jsonStream.WriteStringValue(child.Value);
+                        }
                         else
                             CreateTokenNative(child, jsonStream);
                     }
