@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                                    JsonSerializer.Serialize(new
                                    {
                                        query = $"FOR s in {collection} " +
-                                               "SORT s.Version ASC " +
+                                               "SORT s.MetaVersion ASC " +
                                                "LIMIT 1 " +
                                                "RETURN { MetaVersion: s.MetaVersion}"
                                    }),
@@ -61,7 +61,9 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning($"couldn't save snapshots to arango; {response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
+                _logger.LogWarning("could not query latest version from Document-Collection; " +
+                                   $"{response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
+
                 return Result.Error<long>("could not query latest version from Document-Collection " +
                                           $"{response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}",
                                           ErrorCode.DbQueryError);
