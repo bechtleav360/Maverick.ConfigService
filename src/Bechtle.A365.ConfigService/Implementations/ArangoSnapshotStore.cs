@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
@@ -191,7 +192,17 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IResult> SaveSnapshotsInternal(IList<DomainObjectSnapshot> snapshots, string collection)
         {
-            var json = JsonSerializer.Serialize(snapshots);
+            var metaVersion = snapshots.Max(s => s.Version);
+
+            var json = JsonSerializer.Serialize(snapshots.Select(s => new ArangoSnapshot
+            {
+                Key = Convert.ToBase64String(Encoding.UTF8.GetBytes(s.Identifier)),
+                Data = s,
+                Version = s.Version,
+                DataType = s.DataType,
+                Identifier = s.Identifier,
+                MetaVersion = metaVersion
+            }).ToList());
 
             var response = await _httpClient.PostAsync($"_api/document/{collection}", new StringContent(json, Encoding.UTF8, "application/json"));
 
@@ -232,6 +243,22 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             _logger.LogWarning($"arango-collection is unset ({ConfigBasePath}:Collection:Name)");
             return false;
+        }
+
+        private class ArangoSnapshot
+        {
+            [JsonPropertyName("_key")]
+            public string Key { get; set; }
+
+            public string DataType { get; set; }
+
+            public string Identifier { get; set; }
+
+            public DomainObjectSnapshot Data { get; set; }
+
+            public long MetaVersion { get; set; }
+
+            public long Version { get; set; }
         }
     }
 }
