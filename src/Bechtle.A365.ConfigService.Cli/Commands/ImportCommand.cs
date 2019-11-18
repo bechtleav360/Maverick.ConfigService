@@ -50,7 +50,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             var formData = new MultipartFormDataContent {{new ByteArrayContent(utf8Bytes), "file", "file"}};
 
             var request = await RestRequest.Make(Output)
-                                           .Post(new Uri(new Uri(ConfigServiceEndpoint), "import"), formData)
+                                           .Post(new Uri(new Uri(ConfigServiceEndpoint), "v1/import"), formData)
                                            .ReceiveString();
 
             if (request.HttpResponseMessage?.IsSuccessStatusCode != true)
