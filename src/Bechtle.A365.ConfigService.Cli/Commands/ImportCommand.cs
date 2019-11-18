@@ -2,14 +2,13 @@
 using System.IO;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
-
+using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
@@ -118,7 +117,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             try
             {
                 // validate it against the actual object
-                JsonSerializer.Deserialize<ExportDefinition>(input);
+                JsonConvert.DeserializeObject<ExportDefinition>(input);
             }
             catch (JsonException e)
             {
