@@ -84,11 +84,12 @@ namespace Bechtle.A365.ConfigService.Implementations
             }).ToList();
 
             _logger.LogDebug($"separated '{snapshots.Count}' snapshots into '{groupNum}' batches of up to '{groupSize}' items");
+            var metaVersion = snapshots.Max(s => s.Version);
 
             foreach (var group in groups)
             {
                 _logger.LogDebug($"saving snapshot-group {group.Key} with {group.Count()} items");
-                var result = await SaveSnapshotsInternal(group.ToList(), collection);
+                var result = await SaveSnapshotsInternal(group.ToList(), collection, metaVersion);
                 if (result.IsError)
                     return result;
             }
@@ -190,14 +191,12 @@ namespace Bechtle.A365.ConfigService.Implementations
         private Task<IResult<DomainObjectSnapshot>> GetSnapshotInternal(string dataType, string identifier, long maxVersion)
             => Task.FromResult(Result.Error<DomainObjectSnapshot>(string.Empty, ErrorCode.Undefined));
 
-        private async Task<IResult> SaveSnapshotsInternal(IList<DomainObjectSnapshot> snapshots, string collection)
+        private async Task<IResult> SaveSnapshotsInternal(IList<DomainObjectSnapshot> snapshots, string collection, long metaVersion)
         {
-            var metaVersion = snapshots.Max(s => s.Version);
-
             var json = JsonSerializer.Serialize(snapshots.Select(s => new ArangoSnapshot
             {
                 Key = Convert.ToBase64String(Encoding.UTF8.GetBytes(s.Identifier)),
-                Data = s,
+                Data = s.JsonData,
                 Version = s.Version,
                 DataType = s.DataType,
                 Identifier = s.Identifier,
