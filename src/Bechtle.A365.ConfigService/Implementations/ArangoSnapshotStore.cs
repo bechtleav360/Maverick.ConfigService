@@ -309,6 +309,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             return false;
         }
 
+        // ReSharper disable UnusedAutoPropertyAccessor.Local
+        // ReSharper disable UnusedMember.Local
         private class LatestSnapshotQuery
         {
             public long MetaVersion { get; set; }
@@ -338,5 +340,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             [JsonPropertyName("result")]
             public T[] Result { get; set; }
         }
+        // ReSharper restore UnusedMember.Local
+        // ReSharper restore UnusedAutoPropertyAccessor.Local
     }
 }
