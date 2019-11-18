@@ -233,9 +233,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Key = Convert.ToBase64String(Encoding.UTF8.GetBytes(s.Identifier)),
                 Data = s.JsonData,
-                Version = s.Version,
-                DataType = s.DataType,
-                Identifier = s.Identifier,
                 MetaVersion = metaVersion
             }).ToList());
 
@@ -289,16 +286,10 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             public string Data { get; set; }
 
-            public string DataType { get; set; }
-
-            public string Identifier { get; set; }
-
             [JsonPropertyName("_key")]
             public string Key { get; set; }
 
             public long MetaVersion { get; set; }
-
-            public long Version { get; set; }
         }
 
         private class ArangoQueryResponse<T>
