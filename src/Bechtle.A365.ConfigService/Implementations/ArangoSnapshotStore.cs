@@ -224,8 +224,40 @@ namespace Bechtle.A365.ConfigService.Implementations
         private Task<IResult<DomainObjectSnapshot>> GetSnapshotInternal<T>(string identifier, long maxVersion)
             => GetSnapshotInternal(typeof(T).Name, identifier, maxVersion);
 
-        private Task<IResult<DomainObjectSnapshot>> GetSnapshotInternal(string dataType, string identifier, long maxVersion)
-            => Task.FromResult(Result.Error<DomainObjectSnapshot>(string.Empty, ErrorCode.Undefined));
+        private async Task<IResult<DomainObjectSnapshot>> GetSnapshotInternal(string dataType, string identifier, long maxVersion)
+        {
+            if (!TryGetCollectionName(out var collection))
+                return Result.Error<DomainObjectSnapshot>("could not read collection-name from config", ErrorCode.DbQueryError);
+
+            var response = await _httpClient.PostAsync(
+                               "_db/_system/_api/cursor",
+                               new StringContent(
+                                   JsonSerializer.Serialize(new
+                                   {
+                                       query = $"FOR s in {collection} " +
+                                               $"FILTER s.Identifier == \"{identifier}\" && s.DataType == \"{dataType}\" && s.Version <= {maxVersion}" +
+                                               "RETURN s.Data"
+                                   }),
+                                   Encoding.UTF8,
+                                   "application/json"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning($"couldn't get snapshot from arango; {response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
+                return Result.Error<DomainObjectSnapshot>(
+                    $"couldn't get snapshot from arango {response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}",
+                    ErrorCode.DbQueryError);
+            }
+
+            await using var responseStream = await response.Content.ReadAsStreamAsync();
+
+            var result = await JsonSerializer.DeserializeAsync<ArangoQueryResponse<DomainObjectSnapshot>>(responseStream);
+
+            if (result?.Result?.Any() == true)
+                return Result.Success(result.Result.First());
+
+            return Result.Error<DomainObjectSnapshot>($"arango-query failed: {result?.Code ?? -1}", ErrorCode.DbQueryError);
+        }
 
         private async Task<IResult> SaveSnapshotsInternal(IList<DomainObjectSnapshot> snapshots, string collection, long metaVersion)
         {
