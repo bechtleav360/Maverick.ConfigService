@@ -313,7 +313,7 @@ namespace Bechtle.A365.ConfigService
 
             var arangoSection = Configuration.GetSection("SnapshotConfiguration:Stores:Arango");
             if (arangoSection.GetSection("Enabled").Get<bool>())
-                services.AddScoped<ISnapshotStore, ArangoSnapshotStore>()
+                services.AddScoped<ISnapshotStore, ArangoSnapshotStore>(_logger)
                         .AddHttpClient("Arango", (provider, client) =>
                         {
                             var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
