@@ -41,7 +41,41 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         /// <inheritdoc />
-        public Task<IResult<long>> GetLatestSnapshotNumbers() => Task.FromResult(Result.Success(0L));
+        public async Task<IResult<long>> GetLatestSnapshotNumbers()
+        {
+            if (!TryGetCollectionName(out var collection))
+                return Result.Error<long>("could not read collection-name from config", ErrorCode.DbQueryError);
+
+            var response = await _httpClient.PostAsync(
+                               "_db/_system/_api/cursor",
+                               new StringContent(
+                                   JsonSerializer.Serialize(new
+                                   {
+                                       query = $"FOR s in {collection} " +
+                                               "SORT s.Version ASC " +
+                                               "LIMIT 1 " +
+                                               "RETURN { MetaVersion: s.MetaVersion}"
+                                   }),
+                                   Encoding.UTF8,
+                                   "application/json"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning($"couldn't save snapshots to arango; {response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}");
+                return Result.Error<long>("could not query latest version from Document-Collection " +
+                                          $"{response.StatusCode:D}-{response.StatusCode:G} {response.ReasonPhrase}",
+                                          ErrorCode.DbQueryError);
+            }
+
+            await using var responseStream = await response.Content.ReadAsStreamAsync();
+
+            var result = await JsonSerializer.DeserializeAsync<ArangoQueryResponse<LatestSnapshotQuery>>(responseStream);
+
+            if (result?.Result?.Any() == true)
+                return Result.Success(result.Result.First().MetaVersion);
+
+            return Result.Error<long>($"arango-query failed: {result?.Code ?? -1}", ErrorCode.DbQueryError);
+        }
 
         /// <inheritdoc />
         public Task<IResult<DomainObjectSnapshot>> GetSnapshot<T>(string identifier) where T : DomainObject
@@ -244,20 +278,40 @@ namespace Bechtle.A365.ConfigService.Implementations
             return false;
         }
 
+        private class LatestSnapshotQuery
+        {
+            public long MetaVersion { get; set; }
+        }
+
         private class ArangoSnapshot
         {
-            [JsonPropertyName("_key")]
-            public string Key { get; set; }
+            public string Data { get; set; }
 
             public string DataType { get; set; }
 
             public string Identifier { get; set; }
 
-            public DomainObjectSnapshot Data { get; set; }
+            [JsonPropertyName("_key")]
+            public string Key { get; set; }
 
             public long MetaVersion { get; set; }
 
             public long Version { get; set; }
+        }
+
+        private class ArangoQueryResponse<T>
+        {
+            [JsonPropertyName("code")]
+            public int Code { get; set; }
+
+            [JsonPropertyName("error")]
+            public bool Error { get; set; }
+
+            [JsonPropertyName("hasMore")]
+            public bool HasMore { get; set; }
+
+            [JsonPropertyName("result")]
+            public T[] Result { get; set; }
         }
     }
 }
