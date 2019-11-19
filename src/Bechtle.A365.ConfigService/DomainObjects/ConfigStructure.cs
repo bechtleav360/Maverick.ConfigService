@@ -186,8 +186,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
-            => new Dictionary<Type, Func<StreamedEvent, bool>>
+        protected override IDictionary<Type, Func<ReplayedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<ReplayedEvent, bool>>
             {
                 {typeof(StructureCreated), HandleStructureCreatedEvent},
                 {typeof(StructureDeleted), HandleStructureDeletedEvent},
@@ -197,9 +197,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         protected override string GetSnapshotIdentifier() => Identifier.ToString();
 
-        private bool HandleStructureCreatedEvent(StreamedEvent streamedEvent)
+        private bool HandleStructureCreatedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is StructureCreated created) || created.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is StructureCreated created) || created.Identifier != Identifier)
                 return false;
 
             Created = true;
@@ -208,18 +208,18 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return true;
         }
 
-        private bool HandleStructureDeletedEvent(StreamedEvent streamedEvent)
+        private bool HandleStructureDeletedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is StructureDeleted deleted) || deleted.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is StructureDeleted deleted) || deleted.Identifier != Identifier)
                 return false;
 
             Deleted = true;
             return true;
         }
 
-        private bool HandleStructureVariablesModifiedEvent(StreamedEvent streamedEvent)
+        private bool HandleStructureVariablesModifiedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is StructureVariablesModified modified) || modified.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is StructureVariablesModified modified) || modified.Identifier != Identifier)
                 return false;
 
             foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))

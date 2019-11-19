@@ -275,8 +275,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
-            => new Dictionary<Type, Func<StreamedEvent, bool>>
+        protected override IDictionary<Type, Func<ReplayedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<ReplayedEvent, bool>>
             {
                 {typeof(DefaultEnvironmentCreated), HandleDefaultEnvironmentCreatedEvent},
                 {typeof(EnvironmentCreated), HandleEnvironmentCreatedEvent},
@@ -356,9 +356,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return roots;
         }
 
-        private bool HandleDefaultEnvironmentCreatedEvent(StreamedEvent streamedEvent)
+        private bool HandleDefaultEnvironmentCreatedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is EnvironmentCreated created) || created.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is EnvironmentCreated created) || created.Identifier != Identifier)
                 return false;
 
             IsDefault = true;
@@ -366,27 +366,27 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return true;
         }
 
-        private bool HandleEnvironmentCreatedEvent(StreamedEvent streamedEvent)
+        private bool HandleEnvironmentCreatedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is DefaultEnvironmentCreated created) || created.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is DefaultEnvironmentCreated created) || created.Identifier != Identifier)
                 return false;
 
             Created = true;
             return true;
         }
 
-        private bool HandleEnvironmentDeletedEvent(StreamedEvent streamedEvent)
+        private bool HandleEnvironmentDeletedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is EnvironmentDeleted deleted) || deleted.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is EnvironmentDeleted deleted) || deleted.Identifier != Identifier)
                 return false;
 
             Deleted = true;
             return true;
         }
 
-        private bool HandleEnvironmentKeysImportedEvent(StreamedEvent streamedEvent)
+        private bool HandleEnvironmentKeysImportedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is EnvironmentKeysImported imported) || imported.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is EnvironmentKeysImported imported) || imported.Identifier != Identifier)
                 return false;
 
             Keys = imported.ModifiedKeys
@@ -408,9 +408,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return true;
         }
 
-        private bool HandleEnvironmentKeysModifiedEvent(StreamedEvent streamedEvent)
+        private bool HandleEnvironmentKeysModifiedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is EnvironmentKeysModified modified) || modified.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is EnvironmentKeysModified modified) || modified.Identifier != Identifier)
                 return false;
 
             foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))

@@ -35,25 +35,25 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
-            => new Dictionary<Type, Func<StreamedEvent, bool>>
+        protected override IDictionary<Type, Func<ReplayedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<ReplayedEvent, bool>>
             {
                 {typeof(StructureCreated), HandleStructureCreatedEvent},
                 {typeof(StructureDeleted), HandleStructureDeletedEvent}
             };
 
-        private bool HandleStructureCreatedEvent(StreamedEvent streamedEvent)
+        private bool HandleStructureCreatedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is StructureCreated created))
+            if (!(replayedEvent.DomainEvent is StructureCreated created))
                 return false;
 
             Identifiers.Add(created.Identifier);
             return true;
         }
 
-        private bool HandleStructureDeletedEvent(StreamedEvent streamedEvent)
+        private bool HandleStructureDeletedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is StructureDeleted deleted))
+            if (!(replayedEvent.DomainEvent is StructureDeleted deleted))
                 return false;
 
             if (Identifiers.Contains(deleted.Identifier))

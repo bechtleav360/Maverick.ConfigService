@@ -66,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var (recordedEvent, domainEvent) = tuple;
 
-            var streamedEvent = new StreamedEvent
+            var streamedEvent = new ReplayedEvent
             {
                 DomainEvent = domainEvent,
                 UtcTime = recordedEvent.Created.ToUniversalTime(),

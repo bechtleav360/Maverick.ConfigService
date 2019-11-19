@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     {
         private readonly object _eventLock = new object();
         private bool _eventsBeingDrained;
-        private IDictionary<Type, Func<StreamedEvent, bool>> _handlerMapping;
+        private IDictionary<Type, Func<ReplayedEvent, bool>> _handlerMapping;
 
         /// <summary>
         ///     Current Version-Number of this Object
@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     cache for <see cref="GetEventApplicationMapping" /> using <see cref="_handlerMapping" />
         /// </summary>
-        protected IDictionary<Type, Func<StreamedEvent, bool>> HandlerMapping => _handlerMapping ??= GetEventApplicationMapping();
+        protected IDictionary<Type, Func<ReplayedEvent, bool>> HandlerMapping => _handlerMapping ??= GetEventApplicationMapping();
 
         /// <summary>
         ///     calculate the size of this object - used to limit the objects kept in the memory-cache at the same time
@@ -55,31 +55,31 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     get a mapping of <see cref="DomainEvent" /> to EventHandler. this mapping is used to evaluate all applied events
         /// </summary>
         /// <returns></returns>
-        protected abstract IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping();
+        protected abstract IDictionary<Type, Func<ReplayedEvent, bool>> GetEventApplicationMapping();
 
         /// <summary>
-        ///     apply a single <see cref="StreamedEvent" /> to this object,
+        ///     apply a single <see cref="ReplayedEvent" /> to this object,
         ///     in order to modify its state to a more current one.
         /// </summary>
-        /// <param name="streamedEvent"></param>
-        public virtual void ApplyEvent(StreamedEvent streamedEvent)
+        /// <param name="replayedEvent"></param>
+        public virtual void ApplyEvent(ReplayedEvent replayedEvent)
         {
             // ReSharper disable once UseNullPropagation
-            if (streamedEvent is null)
+            if (replayedEvent is null)
                 return;
 
-            if (streamedEvent.DomainEvent is null)
+            if (replayedEvent.DomainEvent is null)
                 return;
 
-            if (streamedEvent.Version <= CurrentVersion)
+            if (replayedEvent.Version <= CurrentVersion)
                 return;
 
             // if there is a handler for the given DomainEvent, call if
             // if that handler returns true we know the event was meant for this object and
             // we can update CurrentVersion
-            if (HandlerMapping.TryGetValue(streamedEvent.DomainEvent.GetType(), out var handler)
-                && handler.Invoke(streamedEvent))
-                CurrentVersion = streamedEvent.Version;
+            if (HandlerMapping.TryGetValue(replayedEvent.DomainEvent.GetType(), out var handler)
+                && handler.Invoke(replayedEvent))
+                CurrentVersion = replayedEvent.Version;
         }
 
         /// <summary>

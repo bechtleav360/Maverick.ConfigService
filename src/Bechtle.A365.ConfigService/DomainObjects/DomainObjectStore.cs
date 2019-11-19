@@ -143,7 +143,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     if (recordedEvent.EventNumber > maxVersion)
                         return false;
 
-                    domainObject.ApplyEvent(new StreamedEvent
+                    domainObject.ApplyEvent(new ReplayedEvent
                     {
                         UtcTime = recordedEvent.Created.ToUniversalTime(),
                         Version = recordedEvent.EventNumber,

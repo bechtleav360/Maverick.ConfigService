@@ -6,7 +6,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Data used by a <see cref="DomainObject" /> to update its own Information to the desired State
     /// </summary>
-    public class StreamedEvent
+    public class ReplayedEvent
     {
         /// <summary>
         ///     Some DomainEvent that may be Evaluated, depending on its Type

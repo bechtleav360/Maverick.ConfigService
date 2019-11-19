@@ -174,8 +174,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
-            => new Dictionary<Type, Func<StreamedEvent, bool>>
+        protected override IDictionary<Type, Func<ReplayedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<ReplayedEvent, bool>>
             {
                 {typeof(ConfigurationBuilt), HandleConfigurationBuiltEvent}
             };
@@ -183,14 +183,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         protected override string GetSnapshotIdentifier() => Identifier.ToString();
 
-        private bool HandleConfigurationBuiltEvent(StreamedEvent streamedEvent)
+        private bool HandleConfigurationBuiltEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is ConfigurationBuilt built) || built.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is ConfigurationBuilt built) || built.Identifier != Identifier)
                 return false;
 
             ValidFrom = built.ValidFrom;
             ValidTo = built.ValidTo;
-            ConfigurationVersion = (long) streamedEvent.UtcTime
+            ConfigurationVersion = (long) replayedEvent.UtcTime
                                                        .Subtract(_unixEpoch)
                                                        .TotalSeconds;
             return true;

@@ -47,8 +47,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        protected override IDictionary<Type, Func<StreamedEvent, bool>> GetEventApplicationMapping()
-            => new Dictionary<Type, Func<StreamedEvent, bool>>
+        protected override IDictionary<Type, Func<ReplayedEvent, bool>> GetEventApplicationMapping()
+            => new Dictionary<Type, Func<ReplayedEvent, bool>>
             {
                 {typeof(ConfigurationBuilt), HandleConfigurationBuiltEvent},
                 {typeof(EnvironmentKeysImported), HandleEnvironmentKeysImportedEvent},
@@ -56,9 +56,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 {typeof(StructureVariablesModified), HandleStructureVariablesModifiedEvent}
             };
 
-        private bool HandleConfigurationBuiltEvent(StreamedEvent streamedEvent)
+        private bool HandleConfigurationBuiltEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is ConfigurationBuilt built))
+            if (!(replayedEvent.DomainEvent is ConfigurationBuilt built))
                 return false;
 
             Lookup[built.Identifier] = new ConfigInformation
@@ -71,9 +71,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return true;
         }
 
-        private bool HandleEnvironmentKeysImportedEvent(StreamedEvent streamedEvent)
+        private bool HandleEnvironmentKeysImportedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is EnvironmentKeysImported imported))
+            if (!(replayedEvent.DomainEvent is EnvironmentKeysImported imported))
                 return false;
 
             foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == imported.Identifier))
@@ -82,9 +82,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return true;
         }
 
-        private bool HandleEnvironmentKeysModifiedEvent(StreamedEvent streamedEvent)
+        private bool HandleEnvironmentKeysModifiedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is EnvironmentKeysModified modified1))
+            if (!(replayedEvent.DomainEvent is EnvironmentKeysModified modified1))
                 return false;
 
             foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == modified1.Identifier))
@@ -93,9 +93,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return true;
         }
 
-        private bool HandleStructureVariablesModifiedEvent(StreamedEvent streamedEvent)
+        private bool HandleStructureVariablesModifiedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(streamedEvent.DomainEvent is StructureVariablesModified modified2))
+            if (!(replayedEvent.DomainEvent is StructureVariablesModified modified2))
                 return false;
 
             foreach (var (_, info) in Lookup.Where(l => l.Value.UsedStructure == modified2.Identifier))
