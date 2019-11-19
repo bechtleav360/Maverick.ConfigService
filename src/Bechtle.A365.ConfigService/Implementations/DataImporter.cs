@@ -14,16 +14,16 @@ namespace Bechtle.A365.ConfigService.Implementations
     public class DataImporter : IDataImporter
     {
         private readonly IEventStore _eventStore;
-        private readonly IStreamedStore _streamedStore;
+        private readonly IDomainObjectStore _domainObjectStore;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc />
         public DataImporter(IEventStore eventStore,
-                            IStreamedStore streamedStore,
+                            IDomainObjectStore domainObjectStore,
                             IEnumerable<ICommandValidator> validators)
         {
             _eventStore = eventStore;
-            _streamedStore = streamedStore;
+            _domainObjectStore = domainObjectStore;
             _validators = validators.ToArray();
         }
 
@@ -37,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 var identifier = new EnvironmentIdentifier(envExport.Category, envExport.Name);
 
-                var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
+                var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
                 if (envResult.IsError)
                     return envResult;
 

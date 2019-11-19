@@ -19,25 +19,25 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     {
         private readonly IEventStore _eventStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
-        private readonly IStreamedStore _streamedStore;
+        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc />
         public EnvironmentProjectionStore(IEventStore eventStore,
-                                          IStreamedStore streamedStore,
+                                          IDomainObjectStore domainObjectStore,
                                           ILogger<EnvironmentProjectionStore> logger,
                                           IEnumerable<ICommandValidator> validators)
         {
             _logger = logger;
             _validators = validators.ToList();
             _eventStore = eventStore;
-            _streamedStore = streamedStore;
+            _domainObjectStore = domainObjectStore;
         }
 
         /// <inheritdoc />
         public async Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
+            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -61,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> Delete(EnvironmentIdentifier identifier)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
+            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
+            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -111,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var result = await _streamedStore.GetStreamedObject<ConfigEnvironmentList>();
+                var result = await _domainObjectStore.ReplayObject<ConfigEnvironmentList>();
 
                 return Result.Success<IList<EnvironmentIdentifier>>(
                     result.IsError
@@ -133,7 +133,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 key = Uri.UnescapeDataString(key ?? string.Empty);
-                var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
+                var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
                 if (envResult.IsError)
                     return Result.Error<IList<DtoConfigKeyCompletion>>(
                         "no environment found with (" +
@@ -255,7 +255,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> UpdateKeys(EnvironmentIdentifier identifier, ICollection<DtoConfigKey> keys)
         {
-            var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(identifier), identifier.ToString());
+            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
             if (envResult.IsError)
                 return envResult;
 
@@ -399,7 +399,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var envResult = await _streamedStore.GetStreamedObject(new ConfigEnvironment(parameters.Environment), parameters.Environment.ToString());
+                var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Environment), parameters.Environment.ToString());
                 if (envResult.IsError)
                     return Result.Error<TResult>(envResult.Message, envResult.Code);
 

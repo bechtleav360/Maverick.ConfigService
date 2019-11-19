@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         private readonly IConfigurationCompiler _compiler;
         private readonly IEventStore _eventStore;
         private readonly IConfigurationParser _parser;
-        private readonly IStreamedStore _streamedStore;
+        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
@@ -30,13 +30,13 @@ namespace Bechtle.A365.ConfigService.Implementations
                                         IConfigurationParser parser,
                                         IConfigurationCompiler compiler,
                                         IJsonTranslator translator,
-                                        IStreamedStore streamedStore)
+                                        IDomainObjectStore domainObjectStore)
         {
             _eventStore = eventStore;
             _parser = parser;
             _compiler = compiler;
             _translator = translator;
-            _streamedStore = streamedStore;
+            _domainObjectStore = domainObjectStore;
         }
 
         /// <inheritdoc />
@@ -56,7 +56,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 if (cancellationToken.IsCancellationRequested)
                     return new List<DomainObjectSnapshot>();
 
-                await config.Compile(_streamedStore, _compiler, _parser, _translator);
+                await config.Compile(_domainObjectStore, _compiler, _parser, _translator);
             }
 
             return streamedObjects.Select(o => o.CreateSnapshot()).ToList();

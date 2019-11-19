@@ -100,7 +100,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <param name="translator"></param>
         /// <param name="logger">optional logger to pass during the compilation-phase</param>
         /// <returns></returns>
-        public async Task<IResult> Compile(IStreamedStore store,
+        public async Task<IResult> Compile(IDomainObjectStore store,
                                            IConfigurationCompiler compiler,
                                            IConfigurationParser parser,
                                            IJsonTranslator translator,
@@ -109,15 +109,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (Built)
                 return Result.Success();
 
-            var envResult = await store.GetStreamedObject(new ConfigEnvironment(Identifier.Environment),
-                                                          Identifier.Environment.ToString(),
-                                                          CurrentVersion);
+            var envResult = await store.ReplayObject(new ConfigEnvironment(Identifier.Environment),
+                                                     Identifier.Environment.ToString(),
+                                                     CurrentVersion);
             if (envResult.IsError)
                 return envResult;
 
-            var structResult = await store.GetStreamedObject(new ConfigStructure(Identifier.Structure),
-                                                             Identifier.Structure.ToString(),
-                                                             CurrentVersion);
+            var structResult = await store.ReplayObject(new ConfigStructure(Identifier.Structure),
+                                                        Identifier.Structure.ToString(),
+                                                        CurrentVersion);
             if (structResult.IsError)
                 return structResult;
 

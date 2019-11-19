@@ -14,7 +14,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     default ObjectStore using <see cref="IEventStore" /> and <see cref="ISnapshotStore" /> for retrieving Objects
     /// </summary>
-    public class DomainObjectStore : IStreamedStore
+    public class DomainObjectStore : IDomainObjectStore
     {
         private readonly TimeSpan _defaultTimeSpan = TimeSpan.FromMinutes(15);
         private readonly IConfiguration _configuration;
@@ -38,20 +38,20 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>() where T : DomainObject, new()
-            => GetStreamedObject<T>(long.MaxValue);
+        public Task<IResult<T>> ReplayObject<T>() where T : DomainObject, new()
+            => ReplayObject<T>(long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>(long maxVersion) where T : DomainObject, new()
-            => GetStreamedObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name, false);
+        public Task<IResult<T>> ReplayObject<T>(long maxVersion) where T : DomainObject, new()
+            => ReplayObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name, false);
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier) where T : DomainObject
-            => GetStreamedObject(streamedObject, identifier, long.MaxValue);
+        public Task<IResult<T>> ReplayObject<T>(T streamedObject, string identifier) where T : DomainObject
+            => ReplayObject(streamedObject, identifier, long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier, long maxVersion) where T : DomainObject
-            => GetStreamedObjectInternal(streamedObject, identifier, maxVersion, identifier, true);
+        public Task<IResult<T>> ReplayObject<T>(T streamedObject, string identifier, long maxVersion) where T : DomainObject
+            => ReplayObjectInternal(streamedObject, identifier, maxVersion, identifier, true);
 
         private TimeSpan GetCacheTime()
         {
@@ -70,11 +70,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
         }
 
-        private async Task<IResult<T>> GetStreamedObjectInternal<T>(T streamedObject,
-                                                                    string identifier,
-                                                                    long maxVersion,
-                                                                    string cacheKey,
-                                                                    bool useMetadataFilter)
+        private async Task<IResult<T>> ReplayObjectInternal<T>(T streamedObject,
+                                                               string identifier,
+                                                               long maxVersion,
+                                                               string cacheKey,
+                                                               bool useMetadataFilter)
             where T : DomainObject
         {
             try

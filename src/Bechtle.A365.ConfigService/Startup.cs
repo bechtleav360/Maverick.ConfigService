@@ -227,7 +227,7 @@ namespace Bechtle.A365.ConfigService
                                                            provider.GetService<ILoggerFactory>());
                     })
                     .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
-                    .AddScoped<IStreamedStore, DomainObjectStore>(_logger)
+                    .AddScoped<IDomainObjectStore, DomainObjectStore>(_logger)
                     .AddScoped<TimerSnapshotTrigger>(_logger)
                     .AddScoped<NumberThresholdSnapshotTrigger>(_logger)
                     .AddScoped<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
