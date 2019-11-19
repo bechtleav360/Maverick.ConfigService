@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo)
         {
-            var configResult = await _domainObjectStore.ReplayObject(new StreamedConfiguration(identifier), identifier.ToString());
+            var configResult = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
             if (configResult.IsError)
                 return configResult;
 
@@ -74,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var list = await _domainObjectStore.ReplayObject<StreamedConfigurationList>();
+                var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -109,7 +109,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var list = await _domainObjectStore.ReplayObject<StreamedConfigurationList>();
+                var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -146,7 +146,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var list = await _domainObjectStore.ReplayObject<StreamedConfigurationList>();
+                var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -188,7 +188,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
-                var configuration = await _domainObjectStore.ReplayObject(new StreamedConfiguration(identifier), identifier.ToString());
+                var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<JsonElement>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
@@ -223,7 +223,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
-                var configuration = await _domainObjectStore.ReplayObject(new StreamedConfiguration(identifier), identifier.ToString());
+                var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<IDictionary<string, string>>(
                         $"no configuration found with id: {formattedParams}",
@@ -257,7 +257,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                var list = await _domainObjectStore.ReplayObject<StreamedConfigurationList>();
+                var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
@@ -295,7 +295,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
-                var configuration = await _domainObjectStore.ReplayObject(new StreamedConfiguration(identifier), identifier.ToString());
+                var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
@@ -331,7 +331,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
-                var configuration = await _domainObjectStore.ReplayObject(new StreamedConfiguration(identifier), identifier.ToString());
+                var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 

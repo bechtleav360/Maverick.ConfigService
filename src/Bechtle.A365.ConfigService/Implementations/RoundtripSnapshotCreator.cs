@@ -51,7 +51,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IList<DomainObjectSnapshot>> CreateSnapshotsInternal(IList<DomainObject> streamedObjects, CancellationToken cancellationToken)
         {
-            foreach (var config in streamedObjects.OfType<StreamedConfiguration>())
+            foreach (var config in streamedObjects.OfType<PreparedConfiguration>())
             {
                 if (cancellationToken.IsCancellationRequested)
                     return new List<DomainObjectSnapshot>();
@@ -77,8 +77,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             switch (domainEvent)
             {
                 case ConfigurationBuilt built:
-                    if (streamedObjects.OfType<StreamedConfiguration>().FirstOrDefault(o => o.Identifier == built.Identifier) is null)
-                        streamedObjects.Add(new StreamedConfiguration(built.Identifier));
+                    if (streamedObjects.OfType<PreparedConfiguration>().FirstOrDefault(o => o.Identifier == built.Identifier) is null)
+                        streamedObjects.Add(new PreparedConfiguration(built.Identifier));
                     break;
 
                 case DefaultEnvironmentCreated created:

@@ -16,12 +16,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Domain-Object representing a Configuration built from a Structure and an Environment
     /// </summary>
-    public class StreamedConfiguration : DomainObject
+    public class PreparedConfiguration : DomainObject
     {
         private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
 
         /// <inheritdoc />
-        public StreamedConfiguration(ConfigurationIdentifier identifier)
+        public PreparedConfiguration(ConfigurationIdentifier identifier)
         {
             Identifier = identifier;
         }
@@ -160,7 +160,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         protected override void ApplySnapshotInternal(DomainObject domainObject)
         {
-            if (!(domainObject is StreamedConfiguration other))
+            if (!(domainObject is PreparedConfiguration other))
                 return;
 
             Identifier = other.Identifier;

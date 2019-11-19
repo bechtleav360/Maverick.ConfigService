@@ -8,7 +8,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Helper-Domain-Object to access all built Configurations
     /// </summary>
-    public class StreamedConfigurationList : DomainObject
+    public class PreparedConfigurationList : DomainObject
     {
         /// <summary>
         ///     internal Lookup, to keep data for Configurations in
@@ -40,7 +40,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         protected override void ApplySnapshotInternal(DomainObject domainObject)
         {
-            if (!(domainObject is StreamedConfigurationList other))
+            if (!(domainObject is PreparedConfigurationList other))
                 return;
 
             Lookup = other.Lookup;
@@ -124,10 +124,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             /// <Inheritdoc cref="StructureIdentifier" />
             public StructureIdentifier UsedStructure => Identifier.Structure;
 
-            /// <Inheritdoc cref="StreamedConfiguration.ValidFrom" />
+            /// <Inheritdoc cref="PreparedConfiguration.ValidFrom" />
             public DateTime? ValidFrom { get; set; }
 
-            /// <Inheritdoc cref="StreamedConfiguration.ValidTo" />
+            /// <Inheritdoc cref="PreparedConfiguration.ValidTo" />
             public DateTime? ValidTo { get; set; }
         }
     }
