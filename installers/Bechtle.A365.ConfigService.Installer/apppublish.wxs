@@ -125,12 +125,6 @@
             <Component Id="cmp3A60DA8EF6F6D4D38D6E9DE4AADA6466" Guid="*">
                 <File Id="filD6552E7B14F064D7C0B9465D9A5A62B0" KeyPath="yes" Source="$(var.BasePath)\Bechtle.A365.ConfigService.exe" />
             </Component>
-            <Component Id="cmpE3F9E780D8D49F4A9FBA960AF7AE36ED" Guid="*">
-                <File Id="filB6ED9CB69959B1F2FC38CDCA0AE643C4" KeyPath="yes" Source="$(var.BasePath)\Bechtle.A365.ConfigService.Migrations.dll" />
-            </Component>
-            <Component Id="cmp95BD47A02755DCADAA949425224389D2" Guid="*">
-                <File Id="fil85D8EFB0811E6E88BC3108620D16C4B2" KeyPath="yes" Source="$(var.BasePath)\Bechtle.A365.ConfigService.Migrations.pdb" />
-            </Component>
             <Component Id="cmp1AAB9E9DAB88B5C7573D47F3CF0B7986" Guid="*">
                 <File Id="fil4941C2728CFB2DF1377A408F62C967C3" KeyPath="yes" Source="$(var.BasePath)\Bechtle.A365.ConfigService.Parsing.dll" />
             </Component>
@@ -235,6 +229,9 @@
             </Component>
             <Component Id="cmpA4611957CEC527FB6A9C663A4D40B1C3" Guid="*">
                 <File Id="fil49B671F56429C90F9997AA866BA60A70" KeyPath="yes" Source="$(var.BasePath)\Microsoft.OpenApi.dll" />
+            </Component>
+            <Component Id="cmp8984CB2736782C1C3D7E8C995186F1C8" Guid="*">
+                <File Id="fil01EB89BCA1427E8D009255D53209218F" KeyPath="yes" Source="$(var.BasePath)\NCrontab.dll" />
             </Component>
             <Component Id="cmpE679161C4F75F1B7C7AE4047591EBF60" Guid="*">
                 <File Id="filA733CFEDBBAEF5FB0253E58062369BFE" KeyPath="yes" Source="$(var.BasePath)\Newtonsoft.Json.Bson.dll" />
@@ -520,8 +517,6 @@
             <ComponentRef Id="cmp427E3C63B95A454D007AD1F9DAA43A5A" />
             <ComponentRef Id="cmp423DA50D8914CCB85F4A8953A629D24B" />
             <ComponentRef Id="cmp3A60DA8EF6F6D4D38D6E9DE4AADA6466" />
-            <ComponentRef Id="cmpE3F9E780D8D49F4A9FBA960AF7AE36ED" />
-            <ComponentRef Id="cmp95BD47A02755DCADAA949425224389D2" />
             <ComponentRef Id="cmp1AAB9E9DAB88B5C7573D47F3CF0B7986" />
             <ComponentRef Id="cmp914CBB1C69FBDF7DC1118B254521920F" />
             <ComponentRef Id="cmpC4DB7D54D1A420C5268787DB3206A9C8" />
@@ -557,6 +552,7 @@
             <ComponentRef Id="cmpBB49DA53705E17508F91D43C0B87AAA1" />
             <ComponentRef Id="cmpECB4AFEEC4D7711360AF57F2CE96729D" />
             <ComponentRef Id="cmpA4611957CEC527FB6A9C663A4D40B1C3" />
+            <ComponentRef Id="cmp8984CB2736782C1C3D7E8C995186F1C8" />
             <ComponentRef Id="cmpE679161C4F75F1B7C7AE4047591EBF60" />
             <ComponentRef Id="cmpBC4FC00A26E7D32479D42D3411317FC5" />
             <ComponentRef Id="cmpB7F1EBE42DCB1051B92D42C1EF84E2F9" />
