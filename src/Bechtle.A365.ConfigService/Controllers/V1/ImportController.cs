@@ -82,7 +82,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return ProviderError(result);
 
             return AcceptedAtAction(nameof(EnvironmentController.GetAvailableEnvironments),
-                                    RouteUtilities.ControllerName<EnvironmentController>());
+                                    RouteUtilities.ControllerName<EnvironmentController>(),
+                                    new {version = ApiVersions.V1});
         }
     }
 }
