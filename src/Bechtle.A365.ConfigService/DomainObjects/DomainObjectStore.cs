@@ -5,6 +5,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
@@ -15,6 +16,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class DomainObjectStore : IStreamedStore
     {
+        private readonly TimeSpan _defaultTimeSpan = TimeSpan.FromMinutes(15);
+        private readonly IConfiguration _configuration;
         private readonly IEventStore _eventStore;
         private readonly ILogger<DomainObjectStore> _logger;
         private readonly IMemoryCache _memoryCache;
@@ -22,13 +25,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         public DomainObjectStore(IEventStore eventStore,
-                                   ISnapshotStore snapshotStore,
-                                   IMemoryCache memoryCache,
-                                   ILogger<DomainObjectStore> logger)
+                                 ISnapshotStore snapshotStore,
+                                 IMemoryCache memoryCache,
+                                 IConfiguration configuration,
+                                 ILogger<DomainObjectStore> logger)
         {
             _eventStore = eventStore;
             _snapshotStore = snapshotStore;
             _memoryCache = memoryCache;
+            _configuration = configuration;
             _logger = logger;
         }
 
@@ -47,6 +52,23 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         public Task<IResult<T>> GetStreamedObject<T>(T streamedObject, string identifier, long maxVersion) where T : DomainObject
             => GetStreamedObjectInternal(streamedObject, identifier, maxVersion, identifier, true);
+
+        private TimeSpan GetCacheTime()
+        {
+            try
+            {
+                var span = _configuration.GetSection("MemoryCache:Local:Duration").Get<TimeSpan?>();
+
+                if (span is null || span.Value <= TimeSpan.Zero)
+                    return _defaultTimeSpan;
+
+                return span.Value;
+            }
+            catch (Exception)
+            {
+                return _defaultTimeSpan;
+            }
+        }
 
         private async Task<IResult<T>> GetStreamedObjectInternal<T>(T streamedObject,
                                                                     string identifier,
@@ -72,7 +94,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                 _logger.LogInformation($"item cached: priority={priority}; size={size}; key={cacheKey}");
 
-                var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                var cts = new CancellationTokenSource(GetCacheTime());
 
                 _memoryCache.Set(cacheKey,
                                  streamedObject,
