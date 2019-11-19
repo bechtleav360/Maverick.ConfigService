@@ -14,9 +14,6 @@
         /// <inheritdoc cref="EventStoreConnectionConfiguration" />
         public EventStoreConnectionConfiguration EventStoreConnection { get; set; }
 
-        /// <inheritdoc cref="MemoryCacheConfiguration" />
-        public MemoryCacheConfiguration MemoryCache { get; set; }
-
         /// <inheritdoc cref="ProtectedConfiguration" />
         public ProtectedConfiguration Protected { get; set; }
     }

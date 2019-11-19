@@ -196,7 +196,7 @@ namespace Bechtle.A365.ConfigService
                     })
                     .AddStackExchangeRedisCache(options =>
                     {
-                        var connectionString = Configuration.Get<ConfigServiceConfiguration>()?.MemoryCache?.Redis?.ConnectionString ?? string.Empty;
+                        var connectionString = Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>();
 
                         if (string.IsNullOrWhiteSpace(connectionString))
                             throw new ArgumentNullException(nameof(connectionString), "MemoryCache:Redis:ConnectionString is null or empty");
