@@ -297,22 +297,31 @@ namespace Bechtle.A365.ConfigService
 
         private void RegisterSnapshotStores(IServiceCollection services)
         {
+            var storesRegistered = false;
+
             var postgresSection = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres");
             if (postgresSection.GetSection("Enabled").Get<bool>())
+            {
                 services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
                         .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
                             _logger,
                             (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
+                storesRegistered = true;
+            }
 
             var mssqlSection = Configuration.GetSection("SnapshotConfiguration:Stores:MsSql");
             if (mssqlSection.GetSection("Enabled").Get<bool>())
+            {
                 services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
                         .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
                             _logger,
                             (provider, builder) => { builder.UseSqlServer(mssqlSection.GetSection("ConnectionString").Get<string>()); });
+                storesRegistered = true;
+            }
 
             var arangoSection = Configuration.GetSection("SnapshotConfiguration:Stores:Arango");
             if (arangoSection.GetSection("Enabled").Get<bool>())
+            {
                 services.AddScoped<ISnapshotStore, ArangoSnapshotStore>(_logger)
                         .AddHttpClient("Arango", (provider, client) =>
                         {
@@ -339,6 +348,14 @@ namespace Bechtle.A365.ConfigService
                             client.DefaultRequestHeaders.Authorization =
                                 new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
                         });
+                storesRegistered = true;
+            }
+
+            if (storesRegistered)
+                return;
+
+            _logger.LogWarning($"no actual snapshot-stores have been registered, using {nameof(MemorySnapshotStore)} as fallback");
+            services.AddScoped<ISnapshotStore, MemorySnapshotStore>(_logger);
         }
 
         private void RegisterSwagger(IServiceCollection services)
