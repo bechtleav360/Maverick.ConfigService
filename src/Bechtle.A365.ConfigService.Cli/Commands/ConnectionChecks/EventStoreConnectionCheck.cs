@@ -42,9 +42,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             output.WriteLine("Connecting to EventStore using Effective Configuration");
 
-            var configuration = settings.EffectiveConfiguration.Get<ConfigServiceConfiguration>();
+            var configuration = settings.EffectiveConfiguration.GetSection("EventStoreConnection").Get<EventStoreConnectionConfiguration>();
 
-            if (configuration?.EventStoreConnection is null)
+            if (configuration is null)
             {
                 output.WriteLine("Effective Configuration (EventStoreConnection) is null - see previous checks", 1);
                 return new TestResult
@@ -54,7 +54,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 };
             }
 
-            output.WriteLine($"Using EventStore @ '{configuration.EventStoreConnection.Stream}' => {configuration.EventStoreConnection.Stream}");
+            output.WriteLine($"Using EventStore @ '{configuration.Stream}' => {configuration.Stream}");
 
             using (var connection = MakeConnection(configuration))
             {
@@ -92,14 +92,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         /// <param name="connection"></param>
         /// <param name="configuration"></param>
         /// <returns></returns>
-        private async Task<TestResult> CountEvents(IEventStoreConnection connection, ConfigServiceConfiguration configuration)
+        private async Task<TestResult> CountEvents(IEventStoreConnection connection, EventStoreConnectionConfiguration configuration)
         {
-            _output.WriteLine($"Counting all Events in Stream '{configuration.EventStoreConnection.Stream}'", 1);
+            _output.WriteLine($"Counting all Events in Stream '{configuration.Stream}'", 1);
 
             _startTime = DateTime.Now;
 
             // subscribe to the stream to count the number of events contained in it
-            connection.SubscribeToStreamFrom(configuration.EventStoreConnection.Stream,
+            connection.SubscribeToStreamFrom(configuration.Stream,
                                              StreamCheckpoint.StreamStart,
                                              new CatchUpSubscriptionSettings(128, 256, false, true, "ConfigService.CLI.ConnectionTest"),
                                              (subscription, @event) => { _countedEvents += 1; },
@@ -187,12 +187,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         /// </summary>
         /// <param name="configuration"></param>
         /// <returns></returns>
-        private IEventStoreConnection MakeConnection(ConfigServiceConfiguration configuration)
+        private IEventStoreConnection MakeConnection(EventStoreConnectionConfiguration configuration)
             => EventStoreConnection.Create(ConnectionSettings.Create()
                                                              .KeepReconnecting()
                                                              .KeepRetrying(),
-                                           new Uri(configuration.EventStoreConnection.Uri),
-                                           configuration.EventStoreConnection.ConnectionName);
+                                           new Uri(configuration.Uri),
+                                           configuration.ConnectionName);
 
         private void OnAuthenticationFailed(object sender, ClientAuthenticationFailedEventArgs args)
             => _output.WriteLine($"Authentication to EventStore failed: {args.Reason}", 1);

@@ -19,22 +19,23 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void ConfigureWithEmptySection()
         {
+            var configuration = new ConfigurationBuilder()
+                                .AddInMemoryCollection(new[]
+                                {
+                                    new KeyValuePair<string, string>("ConnectionName", "UnitTest"),
+                                    new KeyValuePair<string, string>("MaxLiveQueueSize", "8"),
+                                    new KeyValuePair<string, string>("ReadBatchSize", "64"),
+                                    new KeyValuePair<string, string>("Stream", "ConfigStream"),
+                                    new KeyValuePair<string, string>("Uri", "tcp://admin:changeit@localhost:2113"),
+                                })
+                                .Build();
+
             var provider = new ServiceCollection()
                            .AddLogging()
                            .AddSingleton<NumberThresholdSnapshotTrigger>()
                            .AddSingleton(new Mock<IEventStore>(MockBehavior.Strict).Object)
                            .AddSingleton(new Mock<ISnapshotStore>(MockBehavior.Strict).Object)
-                           .AddSingleton(new ConfigServiceConfiguration
-                           {
-                               EventStoreConnection = new EventStoreConnectionConfiguration
-                               {
-                                   ConnectionName = "UnitTest",
-                                   MaxLiveQueueSize = 8,
-                                   ReadBatchSize = 64,
-                                   Stream = "ConfigStream",
-                                   Uri = "tcp://admin:changeit@localhost:2113"
-                               }
-                           })
+                           .Configure<EventStoreConnectionConfiguration>(configuration)
                            .BuildServiceProvider();
 
             Assert.NotNull(provider.GetRequiredService<NumberThresholdSnapshotTrigger>());
@@ -43,22 +44,23 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void CreateInstance()
         {
+            var configuration = new ConfigurationBuilder()
+                                .AddInMemoryCollection(new[]
+                                {
+                                    new KeyValuePair<string, string>("ConnectionName", "UnitTest"),
+                                    new KeyValuePair<string, string>("MaxLiveQueueSize", "8"),
+                                    new KeyValuePair<string, string>("ReadBatchSize", "64"),
+                                    new KeyValuePair<string, string>("Stream", "ConfigStream"),
+                                    new KeyValuePair<string, string>("Uri", "tcp://admin:changeit@localhost:2113"),
+                                })
+                                .Build();
+
             var provider = new ServiceCollection()
                            .AddLogging()
                            .AddSingleton<NumberThresholdSnapshotTrigger>()
                            .AddSingleton(new Mock<IEventStore>(MockBehavior.Strict).Object)
                            .AddSingleton(new Mock<ISnapshotStore>(MockBehavior.Strict).Object)
-                           .AddSingleton(new ConfigServiceConfiguration
-                           {
-                               EventStoreConnection = new EventStoreConnectionConfiguration
-                               {
-                                   ConnectionName = "UnitTest",
-                                   MaxLiveQueueSize = 8,
-                                   ReadBatchSize = 64,
-                                   Stream = "ConfigStream",
-                                   Uri = "tcp://admin:changeit@localhost:2113"
-                               }
-                           })
+                           .Configure<EventStoreConnectionConfiguration>(configuration)
                            .BuildServiceProvider();
 
             var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();
@@ -69,22 +71,23 @@ namespace Bechtle.A365.ConfigService.Tests
         [Fact]
         public void DisposeObject()
         {
+            var configuration = new ConfigurationBuilder()
+                                .AddInMemoryCollection(new[]
+                                {
+                                    new KeyValuePair<string, string>("ConnectionName", "UnitTest"),
+                                    new KeyValuePair<string, string>("MaxLiveQueueSize", "8"),
+                                    new KeyValuePair<string, string>("ReadBatchSize", "64"),
+                                    new KeyValuePair<string, string>("Stream", "ConfigStream"),
+                                    new KeyValuePair<string, string>("Uri", "tcp://admin:changeit@localhost:2113"),
+                                })
+                                .Build();
+
             var provider = new ServiceCollection()
                            .AddLogging()
                            .AddSingleton<NumberThresholdSnapshotTrigger>()
                            .AddSingleton(new Mock<IEventStore>(MockBehavior.Strict).Object)
                            .AddSingleton(new Mock<ISnapshotStore>(MockBehavior.Strict).Object)
-                           .AddSingleton(new ConfigServiceConfiguration
-                           {
-                               EventStoreConnection = new EventStoreConnectionConfiguration
-                               {
-                                   ConnectionName = "UnitTest",
-                                   MaxLiveQueueSize = 8,
-                                   ReadBatchSize = 64,
-                                   Stream = "ConfigStream",
-                                   Uri = "tcp://admin:changeit@localhost:2113"
-                               }
-                           })
+                           .Configure<EventStoreConnectionConfiguration>(configuration)
                            .BuildServiceProvider();
 
             var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();
@@ -106,22 +109,23 @@ namespace Bechtle.A365.ConfigService.Tests
                   .ReturnsAsync(Result.Success(0L))
                   .Verifiable("Latest Snapshot was not retrieved");
 
+            var configuration = new ConfigurationBuilder()
+                                .AddInMemoryCollection(new[]
+                                {
+                                    new KeyValuePair<string, string>("ConnectionName", "UnitTest"),
+                                    new KeyValuePair<string, string>("MaxLiveQueueSize", "8"),
+                                    new KeyValuePair<string, string>("ReadBatchSize", "64"),
+                                    new KeyValuePair<string, string>("Stream", "ConfigStream"),
+                                    new KeyValuePair<string, string>("Uri", "tcp://admin:changeit@localhost:2113"),
+                                })
+                                .Build();
+
             var provider = new ServiceCollection()
                            .AddLogging()
                            .AddSingleton<NumberThresholdSnapshotTrigger>()
                            .AddSingleton(esMock.Object)
                            .AddSingleton(ssMock.Object)
-                           .AddSingleton(new ConfigServiceConfiguration
-                           {
-                               EventStoreConnection = new EventStoreConnectionConfiguration
-                               {
-                                   ConnectionName = "UnitTest",
-                                   MaxLiveQueueSize = 8,
-                                   ReadBatchSize = 64,
-                                   Stream = "ConfigStream",
-                                   Uri = "tcp://admin:changeit@localhost:2113"
-                               }
-                           })
+                           .Configure<EventStoreConnectionConfiguration>(configuration)
                            .BuildServiceProvider();
 
             var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();
@@ -156,22 +160,23 @@ namespace Bechtle.A365.ConfigService.Tests
                   .ReturnsAsync(Result.Success(0L))
                   .Verifiable("Latest Snapshot was not retrieved");
 
+            var configuration = new ConfigurationBuilder()
+                                .AddInMemoryCollection(new[]
+                                {
+                                    new KeyValuePair<string, string>("ConnectionName", "UnitTest"),
+                                    new KeyValuePair<string, string>("MaxLiveQueueSize", "8"),
+                                    new KeyValuePair<string, string>("ReadBatchSize", "64"),
+                                    new KeyValuePair<string, string>("Stream", "ConfigStream"),
+                                    new KeyValuePair<string, string>("Uri", "tcp://admin:changeit@localhost:2113"),
+                                })
+                                .Build();
+
             var provider = new ServiceCollection()
                            .AddLogging()
                            .AddSingleton<NumberThresholdSnapshotTrigger>()
                            .AddSingleton(esMock.Object)
                            .AddSingleton(ssMock.Object)
-                           .AddSingleton(new ConfigServiceConfiguration
-                           {
-                               EventStoreConnection = new EventStoreConnectionConfiguration
-                               {
-                                   ConnectionName = "UnitTest",
-                                   MaxLiveQueueSize = 8,
-                                   ReadBatchSize = 64,
-                                   Stream = "ConfigStream",
-                                   Uri = "tcp://admin:changeit@localhost:2113"
-                               }
-                           })
+                           .Configure<EventStoreConnectionConfiguration>(configuration)
                            .BuildServiceProvider();
 
             var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();

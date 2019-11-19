@@ -1,10 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 
@@ -67,24 +64,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
             output.WriteLine("Effective Configuration:", 1);
             foreach (var (key, value) in orderedConfigKeys)
                 output.WriteLine($"{key.PadRight(longestKey)} => {value}", 2);
-
-            output.WriteLine(string.Empty, 1);
-
-            output.WriteLine($"Applying Effective Configuration to {nameof(ConfigServiceConfiguration)}", 1);
-
-            var csConfig = new ConfigServiceConfiguration();
-            try
-            {
-                config.Bind(csConfig);
-            }
-            catch (Exception e)
-            {
-                output.WriteLine($"Effective Configuration could not be applied to {nameof(ConfigServiceConfiguration)}", 1);
-                output.WriteLine($"Error: {e.GetType().Name}; {e.Message}", 1);
-            }
-
-            var configJson = JsonSerializer.Serialize(csConfig, new JsonSerializerOptions {WriteIndented = true});
-            output.WriteLine($"Effective Configuration:{Environment.NewLine}{configJson}", 1);
 
             output.WriteLine(string.Empty, 1);
 

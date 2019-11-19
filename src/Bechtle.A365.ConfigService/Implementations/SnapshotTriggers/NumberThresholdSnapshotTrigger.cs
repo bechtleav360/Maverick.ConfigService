@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using EventStore.ClientAPI;
@@ -19,7 +18,6 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
     {
         private readonly IEventStore _eventStore;
         private readonly ILogger _logger;
-        private readonly ConfigServiceConfiguration _serviceConfig;
         private readonly ISnapshotStore _snapshotStore;
 
         private IConfiguration _configuration;
@@ -27,12 +25,10 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
         /// <inheritdoc />
         public NumberThresholdSnapshotTrigger(IEventStore eventStore,
                                               ISnapshotStore snapshotStore,
-                                              ConfigServiceConfiguration serviceConfig,
                                               ILogger<NumberThresholdSnapshotTrigger> logger)
         {
             _eventStore = eventStore;
             _snapshotStore = snapshotStore;
-            _serviceConfig = serviceConfig;
             _logger = logger;
         }
 
@@ -61,9 +57,9 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                _logger.LogDebug($"retrieving last event in '{_serviceConfig.EventStoreConnection.Stream}'");
+                _logger.LogDebug("retrieving last event in EventStore");
                 var lastEventNumber = await _eventStore.GetCurrentEventNumber();
-                _logger.LogDebug($"last event in '{_serviceConfig.EventStoreConnection.Stream}': {lastEventNumber}");
+                _logger.LogDebug($"last event in EventStore: {lastEventNumber}");
 
                 if (cancellationToken.IsCancellationRequested)
                     return;

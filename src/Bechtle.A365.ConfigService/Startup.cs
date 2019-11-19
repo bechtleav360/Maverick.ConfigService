@@ -61,7 +61,7 @@ namespace Bechtle.A365.ConfigService
             _environment = env;
             Configuration = configuration;
 
-            _logger.LogInformation(DebugUtilities.FormatConfiguration<ConfigServiceConfiguration>(configuration));
+            _logger.LogInformation(DebugUtilities.FormatConfiguration(configuration));
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace Bechtle.A365.ConfigService
                                  conf =>
                                  {
                                      conf.ConfigureNLog(_logger);
-                                     _logger.LogInformation(DebugUtilities.FormatConfiguration<ConfigServiceConfiguration>(conf));
+                                     //_logger.LogInformation(DebugUtilities.FormatConfiguration(conf));
                                  },
                                  Configuration);
         }
@@ -145,12 +145,21 @@ namespace Bechtle.A365.ConfigService
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
+            RegisterOptions(services);
             RegisterMvc(services);
             RegisterVersioning(services);
             RegisterSwagger(services);
             RegisterAuthentication(services);
             RegisterDiServices(services);
             RegisterHealthEndpoints(services);
+        }
+
+        private void RegisterOptions(IServiceCollection services)
+        {
+            services.Configure<KestrelAuthenticationConfiguration>(Configuration.GetSection("Authentication:Kestrel"));
+            services.Configure<EventBusConnectionConfiguration>(Configuration.GetSection("EventBusConnection"));
+            services.Configure<ProtectedConfiguration>(Configuration.GetSection("Protection"));
+            services.Configure<EventStoreConnectionConfiguration>(Configuration.GetSection("EventStoreConnection"));
         }
 
         private void RegisterAuthentication(IServiceCollection services)
@@ -203,10 +212,6 @@ namespace Bechtle.A365.ConfigService
 
                         options.Configuration = connectionString;
                     })
-                    .AddScoped(_logger, provider => provider.GetService<IConfiguration>().Get<ConfigServiceConfiguration>())
-                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventBusConnection)
-                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().EventStoreConnection)
-                    .AddScoped(_logger, provider => provider.GetService<ConfigServiceConfiguration>().Protected)
                     .AddScoped<IProjectionStore, ProjectionStore>(_logger)
                     .AddScoped<IStructureProjectionStore, StructureProjectionStore>(_logger)
                     .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
@@ -221,7 +226,7 @@ namespace Bechtle.A365.ConfigService
                     .AddScoped<IDataImporter, DataImporter>(_logger)
                     .AddScoped<IEventBus, WebSocketEventBusClient>(_logger, provider =>
                     {
-                        var config = provider.GetService<EventBusConnectionConfiguration>();
+                        var config = provider.GetRequiredService<IOptionsMonitor<EventBusConnectionConfiguration>>().CurrentValue;
 
                         return new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
                                                            provider.GetService<ILoggerFactory>());

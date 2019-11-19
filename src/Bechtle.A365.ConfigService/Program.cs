@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NLog.Extensions.Logging;
 
@@ -38,85 +39,84 @@ namespace Bechtle.A365.ConfigService
         /// <param name="options"></param>
         private static void ConfigureKestrelCertAuth(KestrelServerOptions options)
         {
-            using (var scope = options.ApplicationServices.CreateScope())
+            using var scope = options.ApplicationServices.CreateScope();
+
+            var logger = scope.ServiceProvider.GetService<ILogger<Program>>();
+
+            var settings = scope.ServiceProvider
+                                .GetService<IOptionsMonitor<KestrelAuthenticationConfiguration>>()
+                                ?.CurrentValue;
+
+            if (settings is null)
             {
-                var logger = scope.ServiceProvider.GetService<ILogger<Program>>();
+                logger.LogWarning($"{nameof(KestrelAuthenticationConfiguration)} is null, can't configure kestrel");
+                return;
+            }
 
-                var settings = scope.ServiceProvider.GetService<ConfigServiceConfiguration>()
-                                    ?.Authentication?.Kestrel;
+            if (!settings.Enabled)
+            {
+                logger.LogWarning("skipping configuration of kestrel");
+                return;
+            }
 
-                if (settings is null)
-                {
-                    logger.LogWarning($"{nameof(AuthenticationConfiguration)} is null, can't configure kestrel");
-                    return;
-                }
+            if (string.IsNullOrWhiteSpace(settings.Certificate))
+            {
+                logger.LogError("no certificate given, provide path to a valid certificate with '" +
+                                $"{nameof(KestrelAuthenticationConfiguration)}:{nameof(KestrelAuthenticationConfiguration.Certificate)}'");
+                return;
+            }
 
-                if (!settings.Enabled)
-                {
-                    logger.LogWarning("skipping configuration of kestrel");
-                    return;
-                }
+            X509Certificate2 certificate = null;
+            if (Path.GetExtension(settings.Certificate) == "pfx")
+                certificate = settings.Password is null
+                                  ? new X509Certificate2(settings.Certificate)
+                                  : new X509Certificate2(settings.Certificate, settings.Password);
 
-                if (string.IsNullOrWhiteSpace(settings.Certificate))
-                {
-                    logger.LogError("no certificate given, provide path to a valid certificate with '" + $"{nameof(AuthenticationConfiguration)}:" +
-                                    $"{nameof(AuthenticationConfiguration.Kestrel)}:" + $"{nameof(AuthenticationConfiguration.Kestrel.Certificate)}" + "'");
-                    return;
-                }
+            var certpath = Environment.GetEnvironmentVariable("ASPNETCORE_SSLCERT_PATH");
+            if (!string.IsNullOrEmpty(certpath) || Path.GetExtension(settings.Certificate) == "crt")
+            {
+                var port = Environment.GetEnvironmentVariable("ASPNETCORE_SSL_PORT");
+                certificate = X509CertificateUtility.LoadFromCrt(certpath) ?? X509CertificateUtility.LoadFromCrt(settings.Certificate);
+                settings.Port = int.Parse(port ?? settings.Port.ToString());
+            }
 
-                X509Certificate2 certificate = null;
-                if (Path.GetExtension(settings.Certificate) == "pfx")
-                    certificate = settings.Password is null
-                                      ? new X509Certificate2(settings.Certificate)
-                                      : new X509Certificate2(settings.Certificate, settings.Password);
+            var connectionOptions = new HttpsConnectionAdapterOptions
+            {
+                ServerCertificate = certificate
+            };
 
-                var certpath = Environment.GetEnvironmentVariable("ASPNETCORE_SSLCERT_PATH");
-                if (!string.IsNullOrEmpty(certpath) || Path.GetExtension(settings.Certificate) == "crt")
-                {
-                    var port = Environment.GetEnvironmentVariable("ASPNETCORE_SSL_PORT");
-                    certificate = X509CertificateUtility.LoadFromCrt(certpath) ?? X509CertificateUtility.LoadFromCrt(settings.Certificate);
-                    settings.Port = int.Parse(port ?? settings.Port.ToString());
-                }
+            var inDocker = bool.Parse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "false");
+            if (!inDocker)
+            {
+                logger.LogInformation("Not running in docker, adding client certificate validation");
+                connectionOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
+                connectionOptions.ClientCertificateValidation = CertificateValidator.DisableChannelValidation;
+            }
 
-                var connectionOptions = new HttpsConnectionAdapterOptions
-                {
-                    ServerCertificate = certificate
-                };
+            logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
 
-                var inDocker = bool.Parse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ?? "false");
-                if (!inDocker)
-                {
-                    logger.LogInformation("Not running in docker, adding client certificate validation");
-                    connectionOptions.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
-                    connectionOptions.ClientCertificateValidation = CertificateValidator.DisableChannelValidation;
-                }
+            if (string.IsNullOrWhiteSpace(settings.IpAddress))
+            {
+                logger.LogError("no ip-address given, provide a valid ipv4 or ipv6 binding-address or 'localhost' for '" +
+                                $"{nameof(KestrelAuthenticationConfiguration)}:{nameof(KestrelAuthenticationConfiguration.IpAddress)}'");
+                return;
+            }
 
-                logger.LogInformation($"loaded certificate: {connectionOptions.ServerCertificate}");
-
-                if (string.IsNullOrWhiteSpace(settings.IpAddress))
-                {
-                    logger.LogError("no ip-address given, provide a valid ipv4 or ipv6 binding-address or 'localhost' for '" +
-                                    $"{nameof(AuthenticationConfiguration)}" + $"{nameof(AuthenticationConfiguration.Kestrel)}" +
-                                    $"{nameof(AuthenticationConfiguration.Kestrel.IpAddress)}" + "'");
-                    return;
-                }
-
-                if (settings.IpAddress == "localhost")
-                {
-                    logger.LogInformation($"binding to: https://localhost:{settings.Port}");
-                    options.ListenLocalhost(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
-                }
-                else if (settings.IpAddress == "*")
-                {
-                    logger.LogInformation($"binding to: https://*:{settings.Port}");
-                    options.ListenAnyIP(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
-                }
-                else
-                {
-                    var ip = IPAddress.Parse(settings.IpAddress);
-                    logger.LogInformation($"binding to: https://{ip}:{settings.Port}");
-                    options.Listen(ip, settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
-                }
+            if (settings.IpAddress == "localhost")
+            {
+                logger.LogInformation($"binding to: https://localhost:{settings.Port}");
+                options.ListenLocalhost(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+            }
+            else if (settings.IpAddress == "*")
+            {
+                logger.LogInformation($"binding to: https://*:{settings.Port}");
+                options.ListenAnyIP(settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
+            }
+            else
+            {
+                var ip = IPAddress.Parse(settings.IpAddress);
+                logger.LogInformation($"binding to: https://{ip}:{settings.Port}");
+                options.Listen(ip, settings.Port, listenOptions => { listenOptions.UseHttps(connectionOptions); });
             }
         }
 

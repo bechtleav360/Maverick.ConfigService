@@ -10,9 +10,8 @@ using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using EventStore.ClientAPI;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Options;
 // god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is essentially a core component of the eco-system
 using ESLogger = EventStore.ClientAPI.ILogger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -22,16 +21,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc cref="IEventStore" />
     public class EventStore : IEventStore, IDisposable
     {
-        private readonly IConfiguration _configuration;
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly ESLogger _eventStoreLogger;
         private readonly ILogger _logger;
         private readonly IMetrics _metrics;
         private readonly IServiceProvider _provider;
+        private readonly IOptionsMonitor<EventStoreConnectionConfiguration> _eventStoreConfiguration;
 
         private IEventStoreConnection _eventStore;
-        private EventStoreConnectionConfiguration _eventStoreConfiguration;
         private EventStoreSubscription _eventSubscription;
 
         /// <inheritdoc />
@@ -39,13 +37,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>
         /// <param name="eventDeserializer"></param>
-        /// <param name="configuration"></param>
+        /// <param name="eventStoreConfiguration"></param>
         /// <param name="metrics"></param>
         public EventStore(ILogger<EventStore> logger,
                           ESLogger eventStoreLogger,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer,
-                          IConfiguration configuration,
+                          IOptionsMonitor<EventStoreConnectionConfiguration> eventStoreConfiguration,
                           IMetrics metrics)
         {
             _connectionLock = new object();
@@ -53,10 +51,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _eventStoreLogger = eventStoreLogger;
             _provider = provider;
             _eventDeserializer = eventDeserializer;
-            _configuration = configuration;
+            _eventStoreConfiguration = eventStoreConfiguration;
             _metrics = metrics;
 
-            ChangeToken.OnChange(_configuration.GetReloadToken, OnConfigurationChanged);
+            _eventStoreConfiguration.OnChange(_ => Connect(true));
         }
 
         /// <inheritdoc cref="Interfaces.ConnectionState" />
@@ -78,7 +76,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // connect if we're not already connected
             Connect();
 
-            var result = await _eventStore.ReadStreamEventsBackwardAsync(_eventStoreConfiguration.Stream, StreamPosition.End, 1, true);
+            var result = await _eventStore.ReadStreamEventsBackwardAsync(_eventStoreConfiguration.CurrentValue.Stream, StreamPosition.End, 1, true);
 
             return result.LastEventNumber;
         }
@@ -113,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                           ? StreamPosition.Start
                                           : StreamPosition.End;
 
-            var stream = _eventStoreConfiguration.Stream;
+            var stream = _eventStoreConfiguration.CurrentValue.Stream;
             bool continueReading;
 
             _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read, " +
@@ -190,7 +188,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                        $"Data: {item.Data.Length} bytes; " +
                                        $"Metadata: {item.Metadata.Length} bytes;");
 
-            var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.Stream,
+            var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.CurrentValue.Stream,
                                                                ExpectedVersion.Any,
                                                                eventData);
 
@@ -234,24 +232,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     _logger.LogWarning(e, "could not cleanly dispose of last EventStore-Connection - this will likely cause problems in the future");
                 }
 
-                _logger.LogDebug("using current config to connect to EventStore");
-
-                var configuration = _configuration.Get<ConfigServiceConfiguration>();
-                _eventStoreConfiguration = configuration.EventStoreConnection;
-
-                _logger.LogInformation($"connecting to '{configuration.EventStoreConnection.Uri}' " +
-                                       $"using connectionName: '{configuration.EventStoreConnection.ConnectionName}'");
+                _logger.LogInformation($"connecting to '{_eventStoreConfiguration.CurrentValue.Uri}' " +
+                                       $"using connectionName: '{_eventStoreConfiguration.CurrentValue.ConnectionName}'");
 
                 try
                 {
-                    _eventStore = EventStoreConnection.Create($"ConnectTo={configuration.EventStoreConnection.Uri}",
+                    _eventStore = EventStoreConnection.Create($"ConnectTo={_eventStoreConfiguration.CurrentValue.Uri}",
                                                               ConnectionSettings.Create()
                                                                                 .PerformOnAnyNode()
                                                                                 .PreferRandomNode()
                                                                                 .KeepReconnecting()
                                                                                 .LimitRetriesForOperationTo(6)
                                                                                 .UseCustomLogger(_eventStoreLogger),
-                                                              configuration.EventStoreConnection.ConnectionName);
+                                                              _eventStoreConfiguration.CurrentValue.ConnectionName);
                 }
                 catch (Exception e)
                 {
@@ -274,8 +267,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }
             }
         }
-
-        private void OnConfigurationChanged() => Connect(true);
 
         private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
         {

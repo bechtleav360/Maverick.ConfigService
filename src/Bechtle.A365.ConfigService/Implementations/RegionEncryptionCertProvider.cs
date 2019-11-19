@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
@@ -10,28 +11,30 @@ namespace Bechtle.A365.ConfigService.Implementations
     public class RegionEncryptionCertProvider : IRegionEncryptionCertProvider
     {
         private readonly ILogger<RegionEncryptionCertProvider> _logger;
-        private readonly ProtectedConfiguration _protectedConfiguration;
+        private readonly IOptionsMonitor<ProtectedConfiguration> _configuration;
 
         /// <inheritdoc />
-        public RegionEncryptionCertProvider(ProtectedConfiguration protectedConfiguration,
+        public RegionEncryptionCertProvider(IOptionsMonitor<ProtectedConfiguration> configuration,
                                             ILogger<RegionEncryptionCertProvider> logger)
         {
             _logger = logger;
-            _protectedConfiguration = protectedConfiguration;
+            _configuration = configuration;
         }
 
         /// <inheritdoc />
         public X509Certificate2 ForRegion(string region)
         {
-            if (_protectedConfiguration.Regions.ContainsKey(region))
+            var config = _configuration.CurrentValue;
+
+            if (config.Regions.ContainsKey(region))
             {
-                _logger.LogDebug($"using certificate '{"ServiceCerts/" + _protectedConfiguration.Regions[region]}' for region '{region}'; using '{region}'");
-                return new X509Certificate2("ServiceCerts/" + _protectedConfiguration.Regions[region]);
+                _logger.LogDebug($"using certificate '{"ServiceCerts/" + config.Regions[region]}' for region '{region}'; using '{region}'");
+                return new X509Certificate2("ServiceCerts/" + config.Regions[region]);
             }
 
-            if (_protectedConfiguration.Regions.ContainsKey("*"))
+            if (config.Regions.ContainsKey("*"))
             {
-                var autoCert = "ServiceCerts/" + _protectedConfiguration.Regions["*"].Replace("*", region);
+                var autoCert = "ServiceCerts/" + config.Regions["*"].Replace("*", region);
 
                 if (File.Exists(autoCert))
                 {
