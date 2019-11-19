@@ -46,12 +46,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             => ReplayObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name, false);
 
         /// <inheritdoc />
-        public Task<IResult<T>> ReplayObject<T>(T streamedObject, string identifier) where T : DomainObject
-            => ReplayObject(streamedObject, identifier, long.MaxValue);
+        public Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier) where T : DomainObject
+            => ReplayObject(domainObject, identifier, long.MaxValue);
 
         /// <inheritdoc />
-        public Task<IResult<T>> ReplayObject<T>(T streamedObject, string identifier, long maxVersion) where T : DomainObject
-            => ReplayObjectInternal(streamedObject, identifier, maxVersion, identifier, true);
+        public Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier, long maxVersion) where T : DomainObject
+            => ReplayObjectInternal(domainObject, identifier, maxVersion, identifier, true);
 
         private TimeSpan GetCacheTime()
         {
@@ -70,7 +70,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
         }
 
-        private async Task<IResult<T>> ReplayObjectInternal<T>(T streamedObject,
+        private async Task<IResult<T>> ReplayObjectInternal<T>(T domainObject,
                                                                string identifier,
                                                                long maxVersion,
                                                                string cacheKey,
@@ -85,19 +85,19 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
 
                 if (!latestSnapshot.IsError)
-                    streamedObject.ApplySnapshot(latestSnapshot.Data);
+                    domainObject.ApplySnapshot(latestSnapshot.Data);
 
-                await StreamObjectToVersion(streamedObject, maxVersion, identifier, useMetadataFilter);
+                await StreamObjectToVersion(domainObject, maxVersion, identifier, useMetadataFilter);
 
-                var size = streamedObject.CalculateCacheSize();
-                var priority = streamedObject.GetCacheItemPriority();
+                var size = domainObject.CalculateCacheSize();
+                var priority = domainObject.GetCacheItemPriority();
 
                 _logger.LogInformation($"item cached: priority={priority}; size={size}; key={cacheKey}");
 
                 var cts = new CancellationTokenSource(GetCacheTime());
 
                 _memoryCache.Set(cacheKey,
-                                 streamedObject,
+                                 domainObject,
                                  new MemoryCacheEntryOptions()
                                      .SetPriority(priority)
                                      .SetSize(size)
@@ -108,7 +108,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                          _logger.LogInformation($"item '{key}' evicted: {reason}");
                                      }));
 
-                return Result.Success(streamedObject);
+                return Result.Success(domainObject);
             }
             catch (Exception e)
             {

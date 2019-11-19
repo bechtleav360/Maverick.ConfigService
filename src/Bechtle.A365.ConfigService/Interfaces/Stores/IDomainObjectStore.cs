@@ -29,20 +29,20 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         ///     identified by <paramref name="identifier" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="streamedObject"></param>
+        /// <param name="domainObject"></param>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        Task<IResult<T>> ReplayObject<T>(T streamedObject, string identifier) where T : DomainObject;
+        Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier) where T : DomainObject;
 
         /// <summary>
         ///     stream the given <see cref="DomainObject" /> to its latest version,
         ///     identified by <paramref name="identifier" />, up to <paramref name="maxVersion" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="streamedObject"></param>
+        /// <param name="domainObject"></param>
         /// <param name="identifier"></param>
         /// <param name="maxVersion"></param>
         /// <returns></returns>
-        Task<IResult<T>> ReplayObject<T>(T streamedObject, string identifier, long maxVersion) where T : DomainObject;
+        Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier, long maxVersion) where T : DomainObject;
     }
 }
