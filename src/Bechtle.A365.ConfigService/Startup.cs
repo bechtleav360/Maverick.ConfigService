@@ -81,6 +81,9 @@ namespace Bechtle.A365.ConfigService
         {
             app.Configure(a => a.UseRouting(), _ => _logger.LogInformation("adding routing"));
 
+            if (Configuration.GetSection("EnableLegacyRedirect").Get<bool>())
+                app.Configure(a => a.UseMiddleware<V0RedirectMiddleware>(), _ => _logger.LogInformation("adding V0-Redirect-Middleware"));
+
             if (Configuration.GetSection("Authentication:Kestrel:Enabled").Get<bool>())
                 app.Configure(a => a.UseAuthentication(), _ => _logger.LogInformation("adding authentication-hooks"));
             else
