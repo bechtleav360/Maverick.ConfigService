@@ -75,72 +75,64 @@ namespace Bechtle.A365.ConfigService
         /// <param name="app"></param>
         /// <param name="env"></param>
         /// <param name="provider"></param>
-        public void Configure(IApplicationBuilder app,
-                              IWebHostEnvironment env,
-                              IApiVersionDescriptionProvider provider)
-        {
-            app.Configure(a => a.UseRouting(), _ => _logger.LogInformation("adding routing"));
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
+            => app.StartTweakingWith(_logger, Configuration)
+                  .Tweak(a => a.UseRouting(), "adding routing")
+                  .TweakWhen(c => c.GetSection("EnableLegacyRedirect"),
+                             a => a.UseMiddleware<V0RedirectMiddleware>(),
+                             "adding V0-Redirect-Middleware")
+                  .TweakWhen(c => c.GetSection("Authentication:Kestrel:Enabled"),
+                             a => a.UseAuthentication(),
+                             "adding authentication-hooks",
+                             "skipping authentication-hooks")
+                  .TweakWhen(env.IsDevelopment(), a => a.UseDeveloperExceptionPage(), "adding Development Exception-Handler")
+                  .TweakWhen(!env.IsDevelopment(), a => a.UseHsts(), "adding HSTS")
+                  .TweakWhen(!env.IsDevelopment(), a => a.UseHttpsRedirection(), "adding HTTPS-Redirect")
+                  .Tweak(a => a.ApplicationServices.SetupNLogServiceLocator(), "finishing NLog configuration")
+                  .Tweak(a => a.UseMiddleware<LoggingMiddleware>(), "adding Correlation-Logging-Middleware")
+                  .Tweak(a => a.UseCors(policy => policy.AllowAnyHeader()
+                                                        .AllowAnyMethod()
+                                                        .AllowAnyOrigin()),
+                         "adding CORS")
+                  .Tweak(a => a.UseSwagger()
+                               .UseSwaggerUI(options =>
+                               {
+                                   options.DocExpansion(DocExpansion.None);
+                                   options.DisplayRequestDuration();
+                                   options.EnableDeepLinking();
+                                   options.EnableFilter();
+                                   options.ShowExtensions();
 
-            if (Configuration.GetSection("EnableLegacyRedirect").Get<bool>())
-                app.Configure(a => a.UseMiddleware<V0RedirectMiddleware>(), _ => _logger.LogInformation("adding V0-Redirect-Middleware"));
-
-            if (Configuration.GetSection("Authentication:Kestrel:Enabled").Get<bool>())
-                app.Configure(a => a.UseAuthentication(), _ => _logger.LogInformation("adding authentication-hooks"));
-            else
-                _logger.LogInformation("skipping authentication-hooks");
-
-            if (env.IsDevelopment())
-                app.Configure(a => a.UseDeveloperExceptionPage(), _ => _logger.LogInformation("adding Development Exception-Handler"));
-            else
-                app.Configure(a => a.UseHsts(), _ => _logger.LogInformation("adding HSTS"))
-                   .Configure(a => a.UseHttpsRedirection(), _ => _logger.LogInformation("adding HTTPS-Redirect"));
-
-            app.Configure(a => a.ApplicationServices.SetupNLogServiceLocator(), _ => _logger.LogInformation("finishing NLog configuration"))
-               .Configure(a => a.UseMiddleware<LoggingMiddleware>(), _ => _logger.LogInformation("adding Correlation-Logging-Middleware"))
-               .Configure(a => a.UseCors(policy => policy.AllowAnyHeader()
-                                                         .AllowAnyMethod()
-                                                         .AllowAnyOrigin()),
-                          _ => _logger.LogInformation("adding CORS"))
-               .Configure(a => a.UseSwagger()
-                                .UseSwaggerUI(options =>
-                                {
-                                    options.DocExpansion(DocExpansion.None);
-                                    options.DisplayRequestDuration();
-                                    options.EnableDeepLinking();
-                                    options.EnableFilter();
-                                    options.ShowExtensions();
-
-                                    foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
-                                        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
-                                                                $"ConfigService {description.GroupName.ToUpperInvariant()}");
-                                }),
-                          _ => _logger.LogInformation("adding Swagger/-UI"))
-               .Configure(a => a.UseEndpoints(routes => routes.MapControllerRoute("Health", "api/health/status/{depth?}", new
-                          {
-                              controller = "Health",
-                              action = "Status"
-                          })),
-                          _ => _logger.LogInformation("adding Health-Middleware"))
-               .Configure(a => a.UseMetricsActiveRequestMiddleware(), _ => _logger.LogInformation("adding active-request metrics"))
-               .Configure(a => a.UseMetricsApdexTrackingMiddleware(), _ => _logger.LogInformation("adding apdex metrics"))
-               .Configure(a => a.UseMetricsErrorTrackingMiddleware(), _ => _logger.LogInformation("adding error metrics"))
-               .Configure(a => a.UseMetricsOAuth2TrackingMiddleware(), _ => _logger.LogInformation("adding oauth metrics"))
-               .Configure(a => a.UseMetricsPostAndPutSizeTrackingMiddleware(), _ => _logger.LogInformation("adding request-size metrics"))
-               .Configure(a => a.UseMetricsRequestTrackingMiddleware(), _ => _logger.LogInformation("adding request-path metrics"))
-               .Configure(a => a.UseMetricsTextEndpoint(), _ => _logger.LogInformation("adding text-metrics endpoint"))
-               .Configure(a => a.UseMetricsEndpoint(), _ => _logger.LogInformation("adding metrics endpoint"))
-               .Configure(a => a.UseEndpoints(builder => builder.MapControllers()), _ => _logger.LogInformation("adding controller-endpoints"));
-
-            _logger.LogInformation("registering config-reload hook");
-
-            ChangeToken.OnChange(Configuration.GetReloadToken,
-                                 conf =>
-                                 {
-                                     conf.ConfigureNLog(_logger);
-                                     //_logger.LogInformation(DebugUtilities.FormatConfiguration(conf));
-                                 },
-                                 Configuration);
-        }
+                                   foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
+                                       options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                                                               $"ConfigService {description.GroupName.ToUpperInvariant()}");
+                               }),
+                         "adding Swagger/-UI")
+                  .Tweak(a => a.UseEndpoints(routes => routes.MapControllerRoute("Health", "api/health/status/{depth?}", new
+                         {
+                             controller = "Health",
+                             action = "Status"
+                         })),
+                         "adding Health-Middleware")
+                  .Tweak(a => a.UseMetricsActiveRequestMiddleware(), "adding active-request metrics")
+                  .Tweak(a => a.UseMetricsApdexTrackingMiddleware(), "adding apdex metrics")
+                  .Tweak(a => a.UseMetricsErrorTrackingMiddleware(), "adding error metrics")
+                  .Tweak(a => a.UseMetricsOAuth2TrackingMiddleware(), "adding oauth metrics")
+                  .Tweak(a => a.UseMetricsPostAndPutSizeTrackingMiddleware(), "adding request-size metrics")
+                  .Tweak(a => a.UseMetricsRequestTrackingMiddleware(), "adding request-path metrics")
+                  .Tweak(a => a.UseMetricsTextEndpoint(), "adding text-metrics endpoint")
+                  .Tweak(a => a.UseMetricsEndpoint(), "adding metrics endpoint")
+                  .Tweak(a => a.UseEndpoints(builder => builder.MapControllers()), "adding controller-endpoints")
+                  .Tweak(_ =>
+                  {
+                      ChangeToken.OnChange(Configuration.GetReloadToken,
+                                           conf =>
+                                           {
+                                               conf.ConfigureNLog(_logger);
+                                               _logger.LogInformation(DebugUtilities.FormatConfiguration(conf));
+                                           },
+                                           Configuration);
+                  }, "registering config-reload hook");
 
         /// <summary>
         ///     Configure DI-Services
