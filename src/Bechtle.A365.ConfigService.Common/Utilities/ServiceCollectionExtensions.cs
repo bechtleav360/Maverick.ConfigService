@@ -63,52 +63,6 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             return services.AddScoped<TService, TImplementation>(implementationFactory);
         }
 
-        public static IServiceCollection AddScoped<TImplementation>(this IServiceCollection services,
-                                                                    ILogger logger,
-                                                                    Func<IServiceProvider, TImplementation> implementationFactory)
-            where TImplementation : class
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Scoped,
-                                          typeof(TImplementation).GetFriendlyName(),
-                                          usingCustomFactory: true);
-
-            return services.AddScoped(implementationFactory);
-        }
-
-        public static IServiceCollection AddScoped(this IServiceCollection services,
-                                                   ILogger logger,
-                                                   Type serviceType)
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Scoped,
-                                          serviceType.GetFriendlyName());
-
-            return services.AddScoped(serviceType);
-        }
-
-        public static IServiceCollection AddScoped(this IServiceCollection services,
-                                                   ILogger logger,
-                                                   Type serviceType,
-                                                   Type implementationType)
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Scoped,
-                                          serviceType.GetFriendlyName(),
-                                          implementationType.GetFriendlyName());
-
-            return services.AddScoped(serviceType, implementationType);
-        }
-
-        public static IServiceCollection AddScoped<T>(this IServiceCollection services,
-                                                      ILogger logger,
-                                                      T implementationInstance)
-            where T : class
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Scoped,
-                                          typeof(T).GetFriendlyName(),
-                                          usingCustomInstance: true);
-
-            return services.AddSingleton(implementationInstance);
-        }
-
         public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services, ILogger logger)
             where TService : class
             where TImplementation : class, TService
@@ -118,42 +72,6 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                           typeof(TImplementation).GetFriendlyName());
 
             return services.AddSingleton<TService, TImplementation>();
-        }
-
-        public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services,
-                                                                                 ILogger logger,
-                                                                                 Func<IServiceProvider, TImplementation> implementationFactory)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Singleton,
-                                          typeof(TService).GetFriendlyName(),
-                                          typeof(TImplementation).GetFriendlyName(),
-                                          true);
-
-            return services.AddSingleton<TService, TImplementation>(implementationFactory);
-        }
-
-        public static IServiceCollection AddSingleton<TImplementation>(this IServiceCollection services,
-                                                                       ILogger logger,
-                                                                       Func<IServiceProvider, TImplementation> implementationFactory)
-            where TImplementation : class
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Singleton,
-                                          typeof(TImplementation).GetFriendlyName(),
-                                          usingCustomFactory: true);
-
-            return services.AddSingleton(implementationFactory);
-        }
-
-        public static IServiceCollection AddSingleton(this IServiceCollection services,
-                                                      ILogger logger,
-                                                      Type serviceType)
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Singleton,
-                                          serviceType.GetFriendlyName());
-
-            return services.AddSingleton(serviceType);
         }
 
         public static IServiceCollection AddSingleton(this IServiceCollection services,
@@ -166,77 +84,6 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                           implementationType.GetFriendlyName());
 
             return services.AddSingleton(serviceType, implementationType);
-        }
-
-        public static IServiceCollection AddSingleton<T>(this IServiceCollection services,
-                                                         ILogger logger,
-                                                         T implementationInstance)
-            where T : class
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Singleton,
-                                          typeof(T).GetFriendlyName(),
-                                          usingCustomInstance: true);
-
-            return services.AddSingleton(implementationInstance);
-        }
-
-        public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services, ILogger logger)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Transient,
-                                          typeof(TService).GetFriendlyName(),
-                                          typeof(TImplementation).GetFriendlyName());
-
-            return services.AddTransient<TService, TImplementation>();
-        }
-
-        public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services,
-                                                                                 ILogger logger,
-                                                                                 Func<IServiceProvider, TImplementation> implementationFactory)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Transient,
-                                          typeof(TService).GetFriendlyName(),
-                                          typeof(TImplementation).GetFriendlyName(),
-                                          true);
-
-            return services.AddTransient<TService, TImplementation>(implementationFactory);
-        }
-
-        public static IServiceCollection AddTransient<TImplementation>(this IServiceCollection services,
-                                                                       ILogger logger,
-                                                                       Func<IServiceProvider, TImplementation> implementationFactory)
-            where TImplementation : class
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Transient,
-                                          typeof(TImplementation).GetFriendlyName(),
-                                          usingCustomFactory: true);
-
-            return services.AddTransient(implementationFactory);
-        }
-
-        public static IServiceCollection AddTransient(this IServiceCollection services,
-                                                      ILogger logger,
-                                                      Type serviceType)
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Transient,
-                                          serviceType.GetFriendlyName());
-
-            return services.AddTransient(serviceType);
-        }
-
-        public static IServiceCollection AddTransient(this IServiceCollection services,
-                                                      ILogger logger,
-                                                      Type serviceType,
-                                                      Type implementationType)
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Transient,
-                                          serviceType.GetFriendlyName(),
-                                          implementationType.GetFriendlyName());
-
-            return services.AddTransient(serviceType, implementationType);
         }
 
         private static string GetFriendlyName(this Type type)
