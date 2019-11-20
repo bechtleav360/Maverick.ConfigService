@@ -164,6 +164,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             internal DbSet<PostgresSnapshot> Snapshots { get; set; }
         }
 
+        [Table(nameof(PostgresSnapshot), Schema = "ConfigService")]
         internal class PostgresSnapshot
         {
             public string DataType { get; set; }

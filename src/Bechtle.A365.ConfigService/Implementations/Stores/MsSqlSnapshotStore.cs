@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -163,6 +164,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             internal DbSet<MsSqlSnapshot> Snapshots { get; set; }
         }
 
+        [Table(nameof(MsSqlSnapshot), Schema = "ConfigService")]
         internal class MsSqlSnapshot
         {
             public string DataType { get; set; }
