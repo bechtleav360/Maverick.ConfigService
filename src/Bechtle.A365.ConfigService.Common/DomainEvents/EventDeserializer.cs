@@ -61,8 +61,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
             if (resolvedEvent.OriginalEvent.Metadata?.Any() != true)
             {
-                Logger.LogWarning($"no metadata saved in event '{resolvedEvent.OriginalEvent.EventId}' " +
-                                  $"of type '{resolvedEvent.OriginalEvent.EventType}'");
+                Logger.LogTrace($"no metadata saved in event '{resolvedEvent.OriginalEvent.EventId}' " +
+                                $"of type '{resolvedEvent.OriginalEvent.EventType}'");
                 metadata = new DomainEventMetadata();
                 return true;
             }
