@@ -251,7 +251,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                                                 .KeepReconnecting()
                                                                                 .LimitRetriesForOperationTo(6)
                                                                                 .UseCustomLogger(_eventStoreLogger),
-                                                              _eventStoreConfiguration.CurrentValue.ConnectionName);
+                                                              MakeConnectionName());
                 }
                 catch (Exception e)
                 {
@@ -274,6 +274,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }
             }
         }
+
+        private string MakeConnectionName()
+            => $"{_eventStoreConfiguration.CurrentValue.ConnectionName}-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}";
 
         private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
         {
