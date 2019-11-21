@@ -146,6 +146,7 @@ namespace Bechtle.A365.ConfigService
             RegisterSwagger(services);
             RegisterAuthentication(services);
             RegisterDiServices(services);
+            RegisterSnapshotStores(services);
             RegisterHealthEndpoints(services);
         }
 
@@ -240,8 +241,6 @@ namespace Bechtle.A365.ConfigService
                     .AddHostedService<TemporaryKeyCleanupService>(_logger)
                     .AddHostedService<SnapshotService>(_logger)
                     .AddHostedService<IncrementalSnapshotService>(_logger);
-
-            RegisterSnapshotStores(services);
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)
