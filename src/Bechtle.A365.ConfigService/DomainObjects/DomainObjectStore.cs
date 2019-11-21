@@ -16,8 +16,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class DomainObjectStore : IDomainObjectStore
     {
-        private readonly TimeSpan _defaultTimeSpan = TimeSpan.FromMinutes(15);
         private readonly IConfiguration _configuration;
+        private readonly TimeSpan _defaultTimeSpan = TimeSpan.FromMinutes(15);
         private readonly IEventStore _eventStore;
         private readonly ILogger<DomainObjectStore> _logger;
         private readonly IMemoryCache _memoryCache;
@@ -95,6 +95,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 _logger.LogInformation($"item cached: priority={priority}; size={size}; key={cacheKey}");
 
                 var cts = new CancellationTokenSource(GetCacheTime());
+                (CancellationTokenSource, ILogger<DomainObjectStore>) callbackParams = (cts, _logger);
 
                 _memoryCache.Set(cacheKey,
                                  domainObject,
@@ -104,9 +105,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                      .AddExpirationToken(new CancellationChangeToken(cts.Token))
                                      .RegisterPostEvictionCallback((key, value, reason, state) =>
                                      {
-                                         cts.Dispose();
-                                         _logger.LogInformation($"item '{key}' evicted: {reason}");
-                                     }));
+                                         var (tokenSource, logger) = ((CancellationTokenSource, ILogger<DomainObjectStore>)) state;
+                                         tokenSource?.Dispose();
+                                         logger?.LogInformation($"cached item '{key}' evicted: {reason}");
+                                     }, callbackParams));
 
                 return Result.Success(domainObject);
             }
