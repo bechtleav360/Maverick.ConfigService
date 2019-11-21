@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.DomainObjects;
@@ -9,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// <summary>
     ///     Store, to retrieve Snapshots of <see cref="DomainObject" />
     /// </summary>
-    public interface ISnapshotStore
+    public interface ISnapshotStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     get the highest event-number of the currently saved snapshots

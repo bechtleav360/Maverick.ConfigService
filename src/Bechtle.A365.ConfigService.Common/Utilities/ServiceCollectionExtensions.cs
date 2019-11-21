@@ -29,15 +29,6 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             return services.AddHostedService<THostedService>();
         }
 
-        public static IServiceCollection AddScoped<TService>(this IServiceCollection services, ILogger logger)
-            where TService : class
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Scoped,
-                                          typeof(TService).GetFriendlyName());
-
-            return services.AddScoped<TService>();
-        }
-
         public static IServiceCollection AddScoped<TService, TImplementation>(this IServiceCollection services, ILogger logger)
             where TService : class
             where TImplementation : class, TService
@@ -47,20 +38,6 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                           typeof(TImplementation).GetFriendlyName());
 
             return services.AddScoped<TService, TImplementation>();
-        }
-
-        public static IServiceCollection AddScoped<TService, TImplementation>(this IServiceCollection services,
-                                                                              ILogger logger,
-                                                                              Func<IServiceProvider, TImplementation> implementationFactory)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            logger.LogServiceRegistration(ServiceLifetime.Scoped,
-                                          typeof(TService).GetFriendlyName(),
-                                          typeof(TImplementation).GetFriendlyName(),
-                                          true);
-
-            return services.AddScoped<TService, TImplementation>(implementationFactory);
         }
 
         public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services, ILogger logger)
@@ -84,6 +61,39 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
                                           implementationType.GetFriendlyName());
 
             return services.AddSingleton(serviceType, implementationType);
+        }
+
+        public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services,
+                                                                                 ILogger logger,
+                                                                                 Func<IServiceProvider, TImplementation> implementationFactory)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            logger.LogServiceRegistration(ServiceLifetime.Transient,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TimeSpan).GetFriendlyName(),
+                                          true);
+
+            return services.AddTransient<TService, TImplementation>(implementationFactory);
+        }
+
+        public static IServiceCollection AddTransient<TService>(this IServiceCollection services, ILogger logger)
+            where TService : class
+        {
+            logger.LogServiceRegistration(ServiceLifetime.Transient, typeof(TService).GetFriendlyName());
+
+            return services.AddTransient<TService>();
+        }
+
+        public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services, ILogger logger)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            logger.LogServiceRegistration(ServiceLifetime.Transient,
+                                          typeof(TService).GetFriendlyName(),
+                                          typeof(TimeSpan).GetFriendlyName());
+
+            return services.AddTransient<TService, TImplementation>();
         }
 
         private static string GetFriendlyName(this Type type)

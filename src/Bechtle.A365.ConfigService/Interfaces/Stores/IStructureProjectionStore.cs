@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -8,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// <summary>
     ///     read projected Structures
     /// </summary>
-    public interface IStructureProjectionStore
+    public interface IStructureProjectionStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     create a new Structure with the given Identifier

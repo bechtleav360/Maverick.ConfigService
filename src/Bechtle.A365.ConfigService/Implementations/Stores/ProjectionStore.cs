@@ -1,4 +1,5 @@
-﻿using Bechtle.A365.ConfigService.Interfaces.Stores;
+﻿using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Interfaces.Stores;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
@@ -16,6 +17,27 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             Structures = structureStore;
             Environments = environmentStore;
             Configurations = configurationStore;
+        }
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (Configurations != null)
+                await Configurations.DisposeAsync();
+
+            if (Environments != null)
+                await Environments.DisposeAsync();
+
+            if (Structures != null)
+                await Structures.DisposeAsync();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Configurations?.Dispose();
+            Environments?.Dispose();
+            Structures?.Dispose();
         }
 
         /// <inheritdoc />

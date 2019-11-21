@@ -19,15 +19,15 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <inheritdoc cref="IEventStore" />
-    public class EventStore : IEventStore, IDisposable
+    public class EventStore : IEventStore
     {
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
+        private readonly IOptionsMonitor<EventStoreConnectionConfiguration> _eventStoreConfiguration;
         private readonly ESLogger _eventStoreLogger;
         private readonly ILogger _logger;
         private readonly IMetrics _metrics;
         private readonly IServiceProvider _provider;
-        private readonly IOptionsMonitor<EventStoreConnectionConfiguration> _eventStoreConfiguration;
 
         private IEventStoreConnection _eventStore;
         private EventStoreSubscription _eventSubscription;
@@ -59,6 +59,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         /// <inheritdoc cref="Interfaces.ConnectionState" />
         public static ConnectionState ConnectionState { get; private set; } = ConnectionState.Disconnected;
+
+        /// <inheritdoc />
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return new ValueTask(Task.CompletedTask);
+        }
 
         /// <inheritdoc />
         public void Dispose()

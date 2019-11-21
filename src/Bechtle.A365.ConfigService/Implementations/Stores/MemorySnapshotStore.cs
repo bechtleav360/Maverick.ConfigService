@@ -19,6 +19,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             = new ConcurrentDictionary<string, AnnotatedSnapshot>(StringComparer.Ordinal);
 
         /// <inheritdoc />
+        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+        }
+
+        /// <inheritdoc />
         public Task<IResult<long>> GetLatestSnapshotNumbers()
             => Task.FromResult(
                 Result.Success(

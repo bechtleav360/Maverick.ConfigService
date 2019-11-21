@@ -41,6 +41,19 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         /// <inheritdoc />
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return new ValueTask(Task.CompletedTask);
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _httpClient?.Dispose();
+        }
+
+        /// <inheritdoc />
         public async Task<IResult<long>> GetLatestSnapshotNumbers()
         {
             if (!TryGetCollectionName(out var collection))

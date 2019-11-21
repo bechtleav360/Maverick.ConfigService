@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.DomainObjects;
 
@@ -7,7 +8,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// <summary>
     ///     Store to retrieve the latest available Version of a <see cref="DomainObject" />
     /// </summary>
-    public interface IDomainObjectStore
+    public interface IDomainObjectStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     get the latest version of a simple <see cref="DomainObject" />

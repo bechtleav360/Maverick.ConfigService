@@ -31,6 +31,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
+        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+        }
+
+        /// <inheritdoc />
         public Task<IResult> Extend(string region, string key, TimeSpan duration) => Extend(region, new[] {key}, duration);
 
         /// <inheritdoc />

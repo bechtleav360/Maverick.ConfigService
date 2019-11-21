@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -10,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// <summary>
     ///     read projected Environments
     /// </summary>
-    public interface IEnvironmentProjectionStore
+    public interface IEnvironmentProjectionStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     create a new Environment with the given <see cref="EnvironmentIdentifier" />

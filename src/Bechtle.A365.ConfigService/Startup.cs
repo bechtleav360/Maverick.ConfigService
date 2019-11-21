@@ -208,30 +208,30 @@ namespace Bechtle.A365.ConfigService
 
                         options.Configuration = connectionString;
                     })
-                    .AddScoped<IProjectionStore, ProjectionStore>(_logger)
-                    .AddScoped<IStructureProjectionStore, StructureProjectionStore>(_logger)
-                    .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
-                    .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)
-                    .AddScoped<ITemporaryKeyStore, TemporaryKeyStore>(_logger)
-                    .AddScoped<IConfigurationCompiler, ConfigurationCompiler>(_logger)
-                    .AddScoped<IJsonTranslator, JsonTranslator>(_logger)
-                    .AddScoped<IConfigurationParser, AntlrConfigurationParser>(_logger)
-                    .AddScoped<IConfigProtector, ConfigProtector>(_logger)
-                    .AddScoped<IRegionEncryptionCertProvider, RegionEncryptionCertProvider>(_logger)
-                    .AddScoped<IDataExporter, DataExporter>(_logger)
-                    .AddScoped<IDataImporter, DataImporter>(_logger)
-                    .AddScoped<IEventBus, WebSocketEventBusClient>(_logger, provider =>
+                    .AddTransient<IProjectionStore, ProjectionStore>(_logger)
+                    .AddTransient<IStructureProjectionStore, StructureProjectionStore>(_logger)
+                    .AddTransient<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
+                    .AddTransient<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)
+                    .AddTransient<ITemporaryKeyStore, TemporaryKeyStore>(_logger)
+                    .AddTransient<IConfigurationCompiler, ConfigurationCompiler>(_logger)
+                    .AddTransient<IJsonTranslator, JsonTranslator>(_logger)
+                    .AddTransient<IConfigurationParser, AntlrConfigurationParser>(_logger)
+                    .AddTransient<IConfigProtector, ConfigProtector>(_logger)
+                    .AddTransient<IRegionEncryptionCertProvider, RegionEncryptionCertProvider>(_logger)
+                    .AddTransient<IDataExporter, DataExporter>(_logger)
+                    .AddTransient<IDataImporter, DataImporter>(_logger)
+                    .AddTransient<IEventBus, WebSocketEventBusClient>(_logger, provider =>
                     {
                         var config = provider.GetRequiredService<IOptionsMonitor<EventBusConnectionConfiguration>>().CurrentValue;
 
                         return new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
                                                            provider.GetService<ILoggerFactory>());
                     })
-                    .AddScoped<ICommandValidator, InternalDataCommandValidator>(_logger)
-                    .AddScoped<IDomainObjectStore, DomainObjectStore>(_logger)
-                    .AddScoped<TimerSnapshotTrigger>(_logger)
-                    .AddScoped<NumberThresholdSnapshotTrigger>(_logger)
-                    .AddScoped<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
+                    .AddTransient<ICommandValidator, InternalDataCommandValidator>(_logger)
+                    .AddTransient<IDomainObjectStore, DomainObjectStore>(_logger)
+                    .AddTransient<TimerSnapshotTrigger>(_logger)
+                    .AddTransient<NumberThresholdSnapshotTrigger>(_logger)
+                    .AddTransient<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
                     .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddSingleton<IEventStore, Implementations.Stores.EventStore>(_logger)
                     .AddSingleton<ESLogger, EventStoreLogger>(_logger)

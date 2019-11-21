@@ -8,7 +8,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// <summary>
     ///     Store for temporary, high-priority Keys
     /// </summary>
-    public interface ITemporaryKeyStore
+    public interface ITemporaryKeyStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     extend the lifespan of a temporary key in the store, and setting a new lifespan

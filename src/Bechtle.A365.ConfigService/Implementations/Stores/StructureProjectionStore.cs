@@ -15,9 +15,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc />
     public class StructureProjectionStore : IStructureProjectionStore
     {
+        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IEventStore _eventStore;
         private readonly ILogger<StructureProjectionStore> _logger;
-        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc />
@@ -30,6 +30,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _domainObjectStore = domainObjectStore;
             _eventStore = eventStore;
             _validators = validators.ToList();
+        }
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (_domainObjectStore != null)
+                await _domainObjectStore.DisposeAsync();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _domainObjectStore?.Dispose();
         }
 
         /// <inheritdoc />

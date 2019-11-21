@@ -20,10 +20,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public class ConfigurationProjectionStore : IConfigurationProjectionStore
     {
         private readonly IConfigurationCompiler _compiler;
+        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IEventStore _eventStore;
         private readonly ILogger<ConfigurationProjectionStore> _logger;
         private readonly IConfigurationParser _parser;
-        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IJsonTranslator _translator;
         private readonly IList<ICommandValidator> _validators;
 
@@ -43,6 +43,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _translator = translator;
             _eventStore = eventStore;
             _validators = validators.ToList();
+        }
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (_domainObjectStore != null)
+                await _domainObjectStore.DisposeAsync();
         }
 
         /// <inheritdoc />
@@ -343,6 +350,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error<string>($"failed to retrieve used environment keys for id: {formattedParams}: {e}",
                                             ErrorCode.DbQueryError);
             }
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _domainObjectStore?.Dispose();
         }
     }
 }

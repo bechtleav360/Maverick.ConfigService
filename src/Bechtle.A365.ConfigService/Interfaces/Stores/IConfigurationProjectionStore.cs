@@ -10,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// <summary>
     ///     read projected Configurations
     /// </summary>
-    public interface IConfigurationProjectionStore
+    public interface IConfigurationProjectionStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     build a new Configuration with the given Environment and Structure, valid in the given time-frame

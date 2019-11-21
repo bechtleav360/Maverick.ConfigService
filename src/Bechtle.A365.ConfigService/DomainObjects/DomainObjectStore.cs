@@ -38,6 +38,19 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (_snapshotStore != null)
+                await _snapshotStore.DisposeAsync();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _snapshotStore?.Dispose();
+        }
+
+        /// <inheritdoc />
         public Task<IResult<T>> ReplayObject<T>() where T : DomainObject, new()
             => ReplayObject<T>(long.MaxValue);
 

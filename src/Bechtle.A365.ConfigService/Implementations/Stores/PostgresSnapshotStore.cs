@@ -30,6 +30,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (_context != null)
+                await _context.DisposeAsync();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _context?.Dispose();
+        }
+
+        /// <inheritdoc />
         public async Task<IResult<long>> GetLatestSnapshotNumbers()
         {
             try

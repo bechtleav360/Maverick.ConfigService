@@ -1,9 +1,11 @@
-﻿namespace Bechtle.A365.ConfigService.Interfaces.Stores
+﻿using System;
+
+namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
     /// <summary>
     ///     read projected configurations
     /// </summary>
-    public interface IProjectionStore
+    public interface IProjectionStore : IDisposable, IAsyncDisposable
     {
         /// <inheritdoc cref="IConfigurationProjectionStore" />
         IConfigurationProjectionStore Configurations { get; }

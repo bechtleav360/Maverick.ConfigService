@@ -498,5 +498,18 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error<IEnumerable<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys", ErrorCode.Undefined);
             }
         }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _domainObjectStore?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (_domainObjectStore != null)
+                await _domainObjectStore.DisposeAsync();
+        }
     }
 }

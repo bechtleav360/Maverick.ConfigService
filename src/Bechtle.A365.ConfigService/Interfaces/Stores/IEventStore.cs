@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// <summary>
     ///     internal EventStore interface
     /// </summary>
-    public interface IEventStore
+    public interface IEventStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
         ///     event triggered once a new Event has been received from EventStore
