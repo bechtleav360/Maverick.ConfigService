@@ -91,10 +91,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                 var size = domainObject.CalculateCacheSize();
                 var priority = domainObject.GetCacheItemPriority();
+                var cacheDuration = GetCacheTime();
 
-                _logger.LogInformation($"item cached: priority={priority}; size={size}; key={cacheKey}");
+                _logger.LogInformation($"item cached: duration={cacheDuration:g}; priority={priority}; size={size}; key={cacheKey}");
 
-                var cts = new CancellationTokenSource(GetCacheTime());
+                var cts = new CancellationTokenSource(cacheDuration);
                 (CancellationTokenSource, ILogger<DomainObjectStore>) callbackParams = (cts, _logger);
 
                 _memoryCache.Set(cacheKey,
