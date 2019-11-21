@@ -57,28 +57,37 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                _logger.LogDebug("retrieving last event in EventStore");
-                var lastEventNumber = await _eventStore.GetCurrentEventNumber();
-                _logger.LogDebug($"last event in EventStore: {lastEventNumber}");
-
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                _logger.LogDebug("retrieving event-number of last Snapshot");
-                var currentSnapshotEventNumber = await GetCurrentSnapshotEventNumber();
-                _logger.LogDebug($"event-number of last Snapshot: {currentSnapshotEventNumber}");
-
                 var threshold = _configuration.GetSection("Max").Get<long>();
                 _logger.LogDebug($"resolved threshold: {threshold}");
 
-                if (lastEventNumber - currentSnapshotEventNumber > threshold)
+                if (threshold > 0)
                 {
-                    TriggerSnapshot(lastEventNumber, currentSnapshotEventNumber, threshold);
-                    return;
-                }
+                    _logger.LogDebug("retrieving last event in EventStore");
+                    var lastEventNumber = await _eventStore.GetCurrentEventNumber();
+                    _logger.LogDebug($"last event in EventStore: {lastEventNumber}");
 
-                if (cancellationToken.IsCancellationRequested)
-                    return;
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    _logger.LogDebug("retrieving event-number of last Snapshot");
+                    var currentSnapshotEventNumber = await GetCurrentSnapshotEventNumber();
+                    _logger.LogDebug($"event-number of last Snapshot: {currentSnapshotEventNumber}");
+
+                    if (lastEventNumber - currentSnapshotEventNumber > threshold)
+                    {
+                        TriggerSnapshot(lastEventNumber, currentSnapshotEventNumber, threshold);
+                        return;
+                    }
+
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+                }
+                else
+                {
+                    _logger.LogInformation($"invalid threshold set: {threshold}; " +
+                                           "select a positive threshold greater than 0; " +
+                                           "skipping immediate threshold-check");
+                }
 
                 _eventStore.EventAppeared += EventStoreOnEventAppeared;
             }
@@ -92,15 +101,21 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
         {
             var (subscription, _) = e;
 
+            var threshold = _configuration.GetSection("Max").Get<long>();
+            _logger.LogDebug($"resolved threshold: {threshold}");
+
+            if (threshold <= 0)
+            {
+                _logger.LogInformation($"invalid threshold set: {threshold}; select a positive threshold greater than 0");
+                return;
+            }
+
             var lastEventNumber = subscription.LastEventNumber ?? 0;
             _logger.LogDebug($"event received, EventNumber: {lastEventNumber}");
 
             _logger.LogDebug("retrieving event-number of last Snapshot");
             var currentSnapshotEventNumber = await GetCurrentSnapshotEventNumber();
             _logger.LogDebug($"event-number of last Snapshot: {currentSnapshotEventNumber}");
-
-            var threshold = _configuration.GetSection("Max").Get<long>();
-            _logger.LogDebug($"resolved threshold: {threshold}");
 
             if (lastEventNumber - currentSnapshotEventNumber > threshold)
                 TriggerSnapshot(lastEventNumber, currentSnapshotEventNumber, threshold);
