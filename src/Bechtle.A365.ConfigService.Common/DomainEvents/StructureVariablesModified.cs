@@ -23,18 +23,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public ConfigKeyAction[] ModifiedKeys { get; }
 
-        public bool Equals(StructureVariablesModified other) => Equals(other, false);
-
         public static bool operator ==(StructureVariablesModified left, StructureVariablesModified right) => Equals(left, right);
 
         public static bool operator !=(StructureVariablesModified left, StructureVariablesModified right) => !Equals(left, right);
-
-        public bool Equals(StructureVariablesModified other, bool _)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Equals(Identifier, other.Identifier) && Equals(ModifiedKeys, other.ModifiedKeys);
-        }
 
         public override bool Equals(object obj)
         {
@@ -45,6 +36,15 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         public override bool Equals(DomainEvent other, bool strict) => Equals(other as StructureVariablesModified, strict);
+
+        public bool Equals(StructureVariablesModified other) => Equals(other, false);
+
+        public bool Equals(StructureVariablesModified other, bool _)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Equals(Identifier, other.Identifier) && Equals(ModifiedKeys, other.ModifiedKeys);
+        }
 
         public override int GetHashCode()
         {

@@ -23,19 +23,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public ConfigKeyAction[] ModifiedKeys { get; }
 
-        public bool Equals(EnvironmentKeysImported other) => Equals(other, false);
-
         public static bool operator ==(EnvironmentKeysImported left, EnvironmentKeysImported right) => Equals(left, right);
 
         public static bool operator !=(EnvironmentKeysImported left, EnvironmentKeysImported right) => !Equals(left, right);
-
-        public bool Equals(EnvironmentKeysImported other, bool _)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Equals(Identifier, other.Identifier)
-                   && Equals(ModifiedKeys, other.ModifiedKeys);
-        }
 
         public override bool Equals(object obj)
         {
@@ -46,6 +36,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentKeysImported, strict);
+
+        public bool Equals(EnvironmentKeysImported other) => Equals(other, false);
+
+        public bool Equals(EnvironmentKeysImported other, bool _)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Equals(Identifier, other.Identifier)
+                   && Equals(ModifiedKeys, other.ModifiedKeys);
+        }
 
         public override int GetHashCode()
         {

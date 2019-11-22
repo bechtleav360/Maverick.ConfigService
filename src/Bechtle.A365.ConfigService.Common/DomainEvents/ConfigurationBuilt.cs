@@ -31,11 +31,21 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public DateTime? ValidTo { get; }
 
-        public bool Equals(ConfigurationBuilt other) => Equals(other, false);
-
         public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
 
         public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((ConfigurationBuilt) obj);
+        }
+
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other as ConfigurationBuilt, strict);
+
+        public bool Equals(ConfigurationBuilt other) => Equals(other, false);
 
         public bool Equals(ConfigurationBuilt other, bool strict)
         {
@@ -47,16 +57,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                          && ValidTo.Equals(other.ValidTo)
                        : Equals(Identifier, other.Identifier);
         }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((ConfigurationBuilt) obj);
-        }
-
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other as ConfigurationBuilt, strict);
 
         public override int GetHashCode()
         {

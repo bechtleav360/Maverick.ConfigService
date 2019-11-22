@@ -24,13 +24,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public string Name { get; }
 
-        public bool Equals(EnvironmentIdentifier other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return string.Equals(Category, other.Category, StringComparison.OrdinalIgnoreCase) && string.Equals(Name, other.Name);
-        }
-
         public static bool operator ==(EnvironmentIdentifier left, EnvironmentIdentifier right) => Equals(left, right);
 
         public static bool operator !=(EnvironmentIdentifier left, EnvironmentIdentifier right) => !Equals(left, right);
@@ -41,6 +34,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
             return Equals((EnvironmentIdentifier) obj);
+        }
+
+        public bool Equals(EnvironmentIdentifier other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return string.Equals(Category, other.Category, StringComparison.OrdinalIgnoreCase) && string.Equals(Name, other.Name);
         }
 
         public override int GetHashCode()

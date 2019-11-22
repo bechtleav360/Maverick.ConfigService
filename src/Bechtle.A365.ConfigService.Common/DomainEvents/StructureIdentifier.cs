@@ -24,13 +24,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public int Version { get; }
 
-        public bool Equals(StructureIdentifier other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Version == other.Version;
-        }
-
         public static bool operator ==(StructureIdentifier left, StructureIdentifier right) => Equals(left, right);
 
         public static bool operator !=(StructureIdentifier left, StructureIdentifier right) => !Equals(left, right);
@@ -41,6 +34,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
             return Equals((StructureIdentifier) obj);
+        }
+
+        public bool Equals(StructureIdentifier other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Version == other.Version;
         }
 
         public override int GetHashCode()

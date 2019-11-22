@@ -33,11 +33,21 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public Dictionary<string, string> Variables { get; }
 
-        public bool Equals(StructureCreated other) => Equals(other, false);
-
         public static bool operator ==(StructureCreated left, StructureCreated right) => Equals(left, right);
 
         public static bool operator !=(StructureCreated left, StructureCreated right) => !Equals(left, right);
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((StructureCreated) obj);
+        }
+
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other as StructureCreated, strict);
+
+        public bool Equals(StructureCreated other) => Equals(other, false);
 
         public bool Equals(StructureCreated other, bool strict)
         {
@@ -49,16 +59,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                          && CompareDictionaries(Variables, other.Variables)
                        : Equals(Identifier, other.Identifier);
         }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((StructureCreated) obj);
-        }
-
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other as StructureCreated, strict);
 
         public override int GetHashCode()
         {

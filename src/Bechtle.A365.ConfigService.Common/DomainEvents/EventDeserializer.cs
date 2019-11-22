@@ -38,7 +38,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public bool ToDomainEvent(ResolvedEvent resolvedEvent, out DomainEvent domainEvent)
         {
             if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
-            {
                 try
                 {
                     var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
@@ -50,7 +49,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 {
                     Logger.LogWarning(e, $"could not deserialize data in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}'");
                 }
-            }
 
             Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
             domainEvent = null;
@@ -68,7 +66,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
 
             if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
-            {
                 try
                 {
                     var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
@@ -80,7 +77,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 {
                     Logger.LogWarning(e, $"could not deserialize metadata in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}'");
                 }
-            }
 
             Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
             metadata = null;

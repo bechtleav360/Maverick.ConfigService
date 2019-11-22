@@ -50,17 +50,6 @@ namespace Bechtle.A365.ConfigService.Common
         /// </summary>
         public string ValueType { get; }
 
-        public bool Equals(ConfigKeyAction other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return string.Equals(Description, other.Description, StringComparison.OrdinalIgnoreCase)
-                   && string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase)
-                   && Type == other.Type
-                   && string.Equals(Value, other.Value, StringComparison.OrdinalIgnoreCase)
-                   && string.Equals(ValueType, other.ValueType, StringComparison.OrdinalIgnoreCase);
-        }
-
         /// <summary>
         /// </summary>
         /// <param name="key"></param>
@@ -94,6 +83,17 @@ namespace Bechtle.A365.ConfigService.Common
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
             return Equals((ConfigKeyAction) obj);
+        }
+
+        public bool Equals(ConfigKeyAction other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return string.Equals(Description, other.Description, StringComparison.OrdinalIgnoreCase)
+                   && string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase)
+                   && Type == other.Type
+                   && string.Equals(Value, other.Value, StringComparison.OrdinalIgnoreCase)
+                   && string.Equals(ValueType, other.ValueType, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()

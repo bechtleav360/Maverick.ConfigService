@@ -127,7 +127,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
                         default:
                             Output.WriteError($"invalid {nameof(ConfigKeyAction)}: {action.Type:G} / {action.Type:D}");
-                            throw new ArgumentOutOfRangeException();
+                            throw new ArgumentOutOfRangeException(nameof(actions), $"unsupported {nameof(ConfigKeyActionType)}: {action.Type}");
                     }
 
                 var serializedDeletions = JsonSerializer.Serialize(deletions.Select(d => d.Key).ToList());
