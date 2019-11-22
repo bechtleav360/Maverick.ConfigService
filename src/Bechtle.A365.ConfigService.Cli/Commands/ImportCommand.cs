@@ -98,11 +98,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                         result = export;
 
                         // if there is nothing in here, we might as well assume we didn't get anything
-                        if (result.Environments is null || !result.Environments.Any())
+                        if (result?.Environments is null || !result.Environments.Any())
                             result = null;
-
                         // if we get more than one environment here, we can't safely overwrite anything with the other files, so we skip'em
-                        if (result.Environments.Length > 1)
+                        else if (result.Environments.Length > 1)
                             return result;
                     }
                     else

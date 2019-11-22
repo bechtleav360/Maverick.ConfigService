@@ -36,7 +36,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((EnvironmentIdentifier) obj);
         }
 
-        public bool Equals(EnvironmentIdentifier other)
+        public virtual bool Equals(EnvironmentIdentifier other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

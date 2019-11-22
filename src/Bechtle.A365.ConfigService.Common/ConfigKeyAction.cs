@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Common
             return Equals((ConfigKeyAction) obj);
         }
 
-        public bool Equals(ConfigKeyAction other)
+        public virtual bool Equals(ConfigKeyAction other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

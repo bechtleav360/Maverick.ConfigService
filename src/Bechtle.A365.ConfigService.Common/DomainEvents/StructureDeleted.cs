@@ -31,9 +31,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 
         public override bool Equals(DomainEvent other, bool strict) => Equals(other as StructureDeleted, strict);
 
-        public bool Equals(StructureDeleted other) => Equals(other, false);
+        public virtual bool Equals(StructureDeleted other) => Equals(other, false);
 
-        public bool Equals(StructureDeleted other, bool _)
+        public virtual bool Equals(StructureDeleted other, bool _)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

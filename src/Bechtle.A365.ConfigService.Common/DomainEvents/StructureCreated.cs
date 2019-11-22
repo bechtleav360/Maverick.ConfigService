@@ -47,9 +47,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 
         public override bool Equals(DomainEvent other, bool strict) => Equals(other as StructureCreated, strict);
 
-        public bool Equals(StructureCreated other) => Equals(other, false);
+        public virtual bool Equals(StructureCreated other) => Equals(other, false);
 
-        public bool Equals(StructureCreated other, bool strict)
+        public virtual bool Equals(StructureCreated other, bool strict)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

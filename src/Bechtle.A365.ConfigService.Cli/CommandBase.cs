@@ -18,6 +18,7 @@ namespace Bechtle.A365.ConfigService.Cli
         public string ConfigServiceEndpoint { get; set; }
 
         [Option("-v|--verbose", Description = "Increase verbosity of logging each time it's supplied")]
+        [SuppressMessage("Major Code Smell", "S2376:Write-only properties should not be used", Justification = "used to set LogLevel via Arguments")]
         public bool[] Verbose
         {
             set

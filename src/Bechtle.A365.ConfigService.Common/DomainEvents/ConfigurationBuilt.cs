@@ -45,9 +45,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 
         public override bool Equals(DomainEvent other, bool strict) => Equals(other as ConfigurationBuilt, strict);
 
-        public bool Equals(ConfigurationBuilt other) => Equals(other, false);
+        public virtual bool Equals(ConfigurationBuilt other) => Equals(other, false);
 
-        public bool Equals(ConfigurationBuilt other, bool strict)
+        public virtual bool Equals(ConfigurationBuilt other, bool strict)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

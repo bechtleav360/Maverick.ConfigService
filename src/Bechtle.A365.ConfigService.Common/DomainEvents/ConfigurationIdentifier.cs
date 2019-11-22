@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((ConfigurationIdentifier) obj);
         }
 
-        public bool Equals(ConfigurationIdentifier other)
+        public virtual bool Equals(ConfigurationIdentifier other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

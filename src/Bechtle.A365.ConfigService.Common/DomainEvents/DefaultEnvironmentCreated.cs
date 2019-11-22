@@ -27,9 +27,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 
         public override bool Equals(DomainEvent other, bool strict) => Equals(other as DefaultEnvironmentCreated, strict);
 
-        public bool Equals(DefaultEnvironmentCreated other) => Equals(other, false);
+        public virtual bool Equals(DefaultEnvironmentCreated other) => Equals(other, false);
 
-        public bool Equals(DefaultEnvironmentCreated other, bool strict)
+        public virtual bool Equals(DefaultEnvironmentCreated other, bool strict)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
