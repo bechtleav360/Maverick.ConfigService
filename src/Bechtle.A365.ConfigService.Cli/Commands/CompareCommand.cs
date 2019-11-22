@@ -157,9 +157,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
                                               // null and "" are treated as equals here
                                               return sourceKey is null
-                                                     || (sourceKey.Value ?? string.Empty).Equals(key.Value ?? string.Empty) != true
-                                                     || (sourceKey.Type ?? string.Empty).Equals(key.Type ?? string.Empty) != true
-                                                     || (sourceKey.Description ?? string.Empty).Equals(key.Description ?? string.Empty) != true;
+                                                     || !(sourceKey.Value ?? string.Empty).Equals(key.Value ?? string.Empty)
+                                                     || !(sourceKey.Type ?? string.Empty).Equals(key.Type ?? string.Empty)
+                                                     || !(sourceKey.Description ?? string.Empty).Equals(key.Description ?? string.Empty);
                                           }).ToList()
                                           : new List<EnvironmentKeyExport>();
 

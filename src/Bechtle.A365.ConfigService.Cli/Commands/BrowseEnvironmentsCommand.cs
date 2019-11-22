@@ -49,13 +49,11 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return 1;
         }
 
-        // ReSharper disable UnusedAutoPropertyAccessor.Local
         private class ConfigEnv
         {
-            public string Category { get; set; }
+            public string Category { get; set; } = string.Empty;
 
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
         }
-        // ReSharper restore UnusedAutoPropertyAccessor.Local
     }
 }

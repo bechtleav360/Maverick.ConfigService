@@ -25,7 +25,7 @@ namespace Bechtle.A365.ConfigService
     /// <summary>
     ///     Main Entry-Point for the Application
     /// </summary>
-    public class Program
+    public static class Program
     {
         /// <summary>
         ///     Build the WebHost that runs this application
@@ -41,7 +41,9 @@ namespace Bechtle.A365.ConfigService
         {
             using var scope = options.ApplicationServices.CreateScope();
 
-            var logger = scope.ServiceProvider.GetService<ILogger<Program>>();
+            var logger = scope.ServiceProvider
+                              .GetService<ILoggerFactory>()
+                              ?.CreateLogger(nameof(Program));
 
             var settings = scope.ServiceProvider
                                 .GetService<IOptionsMonitor<KestrelAuthenticationConfiguration>>()

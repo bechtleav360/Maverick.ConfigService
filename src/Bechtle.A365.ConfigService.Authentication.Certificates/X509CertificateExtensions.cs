@@ -15,11 +15,9 @@ namespace Bechtle.A365.ConfigService.Authentication.Certificates
 
         public static string Sha256Thumbprint(this X509Certificate2 certificate)
         {
-            var certificateHash = SHA256.Create().ComputeHash(certificate.RawData);
-            var hashString = string.Empty;
-
-            foreach (var hashByte in certificateHash)
-                hashString += hashByte.ToString("x2", CultureInfo.InvariantCulture);
+            using var sha256 = SHA256.Create();
+            var certificateHash = sha256.ComputeHash(certificate.RawData);
+            var hashString = string.Join(string.Empty, certificateHash.Select(b => b.ToString("x2", CultureInfo.InvariantCulture)));
 
             return hashString;
         }

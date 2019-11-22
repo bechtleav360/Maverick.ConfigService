@@ -61,11 +61,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var structureKeyResult = await _store.Structures.GetKeys(structId, QueryRange.All);
             if (structureKeyResult.IsError)
-                throw new Exception(structureKeyResult.Message);
+                return ProviderError(structureKeyResult);
 
             var structureVariableResult = await _store.Structures.GetVariables(structId, QueryRange.All);
             if (structureVariableResult.IsError)
-                throw new Exception(structureVariableResult.Message);
+                return ProviderError(structureVariableResult);
 
             var environmentResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
             {
@@ -74,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             });
 
             if (environmentResult.IsError)
-                throw new Exception(environmentResult.Message);
+                return ProviderError(environmentResult);
 
             var structureSnapshot = structureKeyResult.Data;
             var variableSnapshot = structureVariableResult.Data;

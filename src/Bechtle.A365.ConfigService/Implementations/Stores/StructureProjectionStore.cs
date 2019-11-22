@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <inheritdoc />
-    public class StructureProjectionStore : IStructureProjectionStore
+    public sealed class StructureProjectionStore : IStructureProjectionStore
     {
         private readonly IDomainObjectStore _domainObjectStore;
         private readonly IEventStore _eventStore;

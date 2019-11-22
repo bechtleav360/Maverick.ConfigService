@@ -4,7 +4,7 @@ using Bechtle.A365.ConfigService.Interfaces.Stores;
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <inheritdoc cref="IProjectionStore" />
-    public class ProjectionStore : IProjectionStore
+    public sealed class ProjectionStore : IProjectionStore
     {
         /// <inheritdoc />
         /// <param name="structureStore"></param>

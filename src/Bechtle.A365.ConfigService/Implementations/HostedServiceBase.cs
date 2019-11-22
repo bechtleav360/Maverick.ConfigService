@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <summary>
         /// </summary>
         /// <param name="provider"></param>
-        public HostedServiceBase(IServiceProvider provider)
+        protected HostedServiceBase(IServiceProvider provider)
         {
             Provider = provider;
 

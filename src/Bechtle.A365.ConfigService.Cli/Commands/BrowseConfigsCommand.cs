@@ -62,29 +62,25 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
         }
 
-        // ReSharper disable UnusedAutoPropertyAccessor.Global
-        // ReSharper disable UnusedAutoPropertyAccessor.Local
         private class Configuration
         {
-            public ConfigEnv Environment { get; set; }
+            public ConfigEnv Environment { get; set; } = null;
 
-            public ConfigStruct Structure { get; set; }
+            public ConfigStruct Structure { get; set; } = null;
         }
 
         private class ConfigEnv
         {
-            public string Category { get; set; }
+            public string Category { get; set; } = string.Empty;
 
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
         }
 
         public class ConfigStruct
         {
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
 
-            public int Version { get; set; }
+            public int Version { get; set; } = 0;
         }
-        // ReSharper restore UnusedAutoPropertyAccessor.Local
-        // ReSharper restore UnusedAutoPropertyAccessor.Global
     }
 }

@@ -70,7 +70,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                 break;
 
                             default:
-                                throw new ArgumentOutOfRangeException();
+                                Logger.LogWarning($"unknown {nameof(ConfigKeyActionType)} encountered " +
+                                                  $"while reading history of {keysModified.Identifier}: {action.Type}");
+                                continue;
                         }
 
                     return true;
@@ -140,7 +142,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                 break;
 
                             default:
-                                throw new ArgumentOutOfRangeException();
+                                Logger.LogWarning($"unknown {nameof(ConfigKeyActionType)} encountered " +
+                                                  $"while reading history of {keysModified.Identifier}: {action.Type}");
+                                continue;
                         }
                     }
 

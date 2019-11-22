@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <summary>
     ///     <see cref="ISnapshotStore" /> that saves all snapshots in the configured Sql-Server-DB
     /// </summary>
-    public class MsSqlSnapshotStore : ISnapshotStore
+    public sealed class MsSqlSnapshotStore : ISnapshotStore
     {
         private readonly MsSqlSnapshotContext _context;
         private readonly ILogger _logger;

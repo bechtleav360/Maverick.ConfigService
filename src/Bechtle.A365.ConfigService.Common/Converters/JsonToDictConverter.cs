@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
-    public class JsonToDictConverter
+    public static class JsonToDictConverter
     {
         public static IDictionary<string, string> ToDict(JsonElement json, string separator, bool encodePath)
         {
@@ -70,7 +70,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                 // disable, because i want to be explicit about what happens when
                 case JsonValueKind.Undefined:
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(json), json.ValueKind, "unexpected ValueKind");
             }
         }
 

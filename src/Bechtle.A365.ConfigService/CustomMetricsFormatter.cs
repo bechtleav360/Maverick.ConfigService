@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -75,7 +76,7 @@ namespace Bechtle.A365.ConfigService
             {
                 // don't have a logger to which we could report this,
                 // so we throw it with some extra explanation of what could have happened
-                throw new Exception("unable to collect metrics into POCOs, see inner exception for more details", e);
+                throw new MetricsFormatException("unable to collect metrics into POCOs, see inner exception for more details", e);
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -198,5 +199,32 @@ namespace Bechtle.A365.ConfigService
             DurationUnit = timer.DurationUnit,
             Tags = timer.Tags.ToDictionary()
         };
+
+        /// <summary>
+        ///     The Exception that is thrown when formatting MetricsSources to POCOs fails
+        /// </summary>
+        [Serializable]
+        public class MetricsFormatException : Exception
+        {
+            /// <inheritdoc />
+            public MetricsFormatException()
+            {
+            }
+
+            /// <inheritdoc />
+            protected MetricsFormatException(SerializationInfo info, StreamingContext context) : base(info, context)
+            {
+            }
+
+            /// <inheritdoc />
+            public MetricsFormatException(string message) : base(message)
+            {
+            }
+
+            /// <inheritdoc />
+            public MetricsFormatException(string message, Exception innerException) : base(message, innerException)
+            {
+            }
+        }
     }
 }

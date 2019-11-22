@@ -5,7 +5,6 @@ using System.Net;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Events;
-using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.Core.EventBus.Abstraction;
@@ -262,7 +261,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
-        ///     format StructureName and StructureVersion in a constant way, to simplify access to <see cref="TemporaryKeyStore" />
+        ///     format StructureName and StructureVersion in a constant way, to simplify access to <see cref="ITemporaryKeyStore" />
         /// </summary>
         /// <param name="structure"></param>
         /// <param name="version"></param>

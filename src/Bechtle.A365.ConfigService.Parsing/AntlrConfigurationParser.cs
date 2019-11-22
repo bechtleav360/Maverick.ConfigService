@@ -164,7 +164,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             if (_commandLookup.ContainsKey(keyword))
                 return _commandLookup[keyword];
 
-            throw new Exception($"keyword '{keyword}' not supported");
+            throw new ArgumentException($"keyword '{keyword}' not supported");
         }
 
         private string SanitizeReferenceCommand(string command) => command.Trim()

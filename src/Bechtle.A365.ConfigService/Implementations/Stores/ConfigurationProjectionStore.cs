@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <inheritdoc />
-    public class ConfigurationProjectionStore : IConfigurationProjectionStore
+    public sealed class ConfigurationProjectionStore : IConfigurationProjectionStore
     {
         private readonly IConfigurationCompiler _compiler;
         private readonly IDomainObjectStore _domainObjectStore;

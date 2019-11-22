@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
     /// <summary>
     ///     schedule-based snapshot-trigger
     /// </summary>
-    public class TimerSnapshotTrigger : ISnapshotTrigger
+    public sealed class TimerSnapshotTrigger : ISnapshotTrigger
     {
         private readonly ILogger _logger;
         private readonly Timer _timer;

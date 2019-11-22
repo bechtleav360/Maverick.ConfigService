@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Authentication.Certificates
 
             try
             {
-                var chain = new X509Chain
+                using var chain = new X509Chain
                 {
                     ChainPolicy = chainPolicy
                 };
@@ -133,14 +133,11 @@ namespace Bechtle.A365.ConfigService.Authentication.Certificates
             }
         }
 
+        // Certificate authentication takes place at the connection level. We can't prompt once we're in
+        // user code, so the best thing to do is Forbid, not Challenge.
         /// <inheritdoc />
         protected override Task HandleChallengeAsync(AuthenticationProperties properties)
-        {
-            // Certificate authentication takes place at the connection level. We can't prompt once we're in
-            // user code, so the best thing to do is Forbid, not Challenge.
-            Response.StatusCode = 403;
-            return Task.CompletedTask;
-        }
+            => HandleForbiddenAsync(properties);
 
         /// <inheritdoc />
         protected override Task HandleForbiddenAsync(AuthenticationProperties properties)

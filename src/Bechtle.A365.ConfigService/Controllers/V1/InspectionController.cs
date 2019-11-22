@@ -323,20 +323,24 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var warnings = new Dictionary<string, List<string>>();
             foreach (var traceResult in traceList.OfType<KeyTraceResult>())
-            foreach (var warning in traceResult.Warnings)
             {
-                if (!warnings.ContainsKey(traceResult.Key))
-                    warnings.Add(traceResult.Key, new List<string>());
-                warnings[traceResult.Key].Add(warning);
+                foreach (var warning in traceResult.Warnings)
+                {
+                    if (!warnings.ContainsKey(traceResult.Key))
+                        warnings.Add(traceResult.Key, new List<string>());
+                    warnings[traceResult.Key].Add(warning);
+                }
             }
 
             var errors = new Dictionary<string, List<string>>();
             foreach (var traceResult in traceList.OfType<KeyTraceResult>())
-            foreach (var error in traceResult.Errors)
             {
-                if (!errors.ContainsKey(traceResult.Key))
-                    errors.Add(traceResult.Key, new List<string>());
-                errors[traceResult.Key].Add(error);
+                foreach (var error in traceResult.Errors)
+                {
+                    if (!errors.ContainsKey(traceResult.Key))
+                        errors.Add(traceResult.Key, new List<string>());
+                    errors[traceResult.Key].Add(error);
+                }
             }
 
             var result = new StructureInspectionResult

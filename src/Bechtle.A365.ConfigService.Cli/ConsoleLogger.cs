@@ -46,7 +46,7 @@ namespace Bechtle.A365.ConfigService.Cli
         }
 
         /// <inheritdoc />
-        public bool IsEnabled(LogLevel level) => level >= LogLevel;
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel;
 
         /// <inheritdoc />
         public IDisposable BeginScope<TState>(TState state) => new ConsoleScope();
@@ -54,11 +54,12 @@ namespace Bechtle.A365.ConfigService.Cli
         /// <summary>
         ///     dummy object to return *something* when BeginScope is called
         /// </summary>
-        private class ConsoleScope : IDisposable
+        private sealed class ConsoleScope : IDisposable
         {
             /// <inheritdoc />
             public void Dispose()
             {
+                // nothing to dispose of
             }
         }
     }

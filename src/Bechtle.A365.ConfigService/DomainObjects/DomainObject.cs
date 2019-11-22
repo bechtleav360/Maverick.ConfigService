@@ -207,9 +207,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             {
                 var prop = base.CreateProperty(member, memberSerialization);
 
-                if (!prop.Writable)
-                    if (member is PropertyInfo property)
-                        prop.Writable = property.GetSetMethod(true) != null;
+                if (!prop.Writable && member is PropertyInfo property)
+                    prop.Writable = property.GetSetMethod(true) != null;
 
                 return prop;
             }

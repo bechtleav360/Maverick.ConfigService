@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 
@@ -31,6 +32,7 @@ namespace Bechtle.A365.ConfigService.Cli
         }
 
         [Option("-q|--quiet", Description = "Decrease verbosity of logging each time it's supplied")]
+        [SuppressMessage("Major Code Smell", "S2376:Write-only properties should not be used", Justification = "used to set LogLevel via Arguments")]
         public bool[] Quiet
         {
             set

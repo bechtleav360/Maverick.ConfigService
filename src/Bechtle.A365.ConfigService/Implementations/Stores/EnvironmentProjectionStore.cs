@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <inheritdoc />
-    public class EnvironmentProjectionStore : IEnvironmentProjectionStore
+    public sealed class EnvironmentProjectionStore : IEnvironmentProjectionStore
     {
         private readonly IEventStore _eventStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;

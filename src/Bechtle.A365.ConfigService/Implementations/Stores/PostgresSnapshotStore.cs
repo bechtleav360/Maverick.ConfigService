@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <summary>
     ///     <see cref="ISnapshotStore" /> that saves all snapshots in the configured Postgres-DB
     /// </summary>
-    public class PostgresSnapshotStore : ISnapshotStore
+    public sealed class PostgresSnapshotStore : ISnapshotStore
     {
         private readonly PostgresSnapshotContext _context;
         private readonly ILogger _logger;

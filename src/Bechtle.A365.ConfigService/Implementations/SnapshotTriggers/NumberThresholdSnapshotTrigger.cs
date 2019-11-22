@@ -14,7 +14,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
     ///     <see cref="ISnapshotTrigger" /> that triggers once a threshold of DomainEvents,
     ///     that haven't been saved in a snapshot, has been reached
     /// </summary>
-    public class NumberThresholdSnapshotTrigger : ISnapshotTrigger
+    public sealed class NumberThresholdSnapshotTrigger : ISnapshotTrigger
     {
         private readonly IEventStore _eventStore;
         private readonly ILogger _logger;

@@ -42,7 +42,12 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public async Task<IList<DomainObjectSnapshot>> CreateAllSnapshots(CancellationToken cancellationToken)
         {
-            var domainObjects = new List<DomainObject>();
+            var domainObjects = new List<DomainObject>
+            {
+                new ConfigEnvironmentList(),
+                new ConfigStructureList(),
+                new PreparedConfigurationList()
+            };
 
             await _eventStore.ReplayEventsAsStream(tuple => StreamProcessor(tuple, domainObjects));
 

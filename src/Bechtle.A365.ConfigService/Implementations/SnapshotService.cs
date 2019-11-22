@@ -164,7 +164,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private class TriggerConfiguration
         {
-            public string Type { get; set; }
+            public string Type { get; set; } = string.Empty;
         }
     }
 }

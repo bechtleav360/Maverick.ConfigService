@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.DomainObjects;
 using Microsoft.Extensions.Configuration;
 
 namespace Bechtle.A365.ConfigService.Interfaces
 {
     /// <summary>
-    ///     component that can trigger the creation of new snapshots for all available <see cref="DomainObject" />
+    ///     component that can trigger the creation of new snapshots for all available <see cref="DomainObjects.DomainObject" />
     /// </summary>
     public interface ISnapshotTrigger : IDisposable
     {

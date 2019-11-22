@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <summary>
     ///     SnapshotStore that stores all its snapshots in memory
     /// </summary>
-    public class MemorySnapshotStore : ISnapshotStore
+    public sealed class MemorySnapshotStore : ISnapshotStore
     {
         private static readonly ConcurrentDictionary<string, AnnotatedSnapshot> Snapshots
             = new ConcurrentDictionary<string, AnnotatedSnapshot>(StringComparer.Ordinal);
@@ -24,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public void Dispose()
         {
+            // nothing to dispose of
         }
 
         /// <inheritdoc />

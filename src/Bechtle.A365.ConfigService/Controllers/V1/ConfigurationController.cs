@@ -106,7 +106,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("available", Name = "GetAvailableConfigurations")]
         [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        [Obsolete]
+        [Obsolete("use GetConfigurations (GET /) instead")]
         public IActionResult GetAvailableConfigurations([FromQuery] DateTime when,
                                                         [FromQuery] int offset = -1,
                                                         [FromQuery] int length = -1)

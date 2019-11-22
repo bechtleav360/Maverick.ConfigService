@@ -1,14 +1,13 @@
 ﻿using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Interfaces.Stores;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
     /// <summary>
     ///     structured parameters for
-    ///     <see cref="IEnvironmentProjectionStore.GetKeys" />
+    ///     <see cref="Interfaces.Stores.IEnvironmentProjectionStore.GetKeys" />
     ///     and
-    ///     <see cref="IEnvironmentProjectionStore.GetKeyObjects(EnvironmentKeyQueryParameters)" />
+    ///     <see cref="Interfaces.Stores.IEnvironmentProjectionStore.GetKeyObjects(EnvironmentKeyQueryParameters)" />
     /// </summary>
     public struct EnvironmentKeyQueryParameters
     {

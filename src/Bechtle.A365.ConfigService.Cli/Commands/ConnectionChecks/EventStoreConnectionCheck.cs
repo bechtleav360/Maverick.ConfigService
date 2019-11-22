@@ -21,16 +21,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         private IOutput _output;
 
         /// <summary>
-        ///     Time at which the event-count was started
-        /// </summary>
-        private DateTime _startTime = DateTime.MinValue;
-
-        /// <summary>
-        ///     Time at which the event-count was finished or dropped
-        /// </summary>
-        private DateTime _stopTime = DateTime.MaxValue;
-
-        /// <summary>
         ///     flag indicating if the Subscription has been dropped before finishing the event-count - see <see cref="_countedEvents" />
         /// </summary>
         private bool _subscriptionDropped;
@@ -56,30 +46,28 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             output.WriteLine($"Using EventStore @ '{configuration.Stream}' => {configuration.Stream}");
 
-            using (var connection = MakeConnection(configuration))
+            using var connection = MakeConnection(configuration);
+            RegisterEvents(connection);
+
+            try
             {
-                RegisterEvents(connection);
+                await connection.ConnectAsync();
 
-                try
-                {
-                    await connection.ConnectAsync();
+                return await CountEvents(connection, configuration);
+            }
+            catch (Exception e)
+            {
+                output.WriteLine($"Error while Assigning event-handlers: {e.GetType().Name}; {e.Message}", 1);
 
-                    return await CountEvents(connection, configuration);
-                }
-                catch (Exception e)
+                return new TestResult
                 {
-                    output.WriteLine($"Error while Assigning event-handlers: {e.GetType().Name}; {e.Message}", 1);
-
-                    return new TestResult
-                    {
-                        Result = false,
-                        Message = "Error in EventHandler - see previous logs"
-                    };
-                }
-                finally
-                {
-                    DeRegisterEvents(connection);
-                }
+                    Result = false,
+                    Message = "Error in EventHandler - see previous logs"
+                };
+            }
+            finally
+            {
+                DeRegisterEvents(connection);
             }
         }
 
@@ -96,7 +84,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         {
             _output.WriteLine($"Counting all Events in Stream '{configuration.Stream}'", 1);
 
-            _startTime = DateTime.Now;
+            var startTime = DateTime.Now;
+            var stopTime = DateTime.Now;
 
             // subscribe to the stream to count the number of events contained in it
             connection.SubscribeToStreamFrom(configuration.Stream,
@@ -106,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                                              subscription =>
                                              {
                                                  _output.WriteLine($"Subscription to '{subscription.SubscriptionName}' opened", 1);
-                                                 _stopTime = DateTime.Now;
+                                                 stopTime = DateTime.Now;
                                                  _liveProcessingEvents = true;
                                              },
                                              (subscription, reason, exception) =>
@@ -114,7 +103,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                                                  _output.WriteLine(
                                                      $"Subscription to '{subscription.SubscriptionName}' dropped: " +
                                                      $"{reason}; {exception.GetType().Name} {exception.Message}", 1);
-                                                 _stopTime = DateTime.Now;
+                                                 stopTime = DateTime.Now;
                                                  _subscriptionDropped = true;
                                              });
 
@@ -125,7 +114,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
 
             if (_subscriptionDropped)
             {
-                _output.WriteLine($"Counted '{_countedEvents}' events in {FormatTime(_stopTime - _startTime)} before Subscription was dropped", 1);
+                _output.WriteLine($"Counted '{_countedEvents}' events in {FormatTime(stopTime - startTime)} before Subscription was dropped", 1);
                 return new TestResult
                 {
                     Result = false,
@@ -133,7 +122,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
                 };
             }
 
-            _output.WriteLine($"Counted '{_countedEvents}' events in {FormatTime(_stopTime - _startTime)}", 1);
+            _output.WriteLine($"Counted '{_countedEvents}' events in {FormatTime(stopTime - startTime)}", 1);
 
             return new TestResult
             {

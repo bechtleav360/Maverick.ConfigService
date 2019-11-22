@@ -19,7 +19,7 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <inheritdoc cref="IEventStore" />
-    public class EventStore : IEventStore
+    public sealed class EventStore : IEventStore
     {
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
@@ -111,12 +111,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // readSize must be below 4096
             readSize = Math.Min(readSize, 4096);
 
+            var streamOrigin = direction == StreamDirection.Forwards
+                                   ? StreamPosition.Start
+                                   : StreamPosition.End;
+
             // use either the given start-position (if startIndex positive or 0), or the Beginning (depending on Direction)
             var currentPosition = startIndex >= 0
                                       ? startIndex
-                                      : direction == StreamDirection.Forwards
-                                          ? StreamPosition.Start
-                                          : StreamPosition.End;
+                                      : streamOrigin;
 
             var stream = _eventStoreConfiguration.CurrentValue.Stream;
             bool continueReading;

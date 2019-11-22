@@ -14,16 +14,16 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         public DomainEventMetadata DeserializeMetadata(byte[] metadata) => JsonSerializer.Deserialize<DomainEventMetadata>(metadata);
 
         /// <inheritdoc />
-        public (byte[] Data, byte[] Metadata) Serialize(DomainEvent created) => Serialize(created as T);
+        public (byte[] Data, byte[] Metadata) Serialize(DomainEvent domainEvent) => Serialize(domainEvent as T);
 
         /// <inheritdoc />
         public T DeserializeInstance(byte[] data) => JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(data));
 
         /// <inheritdoc />
-        public (byte[] Data, byte[] Metadata) Serialize(T created)
+        public (byte[] Data, byte[] Metadata) Serialize(T domainEvent)
             => (
-                   JsonSerializer.SerializeToUtf8Bytes(created),
-                   JsonSerializer.SerializeToUtf8Bytes(created.GetMetadata())
+                   JsonSerializer.SerializeToUtf8Bytes(domainEvent),
+                   JsonSerializer.SerializeToUtf8Bytes(domainEvent.GetMetadata())
                );
     }
 }

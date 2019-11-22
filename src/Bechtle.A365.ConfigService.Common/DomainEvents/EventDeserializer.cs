@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <inheritdoc />
         public EventDeserializer(IServiceProvider provider, ILogger<EventDeserializer> logger)
         {
-            Logger = logger ?? throw new ArgumentNullException(nameof(Logger));
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Provider = provider;
         }
 

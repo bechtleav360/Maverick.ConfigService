@@ -233,11 +233,12 @@ namespace Bechtle.A365.ConfigService.Cli
 
         private void WriteTableRowEnd() => WriteLine("|");
 
-        private class DisposableDummy : IDisposable
+        private sealed class DisposableDummy : IDisposable
         {
             /// <inheritdoc />
             public void Dispose()
             {
+                // nothing to dispose of
             }
         }
 
@@ -264,7 +265,7 @@ namespace Bechtle.A365.ConfigService.Cli
             /// <summary>
             ///     maximum width of this column
             /// </summary>
-            public int Width => (int) (_width ?? (_width = Math.Max(Values?.Max(x => x.Length) ?? 0, Name.Length)));
+            public int Width => _width ??= Math.Max(Values?.Max(x => x.Length) ?? 0, Name.Length);
         }
     }
 }

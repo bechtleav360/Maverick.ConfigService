@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// <summary>
     ///     Snapshot-Store using ArangoDBs Document-Store as backend
     /// </summary>
-    public class ArangoSnapshotStore : ISnapshotStore
+    public sealed class ArangoSnapshotStore : ISnapshotStore
     {
         private const string ConfigBasePath = "SnapshotConfiguration:Stores:Arango";
         private readonly IConfiguration _configuration;
@@ -326,7 +326,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         // ReSharper disable UnusedMember.Local
         private class LatestSnapshotQuery
         {
-            public long MetaVersion { get; set; }
+            public long MetaVersion { get; set; } = -1;
         }
 
         private class ArangoSnapshot

@@ -14,7 +14,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     default ObjectStore using <see cref="IEventStore" /> and <see cref="ISnapshotStore" /> for retrieving Objects
     /// </summary>
-    public class DomainObjectStore : IDomainObjectStore
+    public sealed class DomainObjectStore : IDomainObjectStore
     {
         private readonly IConfiguration _configuration;
         private readonly TimeSpan _defaultTimeSpan = TimeSpan.FromMinutes(15);
