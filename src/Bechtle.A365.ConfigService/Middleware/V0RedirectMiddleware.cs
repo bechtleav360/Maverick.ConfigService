@@ -24,10 +24,10 @@ namespace Bechtle.A365.ConfigService.Middleware
         /// <returns></returns>
         public Task InvokeAsync(HttpContext context)
         {
-            if (!context.Request.Path.StartsWithSegments("/v0"))
+            if (context.Request.Path.StartsWithSegments("/v1"))
                 return _next(context);
 
-            context.Response.Redirect(context.Request.Path.Value.Replace("/v0", "/v1", StringComparison.OrdinalIgnoreCase), false, true);
+            context.Response.Redirect("/v1" + context.Request.Path.Value, true, true);
             return Task.CompletedTask;
         }
     }
