@@ -76,7 +76,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 return 1;
 
             var comparisons = DeserializeInput(fileContent);
-            if (comparisons is null)
+            if (comparisons is null || !comparisons.Any())
                 return 1;
 
             foreach (var comparison in comparisons)
@@ -103,7 +103,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             catch (JsonException e)
             {
                 Output.WriteError($"could not deserialize json: {e.Message}");
-                return null;
+                return new List<EnvironmentComparison>();
             }
         }
 

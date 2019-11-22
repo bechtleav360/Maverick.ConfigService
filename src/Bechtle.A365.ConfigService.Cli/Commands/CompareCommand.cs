@@ -122,7 +122,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             var comparisons = CompareEnvironments(sourceEnvironment, targetEnvironments);
 
-            if (comparisons is null)
+            if (comparisons is null || !comparisons.Any())
             {
                 Output.WriteError("environments could not be compared");
                 return 1;
@@ -190,7 +190,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             catch (Exception e)
             {
                 Output.WriteLine($"error while comparing environments: {e}");
-                return null;
+                return new List<EnvironmentComparison>();
             }
 
             return comparisons;

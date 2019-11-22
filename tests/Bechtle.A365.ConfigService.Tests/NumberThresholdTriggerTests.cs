@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -69,6 +70,7 @@ namespace Bechtle.A365.ConfigService.Tests
         }
 
         [Fact]
+        [SuppressMessage("Blocker Code Smell", "S2699:Tests should include assertions", Justification = "Assumption is that no exceptions are thrown")]
         public void DisposeObject()
         {
             var configuration = new ConfigurationBuilder()

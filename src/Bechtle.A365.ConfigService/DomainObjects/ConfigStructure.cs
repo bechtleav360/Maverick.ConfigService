@@ -18,10 +18,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 throw new ArgumentNullException(nameof(identifier));
 
             if (string.IsNullOrWhiteSpace(identifier.Name))
-                throw new ArgumentNullException(nameof(identifier.Name));
+                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Name)} is null or empty");
 
             if (identifier.Version <= 0)
-                throw new ArgumentNullException(nameof(identifier.Version));
+                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Version)} is null or empty");
 
             Created = false;
             Deleted = false;

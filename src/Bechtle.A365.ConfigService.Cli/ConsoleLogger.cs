@@ -18,12 +18,12 @@ namespace Bechtle.A365.ConfigService.Cli
         }
 
         /// <inheritdoc />
-        public void Log<TState>(LogLevel level, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            if (!IsEnabled(level))
+            if (!IsEnabled(logLevel))
                 return;
 
-            switch (level)
+            switch (logLevel)
             {
                 case LogLevel.Trace:
                 case LogLevel.Debug:
@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Cli
                     return;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(level), level, null);
+                    throw new ArgumentOutOfRangeException(nameof(logLevel), logLevel, null);
             }
         }
 
