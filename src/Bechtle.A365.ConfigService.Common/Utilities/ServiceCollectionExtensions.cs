@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -108,17 +109,7 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             if (backtickIndex > 0)
                 friendlyName = friendlyName.Remove(backtickIndex);
 
-            friendlyName += "<";
-
-            var typeParameters = type.GetGenericArguments();
-
-            for (var i = 0; i < typeParameters.Length; ++i)
-            {
-                var typeParamName = GetFriendlyName(typeParameters[i]);
-                friendlyName += i == 0 ? typeParamName : "," + typeParamName;
-            }
-
-            friendlyName += ">";
+            friendlyName += $"<{string.Join(',', type.GetGenericArguments().Select(t => t.GetFriendlyName()))}>";
 
             return friendlyName;
         }
