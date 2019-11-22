@@ -389,6 +389,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is EnvironmentKeysImported imported) || imported.Identifier != Identifier)
                 return false;
 
+            Created = true;
             Keys = imported.ModifiedKeys
                            .Where(action => action.Type == ConfigKeyActionType.Set)
                            .ToDictionary(
