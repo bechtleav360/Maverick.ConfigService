@@ -113,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             }
             catch (Exception e)
             {
-                throw new Exception($"error occured during json-translation at level: '{node.Name}'. see InnerException for more information", e);
+                throw new JsonException($"error occured during json-translation at level: '{node.Name}'. see InnerException for more information", e);
             }
         }
 
