@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     internal Lookup, to keep data for Configurations in
         /// </summary>
-        protected Dictionary<ConfigurationIdentifier, ConfigInformation> Lookup { get; set; }
+        public Dictionary<ConfigurationIdentifier, ConfigInformation> Lookup { get; set; }
             = new Dictionary<ConfigurationIdentifier, ConfigInformation>();
 
         // 10 for each Identifier, plus 5 for rest
@@ -107,7 +107,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     internal information for any given Configuration
         /// </summary>
-        protected class ConfigInformation
+        public class ConfigInformation
         {
             /// <Inheritdoc cref="ConfigurationIdentifier" />
             public ConfigurationIdentifier Identifier { get; set; }
