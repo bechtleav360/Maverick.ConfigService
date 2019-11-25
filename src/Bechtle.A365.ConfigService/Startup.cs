@@ -150,14 +150,6 @@ namespace Bechtle.A365.ConfigService
             RegisterHealthEndpoints(services);
         }
 
-        private void RegisterOptions(IServiceCollection services)
-        {
-            services.Configure<KestrelAuthenticationConfiguration>(Configuration.GetSection("Authentication:Kestrel"));
-            services.Configure<EventBusConnectionConfiguration>(Configuration.GetSection("EventBusConnection"));
-            services.Configure<ProtectedConfiguration>(Configuration.GetSection("Protection"));
-            services.Configure<EventStoreConnectionConfiguration>(Configuration.GetSection("EventStoreConnection"));
-        }
-
         private void RegisterAuthentication(IServiceCollection services)
         {
             if (!_environment.EnvironmentName.Equals("docker", StringComparison.OrdinalIgnoreCase))
@@ -294,63 +286,26 @@ namespace Bechtle.A365.ConfigService
                     .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
         }
 
+        private void RegisterOptions(IServiceCollection services)
+        {
+            services.Configure<KestrelAuthenticationConfiguration>(Configuration.GetSection("Authentication:Kestrel"));
+            services.Configure<EventBusConnectionConfiguration>(Configuration.GetSection("EventBusConnection"));
+            services.Configure<ProtectedConfiguration>(Configuration.GetSection("Protection"));
+            services.Configure<EventStoreConnectionConfiguration>(Configuration.GetSection("EventStoreConnection"));
+        }
+
         private void RegisterSnapshotStores(IServiceCollection services)
         {
-            var storesRegistered = false;
-
-            var postgresSection = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres");
-            if (postgresSection.GetSection("Enabled").Get<bool>())
+            var storeRegistration = new[]
             {
-                services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
-                        .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
-                            _logger,
-                            (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
-                storesRegistered = true;
-            }
+                TryAddPostgresSnapshotStore(services),
+                TryAddMsSqlSnapshotStore(services),
+                TryAddArangoSnapshotStore(services),
+                TryAddLocalSnapshotStore(services)
+            };
 
-            var mssqlSection = Configuration.GetSection("SnapshotConfiguration:Stores:MsSql");
-            if (mssqlSection.GetSection("Enabled").Get<bool>())
-            {
-                services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
-                        .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
-                            _logger,
-                            (provider, builder) => { builder.UseSqlServer(mssqlSection.GetSection("ConnectionString").Get<string>()); });
-                storesRegistered = true;
-            }
-
-            var arangoSection = Configuration.GetSection("SnapshotConfiguration:Stores:Arango");
-            if (arangoSection.GetSection("Enabled").Get<bool>())
-            {
-                services.AddScoped<ISnapshotStore, ArangoSnapshotStore>(_logger)
-                        .AddHttpClient("Arango", (provider, client) =>
-                        {
-                            var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
-
-                            var rawUri = config.GetSection("Uri").Get<string>();
-                            if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
-                            {
-                                _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango:Uri='{rawUri}'");
-                                return;
-                            }
-
-                            client.BaseAddress = arangoUri;
-
-                            var user = config.GetSection("User").Get<string>();
-                            var password = config.GetSection("Password").Get<string>();
-
-                            if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
-                            {
-                                _logger.LogWarning("unable to locate User / Password (SnapshotConfiguration:Stores:Arango:[User|Password])");
-                                return;
-                            }
-
-                            client.DefaultRequestHeaders.Authorization =
-                                new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
-                        });
-                storesRegistered = true;
-            }
-
-            if (storesRegistered)
+            // if no SnapshotStore was registered, register Memory-Store as fallback
+            if (storeRegistration.Any(r => r))
                 return;
 
             _logger.LogWarning($"no actual snapshot-stores have been registered, using {nameof(MemorySnapshotStore)} as fallback");
@@ -391,6 +346,84 @@ namespace Bechtle.A365.ConfigService
                         options.GroupNameFormat = "'v'VVV";
                         options.SubstituteApiVersionInUrl = true;
                     });
+        }
+
+        private bool TryAddArangoSnapshotStore(IServiceCollection services)
+        {
+            var arangoSection = Configuration.GetSection("SnapshotConfiguration:Stores:Arango");
+            if (!arangoSection.GetSection("Enabled").Get<bool>())
+                return false;
+
+            services.AddScoped<ISnapshotStore, ArangoSnapshotStore>(_logger)
+                    .AddHttpClient("Arango", (provider, client) =>
+                    {
+                        var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
+
+                        var rawUri = config.GetSection("Uri").Get<string>();
+                        if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
+                        {
+                            _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango:Uri='{rawUri}'");
+                            return;
+                        }
+
+                        client.BaseAddress = arangoUri;
+
+                        var user = config.GetSection("User").Get<string>();
+                        var password = config.GetSection("Password").Get<string>();
+
+                        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
+                        {
+                            _logger.LogWarning("unable to locate User / Password (SnapshotConfiguration:Stores:Arango:[User|Password])");
+                            return;
+                        }
+
+                        client.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
+                    });
+
+            return true;
+        }
+
+        private bool TryAddLocalSnapshotStore(IServiceCollection services)
+        {
+            var localSection = Configuration.GetSection("SnapshotConfiguration:Stores:Local");
+            if (!localSection.GetSection("Enabled").Get<bool>())
+                return false;
+
+            services.AddScoped<ISnapshotStore, LocalFileSnapshotStore>(_logger)
+                    .AddDbContext<LocalFileSnapshotStore.LocalFileSnapshotContext>(
+                        _logger,
+                        (provider, builder) => { builder.UseSqlite(localSection.GetSection("ConnectionString").Get<string>()); });
+
+            return true;
+        }
+
+        private bool TryAddMsSqlSnapshotStore(IServiceCollection services)
+        {
+            var mssqlSection = Configuration.GetSection("SnapshotConfiguration:Stores:MsSql");
+            if (!mssqlSection.GetSection("Enabled").Get<bool>())
+                return false;
+
+            services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
+                    .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
+                        _logger,
+                        (provider, builder) => { builder.UseSqlServer(mssqlSection.GetSection("ConnectionString").Get<string>()); });
+
+            return true;
+        }
+
+        private bool TryAddPostgresSnapshotStore(IServiceCollection services)
+        {
+            var postgresSection = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres");
+            if (!postgresSection.GetSection("Enabled").Get<bool>())
+                return false;
+
+            services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
+                    .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
+                        _logger,
+                        (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
+
+            return true;
         }
     }
 }
