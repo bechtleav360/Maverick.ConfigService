@@ -74,7 +74,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             try
             {
                 var keys = _translator.ToDictionary(structure.Structure);
-                var variables = structure.Variables ?? new Dictionary<string, string>();
+                var variables = (structure.Variables
+                                 ?? new Dictionary<string, object>()).ToDictionary(kvp => kvp.Key,
+                                                                                   kvp => kvp.Value?.ToString());
 
                 var result = await _store.Structures.Create(new StructureIdentifier(structure.Name, structure.Version), keys, variables);
                 if (result.IsError)

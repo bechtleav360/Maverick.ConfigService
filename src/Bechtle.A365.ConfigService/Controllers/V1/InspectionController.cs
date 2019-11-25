@@ -281,17 +281,20 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             try
             {
-                compilationResult = _compiler.Compile(new EnvironmentCompilationInfo
-                                                      {
-                                                          Keys = envKeys,
-                                                          Name = envId.ToString()
-                                                      }, new StructureCompilationInfo
-                                                      {
-                                                          Name = structure.Name ?? "Inspected Structure",
-                                                          Keys = structKeys,
-                                                          Variables = structure.Variables ?? new Dictionary<string, string>()
-                                                      },
-                                                      _parser);
+                compilationResult = _compiler.Compile(
+                    new EnvironmentCompilationInfo
+                    {
+                        Keys = envKeys,
+                        Name = envId.ToString()
+                    }, new StructureCompilationInfo
+                    {
+                        Name = structure.Name ?? "Inspected Structure",
+                        Keys = structKeys,
+                        Variables = (structure.Variables
+                                     ?? new Dictionary<string, object>()).ToDictionary(kvp => kvp.Key,
+                                                                                       kvp => kvp.Value?.ToString())
+                    },
+                    _parser);
             }
             catch (Exception e)
             {
