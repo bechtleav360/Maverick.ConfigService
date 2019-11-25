@@ -152,7 +152,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Identifier = result.Identifier,
                     Version = result.Version,
                     DataType = result.DataType,
-                    JsonData = result.JsonData
+                    JsonData = result.JsonData,
+                    MetaVersion = result.MetaVersion
                 });
             }
             catch (Exception e)
