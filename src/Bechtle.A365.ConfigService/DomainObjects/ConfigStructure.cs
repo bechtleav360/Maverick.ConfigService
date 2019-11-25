@@ -57,8 +57,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         public override long CalculateCacheSize()
             => 12
-               + (Keys?.Sum(p => p.Key.Length + p.Value.Length) ?? 0)
-               + (Variables?.Sum(p => p.Key.Length + p.Value.Length) ?? 0);
+               + (Keys?.Sum(p => p.Key?.Length ?? 0 + p.Value?.Length ?? 0) ?? 0)
+               + (Variables?.Sum(p => p.Key?.Length ?? 0 + p.Value?.Length ?? 0) ?? 0);
 
         /// <summary>
         ///     Mark this Object as Created, and record all events necessary for this action
