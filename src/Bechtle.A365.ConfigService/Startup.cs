@@ -204,7 +204,7 @@ namespace Bechtle.A365.ConfigService
                         var connectionString = Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>();
 
                         if (string.IsNullOrWhiteSpace(connectionString))
-                            throw new ArgumentNullException(nameof(connectionString), "MemoryCache:Redis:ConnectionString is null or empty");
+                            throw new ArgumentException("configuration MemoryCache:Redis:ConnectionString is null or empty", nameof(options));
 
                         options.Configuration = connectionString;
                     })
