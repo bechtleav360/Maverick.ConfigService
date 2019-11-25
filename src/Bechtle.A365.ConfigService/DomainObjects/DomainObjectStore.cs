@@ -132,7 +132,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
             catch (Exception e)
             {
-                _logger.LogWarning(e, $"failed to retrieve {typeof(T).Name} from EventStore");
+                _logger.LogWarning(e, $"failed to retrieve {typeof(T).Name} from EventStore (" +
+                                      $"{nameof(identifier)}: {identifier}, " +
+                                      $"{nameof(maxVersion)}: {maxVersion}, " +
+                                      $"{nameof(cacheKey)}: {cacheKey}, " +
+                                      $"{nameof(useMetadataFilter)}: {useMetadataFilter})");
                 return Result.Error<T>($"failed to retrieve {typeof(T).Name} from EventStore", ErrorCode.FailedToRetrieveItem);
             }
         }
@@ -140,7 +144,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private async Task StreamObjectToVersion(DomainObject domainObject, long maxVersion, string identifier, bool useMetadataFilter)
         {
             // skip streaming entirely if the object is at or above the desired version
-            if (domainObject.CurrentVersion >= maxVersion)
+            if (domainObject.MetaVersion >= maxVersion)
                 return;
 
             var handledEvents = domainObject.GetHandledEvents();
