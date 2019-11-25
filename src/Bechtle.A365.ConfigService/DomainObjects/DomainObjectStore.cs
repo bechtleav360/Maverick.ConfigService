@@ -93,12 +93,16 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             try
             {
                 if (_memoryCache.TryGetValue(cacheKey, out T cachedInstance))
-                    return Result.Success(cachedInstance);
+                {
+                    domainObject = cachedInstance;
+                }
+                else
+                {
+                    var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
 
-                var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
-
-                if (!latestSnapshot.IsError)
-                    domainObject.ApplySnapshot(latestSnapshot.Data);
+                    if (!latestSnapshot.IsError)
+                        domainObject.ApplySnapshot(latestSnapshot.Data);
+                }
 
                 await StreamObjectToVersion(domainObject, maxVersion, identifier, useMetadataFilter);
 
