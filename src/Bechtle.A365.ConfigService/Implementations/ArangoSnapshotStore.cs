@@ -133,12 +133,11 @@ namespace Bechtle.A365.ConfigService.Implementations
             }).ToList();
 
             _logger.LogDebug($"separated '{snapshots.Count}' snapshots into '{groupNum}' batches of up to '{groupSize}' items");
-            var metaVersion = snapshots.Max(s => s.Version);
 
             foreach (var group in groups)
             {
                 _logger.LogDebug($"saving snapshot-group {group.Key} with {group.Count()} items");
-                var result = await SaveSnapshotsInternal(group.ToList(), collection, metaVersion);
+                var result = await SaveSnapshotsInternal(group.ToList(), collection);
                 if (result.IsError)
                     return result;
             }
@@ -272,13 +271,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Error<DomainObjectSnapshot>($"arango-query failed: {result?.Code ?? -1}", ErrorCode.DbQueryError);
         }
 
-        private async Task<IResult> SaveSnapshotsInternal(IList<DomainObjectSnapshot> snapshots, string collection, long metaVersion)
+        private async Task<IResult> SaveSnapshotsInternal(IList<DomainObjectSnapshot> snapshots, string collection)
         {
             var json = JsonSerializer.Serialize(snapshots.Select(s => new ArangoSnapshot
             {
                 Key = Convert.ToBase64String(Encoding.UTF8.GetBytes(s.Identifier)),
                 Data = s.JsonData,
-                MetaVersion = metaVersion
+                MetaVersion = s.MetaVersion
             }).ToList());
 
             var response = await _httpClient.PostAsync($"_api/document/{collection}", new StringContent(json, Encoding.UTF8, "application/json"));

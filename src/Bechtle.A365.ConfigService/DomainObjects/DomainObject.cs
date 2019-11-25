@@ -30,6 +30,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public long CurrentVersion { get; protected set; } = -1;
 
         /// <summary>
+        ///     Version of last Event applied to this Object (disregarding if it was meant for this object)
+        /// </summary>
+        public long MetaVersion { get; protected set; } = -1;
+
+        /// <summary>
         ///     List of Captured, Successful events applied to this Object
         /// </summary>
         protected List<DomainEvent> CapturedDomainEvents { get; set; } = new List<DomainEvent>();
@@ -80,6 +85,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (HandlerMapping.TryGetValue(replayedEvent.DomainEvent.GetType(), out var handler)
                 && handler.Invoke(replayedEvent))
                 CurrentVersion = replayedEvent.Version;
+            MetaVersion = replayedEvent.Version;
         }
 
         /// <summary>
@@ -102,6 +108,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }) as DomainObject;
 
             CurrentVersion = snapshot.Version;
+            MetaVersion = snapshot.MetaVersion;
 
             ApplySnapshotInternal(other);
         }
@@ -116,6 +123,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             {
                 Identifier = GetSnapshotIdentifier(),
                 Version = CurrentVersion,
+                MetaVersion = MetaVersion,
                 DataType = GetType().Name,
                 JsonData = JsonConvert.SerializeObject(this, GetType(), new JsonSerializerSettings
                 {

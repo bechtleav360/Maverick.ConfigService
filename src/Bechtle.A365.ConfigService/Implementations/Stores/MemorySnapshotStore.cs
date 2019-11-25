@@ -74,12 +74,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (snapshots is null || !snapshots.Any())
                 return Task.FromResult(Result.Success());
 
-            var metaVersion = snapshots.Max(s => s.Version);
-
             foreach (var snapshot in snapshots)
                 Snapshots[MakeKeyFor(snapshot)] = new AnnotatedSnapshot
                 {
-                    MetaVersion = metaVersion,
+                    MetaVersion = snapshot.MetaVersion,
                     Snapshot = snapshot
                 };
 

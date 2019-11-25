@@ -92,8 +92,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 _context.Snapshots.RemoveRange(oldSnapshots);
 
-                var snapshotBatchVersion = snapshots.Max(s => s.Version);
-
                 _context.SaveChanges();
 
                 _context.Snapshots.AddRange(snapshots.Select(s => new MsSqlSnapshot
@@ -102,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Version = s.Version,
                     DataType = s.DataType,
                     JsonData = s.JsonData,
-                    MetaVersion = snapshotBatchVersion
+                    MetaVersion = s.MetaVersion
                 }));
 
                 _context.SaveChanges();

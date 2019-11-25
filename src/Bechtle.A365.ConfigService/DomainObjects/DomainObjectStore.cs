@@ -171,7 +171,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     });
 
                     return true;
-                }, startIndex: domainObject.CurrentVersion);
+                }, startIndex: domainObject.MetaVersion);
         }
     }
 }

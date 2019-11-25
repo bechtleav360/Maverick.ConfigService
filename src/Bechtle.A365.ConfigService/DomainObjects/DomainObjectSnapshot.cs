@@ -24,5 +24,10 @@
         ///     EventStore-Version of the original <see cref="DomainObject" />
         /// </summary>
         public long Version { get; set; }
+
+        /// <summary>
+        ///     EventStore-MetaVersion of the original <see cref="DomainObject"/>
+        /// </summary>
+        public long MetaVersion { get; set; }
     }
 }
