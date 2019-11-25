@@ -87,5 +87,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <returns></returns>
         Task<IResult<string>> GetVersion(ConfigurationIdentifier identifier, DateTime when);
+
+        /// <summary>
+        ///     check if the given configuration is currently stale or not
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<IResult<bool>> IsStale(ConfigurationIdentifier identifier);
     }
 }

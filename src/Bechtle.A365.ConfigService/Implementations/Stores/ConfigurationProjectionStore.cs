@@ -46,13 +46,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async ValueTask DisposeAsync()
-        {
-            if (_domainObjectStore != null)
-                await _domainObjectStore.DisposeAsync();
-        }
-
-        /// <inheritdoc />
         public async Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo)
         {
             var configResult = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
@@ -74,6 +67,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                           .ToList());
 
             return await configuration.WriteRecordedEvents(_eventStore);
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _domainObjectStore?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (_domainObjectStore != null)
+                await _domainObjectStore.DisposeAsync();
         }
 
         /// <inheritdoc />
@@ -353,9 +359,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public void Dispose()
+        public async Task<IResult<bool>> IsStale(ConfigurationIdentifier identifier)
         {
-            _domainObjectStore?.Dispose();
+            try
+            {
+                var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
+                if (list.IsError)
+                    return Result.Success(true);
+
+                return Result.Success(list.Data
+                                          .GetStale()
+                                          .Any(id => id.Equals(identifier)));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "failed to retrieve projected configurations");
+                return Result.Error<bool>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
+            }
         }
     }
 }

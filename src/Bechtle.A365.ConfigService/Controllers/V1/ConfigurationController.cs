@@ -73,12 +73,35 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (structure is null)
                 return NotFound($"no versions of structure '{structureName}' found");
 
-            var result = await _store.Configurations.Build(new ConfigurationIdentifier(environment, structure, 0),
-                                                           buildOptions?.ValidFrom,
-                                                           buildOptions?.ValidTo);
+            var configId = new ConfigurationIdentifier(environment, structure, 0);
 
-            if (result.IsError)
-                return ProviderError(result);
+            var stalenessResult = await _store.Configurations.IsStale(configId);
+
+            if (stalenessResult.IsError)
+                return ProviderError(stalenessResult);
+
+            bool requestApproved;
+
+            if (stalenessResult.Data)
+            {
+                var result = await _store.Configurations.Build(configId,
+                                                               buildOptions?.ValidFrom,
+                                                               buildOptions?.ValidTo);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                requestApproved = true;
+            }
+            else
+            {
+                Logger.LogInformation($"request for new Configuration ({configId}) denied due to it not being stale");
+                requestApproved = false;
+            }
+
+            // add a header indicating if a new Configuration was actually built or not
+            HttpContext.Response.OnStarting(state => Task.FromResult(HttpContext.Response.Headers.TryAdd("x-built", ((bool) state).ToString())),
+                                            requestApproved);
 
             return AcceptedAtAction(
                 nameof(GetConfiguration),
