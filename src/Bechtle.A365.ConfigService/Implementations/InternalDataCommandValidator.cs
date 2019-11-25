@@ -110,7 +110,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             if (actions is null || !actions.Any())
                 return Result.Error("invalid data: no modified keys", ErrorCode.ValidationFailed);
 
-
             var errors = actions.Select(ValidateConfigKeyAction)
                                 .Where(r => r.IsError)
                                 .ToList();

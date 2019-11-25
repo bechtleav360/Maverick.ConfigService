@@ -13,7 +13,6 @@ using Bechtle.A365.ConfigService.Common.Serialization;
 using Bechtle.A365.Utilities.Rest;
 using McMaster.Extensions.CommandLineUtils;
 
-
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
     /// <inheritdoc />

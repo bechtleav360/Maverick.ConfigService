@@ -103,8 +103,6 @@ namespace Bechtle.A365.ConfigService
         public static readonly string EventStore = $"{Generics}.EventStore";
         public static readonly string EventValidation = $"{Generics}.EventValidation";
         public static readonly string Exceptions = $"{Generics}.Errors";
-
-
         public static readonly string TemporaryKeys = $"{Generics}.TemporaryKeys";
     }
 }
