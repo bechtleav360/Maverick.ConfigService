@@ -107,7 +107,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
         }
 
-        private async Task ExecuteActions(EnvironmentIdentifier identifier, IEnumerable<ConfigKeyAction> actions)
+        private Task ExecuteActions(EnvironmentIdentifier identifier, IEnumerable<ConfigKeyAction> actions)
         {
             try
             {
@@ -134,23 +134,25 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 var serializedChanges = JsonSerializer.Serialize(changes);
 
                 if ((Mode & ComparisonMode.Delete) != 0 && deletions.Any())
-                    await RestRequest.Make(Output)
-                                     .Delete(new Uri(new Uri(ConfigServiceEndpoint), $"v1/environments/{identifier.Category}/{identifier.Name}/keys"),
-                                             new StringContent(serializedDeletions,
-                                                               Encoding.UTF8,
-                                                               "application/json"));
+                    return RestRequest.Make(Output)
+                                      .Delete(new Uri(new Uri(ConfigServiceEndpoint), $"v1/environments/{identifier.Category}/{identifier.Name}/keys"),
+                                              new StringContent(serializedDeletions,
+                                                                Encoding.UTF8,
+                                                                "application/json"));
 
                 if ((Mode & ComparisonMode.Add) != 0 && changes.Any())
-                    await RestRequest.Make(Output)
-                                     .Put(new Uri(new Uri(ConfigServiceEndpoint), $"v1/environments/{identifier.Category}/{identifier.Name}/keys"),
-                                          new StringContent(serializedChanges,
-                                                            Encoding.UTF8,
-                                                            "application/json"));
+                    return RestRequest.Make(Output)
+                                      .Put(new Uri(new Uri(ConfigServiceEndpoint), $"v1/environments/{identifier.Category}/{identifier.Name}/keys"),
+                                           new StringContent(serializedChanges,
+                                                             Encoding.UTF8,
+                                                             "application/json"));
             }
             catch (Exception e)
             {
                 Output.WriteErrorLine($"could not update '{identifier}': {e.Message}");
             }
+
+            return Task.CompletedTask;
         }
 
         private async Task<(bool, string)> ReadInput(string path)
