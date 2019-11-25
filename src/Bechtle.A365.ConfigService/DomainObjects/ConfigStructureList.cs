@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     internal Lookup to keep track of Structures
         /// </summary>
-        protected HashSet<StructureIdentifier> Identifiers { get; set; } = new HashSet<StructureIdentifier>();
+        public HashSet<StructureIdentifier> Identifiers { get; set; } = new HashSet<StructureIdentifier>();
 
         /// <inheritdoc />
         public override long CalculateCacheSize()

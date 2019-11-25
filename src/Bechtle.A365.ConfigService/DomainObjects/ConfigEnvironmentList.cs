@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     internal Lookup to keep track of Environments
         /// </summary>
-        protected HashSet<EnvironmentIdentifier> Identifiers { get; set; } = new HashSet<EnvironmentIdentifier>();
+        public HashSet<EnvironmentIdentifier> Identifiers { get; set; } = new HashSet<EnvironmentIdentifier>();
 
         /// <inheritdoc />
         public override long CalculateCacheSize()
