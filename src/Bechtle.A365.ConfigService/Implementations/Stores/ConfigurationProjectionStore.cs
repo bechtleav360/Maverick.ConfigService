@@ -419,9 +419,18 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Success(true);
                 }
 
-                return Result.Success(list.Data
-                                          .GetStale()
-                                          .Any(id => id.Equals(identifier)));
+                // if it's on the list of known stale Configs return Stale / True
+                if (list.Data
+                        .GetStale()
+                        .Any(id => id.Equals(identifier)))
+                    return Result.Success(true);
+
+                // if it's not, but still known to us, it's not Stale / False
+                if (list.Data.GetIdentifiers().Keys.Any(id => id.Equals(identifier)))
+                    return Result.Success(false);
+
+                // otherwise it defaults to Stale / True
+                return Result.Success(true);
             }
             catch (Exception e)
             {
