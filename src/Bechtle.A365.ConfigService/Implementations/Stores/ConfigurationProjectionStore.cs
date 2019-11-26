@@ -365,7 +365,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
-                    return Result.Success(true);
+                {
+                    _logger.LogInformation($"could not retrieve ConfigurationList to determine staleness of '{identifier}', defaulting to false");
+                    return Result.Success(false);
+                }
 
                 return Result.Success(list.Data
                                           .GetStale()
