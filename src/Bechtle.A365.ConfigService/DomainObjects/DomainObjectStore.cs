@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -94,16 +95,27 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             {
                 if (_memoryCache.TryGetValue(cacheKey, out T cachedInstance))
                 {
+                    _logger.LogDebug($"retrieved cached item for key '{cacheKey}'");
                     domainObject = cachedInstance;
                 }
                 else
                 {
+                    _logger.LogDebug($"no cached item for key '{cacheKey}' found, " +
+                                     $"attempting to retrieve latest snapshot below or at version {maxVersion} for '{identifier}'");
+
                     var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
 
                     if (!latestSnapshot.IsError)
+                    {
+                        _logger.LogDebug($"snapshot for '{identifier}' found, " +
+                                         $"version '{latestSnapshot.Data.Version}', " +
+                                         $"meta '{latestSnapshot.Data.MetaVersion}'");
                         domainObject.ApplySnapshot(latestSnapshot.Data);
+                    }
                 }
 
+                _logger.LogDebug($"replaying events for '{identifier}', " +
+                                 $"'{domainObject.MetaVersion}' => '{maxVersion}'{(useMetadataFilter ? "" : " not")} using metadata-filter");
                 await StreamObjectToVersion(domainObject, maxVersion, identifier, useMetadataFilter);
 
                 var size = domainObject.CalculateCacheSize();
@@ -148,6 +160,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return;
 
             var handledEvents = domainObject.GetHandledEvents();
+            var appliedEvents = new List<long>();
 
             await _eventStore.ReplayEventsAsStream(
                 tuple =>
@@ -167,6 +180,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     if (recordedEvent.EventNumber > maxVersion)
                         return false;
 
+                    var versionBefore = domainObject.CurrentVersion;
+
                     domainObject.ApplyEvent(new ReplayedEvent
                     {
                         UtcTime = recordedEvent.Created.ToUniversalTime(),
@@ -174,8 +189,16 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                         DomainEvent = domainEvent
                     });
 
+                    if (domainObject.CurrentVersion > versionBefore)
+                    {
+                        _logger.LogTrace($"applied event {recordedEvent.EventNumber} / '{recordedEvent.EventType}' to '{identifier}'");
+                        appliedEvents.Add(recordedEvent.EventNumber);
+                    }
+
                     return true;
                 }, startIndex: domainObject.MetaVersion);
+
+            _logger.LogDebug($"applied {appliedEvents.Count} events to '{identifier}': {string.Join(", ", appliedEvents)}");
         }
     }
 }
