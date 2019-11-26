@@ -24,50 +24,19 @@ namespace Bechtle.A365.ConfigService.Implementations
             if (string.IsNullOrWhiteSpace(domainEvent.EventType))
                 return Result.Error("event does not contain EventType", ErrorCode.ValidationFailed);
 
-            IResult result;
-
-            switch (domainEvent)
+            var result = domainEvent switch
             {
-                case ConfigurationBuilt @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case DefaultEnvironmentCreated @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case EnvironmentCreated @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case EnvironmentDeleted @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case EnvironmentKeysImported @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case EnvironmentKeysModified @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case StructureCreated @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case StructureDeleted @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                case StructureVariablesModified @event:
-                    result = ValidateDomainEvent(@event);
-                    break;
-
-                default:
-                    result = Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed);
-                    break;
-            }
+                ConfigurationBuilt @event => ValidateDomainEvent(@event),
+                DefaultEnvironmentCreated @event => ValidateDomainEvent(@event),
+                EnvironmentCreated @event => ValidateDomainEvent(@event),
+                EnvironmentDeleted @event => ValidateDomainEvent(@event),
+                EnvironmentKeysImported @event => ValidateDomainEvent(@event),
+                EnvironmentKeysModified @event => ValidateDomainEvent(@event),
+                StructureCreated @event => ValidateDomainEvent(@event),
+                StructureDeleted @event => ValidateDomainEvent(@event),
+                StructureVariablesModified @event => ValidateDomainEvent(@event),
+                _ => Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed)
+            };
 
             _metrics.Measure.Counter.Increment(KnownMetrics.EventsValidated, result.IsError ? "Invalid" : "Valid");
 

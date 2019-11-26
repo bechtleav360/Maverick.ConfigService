@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Utilities
         public static X509Certificate2 LoadCertificate(StoreName storeName, StoreLocation storeLocation, string thumbprint)
         {
             // The following code gets the cert from the keystore
-            var store = new X509Store(storeName, storeLocation);
+            using var store = new X509Store(storeName, storeLocation);
 
             store.Open(OpenFlags.ReadOnly);
 
@@ -85,25 +85,24 @@ namespace Bechtle.A365.ConfigService.Utilities
 
         private static RSACryptoServiceProvider PrivateKeyFromPemFile(string privateKey)
         {
-            using (TextReader privateKeyTextReader = new StringReader(privateKey))
-            {
-                var readKeyPair = (AsymmetricCipherKeyPair) new PemReader(privateKeyTextReader).ReadObject();
-                var privateKeyParams = (RsaPrivateCrtKeyParameters) readKeyPair.Private;
-                var cryptoServiceProvider = new RSACryptoServiceProvider();
-                cryptoServiceProvider.ImportParameters(new RSAParameters
-                {
-                    Modulus = privateKeyParams.Modulus.ToByteArrayUnsigned(),
-                    P = privateKeyParams.P.ToByteArrayUnsigned(),
-                    Q = privateKeyParams.Q.ToByteArrayUnsigned(),
-                    DP = privateKeyParams.DP.ToByteArrayUnsigned(),
-                    DQ = privateKeyParams.DQ.ToByteArrayUnsigned(),
-                    InverseQ = privateKeyParams.QInv.ToByteArrayUnsigned(),
-                    D = privateKeyParams.Exponent.ToByteArrayUnsigned(),
-                    Exponent = privateKeyParams.PublicExponent.ToByteArrayUnsigned()
-                });
+            using TextReader privateKeyTextReader = new StringReader(privateKey);
 
-                return cryptoServiceProvider;
-            }
+            var readKeyPair = (AsymmetricCipherKeyPair) new PemReader(privateKeyTextReader).ReadObject();
+            var privateKeyParams = (RsaPrivateCrtKeyParameters) readKeyPair.Private;
+            var cryptoServiceProvider = new RSACryptoServiceProvider();
+            cryptoServiceProvider.ImportParameters(new RSAParameters
+            {
+                Modulus = privateKeyParams.Modulus.ToByteArrayUnsigned(),
+                P = privateKeyParams.P.ToByteArrayUnsigned(),
+                Q = privateKeyParams.Q.ToByteArrayUnsigned(),
+                DP = privateKeyParams.DP.ToByteArrayUnsigned(),
+                DQ = privateKeyParams.DQ.ToByteArrayUnsigned(),
+                InverseQ = privateKeyParams.QInv.ToByteArrayUnsigned(),
+                D = privateKeyParams.Exponent.ToByteArrayUnsigned(),
+                Exponent = privateKeyParams.PublicExponent.ToByteArrayUnsigned()
+            });
+
+            return cryptoServiceProvider;
         }
     }
 }

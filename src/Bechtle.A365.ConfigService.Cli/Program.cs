@@ -18,7 +18,8 @@ namespace Bechtle.A365.ConfigService.Cli
         {
             var services = ConfigureServicesInternal().BuildServiceProvider();
 
-            var app = new CommandLineApplication<Program>();
+            using var app = new CommandLineApplication<Program>();
+
             app.Conventions
                .UseDefaultConventions()
                .UseConstructorInjection(services);
