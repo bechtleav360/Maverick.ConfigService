@@ -48,6 +48,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> Build(ConfigurationIdentifier identifier, DateTime? validFrom, DateTime? validTo)
         {
+            _logger.LogDebug($"building new '{nameof(PreparedConfiguration)}' using '{identifier}', from={validFrom}, to={validTo}");
+
             var configResult = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
             if (configResult.IsError)
                 return configResult;
@@ -58,6 +60,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (buildResult.IsError)
                 return buildResult;
 
+            _logger.LogDebug("validating resulting events");
             var errors = configuration.Validate(_validators);
             if (errors.Any())
                 return Result.Error("failed to validate generated DomainEvents",
@@ -87,11 +90,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
+                _logger.LogDebug($"collecting available configurations at '{when:O}', range={range}");
+
                 var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
                 var utcWhen = when.ToUniversalTime();
+                _logger.LogDebug($"using utc-time={utcWhen:O}");
+
                 var identifiers =
                     list.Data
                         .GetIdentifiers()
@@ -105,6 +112,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         .Take(range.Length)
                         .Select(pair => pair.Key)
                         .ToList();
+
+                _logger.LogDebug($"collected '{identifiers.Count}' identifiers");
 
                 return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
             }
@@ -122,11 +131,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
+                _logger.LogDebug($"collecting available configurations at '{when:O}', range={range}");
+
                 var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
                 var utcWhen = when.ToUniversalTime();
+                _logger.LogDebug($"using utc-time={utcWhen:O}");
+
                 var identifiers =
                     list.Data
                         .GetIdentifiers()
@@ -142,6 +155,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         .Take(range.Length)
                         .Select(pair => pair.Key)
                         .ToList();
+
+                _logger.LogDebug($"collected '{identifiers.Count}' identifiers");
 
                 return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
             }
@@ -159,11 +174,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
+                _logger.LogDebug($"collecting available configurations at '{when:O}', range={range}");
+
                 var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
                 var utcWhen = when.ToUniversalTime();
+                _logger.LogDebug($"using utc-time={utcWhen:O}");
+
                 var identifiers =
                     list.Data
                         .GetIdentifiers()
@@ -179,6 +198,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         .Take(range.Length)
                         .Select(pair => pair.Key)
                         .ToList();
+
+                _logger.LogDebug($"collected '{identifiers.Count}' identifiers");
 
                 return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
             }
@@ -201,15 +222,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
+                _logger.LogDebug($"getting json of '{identifier}' at {when:O}");
+
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<JsonElement>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
+                _logger.LogDebug($"compiling '{identifier}'");
                 await configuration.Data.Compile(_domainObjectStore, _compiler, _parser, _translator, _logger);
 
                 if (configuration.Data.Json is null)
                     return Result.Error<JsonElement>($"no json-data found for configuration with id: {formattedParams}", ErrorCode.NotFound);
 
+                _logger.LogDebug($"parsing Config-Keys to json");
                 var jsonElement = JsonDocument.Parse(configuration.Data.Json);
 
                 return Result.Success(jsonElement.RootElement);
@@ -236,12 +261,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
+                _logger.LogDebug($"retrieving keys of '{identifier}' at {when:O}, range={range}");
+
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<IDictionary<string, string>>(
                         $"no configuration found with id: {formattedParams}",
                         ErrorCode.NotFound);
 
+                _logger.LogDebug($"compiling '{identifier}'");
                 await configuration.Data.Compile(_domainObjectStore, _compiler, _parser, _translator, _logger);
 
                 if (configuration.Data.Keys is null || !configuration.Data.Keys.Any())
@@ -249,13 +277,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         $"no data found for configuration with id: {formattedParams}",
                         ErrorCode.NotFound);
 
-                return Result.Success<IDictionary<string, string>>(
-                    configuration.Data
-                                 .Keys
-                                 .OrderBy(k => k.Key)
-                                 .Skip(range.Offset)
-                                 .Take(range.Length)
-                                 .ToImmutableSortedDictionary(k => k.Key, k => k.Value, StringComparer.OrdinalIgnoreCase));
+                var result = configuration.Data
+                                          .Keys
+                                          .OrderBy(k => k.Key)
+                                          .Skip(range.Offset)
+                                          .Take(range.Length)
+                                          .ToImmutableSortedDictionary(k => k.Key, k => k.Value, StringComparer.OrdinalIgnoreCase);
+
+                _logger.LogDebug($"collected '{result.Count}' keys from '{identifier}'");
+
+                return Result.Success<IDictionary<string, string>>(result);
             }
             catch (Exception e)
             {
@@ -270,20 +301,25 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
+                _logger.LogDebug($"retrieving stale configurations, range={range}");
+
                 var list = await _domainObjectStore.ReplayObject<PreparedConfigurationList>();
                 if (list.IsError)
                     return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
 
-                var identifiers =
-                    list.Data
-                        .GetStale()
-                        .OrderBy(id => id.Environment.Category)
-                        .ThenBy(id => id.Environment.Name)
-                        .ThenBy(id => id.Structure.Name)
-                        .ThenByDescending(id => id.Structure.Version)
-                        .Skip(range.Offset)
-                        .Take(range.Length)
-                        .ToList();
+                var stale = list.Data.GetStale();
+
+                _logger.LogDebug($"got '{stale.Count}' stale configurations, filtering / ordering");
+
+                var identifiers = stale.OrderBy(id => id.Environment.Category)
+                                       .ThenBy(id => id.Environment.Name)
+                                       .ThenBy(id => id.Structure.Name)
+                                       .ThenByDescending(id => id.Structure.Version)
+                                       .Skip(range.Offset)
+                                       .Take(range.Length)
+                                       .ToList();
+
+                _logger.LogDebug($"collected '{identifiers.Count}' identifiers");
 
                 return Result.Success<IList<ConfigurationIdentifier>>(identifiers);
             }
@@ -308,21 +344,28 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
+                _logger.LogDebug($"retrieving used Env-Keys for configuration '{identifier}'");
+
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
+                _logger.LogDebug($"compiling '{identifier}'");
                 await configuration.Data.Compile(_domainObjectStore, _compiler, _parser, _translator, _logger);
 
                 if (configuration.Data.UsedKeys is null || !configuration.Data.UsedKeys.Any())
                     return Result.Error<IEnumerable<string>>($"no used-keys for configuration with id: {formattedParams}", ErrorCode.NotFound);
 
-                return Result.Success<IEnumerable<string>>(configuration.Data
-                                                                        .UsedKeys
-                                                                        .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                                                                        .Skip(range.Offset)
-                                                                        .Take(range.Length)
-                                                                        .ToArray());
+                var result = configuration.Data
+                                          .UsedKeys
+                                          .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                                          .Skip(range.Offset)
+                                          .Take(range.Length)
+                                          .ToArray();
+
+                _logger.LogDebug($"collected '{result.Length}' keys");
+
+                return Result.Success<IEnumerable<string>>(result);
             }
             catch (Exception e)
             {
@@ -344,11 +387,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
+                _logger.LogDebug($"retrieving Config-Version of '{identifier}' at {when:O}");
+
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
                 if (configuration.IsError)
                     return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
-                return Result.Success(configuration.Data.ConfigurationVersion.ToString());
+                var result = configuration.Data.ConfigurationVersion.ToString();
+
+                _logger.LogDebug($"Config-Version of '{identifier}' = '{result}'");
+
+                return Result.Success(result);
             }
             catch (Exception e)
             {
