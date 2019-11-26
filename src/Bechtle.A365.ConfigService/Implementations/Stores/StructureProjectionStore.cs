@@ -50,16 +50,21 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                           IDictionary<string, string> keys,
                                           IDictionary<string, string> variables)
         {
+            _logger.LogDebug($"attempting to create new structure '{identifier}'");
+
+            _logger.LogDebug($"building instance of structure to trigger creation-event");
             var structResult = await _domainObjectStore.ReplayObject(new ConfigStructure(identifier), identifier.ToString());
             if (structResult.IsError)
                 return structResult;
 
             var structure = structResult.Data;
 
+            _logger.LogDebug("creating Structure");
             var result = structure.Create(keys, variables);
             if (result.IsError)
                 return result;
 
+            _logger.LogDebug("validating resulting events");
             var errors = structure.Validate(_validators);
             if (errors.Any())
                 return Result.Error("failed to validate generated DomainEvents",
@@ -68,6 +73,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                           .SelectMany(_ => _)
                                           .ToList());
 
+            _logger.LogDebug("writing generated events to ES");
             return await structure.WriteRecordedEvents(_eventStore);
         }
 
