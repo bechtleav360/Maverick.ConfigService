@@ -301,7 +301,8 @@ namespace Bechtle.A365.ConfigService
                 TryAddPostgresSnapshotStore(services),
                 TryAddMsSqlSnapshotStore(services),
                 TryAddArangoSnapshotStore(services),
-                TryAddLocalSnapshotStore(services)
+                TryAddLocalSnapshotStore(services),
+                TryAddVoidSnapshotStore(services)
             };
 
             // if no SnapshotStore was registered, register Memory-Store as fallback
@@ -422,6 +423,17 @@ namespace Bechtle.A365.ConfigService
                     .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
                         _logger,
                         (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
+
+            return true;
+        }
+
+        private bool TryAddVoidSnapshotStore(IServiceCollection services)
+        {
+            var voidSection = Configuration.GetSection("SnapshotConfiguration:Stores:Void");
+            if (!voidSection.GetSection("Enabled").Get<bool>())
+                return false;
+
+            services.AddScoped<ISnapshotStore, VoidSnapshotStore>(_logger);
 
             return true;
         }

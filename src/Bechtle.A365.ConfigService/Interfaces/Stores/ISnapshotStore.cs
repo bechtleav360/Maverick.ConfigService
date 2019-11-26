@@ -6,7 +6,6 @@ using Bechtle.A365.ConfigService.DomainObjects;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
-    // @TODO: each new instance of ISnapshotStore has to be explicitly used by SnapshotService
     /// <summary>
     ///     Store, to retrieve Snapshots of <see cref="DomainObject" />
     /// </summary>
