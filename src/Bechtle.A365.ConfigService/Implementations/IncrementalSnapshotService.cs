@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
 
                 if (cancellationToken.IsCancellationRequested)
                     return;
