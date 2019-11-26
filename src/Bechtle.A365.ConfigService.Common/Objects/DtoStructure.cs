@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Common.Objects
         /// <summary>
         ///     additional variables used while building the configuration
         /// </summary>
-        public Dictionary<string, string> Variables { get; set; }
+        public Dictionary<string, object> Variables { get; set; }
 
         /// <summary>
         ///     unique version of this Structure
