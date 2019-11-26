@@ -27,6 +27,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
+        ///     flag indicating if this Configuration has been created with a <see cref="ConfigurationBuilt"/> event
+        /// </summary>
+        public bool Created { get; protected set; }
+
+        /// <summary>
         ///     flag indicating if this Configuration has been built or not
         /// </summary>
         public bool Built { get; protected set; }
@@ -163,6 +168,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(domainObject is PreparedConfiguration other))
                 return;
 
+            Created = other.Created;
             Identifier = other.Identifier;
             ValidFrom = other.ValidFrom;
             ValidTo = other.ValidTo;
@@ -188,6 +194,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is ConfigurationBuilt built) || built.Identifier != Identifier)
                 return false;
 
+            Created = true;
             ValidFrom = built.ValidFrom;
             ValidTo = built.ValidTo;
             ConfigurationVersion = (long) replayedEvent.UtcTime

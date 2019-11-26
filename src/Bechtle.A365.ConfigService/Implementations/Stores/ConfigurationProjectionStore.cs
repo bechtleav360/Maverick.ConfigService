@@ -225,7 +225,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogDebug($"getting json of '{identifier}' at {when:O}");
 
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
-                if (configuration.IsError)
+                if (configuration.IsError || !configuration.Data.Created)
                     return Result.Error<JsonElement>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 _logger.LogDebug($"compiling '{identifier}'");
@@ -264,7 +264,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogDebug($"retrieving keys of '{identifier}' at {when:O}, range={range}");
 
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
-                if (configuration.IsError)
+                if (configuration.IsError || !configuration.Data.Created)
                     return Result.Error<IDictionary<string, string>>(
                         $"no configuration found with id: {formattedParams}",
                         ErrorCode.NotFound);
@@ -347,7 +347,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogDebug($"retrieving used Env-Keys for configuration '{identifier}'");
 
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
-                if (configuration.IsError)
+                if (configuration.IsError || !configuration.Data.Created)
                     return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 _logger.LogDebug($"compiling '{identifier}'");
@@ -390,7 +390,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogDebug($"retrieving Config-Version of '{identifier}' at {when:O}");
 
                 var configuration = await _domainObjectStore.ReplayObject(new PreparedConfiguration(identifier), identifier.ToString());
-                if (configuration.IsError)
+                if (configuration.IsError || !configuration.Data.Created)
                     return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 var result = configuration.Data.ConfigurationVersion.ToString();
