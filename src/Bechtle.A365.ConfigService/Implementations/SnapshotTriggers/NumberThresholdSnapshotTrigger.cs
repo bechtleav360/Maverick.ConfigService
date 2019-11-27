@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
-using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -97,7 +96,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
             }
         }
 
-        private async void EventStoreOnEventAppeared(object sender, (EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent) e)
+        private async void EventStoreOnEventAppeared(object sender, (StoreSubscription Subscription, StoredEvent ResolvedEvent) e)
         {
             var (subscription, _) = e;
 

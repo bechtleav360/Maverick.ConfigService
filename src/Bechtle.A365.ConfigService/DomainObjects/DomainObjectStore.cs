@@ -184,7 +184,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                     domainObject.ApplyEvent(new ReplayedEvent
                     {
-                        UtcTime = recordedEvent.Created.ToUniversalTime(),
+                        UtcTime = recordedEvent.UtcTime.ToUniversalTime(),
                         Version = recordedEvent.EventNumber,
                         DomainEvent = domainEvent
                     });

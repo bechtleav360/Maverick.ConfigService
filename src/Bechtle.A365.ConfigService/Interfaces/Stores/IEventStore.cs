@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using EventStore.ClientAPI;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
@@ -14,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <summary>
         ///     event triggered once a new Event has been received from EventStore
         /// </summary>
-        event EventHandler<(EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent)> EventAppeared;
+        event EventHandler<(StoreSubscription Subscription, StoredEvent StoredEvent)> EventAppeared;
 
         /// <summary>
         ///     get the EventNumber of the newest Event
@@ -32,8 +31,8 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="direction"></param>
         /// <param name="startIndex"></param>
         /// <returns></returns>
-        Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEventMetadata Metadata), bool> streamFilter,
-                                  Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
+        Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool> streamFilter,
+                                  Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                   int readSize = 64,
                                   StreamDirection direction = StreamDirection.Forwards,
                                   long startIndex = -1);
@@ -46,7 +45,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="direction"></param>
         /// <param name="startIndex"></param>
         /// <returns></returns>
-        Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
+        Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                   int readSize = 64,
                                   StreamDirection direction = StreamDirection.Forwards,
                                   long startIndex = -1);

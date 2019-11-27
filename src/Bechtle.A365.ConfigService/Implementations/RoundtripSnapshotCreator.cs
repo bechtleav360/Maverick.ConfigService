@@ -10,7 +10,6 @@ using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Parsing;
-using EventStore.ClientAPI;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
@@ -67,14 +66,14 @@ namespace Bechtle.A365.ConfigService.Implementations
             return domainObjects.Select(o => o.CreateSnapshot()).ToList();
         }
 
-        private bool StreamProcessor((RecordedEvent, DomainEvent) tuple, IList<DomainObject> domainObjects)
+        private bool StreamProcessor((StoredEvent, DomainEvent) tuple, IList<DomainObject> domainObjects)
         {
             var (recordedEvent, domainEvent) = tuple;
 
             var replayedEvent = new ReplayedEvent
             {
                 DomainEvent = domainEvent,
-                UtcTime = recordedEvent.Created.ToUniversalTime(),
+                UtcTime = recordedEvent.UtcTime,
                 Version = recordedEvent.EventNumber
             };
 

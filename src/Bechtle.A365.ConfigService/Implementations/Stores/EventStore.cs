@@ -75,7 +75,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public event EventHandler<(EventStoreSubscription Subscription, ResolvedEvent ResolvedEvent)> EventAppeared;
+        public event EventHandler<(StoreSubscription Subscription, StoredEvent StoredEvent)> EventAppeared;
 
         /// <inheritdoc />
         public async Task<long> GetCurrentEventNumber()
@@ -89,15 +89,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
+        public Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                          int readSize = 64,
                                          StreamDirection direction = StreamDirection.Forwards,
                                          long startIndex = -1)
             => ReplayEventsAsStream(_ => true, streamProcessor, readSize, direction, startIndex);
 
         /// <inheritdoc />
-        public async Task ReplayEventsAsStream(Func<(RecordedEvent RecordedEvent, DomainEventMetadata Metadata), bool> streamFilter,
-                                               Func<(RecordedEvent RecordedEvent, DomainEvent DomainEvent), bool> streamProcessor,
+        public async Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool> streamFilter,
+                                               Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
                                                int readSize = 64,
                                                StreamDirection direction = StreamDirection.Forwards,
                                                long startIndex = -1)
@@ -143,8 +143,18 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     if (!_eventDeserializer.ToMetadata(item, out var metadata))
                         metadata = new DomainEventMetadata();
 
+                    var storedEvent = new StoredEvent
+                    {
+                        EventId = item.Event.EventId,
+                        Data = item.Event.Data,
+                        Metadata = item.Event.Metadata,
+                        EventType = item.Event.EventType,
+                        EventNumber = item.Event.EventNumber,
+                        UtcTime = item.Event.Created.ToUniversalTime()
+                    };
+
                     // skip this event entirely if filter evaluates to false
-                    if (!streamFilter((RecordedEvent: item.Event, Metadata: metadata)))
+                    if (!streamFilter((StoredEvent: storedEvent, Metadata: metadata)))
                     {
                         _metrics.Measure.Counter.Increment(KnownMetrics.EventsFiltered, item.Event.EventType);
                         continue;
@@ -159,7 +169,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, domainEvent.EventType);
 
                     // stop streaming events once streamProcessor returns false
-                    if (!streamProcessor.Invoke((item.Event, domainEvent)))
+                    if (!streamProcessor.Invoke((storedEvent, domainEvent)))
                         return;
                 }
 
@@ -282,7 +292,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
         {
-            EventAppeared?.Invoke(this, (Subscription: subscription, ResolvedEvent: resolvedEvent));
+            var storeSubscription = new StoreSubscription
+            {
+                LastEventNumber = subscription.LastEventNumber,
+                StreamId = subscription.StreamId
+            };
+
+            var storedEvent = new StoredEvent
+            {
+                EventId = resolvedEvent.Event.EventId,
+                Data = resolvedEvent.Event.Data,
+                Metadata = resolvedEvent.Event.Metadata,
+                EventType = resolvedEvent.Event.EventType,
+                EventNumber = resolvedEvent.Event.EventNumber,
+                UtcTime = resolvedEvent.Event.Created.ToUniversalTime()
+            };
+
+            EventAppeared?.Invoke(this, (Subscription: storeSubscription, StoredEvent: storedEvent));
             return Task.CompletedTask;
         }
 

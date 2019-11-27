@@ -7,7 +7,6 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Implementations.SnapshotTriggers;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
-using EventStore.ClientAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -153,7 +152,7 @@ namespace Bechtle.A365.ConfigService.Tests
                   .ReturnsAsync(0)
                   .Verifiable("Current EventNumber was not retrieved");
 
-            esMock.SetupAdd(e => e.EventAppeared += It.IsAny<EventHandler<(EventStoreSubscription, ResolvedEvent)>>())
+            esMock.SetupAdd(e => e.EventAppeared += It.IsAny<EventHandler<(StoreSubscription, StoredEvent)>>())
                   .Verifiable("EventStore.EventAppeared was not subscribed");
 
             var ssMock = new Mock<ISnapshotStore>(MockBehavior.Strict);

@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var comparisonEnvId = new EnvironmentIdentifier(category, name).ToString();
 
             await _eventStore.ReplayEventsAsStream(
-                t => t.RecordedEvent.EventType.Equals(nameof(EnvironmentKeysModified))
+                t => t.StoredEvent.EventType.Equals(nameof(EnvironmentKeysModified))
                      && t.Metadata[KnownDomainEventMetadata.Identifier].Equals(comparisonEnvId,
                                                                                StringComparison.OrdinalIgnoreCase),
                 tuple =>
@@ -59,7 +59,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                             case ConfigKeyActionType.Set:
                                 blameData[action.Key] = new KeyRevision
                                 {
-                                    DateTime = recordedEvent.Created,
+                                    DateTime = recordedEvent.UtcTime,
                                     Value = action.Value
                                 };
                                 break;
@@ -101,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var history = new Dictionary<string, KeyHistory>();
 
             await _eventStore.ReplayEventsAsStream(
-                t => t.RecordedEvent.EventType.Equals(nameof(EnvironmentKeysModified))
+                t => t.StoredEvent.EventType.Equals(nameof(EnvironmentKeysModified))
                      && t.Metadata[KnownDomainEventMetadata.Identifier].Equals(comparisonEnvId,
                                                                                StringComparison.OrdinalIgnoreCase),
                 tuple =>
@@ -124,19 +124,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                         switch (action.Type)
                         {
                             case ConfigKeyActionType.Set:
-                                history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
+                                history[action.Key].Changes.Add(recordedEvent.UtcTime, new KeyRevision
                                 {
                                     Type = ConfigKeyActionType.Set,
-                                    DateTime = recordedEvent.Created,
+                                    DateTime = recordedEvent.UtcTime,
                                     Value = action.Value
                                 });
                                 break;
 
                             case ConfigKeyActionType.Delete:
-                                history[action.Key].Changes.Add(recordedEvent.Created, new KeyRevision
+                                history[action.Key].Changes.Add(recordedEvent.UtcTime, new KeyRevision
                                 {
                                     Type = ConfigKeyActionType.Delete,
-                                    DateTime = recordedEvent.Created,
+                                    DateTime = recordedEvent.UtcTime,
                                     Value = action.Value
                                 });
                                 break;
