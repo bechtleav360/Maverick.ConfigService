@@ -72,6 +72,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return Result.Success();
 
             Created = true;
+            Keys = keys.ToDictionary(pair => pair.Key, pair => pair.Value);
+            Variables = variables.ToDictionary(pair => pair.Key, pair => pair.Value);
             CapturedDomainEvents.Add(new StructureCreated(Identifier, keys, variables));
 
             return Result.Success();
