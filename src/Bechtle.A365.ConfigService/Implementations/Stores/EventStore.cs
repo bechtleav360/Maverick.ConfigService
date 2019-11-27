@@ -139,10 +139,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 foreach (var item in slice.Events)
                 {
-                    // initialize to default value if we can't deserialize successfully
-                    if (!_eventDeserializer.ToMetadata(item, out var metadata))
-                        metadata = new DomainEventMetadata();
-
                     var storedEvent = new StoredEvent
                     {
                         EventId = item.Event.EventId,
@@ -153,6 +149,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         UtcTime = item.Event.Created.ToUniversalTime()
                     };
 
+                    // initialize to default value if we can't deserialize successfully
+                    if (!_eventDeserializer.ToMetadata(storedEvent, out var metadata))
+                        metadata = new DomainEventMetadata();
+
                     // skip this event entirely if filter evaluates to false
                     if (!streamFilter((StoredEvent: storedEvent, Metadata: metadata)))
                     {
@@ -160,7 +160,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         continue;
                     }
 
-                    if (!_eventDeserializer.ToDomainEvent(item, out var domainEvent))
+                    if (!_eventDeserializer.ToDomainEvent(storedEvent, out var domainEvent))
                     {
                         _logger.LogWarning($"event {item.Event.EventId}#{item.Event.EventNumber} could not be deserialized");
                         continue;

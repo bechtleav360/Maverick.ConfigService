@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using Bechtle.A365.ConfigService.Common.Converters;
-using EventStore.ClientAPI;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace Bechtle.A365.ConfigService.Common.DomainEvents
+namespace Bechtle.A365.ConfigService.Implementations
 {
+    /// <inheritdoc />
     public class EventDeserializer : IEventDeserializer
     {
         private readonly Dictionary<string, Type> _factoryAssociations = new Dictionary<string, Type>
@@ -35,50 +37,51 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         private IServiceProvider Provider { get; }
 
         /// <inheritdoc />
-        public bool ToDomainEvent(ResolvedEvent resolvedEvent, out DomainEvent domainEvent)
+        public bool ToDomainEvent(StoredEvent storedEvent, out DomainEvent domainEvent)
         {
-            if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
+            if (_factoryAssociations.TryGetValue(storedEvent.EventType, out var factoryType))
                 try
                 {
                     var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
 
-                    domainEvent = serializer.DeserializeInstance(resolvedEvent.OriginalEvent.Data);
+                    domainEvent = serializer.DeserializeInstance(storedEvent.Data);
                     return true;
                 }
                 catch (Exception e)
                 {
-                    Logger.LogWarning(e, $"could not deserialize data in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}'");
+                    Logger.LogWarning(e, $"could not deserialize data in '{storedEvent.EventType}' using '{factoryType.Name}'");
                 }
 
-            Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
+            Logger.LogWarning($"event of type '{storedEvent.EventType}' ignored");
             domainEvent = null;
             return false;
         }
 
-        public bool ToMetadata(ResolvedEvent resolvedEvent, out DomainEventMetadata metadata)
+        /// <inheritdoc />
+        public bool ToMetadata(StoredEvent storedEvent, out DomainEventMetadata metadata)
         {
-            if (resolvedEvent.OriginalEvent.Metadata?.Any() != true)
+            if (storedEvent.Metadata?.Any() != true)
             {
-                Logger.LogTrace($"no metadata saved in event '{resolvedEvent.OriginalEvent.EventId}' " +
-                                $"of type '{resolvedEvent.OriginalEvent.EventType}'");
+                Logger.LogTrace($"no metadata saved in event '{storedEvent.EventId}' " +
+                                $"of type '{storedEvent.EventType}'");
                 metadata = new DomainEventMetadata();
                 return true;
             }
 
-            if (_factoryAssociations.TryGetValue(resolvedEvent.OriginalEvent.EventType, out var factoryType))
+            if (_factoryAssociations.TryGetValue(storedEvent.EventType, out var factoryType))
                 try
                 {
                     var serializer = (IDomainEventConverter) Provider.GetService(factoryType);
 
-                    metadata = serializer.DeserializeMetadata(resolvedEvent.OriginalEvent.Metadata);
+                    metadata = serializer.DeserializeMetadata(storedEvent.Metadata);
                     return true;
                 }
                 catch (Exception e)
                 {
-                    Logger.LogWarning(e, $"could not deserialize metadata in '{resolvedEvent.OriginalEvent.EventType}' using '{factoryType.Name}'");
+                    Logger.LogWarning(e, $"could not deserialize metadata in '{storedEvent.EventType}' using '{factoryType.Name}'");
                 }
 
-            Logger.LogWarning($"event of type '{resolvedEvent.OriginalEvent.EventType}' ignored");
+            Logger.LogWarning($"event of type '{storedEvent.EventType}' ignored");
             metadata = null;
             return false;
         }
