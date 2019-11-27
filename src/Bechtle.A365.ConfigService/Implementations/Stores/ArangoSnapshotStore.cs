@@ -13,7 +13,7 @@ using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Bechtle.A365.ConfigService.Implementations
+namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <summary>
     ///     Snapshot-Store using ArangoDBs Document-Store as backend
