@@ -60,6 +60,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (buildResult.IsError)
                 return buildResult;
 
+            await configuration.Compile(_domainObjectStore, _compiler, _parser, _translator, _logger);
+
             _logger.LogDebug("validating resulting events");
             var errors = configuration.Validate(_validators);
             if (errors.Any())
