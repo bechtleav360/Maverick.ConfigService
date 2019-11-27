@@ -77,11 +77,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public IResult Build(DateTime? validFrom, DateTime? validTo)
         {
+            Created = true;
             ValidFrom = validFrom;
             ValidTo = validTo;
             Built = false;
             Keys = new Dictionary<string, string>();
             Json = null;
+            ConfigurationVersion = (long) DateTime.UtcNow
+                                                  .Subtract(_unixEpoch)
+                                                  .TotalSeconds;
             CapturedDomainEvents.Add(new ConfigurationBuilt(Identifier, validFrom, validTo));
 
             return Result.Success();
@@ -197,6 +201,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Created = true;
             ValidFrom = built.ValidFrom;
             ValidTo = built.ValidTo;
+            Built = false;
+            Keys = new Dictionary<string, string>();
+            Json = null;
             ConfigurationVersion = (long) replayedEvent.UtcTime
                                                        .Subtract(_unixEpoch)
                                                        .TotalSeconds;

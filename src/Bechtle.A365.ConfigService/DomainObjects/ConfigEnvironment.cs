@@ -174,6 +174,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             try
             {
                 var newKeys = keysToImport.ToDictionary(k => k.Key, k => k);
+
+                Created = true;
                 Keys = newKeys;
 
                 CapturedDomainEvents.Add(new EnvironmentKeysImported(
@@ -371,6 +373,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is DefaultEnvironmentCreated created) || created.Identifier != Identifier)
                 return false;
 
+            IsDefault = false;
             Created = true;
             return true;
         }

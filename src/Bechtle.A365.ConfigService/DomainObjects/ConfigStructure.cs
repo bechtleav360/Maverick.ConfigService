@@ -225,11 +225,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return false;
 
             foreach (var deletion in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Delete))
-                if (Keys.ContainsKey(deletion.Key))
-                    Keys.Remove(deletion.Key);
+                if (Variables.ContainsKey(deletion.Key))
+                    Variables.Remove(deletion.Key);
 
             foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
-                Keys[change.Key] = change.Value;
+                Variables[change.Key] = change.Value;
 
             return true;
         }
