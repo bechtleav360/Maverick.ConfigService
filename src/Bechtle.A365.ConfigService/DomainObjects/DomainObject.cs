@@ -76,7 +76,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (replayedEvent.DomainEvent is null)
                 return;
 
-            if (replayedEvent.Version <= CurrentVersion)
+            if (replayedEvent.Version <= MetaVersion)
                 return;
 
             // if there is a handler for the given DomainEvent, call if
@@ -184,7 +184,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     _eventsBeingDrained = true;
                 }
 
-                CurrentVersion = await store.WriteEvents(CapturedDomainEvents);
+                MetaVersion = CurrentVersion = await store.WriteEvents(CapturedDomainEvents);
                 CapturedDomainEvents.Clear();
                 IncrementalSnapshotService.QueueSnapshot(CreateSnapshot());
 
