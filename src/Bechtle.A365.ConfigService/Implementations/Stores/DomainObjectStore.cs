@@ -4,13 +4,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
-namespace Bechtle.A365.ConfigService.DomainObjects
+namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <summary>
     ///     default ObjectStore using <see cref="IEventStore" /> and <see cref="ISnapshotStore" /> for retrieving Objects
@@ -96,7 +97,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 if (_memoryCache.TryGetValue(cacheKey, out T cachedInstance))
                 {
                     _logger.LogDebug($"retrieved cached item for key '{cacheKey}'");
-                    domainObject = cachedInstance;
+
+                    if (cachedInstance.CurrentVersion <= maxVersion)
+                        domainObject = cachedInstance;
+                    else
+                        _logger.LogDebug($"cached item for key '{cacheKey}' " +
+                                         $"is beyond maximum allowed version {cachedInstance.CurrentVersion} > {maxVersion}");
                 }
                 else
                 {
