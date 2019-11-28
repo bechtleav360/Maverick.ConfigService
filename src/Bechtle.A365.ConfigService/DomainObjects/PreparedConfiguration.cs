@@ -97,8 +97,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         public override long CalculateCacheSize()
             => 15
-               + (Keys?.Sum(p => p.Key.Length + p.Value.Length) * 2 ?? 0)
-               + (UsedKeys?.Sum(s => s.Length) ?? 0);
+               + (Keys?.Sum(p => p.Key?.Length ?? 0 + p.Value?.Length ?? 0) * 2 ?? 0)
+               + (UsedKeys?.Sum(s => s?.Length ?? 0) ?? 0);
 
         /// <summary>
         ///     Compile the configuration that this object represents - subsequent calls will skip recompilation
