@@ -179,12 +179,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (!structResult.IsError && !variableResult.IsError)
                     return (Structure: structResult.Data, Variables: variableResult.Data);
 
-                Logger.LogWarning($"could not retrieve referenced structure / variabels '{id}' for preview: " +
+                Logger.LogWarning($"could not retrieve referenced structure / variables '{id}' for preview: " +
                                   $"{(structResult.IsError ? structResult.Message : variableResult.Message)}");
             }
 
-            return (Structure: structure.Keys ?? new Dictionary<string, string>(),
-                       Variables: structure.Variables ?? new Dictionary<string, string>());
+            return (Structure: structure.Keys?.ToDictionary(pair => pair.Key,
+                                                            pair => pair.Value?.ToString())
+                               ?? new Dictionary<string, string>(),
+                       Variables: structure.Variables?.ToDictionary(pair => pair.Key,
+                                                                    pair => pair.Value?.ToString())
+                                  ?? new Dictionary<string, string>());
         }
     }
 }

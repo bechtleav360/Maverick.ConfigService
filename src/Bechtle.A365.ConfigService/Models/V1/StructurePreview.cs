@@ -10,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Custom Keys
         /// </summary>
-        public Dictionary<string, string> Keys { get; set; }
+        public Dictionary<string, object> Keys { get; set; }
 
         /// <summary>
         ///     Reference to an existing Structure
@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Custom Variables
         /// </summary>
-        public Dictionary<string, string> Variables { get; set; }
+        public Dictionary<string, object> Variables { get; set; }
 
         /// <summary>
         ///     Reference to an existing Structure
