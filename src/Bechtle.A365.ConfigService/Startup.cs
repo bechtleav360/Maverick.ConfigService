@@ -222,6 +222,7 @@ namespace Bechtle.A365.ConfigService
                     .AddTransient<IDomainObjectStore, DomainObjectStore>(_logger)
                     .AddTransient<TimerSnapshotTrigger>(_logger)
                     .AddTransient<NumberThresholdSnapshotTrigger>(_logger)
+                    .AddTransient<OnDemandSnapshotTrigger>(_logger)
                     .AddTransient<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
                     .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddSingleton<IEventStore, Implementations.Stores.EventStore>(_logger)

@@ -115,6 +115,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 var (name, config) = pair;
                 var triggerInstance = pair.Value.Type switch
                 {
+                    "HttpRest" => provider.GetRequiredService<OnDemandSnapshotTrigger>() as ISnapshotTrigger,
                     "Timer" => provider.GetRequiredService<TimerSnapshotTrigger>() as ISnapshotTrigger,
                     "EventLag" => provider.GetRequiredService<NumberThresholdSnapshotTrigger>() as ISnapshotTrigger,
                     _ => throw new ArgumentOutOfRangeException($"SnapshotConfiguration:Triggers:{name}:Type",
