@@ -19,9 +19,9 @@ namespace Bechtle.A365.ConfigService.Implementations
     public class RoundtripSnapshotCreator : ISnapshotCreator
     {
         private readonly IConfigurationCompiler _compiler;
+        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IEventStore _eventStore;
         private readonly IConfigurationParser _parser;
-        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
@@ -55,13 +55,29 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IList<DomainObjectSnapshot>> CreateSnapshotsInternal(IList<DomainObject> domainObjects, CancellationToken cancellationToken)
         {
-            foreach (var config in domainObjects.OfType<PreparedConfiguration>())
+            // take all objects and group all Configs by their Target-Environment
+            var envGroups = domainObjects.OfType<PreparedConfiguration>()
+                                         .GroupBy(c => c.Identifier.Environment);
+
+            await Task.WhenAll(envGroups.AsParallel().Select(async group =>
             {
                 if (cancellationToken.IsCancellationRequested)
-                    return new List<DomainObjectSnapshot>();
+                    return;
 
-                await config.Compile(_domainObjectStore, _compiler, _parser, _translator);
-            }
+                // use only the last version of last version of each structure
+                var selectedConfigs = group.GroupBy(c => c.Identifier.Structure.Name)
+                                           .Select(g => g.OrderBy(c => c.Identifier.Structure.Version).First())
+                                           .OrderBy(c => c.CurrentVersion)
+                                           .ToList();
+
+                foreach (var config in selectedConfigs)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
+                    await config.Compile(_domainObjectStore, _compiler, _parser, _translator);
+                }
+            }));
 
             return domainObjects.Select(o => o.CreateSnapshot()).ToList();
         }
@@ -69,13 +85,6 @@ namespace Bechtle.A365.ConfigService.Implementations
         private bool StreamProcessor((StoredEvent, DomainEvent) tuple, IList<DomainObject> domainObjects)
         {
             var (recordedEvent, domainEvent) = tuple;
-
-            var replayedEvent = new ReplayedEvent
-            {
-                DomainEvent = domainEvent,
-                UtcTime = recordedEvent.UtcTime,
-                Version = recordedEvent.EventNumber
-            };
 
             // create or delete StreamedObjects as necessary
             switch (domainEvent)
@@ -109,9 +118,16 @@ namespace Bechtle.A365.ConfigService.Implementations
                     break;
             }
 
+            var replayedEvent = new ReplayedEvent
+            {
+                DomainEvent = domainEvent,
+                UtcTime = recordedEvent.UtcTime,
+                Version = recordedEvent.EventNumber
+            };
+
             // apply every event to every DomainObject - they should dismiss them if the event doesn't fit
-            foreach (var domainObject in domainObjects)
-                domainObject.ApplyEvent(replayedEvent);
+            domainObjects.AsParallel()
+                         .ForAll(domainObject => domainObject.ApplyEvent(replayedEvent));
 
             // return true to continue StreamProcessing
             return true;
