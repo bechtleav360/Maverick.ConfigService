@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -70,9 +71,9 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             {
                 if (!node.Children.Any())
                 {
-                    if (long.TryParse(node.Value, out var l))
+                    if (long.TryParse(node.Value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out var l))
                         jsonStream.WriteNumberValue(l);
-                    else if (double.TryParse(node.Value, out var d))
+                    else if (double.TryParse(node.Value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out var d))
                         jsonStream.WriteNumberValue(d);
                     else
                         jsonStream.WriteStringValue(node.Value);
@@ -85,9 +86,9 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                     {
                         if (child.Children.Count == 0)
                         {
-                            if (long.TryParse(child.Value, out var l))
+                            if (long.TryParse(node.Value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out var l))
                                 jsonStream.WriteNumberValue(l);
-                            else if (double.TryParse(child.Value, out var d))
+                            else if (double.TryParse(node.Value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out var d))
                                 jsonStream.WriteNumberValue(d);
                             else
                                 jsonStream.WriteStringValue(child.Value);
