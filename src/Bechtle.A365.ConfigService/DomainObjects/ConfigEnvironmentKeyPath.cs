@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -15,7 +16,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Full Path including Parents
         /// </summary>
-        public string FullPath { get; set; } = string.Empty;
+        public string FullPath => Parent?.FullPath + Path + (Children.Any() ? "/" : "");
 
         /// <summary>
         ///     Reference to Parent-Node

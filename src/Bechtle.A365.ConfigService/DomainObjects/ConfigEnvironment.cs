@@ -326,7 +326,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     {
                         Path = rootPart,
                         Parent = null,
-                        FullPath = rootPart,
                         Children = new List<ConfigEnvironmentKeyPath>()
                     };
 
@@ -345,8 +344,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                         {
                             Path = part,
                             Parent = current,
-                            Children = new List<ConfigEnvironmentKeyPath>(),
-                            FullPath = current.FullPath + '/' + part
+                            Children = new List<ConfigEnvironmentKeyPath>()
                         };
                         current.Children.Add(next);
                     }
