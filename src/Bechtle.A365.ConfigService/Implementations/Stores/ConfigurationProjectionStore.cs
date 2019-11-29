@@ -60,7 +60,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (buildResult.IsError)
                 return buildResult;
 
-            await configuration.Compile(_domainObjectStore, _compiler, _parser, _translator, _logger);
+            // assumeLatestVersion=true, because otherwise it would use CurrentVersion of an non-replayed DomainObject
+            // which defaults to -1 causing errors while getting target-env and target-struct
+            //
+            // because this configuration *will* be added to the stream, we can assume that we will get the *most up to date objects as of now*
+            await configuration.Compile(_domainObjectStore, _compiler, _parser, _translator, _logger, true);
 
             _logger.LogDebug("validating resulting events");
             var errors = configuration.Validate(_validators);

@@ -108,25 +108,33 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <param name="parser"></param>
         /// <param name="translator"></param>
         /// <param name="logger">optional logger to pass during the compilation-phase</param>
+        /// <param name="assumeLatestVersion">
+        ///     set to true, to use latest available versions of Environment and Structure instead of <see cref="DomainObject.CurrentVersion"/>
+        /// </param>
         /// <returns></returns>
         public async Task<IResult> Compile(IDomainObjectStore store,
                                            IConfigurationCompiler compiler,
                                            IConfigurationParser parser,
                                            IJsonTranslator translator,
-                                           ILogger logger = null)
+                                           ILogger logger = null,
+                                           bool assumeLatestVersion = false)
         {
             if (Built)
                 return Result.Success();
 
+            var compilationVersion = assumeLatestVersion ? long.MaxValue : CurrentVersion;
+
+            logger?.LogDebug($"version used during compilation: {compilationVersion} ({nameof(assumeLatestVersion)}: {assumeLatestVersion})");
+
             var envResult = await store.ReplayObject(new ConfigEnvironment(Identifier.Environment),
                                                      Identifier.Environment.ToString(),
-                                                     CurrentVersion);
+                                                     compilationVersion);
             if (envResult.IsError)
                 return envResult;
 
             var structResult = await store.ReplayObject(new ConfigStructure(Identifier.Structure),
                                                         Identifier.Structure.ToString(),
-                                                        CurrentVersion);
+                                                        compilationVersion);
             if (structResult.IsError)
                 return structResult;
 
