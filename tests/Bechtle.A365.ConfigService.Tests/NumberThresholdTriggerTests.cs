@@ -182,7 +182,11 @@ namespace Bechtle.A365.ConfigService.Tests
 
             var instance = provider.GetRequiredService<NumberThresholdSnapshotTrigger>();
 
-            instance.Configure(new ConfigurationBuilder().Build());
+            instance.Configure(new ConfigurationBuilder().AddInMemoryCollection(new[]
+            {
+                new KeyValuePair<string, string>("Max", "42")
+            }).Build());
+
             await instance.Start(CancellationToken.None);
 
             esMock.Verify();
