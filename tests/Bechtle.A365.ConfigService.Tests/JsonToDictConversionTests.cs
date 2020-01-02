@@ -109,5 +109,17 @@ namespace Bechtle.A365.ConfigService.Tests
             Assert.Equal("Foo%20With%20Spaces%20%2F%20Slashes", translated.First().Key);
             Assert.Equal("Bar", translated.First().Value);
         }
+
+        [Fact]
+        public void PreserveNull()
+        {
+            var jObject = JsonSerializer.Deserialize<JsonElement>("{\"NullProp\": null}");
+            var translated = _translator.ToDictionary(jObject, true);
+
+            Assert.NotNull(translated);
+            Assert.Equal(1, translated.Count);
+            Assert.Equal("NullProp", translated.First().Key);
+            Assert.Null(translated.First().Value);
+        }
     }
 }

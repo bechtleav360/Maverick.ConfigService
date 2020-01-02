@@ -62,8 +62,11 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                 case JsonValueKind.Number:
                 case JsonValueKind.True:
                 case JsonValueKind.False:
-                case JsonValueKind.Null:
                     dict[currentPath] = json.ToString();
+                    break;
+
+                case JsonValueKind.Null:
+                    dict[currentPath] = null;
                     break;
 
                 // ReSharper disable once RedundantCaseLabel
