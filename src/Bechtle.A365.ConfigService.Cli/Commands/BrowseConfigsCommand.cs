@@ -35,6 +35,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                           $"({request.HttpResponseMessage?.StatusCode:G}); " +
                                           "can't convert response to target type");
 
+                    var rawResponse = await request.Take<string>();
+                    Output.WriteErrorLine($"couldn't deserialize response: {rawResponse}");
+
                     return 1;
                 }
 
@@ -52,14 +55,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
                 return 0;
             }
-            else
-            {
-                Output.WriteErrorLine("couldn't query available environments: " +
-                                      $"{request.HttpResponseMessage?.StatusCode:D} " +
-                                      $"({request.HttpResponseMessage?.StatusCode:G})");
 
-                return 1;
-            }
+            Output.WriteErrorLine("couldn't query available environments: " +
+                                  $"{request.HttpResponseMessage?.StatusCode:D} " +
+                                  $"({request.HttpResponseMessage?.StatusCode:G})");
+
+            var response = await request.Take<string>();
+            Output.WriteErrorLine(response ?? "{no response received}");
+
+            return 1;
         }
 
         private class Configuration
