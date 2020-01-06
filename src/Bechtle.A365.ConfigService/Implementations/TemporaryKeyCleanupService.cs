@@ -53,69 +53,68 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             Logger.LogDebug("creating DI-Scope for this run");
 
-            using (var scope = Provider.CreateScope())
+            using var scope = Provider.CreateScope();
+
+            Logger.LogDebug("requesting services");
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            var tempStore = scope.ServiceProvider.GetRequiredService<ITemporaryKeyStore>();
+            var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
+
+            var result = await tempStore.GetAll();
+
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            if (result.IsError)
             {
-                Logger.LogDebug("requesting services");
+                Logger.LogWarning($"could not retrieve keys from '{nameof(ITemporaryKeyStore)}', will probably try again soon");
+                return;
+            }
+
+            foreach (var (region, data) in result.Data)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                Logger.LogDebug($"searching through region '{region}' for keys to clean up");
+                var keysToExpire = new List<string>();
+
+                var lastDotIndex = region.LastIndexOf('.');
+                var structure = region.Substring(0, lastDotIndex);
+                var version = int.Parse(region.Substring(lastDotIndex + 1));
+
+                Logger.LogDebug($"extracted Structure: '{structure}'; Version: '{version}' from region '{region}'");
+
+                Logger.LogTrace("searching for expired keys");
+                foreach (var (key, value) in data)
+                    if (string.IsNullOrWhiteSpace(value))
+                        keysToExpire.Add(key);
+
+                Logger.LogDebug($"found '{keysToExpire.Count}' keys in '{region}' that will be removed");
+
+                if (keysToExpire.Any() && Logger.IsEnabled(LogLevel.Trace))
+                    Logger.LogTrace($"expired keys that will be removed from region '{region}': {string.Join("; ", keysToExpire)}");
 
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                var tempStore = scope.ServiceProvider.GetRequiredService<ITemporaryKeyStore>();
-                var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
+                Logger.LogTrace("removing keys from store");
+                await tempStore.Remove(region, keysToExpire);
 
-                var result = await tempStore.GetAll();
-
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                if (result.IsError)
+                Logger.LogTrace("publishing event for expired keys");
+                await eventBus.Publish(new EventMessage
                 {
-                    Logger.LogWarning($"could not retrieve keys from '{nameof(ITemporaryKeyStore)}', will probably try again soon");
-                    return;
-                }
-
-                foreach (var (region, data) in result.Data)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    Logger.LogDebug($"searching through region '{region}' for keys to clean up");
-                    var keysToExpire = new List<string>();
-
-                    var lastDotIndex = region.LastIndexOf('.');
-                    var structure = region.Substring(0, lastDotIndex);
-                    var version = int.Parse(region.Substring(lastDotIndex + 1));
-
-                    Logger.LogDebug($"extracted Structure: '{structure}'; Version: '{version}' from region '{region}'");
-
-                    Logger.LogTrace("searching for expired keys");
-                    foreach (var (key, value) in data)
-                        if (string.IsNullOrWhiteSpace(value))
-                            keysToExpire.Add(key);
-
-                    Logger.LogDebug($"found '{keysToExpire.Count}' keys in '{region}' that will be removed");
-
-                    if (keysToExpire.Any() && Logger.IsEnabled(LogLevel.Trace))
-                        Logger.LogTrace($"expired keys that will be removed from region '{region}': {string.Join("; ", keysToExpire)}");
-
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    Logger.LogTrace("removing keys from store");
-                    await tempStore.Remove(region, keysToExpire);
-
-                    Logger.LogTrace("publishing event for expired keys");
-                    await eventBus.Publish(new EventMessage
+                    Event = new TemporaryKeysExpired
                     {
-                        Event = new TemporaryKeysExpired
-                        {
-                            Structure = structure,
-                            Version = version,
-                            Keys = keysToExpire
-                        },
-                        EventType = nameof(TemporaryKeysExpired)
-                    });
-                }
+                        Structure = structure,
+                        Version = version,
+                        Keys = keysToExpire
+                    },
+                    EventType = nameof(TemporaryKeysExpired)
+                });
             }
         }
     }
