@@ -194,13 +194,12 @@ namespace Bechtle.A365.ConfigService.Cli
 
             lock (_consoleLock)
             {
-                using (var reader = new StreamReader(stream, Encoding.UTF8, false, 1, true))
+                using var reader = new StreamReader(stream, Encoding.UTF8, false, 1, true);
+
+                do
                 {
-                    do
-                    {
-                        writer.WriteLine(reader.ReadLine());
-                    } while (!reader.EndOfStream);
-                }
+                    writer.WriteLine(reader.ReadLine());
+                } while (!reader.EndOfStream);
             }
         }
 

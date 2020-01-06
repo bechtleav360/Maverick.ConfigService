@@ -47,13 +47,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             try
             {
                 // open the file and access it somehow to check for problems
-                using (var file = File.OpenRead(InputFile))
+                using var file = File.OpenRead(InputFile);
+
+                if (file.Length <= 0)
                 {
-                    if (file.Length <= 0)
-                    {
-                        Output.WriteError($"given file '{InputFile}' is empty");
-                        return false;
-                    }
+                    Output.WriteError($"given file '{InputFile}' is empty");
+                    return false;
                 }
             }
             catch (IOException e)

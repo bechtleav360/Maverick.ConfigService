@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
     /// <summary>
     ///     User-Facing trigger to be triggered when a new Snapshot is desired
     /// </summary>
-    public class OnDemandSnapshotTrigger : ISnapshotTrigger
+    public sealed class OnDemandSnapshotTrigger : ISnapshotTrigger
     {
         /// <summary>
         ///     User-Facing event to be triggered when a new Snapshot is desired

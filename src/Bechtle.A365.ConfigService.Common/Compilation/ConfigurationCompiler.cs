@@ -139,12 +139,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             _logger.LogDebug(WithContext(context, $"found '{parts.Count}' parts to resolve"));
 
-            var plan = AnalyzeCompilation(context, parts);
+            var (compilationPossible, reason) = AnalyzeCompilation(context, parts);
 
-            if (!plan.CompilationPossible)
+            if (!compilationPossible)
             {
-                context.Tracer.AddError(plan.Reason);
-                _logger.LogWarning(WithContext(context, $"can't compile key: {plan.Reason}"));
+                context.Tracer.AddError(reason);
+                _logger.LogWarning(WithContext(context, $"can't compile key: {reason}"));
                 return new[] {(Key: context.CurrentKey, Value: value)};
             }
 
