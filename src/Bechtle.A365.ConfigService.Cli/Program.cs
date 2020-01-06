@@ -61,6 +61,11 @@ namespace Bechtle.A365.ConfigService.Cli
                    .Build();
 
         // ReSharper disable once UnusedMember.Local
+        /// <summary>
+        ///     this method is executed when no args were given
+        /// </summary>
+        /// <param name="app"></param>
+        /// <returns></returns>
         private int OnExecute(CommandLineApplication app)
         {
             app.ShowHelp();
