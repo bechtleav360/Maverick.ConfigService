@@ -350,6 +350,9 @@
             <Component Id="cmp3704D619BA8176CC239C4E2E3DE22240" Guid="*">
                 <File Id="fil33F3D184398B14A49BD98032A8871B75" KeyPath="yes" Source="$(var.BasePath)\System.Runtime.Caching.dll" />
             </Component>
+            <Component Id="cmp39CE60B301084AE368282EBF261464F0" Guid="*">
+                <File Id="fil4665CC7D527931E3A52770E88AF61542" KeyPath="yes" Source="$(var.BasePath)\System.Security.Cryptography.Pkcs.dll" />
+            </Component>
             <Component Id="cmp9D1519D872AF6E420B3F121C523F1D76" Guid="*">
                 <File Id="fil66E90D2D4495A8A6DC2B7FB12981C567" KeyPath="yes" Source="$(var.BasePath)\System.Security.Cryptography.ProtectedData.dll" />
             </Component>
@@ -459,6 +462,9 @@
                         <Directory Id="dirC7A12D033E10A7A61C2BB3B7672AF3F7" Name="netcoreapp2.1">
                             <Component Id="cmpE826C47AD37442DF9A8FEE65677928CB" Guid="*">
                                 <File Id="fil2601C6B1C0D11C0F11AB2BA7B33167D0" KeyPath="yes" Source="$(var.BasePath)\runtimes\win\lib\netcoreapp2.1\Microsoft.Data.SqlClient.dll" />
+                            </Component>
+                            <Component Id="cmp9C15940278E477CB1B8C051FACC87B77" Guid="*">
+                                <File Id="fil59530264EE595BC3D7548B93B5CA6A54" KeyPath="yes" Source="$(var.BasePath)\runtimes\win\lib\netcoreapp2.1\System.Security.Cryptography.Pkcs.dll" />
                             </Component>
                         </Directory>
                         <Directory Id="dir9B4F20F396822EEA06946FAEF0EA799A" Name="netstandard2.0">
@@ -644,6 +650,7 @@
             <ComponentRef Id="cmp7FFA1CFB45EDA1442E42E34E1F3DB27E" />
             <ComponentRef Id="cmp28698F3E40E97D0D04ED87AE917B13C7" />
             <ComponentRef Id="cmp3704D619BA8176CC239C4E2E3DE22240" />
+            <ComponentRef Id="cmp39CE60B301084AE368282EBF261464F0" />
             <ComponentRef Id="cmp9D1519D872AF6E420B3F121C523F1D76" />
             <ComponentRef Id="cmpC8B4E2670FF4E41E22F95F7602D47941" />
             <ComponentRef Id="cmpF9FE3EF269B462CCFCD03056FED69C64" />
@@ -664,6 +671,7 @@
             <ComponentRef Id="cmp056CE8404951F32D71AED926FB635ECA" />
             <ComponentRef Id="cmp715E5B210852A04EB7289D6B4121E136" />
             <ComponentRef Id="cmpE826C47AD37442DF9A8FEE65677928CB" />
+            <ComponentRef Id="cmp9C15940278E477CB1B8C051FACC87B77" />
             <ComponentRef Id="cmpE1280786F6B7769E0CA79848AE76A397" />
             <ComponentRef Id="cmp43912F9DCE98FF71B0CC55A723E3E80C" />
             <ComponentRef Id="cmp5E0E35D938278EA60B8D182B1969317E" />
