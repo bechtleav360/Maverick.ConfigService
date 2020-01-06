@@ -95,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Tests
                 JsonData = "{}"
             });
 
-            await Task.Delay(TimeSpan.FromSeconds(21), cts.Token);
+            await Task.Delay(TimeSpan.FromSeconds(4), cts.Token);
 
             await instance.StopAsync(cts.Token);
 
