@@ -6,7 +6,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
 {
     public class CompilationTracer : ICompilationTracer
     {
-        /// <inheritdoc />
+        /// <inheritdoc cref="CompilationTracer" />
         public CompilationTracer()
         {
             Tracers = new List<ITracer>();

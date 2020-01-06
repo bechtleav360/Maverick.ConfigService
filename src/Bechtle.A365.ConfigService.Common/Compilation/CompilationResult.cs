@@ -6,7 +6,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 {
     public class CompilationResult
     {
-        /// <inheritdoc />
+        /// <inheritdoc cref="CompilationResult" />
         public CompilationResult(IDictionary<string, string> compiledConfiguration, IEnumerable<TraceResult> traceResults)
         {
             CompiledConfiguration = compiledConfiguration;

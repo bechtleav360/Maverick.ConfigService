@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly PostgresSnapshotContext _context;
         private readonly ILogger _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="PostgresSnapshotStore" />
         public PostgresSnapshotStore(ILogger<PostgresSnapshotStore> logger, PostgresSnapshotContext context)
         {
             _logger = logger;

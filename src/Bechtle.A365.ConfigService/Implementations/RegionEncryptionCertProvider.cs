@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         private readonly ILogger<RegionEncryptionCertProvider> _logger;
         private readonly IOptionsMonitor<ProtectedConfiguration> _configuration;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="RegionEncryptionCertProvider" />
         public RegionEncryptionCertProvider(IOptionsMonitor<ProtectedConfiguration> configuration,
                                             ILogger<RegionEncryptionCertProvider> logger)
         {

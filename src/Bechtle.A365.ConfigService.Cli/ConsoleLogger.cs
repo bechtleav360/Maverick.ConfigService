@@ -10,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Cli
 
         public LogLevel LogLevel { get; set; }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ConsoleLogger" />
         public ConsoleLogger(IConsole console, LogLevel logLevel = LogLevel.None)
         {
             LogLevel = logLevel;

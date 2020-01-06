@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
 
         private IConfiguration _configuration;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="NumberThresholdSnapshotTrigger" />
         public NumberThresholdSnapshotTrigger(IEventStore eventStore,
                                               ISnapshotStore snapshotStore,
                                               ILogger<NumberThresholdSnapshotTrigger> logger)

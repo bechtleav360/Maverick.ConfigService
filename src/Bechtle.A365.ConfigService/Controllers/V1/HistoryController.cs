@@ -166,7 +166,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
         private class KeyHistory
         {
-            /// <inheritdoc />
+            /// <inheritdoc cref="KeyHistory"/>
             public KeyHistory()
             {
                 Key = string.Empty;

@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly IDomainObjectStore _domainObjectStore;
         private readonly IList<ICommandValidator> _validators;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="EnvironmentProjectionStore" />
         public EnvironmentProjectionStore(IEventStore eventStore,
                                           IDomainObjectStore domainObjectStore,
                                           ILogger<EnvironmentProjectionStore> logger,

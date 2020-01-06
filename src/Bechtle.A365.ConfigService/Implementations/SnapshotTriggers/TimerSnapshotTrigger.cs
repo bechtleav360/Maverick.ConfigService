@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
 
         private IConfiguration _configuration;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="TimerSnapshotTrigger" />
         public TimerSnapshotTrigger(ILogger<TimerSnapshotTrigger> logger)
         {
             _logger = logger;

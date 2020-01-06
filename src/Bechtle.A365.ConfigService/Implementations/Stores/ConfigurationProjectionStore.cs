@@ -27,7 +27,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly IJsonTranslator _translator;
         private readonly IList<ICommandValidator> _validators;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ConfigurationProjectionStore" />
         public ConfigurationProjectionStore(ILogger<ConfigurationProjectionStore> logger,
                                             IDomainObjectStore domainObjectStore,
                                             IConfigurationCompiler compiler,

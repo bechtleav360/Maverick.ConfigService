@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     {
         private readonly IMetrics _metrics;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="InternalDataCommandValidator" />
         public InternalDataCommandValidator(IMetrics metrics)
         {
             _metrics = metrics;

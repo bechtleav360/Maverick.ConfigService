@@ -28,7 +28,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly IJsonTranslator _translator;
         private bool _collectionCreated;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ArangoSnapshotStore" />
         public ArangoSnapshotStore(IHttpClientFactory factory,
                                    IConfiguration configuration,
                                    IJsonTranslator translator,

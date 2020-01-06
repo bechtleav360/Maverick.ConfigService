@@ -25,7 +25,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly IMemoryCache _memoryCache;
         private readonly ISnapshotStore _snapshotStore;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="DomainObjectStore" />
         public DomainObjectStore(IEventStore eventStore,
                                  ISnapshotStore snapshotStore,
                                  IMemoryCache memoryCache,

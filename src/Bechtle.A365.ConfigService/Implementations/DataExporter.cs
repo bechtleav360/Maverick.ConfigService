@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         private readonly ILogger<DataExporter> _logger;
         private readonly IProjectionStore _store;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="DataExporter"/>
         public DataExporter(ILogger<DataExporter> logger,
                             IProjectionStore store)
         {

@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         private readonly IConfigurationParser _parser;
         private readonly IJsonTranslator _translator;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="RoundtripSnapshotCreator" />
         public RoundtripSnapshotCreator(IEventStore eventStore,
                                         IConfigurationParser parser,
                                         IConfigurationCompiler compiler,

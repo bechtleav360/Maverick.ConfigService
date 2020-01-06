@@ -8,7 +8,7 @@ namespace Bechtle.A365.ConfigService.Parsing
     {
         private readonly ILogger _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="AntlrErrorListener" />
         public AntlrErrorListener(ILogger logger)
         {
             _logger = logger;

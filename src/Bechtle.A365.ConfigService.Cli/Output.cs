@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Cli
 
         private readonly object _indentBuilderLock = new object();
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="Output" />
         public Output(IConsole console, LogLevel logLevel)
         {
             _console = console;

@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly MsSqlSnapshotContext _context;
         private readonly ILogger _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="MsSqlSnapshotStore" />
         public MsSqlSnapshotStore(ILogger<MsSqlSnapshotStore> logger, MsSqlSnapshotContext context)
         {
             _logger = logger;

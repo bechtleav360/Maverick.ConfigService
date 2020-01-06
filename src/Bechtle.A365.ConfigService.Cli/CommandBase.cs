@@ -8,7 +8,7 @@ namespace Bechtle.A365.ConfigService.Cli
     [HelpOption("--help")]
     public abstract class CommandBase
     {
-        /// <inheritdoc />
+        /// <inheritdoc cref="CommandBase" />
         protected CommandBase(IConsole console)
         {
             Output = new Output(console, LogLevel.Information);

@@ -25,7 +25,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {DomainEvent.GetEventType<StructureVariablesModified>(), typeof(IDomainEventConverter<StructureVariablesModified>)}
         };
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="EventDeserializer" />
         public EventDeserializer(IServiceProvider provider, ILogger<EventDeserializer> logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));

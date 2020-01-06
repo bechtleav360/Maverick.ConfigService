@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         private readonly IDomainObjectStore _domainObjectStore;
         private readonly ICommandValidator[] _validators;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="DataImporter" />
         public DataImporter(IEventStore eventStore,
                             IDomainObjectStore domainObjectStore,
                             IEnumerable<ICommandValidator> validators)

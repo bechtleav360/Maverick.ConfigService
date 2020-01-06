@@ -10,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Middleware
     {
         private readonly RequestDelegate _next;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="V0RedirectMiddleware" />
         public V0RedirectMiddleware(RequestDelegate next)
         {
             _next = next;

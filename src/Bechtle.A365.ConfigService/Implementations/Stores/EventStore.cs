@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private IEventStoreConnection _eventStore;
         private EventStoreSubscription _eventSubscription;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="EventStore" />
         /// <param name="logger"></param>
         /// <param name="eventStoreLogger"></param>
         /// <param name="provider"></param>

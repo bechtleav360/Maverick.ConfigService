@@ -6,7 +6,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
 {
     public abstract class TracerBase : ITracer
     {
-        /// <inheritdoc />
+        /// <inheritdoc cref="TracerBase" />
         protected TracerBase(ITracer parent)
         {
             Parent = parent;

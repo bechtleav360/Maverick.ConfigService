@@ -11,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     {
         private readonly ILogger _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="CertificateValidator" />
         public CertificateValidator(ILogger<CertificateValidator> logger)
         {
             _logger = logger;

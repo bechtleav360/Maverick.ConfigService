@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         private readonly ILogger<MemorySnapshotStore> _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="MemorySnapshotStore" />
         public MemorySnapshotStore(ILogger<MemorySnapshotStore> logger)
         {
             _logger = logger;

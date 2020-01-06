@@ -378,12 +378,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
         private class CompilationContext
         {
-            /// <inheritdoc />
+            /// <inheritdoc cref="CompilationContext" />
             public CompilationContext()
             {
             }
 
-            /// <inheritdoc />
+            /// <inheritdoc cref="CompilationContext" />
             public CompilationContext(CompilationContext context)
             {
                 EnvironmentInfo = context.EnvironmentInfo;

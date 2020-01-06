@@ -49,7 +49,7 @@ namespace Bechtle.A365.ConfigService
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<Startup> _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="Startup" />
         /// <param name="configuration"></param>
         /// <param name="logger"></param>
         /// <param name="env"></param>

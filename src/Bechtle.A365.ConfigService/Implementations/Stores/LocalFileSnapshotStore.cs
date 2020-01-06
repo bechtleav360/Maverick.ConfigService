@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly LocalFileSnapshotContext _context;
         private readonly ILogger _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="LocalFileSnapshotStore" />
         public LocalFileSnapshotStore(ILogger<LocalFileSnapshotStore> logger, LocalFileSnapshotContext context)
         {
             _logger = logger;

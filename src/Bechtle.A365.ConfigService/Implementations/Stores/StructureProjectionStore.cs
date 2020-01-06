@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly ILogger<StructureProjectionStore> _logger;
         private readonly IList<ICommandValidator> _validators;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="StructureProjectionStore" />
         public StructureProjectionStore(ILogger<StructureProjectionStore> logger,
                                         IDomainObjectStore domainObjectStore,
                                         IEventStore eventStore,

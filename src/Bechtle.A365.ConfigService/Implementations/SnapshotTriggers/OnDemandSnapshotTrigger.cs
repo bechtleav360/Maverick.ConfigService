@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Implementations.SnapshotTriggers
             OnDemandSnapshotTriggered?.Invoke(null, EventArgs.Empty);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="OnDemandSnapshotTrigger" />
         public OnDemandSnapshotTrigger()
         {
             OnDemandSnapshotTriggered += OnOnDemandSnapshotTriggered;

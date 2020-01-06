@@ -23,7 +23,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly IDistributedCache _cache;
         private readonly ILogger _logger;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="TemporaryKeyStore" />
         public TemporaryKeyStore(ILogger<ITemporaryKeyStore> logger, IDistributedCache cache)
         {
             _logger = logger;
