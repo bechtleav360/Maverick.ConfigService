@@ -65,7 +65,7 @@ namespace Bechtle.A365.ConfigService.Utilities
             var pem = Encoding.ASCII.GetString(data);
             var start = pem.IndexOf(header, StringComparison.OrdinalIgnoreCase);
             var end = pem.IndexOf(footer, start, StringComparison.OrdinalIgnoreCase) + footer.Length;
-            var base64 = pem.Substring(start, end - start);
+            var base64 = pem[start..end];
 
             return base64;
         }
@@ -78,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Utilities
             var pem = Encoding.ASCII.GetString(data);
             var start = pem.IndexOf(header, StringComparison.OrdinalIgnoreCase) + header.Length;
             var end = pem.IndexOf(footer, start, StringComparison.OrdinalIgnoreCase);
-            var base64 = pem.Substring(start, end - start);
+            var base64 = pem[start..end];
 
             return base64;
         }
