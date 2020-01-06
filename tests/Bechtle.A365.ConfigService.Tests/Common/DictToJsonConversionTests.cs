@@ -3,7 +3,7 @@ using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Xunit;
 
-namespace Bechtle.A365.ConfigService.Tests
+namespace Bechtle.A365.ConfigService.Tests.Common
 {
     public class DictToJsonConversionTests
     {

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace Bechtle.A365.ConfigService.Tests
+namespace Bechtle.A365.ConfigService.Tests.Common
 {
     // using ReadOnlyDictionaries to ensure the compiler can't write to the given collections
     public class ConfigurationCompilerTests

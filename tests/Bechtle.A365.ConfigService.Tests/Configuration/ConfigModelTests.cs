@@ -2,7 +2,7 @@
 using Bechtle.A365.ConfigService.Configuration;
 using Xunit;
 
-namespace Bechtle.A365.ConfigService.Tests
+namespace Bechtle.A365.ConfigService.Tests.Configuration
 {
     public class ConfigModelTests
     {

@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
-namespace Bechtle.A365.ConfigService.Tests
+namespace Bechtle.A365.ConfigService.Tests.Service
 {
     public class NumberThresholdTriggerTests
     {

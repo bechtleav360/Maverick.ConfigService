@@ -4,7 +4,7 @@ using System.Linq;
 using Bechtle.A365.ConfigService.Parsing;
 using Xunit;
 
-namespace Bechtle.A365.ConfigService.Tests
+namespace Bechtle.A365.ConfigService.Tests.Parsing
 {
     public class ConfigValueParserTests
     {
