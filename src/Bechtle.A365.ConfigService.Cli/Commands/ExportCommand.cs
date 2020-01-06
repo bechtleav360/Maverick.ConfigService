@@ -84,7 +84,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             };
 
             var request = await RestRequest.Make(Output)
-                                           .Post(new Uri(new Uri(ConfigServiceEndpoint), "export"),
+                                           .Post(new Uri(new Uri(ConfigServiceEndpoint), "v1/export"),
                                                  new StringContent(
                                                      JsonSerializer.Serialize(exportDefinition,
                                                                               new JsonSerializerOptions

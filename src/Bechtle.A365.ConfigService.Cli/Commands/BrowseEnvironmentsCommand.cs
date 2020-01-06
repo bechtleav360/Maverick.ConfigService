@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         protected override async Task<int> OnExecute(CommandLineApplication app)
         {
             var request = await RestRequest.Make(Output)
-                                           .Get(new Uri(new Uri(ConfigServiceEndpoint), "environments/available"))
+                                           .Get(new Uri(new Uri(ConfigServiceEndpoint), "v1/environments/available"))
                                            .ReceiveObject<ConfigEnv[]>()
                                            .ReceiveString();
 
