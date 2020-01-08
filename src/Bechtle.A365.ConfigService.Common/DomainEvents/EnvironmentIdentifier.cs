@@ -40,7 +40,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return string.Equals(Category, other.Category, StringComparison.OrdinalIgnoreCase) && string.Equals(Name, other.Name);
+            return string.Equals(Category, other.Category, StringComparison.OrdinalIgnoreCase)
+                   && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()
