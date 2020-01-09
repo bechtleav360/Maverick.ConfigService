@@ -133,7 +133,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
                             foreach (var key in definition.Keys)
                             {
-                                var existing = result.Environments[0].Keys.FirstOrDefault(k => k.Key == key.Key);
+                                // search vor keys to overwrite, case-insensitive
+                                var existing = result.Environments[0]
+                                                     .Keys
+                                                     .FirstOrDefault(k => string.Equals(k.Key,
+                                                                                        key.Key,
+                                                                                        StringComparison.OrdinalIgnoreCase));
 
                                 if (existing is null)
                                 {
