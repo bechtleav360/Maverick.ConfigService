@@ -16,10 +16,19 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void DebugLogs() => TestLogLevelInternal(logger => logger.Debug("Hello, World"));
 
         [Fact]
+        public void DebugLogsWithException() => TestLogLevelInternal(logger => logger.Debug(new Exception("Exception-Text"), "Hello, World"));
+
+        [Fact]
         public void ErrorLogs() => TestLogLevelInternal(logger => logger.Error("Hello, World"));
 
         [Fact]
+        public void ErrorLogsWithException() => TestLogLevelInternal(logger => logger.Error(new Exception("Exception-Text"), "Hello, World"));
+
+        [Fact]
         public void InfoLogs() => TestLogLevelInternal(logger => logger.Info("Hello, World"));
+
+        [Fact]
+        public void InfoLogsWithException() => TestLogLevelInternal(logger => logger.Info(new Exception("Exception-Text"), "Hello, World"));
 
         private void TestLogLevelInternal(Action<EventStoreLogger> debugFunc)
         {
