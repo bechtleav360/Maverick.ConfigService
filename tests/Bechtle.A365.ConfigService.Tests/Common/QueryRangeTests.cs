@@ -20,6 +20,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common
             new object[] {int.MaxValue, int.MinValue}
         };
 
+        // we only check if the constructor throws up
+        // ReSharper disable once ObjectCreationAsStatement
         [Theory]
         [MemberData(nameof(QueryData))]
         public void CreateNew(int offset, int length) => new QueryRange(offset, length);
@@ -70,6 +72,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common
             Assert.Equal(int.MaxValue, queryRange.Length);
         }
 
+        // we only check if the constructor throws up
+        // ReSharper disable once ObjectCreationAsStatement
         [Fact]
         public void CreateNewBasic()
             => new QueryRange();
