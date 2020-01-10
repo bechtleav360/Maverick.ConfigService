@@ -43,7 +43,7 @@ stages:
           displayName: 'build test-project'
           inputs:
             command: 'build'
-            projects: 'tests/Bechtle.A365.ConfigService.Tests/Bechtle.A365.ConfigService.Tests.csproj'
+            projects: 'tests/**/*.Tests.csproj'
             arguments: '-c $(buildConfiguration)'
 
         # execute unit tests
@@ -51,7 +51,7 @@ stages:
           displayName: 'execute unit tests via VSTest'
           inputs:
             testSelector: 'testAssemblies'
-            testAssemblyVer2: 'tests/Bechtle.A365.ConfigService.Tests/bin/$(buildConfiguration)/netcoreapp2.2/Bechtle.A365.ConfigService.Tests.dll'
+            testAssemblyVer2: 'tests/**/bin/**/*.Tests.dll'
             searchFolder: '$(System.DefaultWorkingDirectory)'
             rerunFailedTests: true
             rerunType: basedOnTestFailurePercentage
