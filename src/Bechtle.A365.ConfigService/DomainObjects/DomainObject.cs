@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (replayedEvent.Version <= MetaVersion)
                 return;
 
-            // if there is a handler for the given DomainEvent, call if
+            // if there is a handler for the given DomainEvent, call it
             // if that handler returns true we know the event was meant for this object and
             // we can update CurrentVersion
             if (HandlerMapping.TryGetValue(replayedEvent.DomainEvent.GetType(), out var handler)
