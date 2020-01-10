@@ -63,5 +63,7 @@ if(Test-Path $FilePath) {
     $a.LoggingConfiguration.NLog.Variables.RabbitMqPassword = $RabbitMqPassword
     $a.LoggingConfiguration.NLog.Variables.RabbitMqPort = $RabbitMqPort
     $a.MemoryCache.Redis.ConnectionString = $RedisConnectionString
-    $a | ConvertTo-Json -Depth 100 | Format-Json | set-content $FilePath -Encoding UTF8
+    $result = $a | ConvertTo-Json -Depth 100 | Format-Json
+    $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
+    [System.IO.File]::WriteAllLines($FilePath, $result, $Utf8NoBomEncoding)
 }
