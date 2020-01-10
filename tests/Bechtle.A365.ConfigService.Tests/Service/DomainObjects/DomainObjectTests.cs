@@ -292,6 +292,23 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         }
 
         [Fact]
+        public void ReturnValidationErrors()
+        {
+            var validator = new Mock<ICommandValidator>(MockBehavior.Strict);
+            validator.Setup(v => v.ValidateDomainEvent(It.IsAny<EnvironmentCreated>()))
+                     .Returns(() => Result.Error("Something went wrong", ErrorCode.Undefined));
+
+            var domainObject = new DefaultDomainObject();
+            var domainEvent = new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar"));
+
+            domainObject.AddEvent(domainEvent);
+
+            var result = domainObject.Validate(new List<ICommandValidator> {validator.Object});
+
+            Assert.NotEmpty(result[domainEvent]);
+        }
+
+        [Fact]
         public void VersionsIncrementedAfterReplay()
         {
             var domainObject = new DefaultDomainObject();
