@@ -205,6 +205,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 return false;
 
             Created = true;
+            Deleted = false;
             Keys = created.Keys;
             Variables = created.Variables;
             return true;
@@ -215,7 +216,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is StructureDeleted deleted) || deleted.Identifier != Identifier)
                 return false;
 
+            Created = false;
             Deleted = true;
+            Keys.Clear();
+            Variables.Clear();
             return true;
         }
 
