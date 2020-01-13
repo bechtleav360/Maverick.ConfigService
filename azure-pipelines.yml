@@ -105,3 +105,49 @@ stages:
             containerRegistry: Maverick
             nugetPassword: '$(nuget_password)'
             containerTagPrefix: 'maverick.azurecr.io/'
+
+  - stage: Deploy
+    dependsOn: Build
+    variables:
+      siteAndPoolName: 'A365ConfigService.Pipeline'
+      sitePort: 8456
+      siteHostname: a365configurationservice
+      appLocation: 'E:\RUNNING RELEASE\IIS Services\Bechtle.A365.ConfigService.Pipeline'
+    jobs:
+      - deployment: DevAppServer
+        displayName: 'Deploy Artifact on Dev-AppServer'
+        pool:
+          name: Development
+          demands: app
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - download: 'current'
+                artifact: 'binaries'
+
+              # Stop IIS-Site
+              - task: IISWebAppManagementOnMachineGroup@0
+                displayName: 'Stop IIS-Site'
+                inputs:
+                  IISDeploymentType: 'IISWebsite'
+                  ActionIISWebsite: 'StopWebsite'
+                  StartStopWebsiteName: ${{parameters.siteAndPoolName}}
+
+              - task: IISWebAppManagementOnMachineGroup@0
+                displayName: 'Stop IIS-AppPool'
+                inputs:
+                  IISDeploymentType: 'IISApplicationPool'
+                  ActionIISApplicationPool: 'StopAppPool'
+                  StartStopRecycleAppPoolName: '${{parameters.siteAndPoolName}}'
+
+              - task: IISWebAppManagementOnMachineGroup@0
+                displayName: 'Manage IIS-Site'
+                inputs:
+                  IISDeploymentType: 'IISWebsite'
+                  ActionIISWebsite: 'CreateOrUpdateWebsite'
+                  WebsiteName: '${{parameters.siteAndPoolName}}'
+                  WebsitePhysicalPath: '$(installFoldeR)'
+                  WebsitePhysicalPathAuth: 'WebsiteUserPassThrough'
+                  AddBinding: true
+                  Bindings: 'https/All Unassigned:${{variables.sitePort}}:${{variables.siteHostname}}.$(HostDomain)'
