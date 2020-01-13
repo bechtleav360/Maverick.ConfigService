@@ -126,6 +126,13 @@ stages:
               - download: 'current'
                 artifact: 'binaries'
 
+              - task: ExtractFiles@1
+                displayName: 'Extract files into Subfolder'
+                inputs:
+                  archiveFilePatterns: '$(Pipeline.Workspace)/binaries.zip'
+                  destinationFolder: '$(Pipeline.Workspace)/binaries/'
+                  cleanDestinationFolder: true
+
               # Stop IIS-Site
               - task: IISWebAppManagementOnMachineGroup@0
                 displayName: 'Stop IIS-Site'
@@ -141,11 +148,15 @@ stages:
                   ActionIISApplicationPool: 'StopAppPool'
                   StartStopRecycleAppPoolName: '${{parameters.siteAndPoolName}}'
 
-              - task: ExtractFiles@1
+              - task: CopyFiles@2
+                displayName: 'Copy binaries to target'
                 inputs:
-                  archiveFilePatterns: '$(Pipeline.Workspace)/binaries.zip'
-                  destinationFolder: '$(Pipeline.Workspace)/binaries/'
-                  cleanDestinationFolder: true
+                  SourceFolder: '$(Pipeline.Workspace)/binaries/'
+                  Contents: '**
+                    !*appsettings.json
+                    !*appsettings.*.json'
+                  TargetFolder: '${{variables.appLocation}}'
+                  OverWrite: true
 
               - task: IISWebAppManagementOnMachineGroup@0
                 displayName: 'Manage IIS-Site'
