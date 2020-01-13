@@ -139,14 +139,14 @@ stages:
                 inputs:
                   IISDeploymentType: 'IISWebsite'
                   ActionIISWebsite: 'StopWebsite'
-                  StartStopWebsiteName: ${{parameters.siteAndPoolName}}
+                  StartStopWebsiteName: ${{variables.siteAndPoolName}}
 
               - task: IISWebAppManagementOnMachineGroup@0
                 displayName: 'Stop IIS-AppPool'
                 inputs:
                   IISDeploymentType: 'IISApplicationPool'
                   ActionIISApplicationPool: 'StopAppPool'
-                  StartStopRecycleAppPoolName: '${{parameters.siteAndPoolName}}'
+                  StartStopRecycleAppPoolName: '${{variables.siteAndPoolName}}'
 
               - task: CopyFiles@2
                 displayName: 'Copy binaries to target'
@@ -163,7 +163,7 @@ stages:
                 inputs:
                   IISDeploymentType: 'IISWebsite'
                   ActionIISWebsite: 'CreateOrUpdateWebsite'
-                  WebsiteName: '${{parameters.siteAndPoolName}}'
+                  WebsiteName: '${{variables.siteAndPoolName}}'
                   WebsitePhysicalPath: '$(installFoldeR)'
                   WebsitePhysicalPathAuth: 'WebsiteUserPassThrough'
                   AddBinding: true
