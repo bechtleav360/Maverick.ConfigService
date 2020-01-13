@@ -141,6 +141,12 @@ stages:
                   ActionIISApplicationPool: 'StopAppPool'
                   StartStopRecycleAppPoolName: '${{parameters.siteAndPoolName}}'
 
+              - task: ExtractFiles@1
+                inputs:
+                  archiveFilePatterns: '$(Pipeline.Workspace)/binaries.zip'
+                  destinationFolder: '$(Pipeline.Workspace)/binaries/'
+                  cleanDestinationFolder: true
+
               - task: IISWebAppManagementOnMachineGroup@0
                 displayName: 'Manage IIS-Site'
                 inputs:
