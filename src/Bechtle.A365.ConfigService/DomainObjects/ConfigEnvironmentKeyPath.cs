@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Full Path including Parents
         /// </summary>
-        public string FullPath => Parent?.FullPath + Path + (Children.Any() ? "/" : "");
+        public string FullPath => Parent?.FullPath + Path + (Children?.Any() == true ? "/" : "");
 
         /// <summary>
         ///     Reference to Parent-Node
