@@ -91,9 +91,11 @@ stages:
             projectFile: 'Bechtle.A365.ConfigService.csproj'
             projectName: 'Service'
             containerName: 'configservice'
-            containerRegistry: Maverick
             nugetPassword: '$(nuget_password)'
-            containerTagPrefix: 'maverick.azurecr.io/'
+            publicRegistry: Maverick
+            publicPrefix: 'maverick.azurecr.io/'
+            privateRegistry: MaverickLocal
+            privatePrefix: 'docker-local.registry.a365dev.de/'
 
         # build Cli
         - template: build-project-container.yaml@templates
@@ -102,6 +104,8 @@ stages:
             projectFile: 'Bechtle.A365.ConfigService.Cli.csproj'
             projectName: 'Cli'
             containerName: 'configservice-cli'
-            containerRegistry: Maverick
             nugetPassword: '$(nuget_password)'
-            containerTagPrefix: 'maverick.azurecr.io/'
+            publicRegistry: Maverick
+            publicPrefix: 'maverick.azurecr.io/'
+            privateRegistry: MaverickLocal
+            privatePrefix: 'docker-local.registry.a365dev.de/'
