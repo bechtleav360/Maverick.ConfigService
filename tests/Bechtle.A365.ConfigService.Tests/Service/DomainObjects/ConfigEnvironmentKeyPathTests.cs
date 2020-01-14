@@ -8,7 +8,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void CreateNew()
         {
-            var path = new ConfigEnvironmentKeyPath();
+            var path = new ConfigEnvironmentKeyPath("");
 
             Assert.Empty(path.Children);
             Assert.Equal("", path.FullPath);
@@ -19,8 +19,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void ExceptionOnNullChildren()
         {
-            var root = new ConfigEnvironmentKeyPath {Path = "Foo", Children = null};
-            var child = new ConfigEnvironmentKeyPath {Path = "Bar", Children = null, Parent = root};
+            var root = new ConfigEnvironmentKeyPath("Foo");
+            var child = new ConfigEnvironmentKeyPath("Bar", root);
 
             Assert.NotNull(child.FullPath);
         }
@@ -28,7 +28,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void ExceptionOnNullParent()
         {
-            var child = new ConfigEnvironmentKeyPath {Path = "Foo", Parent = null};
+            var child = new ConfigEnvironmentKeyPath("Foo");
 
             Assert.NotNull(child.FullPath);
         }
@@ -36,28 +36,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void FullPathResolution()
         {
-            // basic hierarchy
-            var jar = new ConfigEnvironmentKeyPath {Path = "Jar"};
-            var baz = new ConfigEnvironmentKeyPath {Path = "Baz"};
-            var bar = new ConfigEnvironmentKeyPath
-            {
-                Path = "Bar",
-                Children = {baz}
-            };
+            // setup hierarchy
+            var root = new ConfigEnvironmentKeyPath("Foo");
+            var bar = new ConfigEnvironmentKeyPath("Bar", root);
+            var baz = new ConfigEnvironmentKeyPath("Baz", bar);
+            var jar = new ConfigEnvironmentKeyPath("Jar", root);
 
-            var root = new ConfigEnvironmentKeyPath
-            {
-                Path = "Foo",
-                Children = {bar, jar}
-            };
-
-            // setup .Parent prop
-            foreach (var child in root.Children)
-            {
-                child.Parent = root;
-                foreach (var grandChild in child.Children)
-                    grandChild.Parent = child;
-            }
+            root.Children.AddRange(new[] {bar, jar});
+            bar.Children.Add(baz);
 
             // actual tests
             // no trailing / because no children

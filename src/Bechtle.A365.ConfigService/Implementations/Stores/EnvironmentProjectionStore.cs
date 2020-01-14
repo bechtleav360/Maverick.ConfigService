@@ -320,14 +320,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var environment = envResult.Data;
 
             _logger.LogDebug($"transforming DTOs to '{nameof(ConfigEnvironmentKey)}'");
-            var updates = keys.Select(dto => new ConfigEnvironmentKey
-            {
-                Description = dto.Description,
-                Type = dto.Type,
-                Version = 0,
-                Key = dto.Key,
-                Value = dto.Value
-            }).ToList();
+            var updates = keys.Select(dto => new ConfigEnvironmentKey(dto.Key, dto.Value, dto.Type, dto.Description, 0))
+                              .ToList();
 
             _logger.LogDebug("updating environment keys");
             var result = environment.UpdateKeys(updates);

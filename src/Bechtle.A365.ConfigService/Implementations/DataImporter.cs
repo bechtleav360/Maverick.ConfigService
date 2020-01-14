@@ -44,13 +44,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 var environment = envResult.Data;
 
                 environment.ImportKeys(envExport.Keys
-                                                .Select(k => new ConfigEnvironmentKey
-                                                {
-                                                    Key = k.Key,
-                                                    Description = k.Description,
-                                                    Type = k.Type,
-                                                    Value = k.Value
-                                                })
+                                                .Select(k => new ConfigEnvironmentKey(k.Key, k.Value, k.Type, k.Description, 0))
                                                 .ToList());
 
                 var errors = environment.Validate(_validators);

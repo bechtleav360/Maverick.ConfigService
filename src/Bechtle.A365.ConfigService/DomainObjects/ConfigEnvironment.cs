@@ -106,6 +106,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (Deleted)
                 return Result.Success();
 
+            Created = false;
             Deleted = true;
             CapturedDomainEvents.Add(new EnvironmentDeleted(Identifier));
 
@@ -322,13 +323,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                 if (root is null)
                 {
-                    root = new ConfigEnvironmentKeyPath
-                    {
-                        Path = rootPart,
-                        Parent = null,
-                        Children = new List<ConfigEnvironmentKeyPath>()
-                    };
-
+                    root = new ConfigEnvironmentKeyPath(rootPart);
                     roots.Add(root);
                 }
 
@@ -340,12 +335,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                     if (next is null)
                     {
-                        next = new ConfigEnvironmentKeyPath
-                        {
-                            Path = part,
-                            Parent = current,
-                            Children = new List<ConfigEnvironmentKeyPath>()
-                        };
+                        next = new ConfigEnvironmentKeyPath(part, current);
                         current.Children.Add(next);
                     }
 
@@ -358,7 +348,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private bool HandleDefaultEnvironmentCreatedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(replayedEvent.DomainEvent is EnvironmentCreated created) || created.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is DefaultEnvironmentCreated created) || created.Identifier != Identifier)
                 return false;
 
             IsDefault = true;
@@ -368,7 +358,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private bool HandleEnvironmentCreatedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(replayedEvent.DomainEvent is DefaultEnvironmentCreated created) || created.Identifier != Identifier)
+            if (!(replayedEvent.DomainEvent is EnvironmentCreated created) || created.Identifier != Identifier)
                 return false;
 
             IsDefault = false;
@@ -381,6 +371,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is EnvironmentDeleted deleted) || deleted.Identifier != Identifier)
                 return false;
 
+            Created = false;
             Deleted = true;
             return true;
         }
@@ -395,16 +386,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                            .Where(action => action.Type == ConfigKeyActionType.Set)
                            .ToDictionary(
                                action => action.Key,
-                               action => new ConfigEnvironmentKey
-                               {
-                                   Key = action.Key,
-                                   Value = action.Value,
-                                   Type = action.ValueType,
-                                   Description = action.Description,
-                                   Version = (long) DateTime.UtcNow
-                                                            .Subtract(_unixEpoch)
-                                                            .TotalSeconds
-                               });
+                               action => new ConfigEnvironmentKey(action.Key,
+                                                                  action.Value,
+                                                                  action.ValueType,
+                                                                  action.Description,
+                                                                  (long) DateTime.UtcNow
+                                                                                 .Subtract(_unixEpoch)
+                                                                                 .TotalSeconds));
 
             _keyPaths = null;
             return true;
@@ -420,16 +408,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     Keys.Remove(deletion.Key);
 
             foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
-                Keys[change.Key] = new ConfigEnvironmentKey
-                {
-                    Key = change.Key,
-                    Value = change.Value,
-                    Type = change.ValueType,
-                    Description = change.Description,
-                    Version = (long) DateTime.UtcNow
-                                             .Subtract(_unixEpoch)
-                                             .TotalSeconds
-                };
+                Keys[change.Key] = new ConfigEnvironmentKey(change.Key,
+                                                            change.Value,
+                                                            change.ValueType,
+                                                            change.Description,
+                                                            (long) DateTime.UtcNow
+                                                                           .Subtract(_unixEpoch)
+                                                                           .TotalSeconds);
 
             _keyPaths = null;
             return true;

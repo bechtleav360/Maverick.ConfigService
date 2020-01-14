@@ -6,7 +6,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
     public class ConfigEnvironmentKeyTests
     {
         [Fact]
-        public void CreateNew() => Assert.NotNull(new ConfigEnvironmentKey());
+        public void CreateNew() => Assert.NotNull(new ConfigEnvironmentKey("", "", "", "", 0));
 
         [Theory]
         [InlineData("", "", "", "", long.MinValue)]
@@ -23,14 +23,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [InlineData("desc", "foo", "bar", "baz", long.MinValue)]
         public void AssignValues(string description, string key, string type, string value, long version)
         {
-            var item = new ConfigEnvironmentKey
-            {
-                Description = description,
-                Key = key,
-                Type = type,
-                Value = value,
-                Version = version
-            };
+            var item = new ConfigEnvironmentKey(key, value, type, description, version);
 
             Assert.Equal(description, item.Description);
             Assert.Equal(key, item.Key);
