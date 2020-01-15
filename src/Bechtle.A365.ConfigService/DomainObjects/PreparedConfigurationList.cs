@@ -94,10 +94,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private bool HandleEnvironmentKeysModifiedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(replayedEvent.DomainEvent is EnvironmentKeysModified modified1))
+            if (!(replayedEvent.DomainEvent is EnvironmentKeysModified modified))
                 return false;
 
-            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedEnvironment == modified1.Identifier))
+            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedEnvironment == modified.Identifier))
                 info.Stale = true;
 
             return true;
@@ -105,10 +105,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private bool HandleStructureVariablesModifiedEvent(ReplayedEvent replayedEvent)
         {
-            if (!(replayedEvent.DomainEvent is StructureVariablesModified modified2))
+            if (!(replayedEvent.DomainEvent is StructureVariablesModified modified))
                 return false;
 
-            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedStructure == modified2.Identifier))
+            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedStructure == modified.Identifier))
                 info.Stale = true;
 
             return true;
