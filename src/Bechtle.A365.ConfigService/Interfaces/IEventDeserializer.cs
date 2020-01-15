@@ -1,7 +1,7 @@
 ﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 
-namespace Bechtle.A365.ConfigService.Implementations
+namespace Bechtle.A365.ConfigService.Interfaces
 {
     /// <summary>
     ///     component that can deserialize Metadata and the actual Data from a given <see cref="StoredEvent"/>
