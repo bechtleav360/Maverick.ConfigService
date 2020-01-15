@@ -11,31 +11,35 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     public class PreparedConfigurationList : DomainObject
     {
         /// <summary>
-        ///     internal Lookup, to keep data for Configurations in
+        ///     internal InformationLookup for IdentifierLookup
         /// </summary>
-        public Dictionary<ConfigurationIdentifier, ConfigInformation> Lookup { get; set; }
-            = new Dictionary<ConfigurationIdentifier, ConfigInformation>();
+        public Dictionary<string, ConfigurationIdentifier> IdentifierLookup { get; set; } = new Dictionary<string, ConfigurationIdentifier>();
+
+        /// <summary>
+        ///     internal InformationLookup for Config-Information
+        /// </summary>
+        public Dictionary<string, ConfigInformation> InfoLookup { get; set; } = new Dictionary<string, ConfigInformation>();
 
         // 10 for each Identifier, plus 5 for rest
         /// <inheritdoc />
         public override long CalculateCacheSize()
-            => Lookup?.Count * 25 ?? 0;
+            => InfoLookup?.Count * 25 ?? 0;
 
         /// <summary>
         ///     get a list of all active Environment-Identifiers
         /// </summary>
         /// <returns></returns>
         public IDictionary<ConfigurationIdentifier, (DateTime? ValidFrom, DateTime? ValidTo)> GetIdentifiers()
-            => Lookup.ToDictionary(_ => _.Key, _ => (_.Value.ValidFrom, _.Value.ValidTo));
+            => InfoLookup.ToDictionary(_ => IdentifierLookup[_.Key], _ => (_.Value.ValidFrom, _.Value.ValidTo));
 
         /// <summary>
         ///     get a list of <see cref="ConfigurationIdentifier" /> for all stale Configurations
         /// </summary>
         /// <returns></returns>
-        public IList<ConfigurationIdentifier> GetStale() => Lookup.Values
-                                                                  .Where(e => e.Stale)
-                                                                  .Select(e => e.Identifier)
-                                                                  .ToList();
+        public IList<ConfigurationIdentifier> GetStale() => InfoLookup.Values
+                                                                      .Where(e => e.Stale)
+                                                                      .Select(e => e.Identifier)
+                                                                      .ToList();
 
         /// <inheritdoc />
         protected override void ApplySnapshotInternal(DomainObject domainObject)
@@ -43,7 +47,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(domainObject is PreparedConfigurationList other))
                 return;
 
-            Lookup = other.Lookup;
+            IdentifierLookup = other.IdentifierLookup;
+            InfoLookup = other.InfoLookup;
         }
 
         /// <inheritdoc />
@@ -61,13 +66,18 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is ConfigurationBuilt built))
                 return false;
 
-            Lookup[built.Identifier] = new ConfigInformation
+            var key = built.Identifier.ToString();
+
+            IdentifierLookup[key] = built.Identifier;
+
+            InfoLookup[key] = new ConfigInformation
             {
                 Identifier = built.Identifier,
                 Stale = false,
                 ValidFrom = built.ValidFrom,
                 ValidTo = built.ValidTo
             };
+
             return true;
         }
 
@@ -76,7 +86,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is EnvironmentKeysImported imported))
                 return false;
 
-            foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == imported.Identifier))
+            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedEnvironment == imported.Identifier))
                 info.Stale = true;
 
             return true;
@@ -87,7 +97,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is EnvironmentKeysModified modified1))
                 return false;
 
-            foreach (var (_, info) in Lookup.Where(l => l.Value.UsedEnvironment == modified1.Identifier))
+            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedEnvironment == modified1.Identifier))
                 info.Stale = true;
 
             return true;
@@ -98,7 +108,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (!(replayedEvent.DomainEvent is StructureVariablesModified modified2))
                 return false;
 
-            foreach (var (_, info) in Lookup.Where(l => l.Value.UsedStructure == modified2.Identifier))
+            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedStructure == modified2.Identifier))
                 info.Stale = true;
 
             return true;
