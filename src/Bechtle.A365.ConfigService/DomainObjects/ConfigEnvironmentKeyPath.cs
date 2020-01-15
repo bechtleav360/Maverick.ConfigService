@@ -37,8 +37,18 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         public string Path { get; }
 
+        /// <summary>
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
         public static bool operator ==(ConfigEnvironmentKeyPath left, ConfigEnvironmentKeyPath right) => Equals(left, right);
 
+        /// <summary>
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
         public static bool operator !=(ConfigEnvironmentKeyPath left, ConfigEnvironmentKeyPath right) => !Equals(left, right);
 
         /// <inheritdoc />
