@@ -118,23 +118,17 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <returns></returns>
         public virtual DomainObjectSnapshot CreateSnapshot()
-        {
-            var snapshot = new DomainObjectSnapshot
-            {
-                Identifier = GetSnapshotIdentifier(),
-                Version = CurrentVersion,
-                MetaVersion = MetaVersion,
-                DataType = GetType().Name,
-                JsonData = JsonConvert.SerializeObject(this, GetType(), new JsonSerializerSettings
-                {
-                    Converters = {new StringEnumConverter(), new IsoDateTimeConverter()},
-                    DateFormatHandling = DateFormatHandling.IsoDateFormat,
-                    DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                })
-            };
-            return snapshot;
-        }
+            => new DomainObjectSnapshot(GetType().Name,
+                                        GetSnapshotIdentifier(),
+                                        JsonConvert.SerializeObject(this, GetType(), new JsonSerializerSettings
+                                        {
+                                            Converters = {new StringEnumConverter(), new IsoDateTimeConverter()},
+                                            DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                                            DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                                            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                                        }),
+                                        CurrentVersion,
+                                        MetaVersion);
 
         /// <summary>
         ///     returns the <see cref="CacheItemPriority" /> for this specific object. Defaults to <see cref="CacheItemPriority.Low" />

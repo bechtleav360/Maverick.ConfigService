@@ -146,14 +146,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (result is null)
                     return Result.Error<DomainObjectSnapshot>("could not retrieve snapshot from Postgres", ErrorCode.DbQueryError);
 
-                return Result.Success(new DomainObjectSnapshot
-                {
-                    Identifier = result.Identifier,
-                    Version = result.Version,
-                    DataType = result.DataType,
-                    JsonData = result.JsonData,
-                    MetaVersion = result.MetaVersion
-                });
+                return Result.Success(
+                    new DomainObjectSnapshot(result.DataType,
+                                             result.Identifier,
+                                             result.JsonData,
+                                             result.Version,
+                                             result.MetaVersion));
             }
             catch (Exception e)
             {

@@ -23,14 +23,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [MemberData(nameof(Values))]
         public void AssignValues(string dataType, string identifier, string jsonData, long metaVersion, long version)
         {
-            var snapshot = new DomainObjectSnapshot
-            {
-                DataType = dataType,
-                Identifier = identifier,
-                JsonData = jsonData,
-                MetaVersion = metaVersion,
-                Version = version
-            };
+            var snapshot = new DomainObjectSnapshot(dataType, identifier, jsonData, version, metaVersion);
 
             Assert.Equal(dataType, snapshot.DataType);
             Assert.Equal(identifier, snapshot.Identifier);
@@ -38,8 +31,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.Equal(metaVersion, snapshot.MetaVersion);
             Assert.Equal(version, snapshot.Version);
         }
-
-        [Fact]
-        public void CreateNew() => Assert.NotNull(new DomainObjectSnapshot());
     }
 }

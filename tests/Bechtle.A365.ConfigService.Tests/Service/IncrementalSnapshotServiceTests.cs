@@ -35,7 +35,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service
         [SuppressMessage("Blocker Code Smell", "S2699:Tests should include assertions", Justification = "Assumption is that no exceptions are thrown")]
         public void QueueSnapshot()
         {
-            IncrementalSnapshotService.QueueSnapshot(new DomainObjectSnapshot());
+            IncrementalSnapshotService.QueueSnapshot(new DomainObjectSnapshot("Test-Snapshot", "Snapshot1", "{}", 4711, 4711));
         }
 
         [Fact]
@@ -87,13 +87,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             await instance.StartAsync(cts.Token);
 
-            IncrementalSnapshotService.QueueSnapshot(new DomainObjectSnapshot
-            {
-                Identifier = "Snapshot1",
-                DataType = "Test-Snapshot",
-                Version = 4711,
-                JsonData = "{}"
-            });
+            IncrementalSnapshotService.QueueSnapshot(new DomainObjectSnapshot("Test-Snapshot", "Snapshot1", "{}", 4711, 4711));
 
             await Task.Delay(TimeSpan.FromSeconds(4), cts.Token);
 

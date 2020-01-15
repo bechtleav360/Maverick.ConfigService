@@ -168,12 +168,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void SnapshotAppliedInternally()
         {
-            var domainObject = new DefaultDomainObject();
-            var snapshot = domainObject.CreateSnapshot();
+            var domainObject = new DefaultDomainObject {FooBarSubProperty1 = 4242};
+            domainObject.SetVersion(42, 42);
 
-            snapshot.JsonData = "{\"FooBarSubProperty1\":4242}";
-            snapshot.MetaVersion = 42;
-            snapshot.Version = 42;
+            var snapshot = domainObject.CreateSnapshot();
 
             Assert.RaisesAny<EventArgs>(e => domainObject.SnapshotAppliedInternally += e,
                                         e => domainObject.SnapshotAppliedInternally -= e,
@@ -264,14 +262,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             var domainObject = new DefaultDomainObject();
 
             var versions = (domainObject.CurrentVersion, domainObject.MetaVersion);
-            domainObject.ApplySnapshot(new DomainObjectSnapshot
-            {
-                DataType = "ForgedDataType",
-                Identifier = "Some-Identifier",
-                JsonData = "{}",
-                Version = long.MaxValue,
-                MetaVersion = long.MaxValue
-            });
+            domainObject.ApplySnapshot(new DomainObjectSnapshot("ForgedDataType", "Some-Identifier", "{}", long.MaxValue, long.MaxValue));
 
             Assert.Equal(versions, (domainObject.CurrentVersion, domainObject.MetaVersion));
         }
