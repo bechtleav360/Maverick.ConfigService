@@ -23,7 +23,24 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         public PreparedConfiguration(ConfigurationIdentifier identifier)
         {
+            if (identifier is null)
+                throw new ArgumentNullException(nameof(identifier));
+
+            if (identifier.Environment is null)
+                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Environment)} is null");
+
+            if (identifier.Structure is null)
+                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Structure)} is null");
+
             Identifier = identifier;
+            Created = false;
+            Built = false;
+            ConfigurationVersion = -1;
+            Json = string.Empty;
+            Keys = new Dictionary<string, string>();
+            UsedKeys = new List<string>();
+            ValidFrom = null;
+            ValidTo = null;
         }
 
         /// <summary>
@@ -121,6 +138,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             if (Built)
                 return Result.Success();
+
+            if (store is null) throw new ArgumentNullException(nameof(store));
+            if (compiler is null) throw new ArgumentNullException(nameof(compiler));
+            if (parser is null) throw new ArgumentNullException(nameof(parser));
+            if (translator is null) throw new ArgumentNullException(nameof(translator));
 
             var compilationVersion = assumeLatestVersion ? long.MaxValue : CurrentVersion;
 
