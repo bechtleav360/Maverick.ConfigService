@@ -232,7 +232,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             var snapshot = domainObject.CreateSnapshot();
 
-            Assert.Contains("\"FooBarSubProperty1\":4711", snapshot.JsonData, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains($"\"{nameof(DefaultDomainObject.FooBarSubProperty1)}\":{domainObject.FooBarSubProperty1}",
+                            snapshot.JsonData,
+                            StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
