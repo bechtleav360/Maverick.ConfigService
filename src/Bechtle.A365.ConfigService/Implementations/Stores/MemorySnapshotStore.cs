@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             var result = Snapshots.Any()
                              ? Snapshots.Select(pair => pair.Value.MetaVersion).Min()
-                             : long.MinValue;
+                             : 0;
 
             _logger.LogDebug($"currently latest snapshot: '{result}'");
 
