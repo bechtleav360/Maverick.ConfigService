@@ -11,7 +11,15 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var provider = new ServiceCollection().AddLogging().BuildServiceProvider();
 
-            Store = new MemorySnapshotStore(provider.GetRequiredService<ILogger<MemorySnapshotStore>>());
+            var instance = new MemorySnapshotStore(provider.GetRequiredService<ILogger<MemorySnapshotStore>>());
+            instance.Clear();
+
+            Store = instance;
+        }
+
+        /// <inheritdoc />
+        public override void Dispose()
+        {
         }
     }
 }

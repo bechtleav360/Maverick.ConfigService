@@ -112,6 +112,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Task.FromResult(Result.Success());
         }
 
+        /// <summary>
+        ///     Clear all stored Snapshots from memory
+        /// </summary>
+        public void Clear() => Snapshots?.Clear();
+
         private static string MakeKeyFor(DomainObjectSnapshot snapshot) => MakeKeyFor(snapshot.DataType, snapshot.Identifier, snapshot.Version);
 
         private static string MakeKeyFor(string dataType, string identifier, long version)

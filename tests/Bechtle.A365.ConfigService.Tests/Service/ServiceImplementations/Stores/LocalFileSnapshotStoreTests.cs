@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 {
-    public class LocalFileSnapshotStoreTests : SnapshotStoreTests, IDisposable
+    public class LocalFileSnapshotStoreTests : SnapshotStoreTests
     {
         private readonly string _databaseName;
 
@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             _databaseName = $"{Guid.NewGuid():N}.db";
 
-            var connectionStringBuilder = new SqliteConnectionStringBuilder()
+            var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
                 DataSource = _databaseName,
                 Mode = SqliteOpenMode.ReadWriteCreate
@@ -36,7 +36,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         /// <inheritdoc />
-        public void Dispose()
+        public override void Dispose()
         {
             try
             {
