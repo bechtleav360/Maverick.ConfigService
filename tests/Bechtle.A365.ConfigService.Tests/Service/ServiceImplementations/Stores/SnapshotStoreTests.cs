@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         protected ISnapshotStore Store { get; set; }
 
         [Fact]
-        public async Task GetLatestSnapshotNumbers()
+        public virtual async Task GetLatestSnapshotNumbers()
         {
             var esMock = new Mock<IEventStore>(MockBehavior.Strict);
             esMock.Setup(es => es.WriteEvents(It.IsAny<IList<DomainEvent>>()))
@@ -39,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task GetLatestSnapshotNumbersEmpty()
+        public virtual async Task GetLatestSnapshotNumbersEmpty()
         {
             var result = await Store.GetLatestSnapshotNumbers();
 
@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task RetrieveDomainObjectSnapshot()
+        public virtual async Task RetrieveDomainObjectSnapshot()
         {
             var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
             item.Create();
@@ -66,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task RetrieveGenericExistingSnapshot()
+        public virtual async Task RetrieveGenericExistingSnapshot()
         {
             var snapshot = new DomainObjectSnapshot("UT-Type", "UT-Id", "{\"UT-Data\":4711}", 1, 2);
 
@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task RetrieveVersionConstrainedSnapshot()
+        public virtual async Task RetrieveVersionConstrainedSnapshot()
         {
             var eventStore = new Mock<IEventStore>();
 
@@ -110,7 +110,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task RetrieveVersionConstrainedSnapshotGeneric()
+        public virtual async Task RetrieveVersionConstrainedSnapshotGeneric()
         {
             var eventStore = new Mock<IEventStore>();
 
@@ -141,7 +141,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task StoreDomainObjectSnapshot()
+        public virtual async Task StoreDomainObjectSnapshot()
         {
             var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
             item.Create();
@@ -155,7 +155,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task StoreGenericSnapshot()
+        public virtual async Task StoreGenericSnapshot()
         {
             var snapshot = new DomainObjectSnapshot("UT-Type", "UT-Id", "{\"UT-Data\":4711}", 1, 2);
 
