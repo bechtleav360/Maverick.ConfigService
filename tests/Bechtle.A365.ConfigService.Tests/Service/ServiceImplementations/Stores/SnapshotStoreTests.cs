@@ -34,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var result = await Store.GetLatestSnapshotNumbers();
 
-            Assert.False(result.IsError);
+            Assert.False(result.IsError, "result.IsError");
             Assert.Equal(1, result.Data);
         }
 
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var result = await Store.GetLatestSnapshotNumbers();
 
-            Assert.False(result.IsError);
+            Assert.False(result.IsError, "result.IsError");
             Assert.Equal(0, result.Data);
         }
 
@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var result = await Store.GetSnapshot<ConfigEnvironment>(new EnvironmentIdentifier("Foo", "Bar").ToString());
 
-            Assert.False(result.IsError);
+            Assert.False(result.IsError, "result.IsError");
             Assert.NotNull(result.Data);
             Assert.Equal(snapshot, result.Data);
         }
@@ -105,7 +105,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var result = await Store.GetSnapshot(nameof(ConfigEnvironment), item.Identifier.ToString(), 1);
 
-            Assert.False(result.IsError);
+            Assert.False(result.IsError, "result.IsError");
             Assert.Equal(secondSnapshot, result.Data);
         }
 
@@ -136,7 +136,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var result = await Store.GetSnapshot<ConfigEnvironment>(item.Identifier.ToString(), 1);
 
-            Assert.False(result.IsError);
+            Assert.False(result.IsError, "result.IsError");
             Assert.Equal(secondSnapshot, result.Data);
         }
 
