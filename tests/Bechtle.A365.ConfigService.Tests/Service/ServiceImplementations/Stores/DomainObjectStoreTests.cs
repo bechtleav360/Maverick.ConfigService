@@ -343,5 +343,129 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Verify();
             snapshotStore.Verify();
         }
+
+        [Fact]
+        public async Task Replay()
+        {
+            var provider = new ServiceCollection()
+                           .AddLogging()
+                           .AddMemoryCache()
+                           .BuildServiceProvider();
+
+            var config = new ConfigurationBuilder()
+                         .AddInMemoryCollection(new[] {new KeyValuePair<string, string>("MemoryCache:Local:Duration", "00:00:10")})
+                         .Build();
+
+            var logger = provider.GetRequiredService<ILogger<DomainObjectStore>>();
+            var memCache = provider.GetRequiredService<IMemoryCache>();
+
+            var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
+            eventStore.Setup(es => es.ReplayEventsAsStream(
+                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
+                                 It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
+                                 It.IsAny<int>(),
+                                 It.IsAny<StreamDirection>(),
+                                 It.IsAny<long>()))
+                      .Returns((Func<(StoredEvent, DomainEventMetadata), bool> filter,
+                                Func<(StoredEvent, DomainEvent), bool> stream,
+                                int batch,
+                                StreamDirection direction,
+                                long maxVersion) =>
+                      {
+                          var metadata = new[]
+                          {
+                              (new StoredEvent
+                                  {
+                                      Data = new byte[0],
+                                      EventId = Guid.NewGuid(),
+                                      EventNumber = 1,
+                                      EventType = nameof(EnvironmentCreated),
+                                      Metadata = new byte[0],
+                                      UtcTime = DateTime.UtcNow
+                                  },
+                                  new DomainEventMetadata {Filters = {{KnownDomainEventMetadata.Identifier, "Foo/Bar"}}}),
+                              (new StoredEvent
+                                  {
+                                      Data = new byte[0],
+                                      EventId = Guid.NewGuid(),
+                                      EventNumber = 2,
+                                      EventType = nameof(EnvironmentCreated),
+                                      Metadata = new byte[0],
+                                      UtcTime = DateTime.UtcNow
+                                  },
+                                  new DomainEventMetadata {Filters = {{KnownDomainEventMetadata.Identifier, "Foo/Baz"}}}),
+                              (new StoredEvent
+                                  {
+                                      Data = new byte[0],
+                                      EventId = Guid.NewGuid(),
+                                      EventNumber = 3,
+                                      EventType = nameof(EnvironmentCreated),
+                                      Metadata = new byte[0],
+                                      UtcTime = DateTime.UtcNow
+                                  },
+                                  new DomainEventMetadata {Filters = {{KnownDomainEventMetadata.Identifier, "Foo/Foo"}}})
+                          };
+
+                          foreach (var tuple in metadata) filter(tuple);
+
+                          var events = new[]
+                          {
+                              (new StoredEvent
+                                  {
+                                      Data = new byte[0],
+                                      EventId = Guid.NewGuid(),
+                                      EventNumber = 1,
+                                      EventType = nameof(EnvironmentCreated),
+                                      Metadata = new byte[0],
+                                      UtcTime = DateTime.UtcNow
+                                  },
+                                  new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar"))),
+                              (new StoredEvent
+                                  {
+                                      Data = new byte[0],
+                                      EventId = Guid.NewGuid(),
+                                      EventNumber = 2,
+                                      EventType = nameof(EnvironmentCreated),
+                                      Metadata = new byte[0],
+                                      UtcTime = DateTime.UtcNow
+                                  },
+                                  new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Baz"))),
+                              (new StoredEvent
+                                  {
+                                      Data = new byte[0],
+                                      EventId = Guid.NewGuid(),
+                                      EventNumber = 3,
+                                      EventType = nameof(EnvironmentCreated),
+                                      Metadata = new byte[0],
+                                      UtcTime = DateTime.UtcNow
+                                  },
+                                  new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Foo")))
+                          };
+
+                          foreach (var tuple in @events) stream(tuple);
+
+                          return Task.CompletedTask;
+                      })
+                      .Verifiable();
+
+            var snapshotStore = new Mock<ISnapshotStore>(MockBehavior.Strict);
+            snapshotStore.Setup(s => s.GetSnapshot<ConfigEnvironmentList>(It.IsAny<string>(), It.IsAny<long>()))
+                         .ReturnsAsync(() => Result.Error<DomainObjectSnapshot>(string.Empty, ErrorCode.DbQueryError))
+                         .Verifiable();
+
+            var store = new DomainObjectStore(eventStore.Object,
+                                              snapshotStore.Object,
+                                              memCache,
+                                              config,
+                                              logger);
+
+            var result = await store.ReplayObject<ConfigEnvironmentList>(2);
+
+            Assert.False(result.IsError, "result.IsError");
+            Assert.NotNull(result.Data);
+
+            eventStore.Verify();
+            snapshotStore.Verify();
+        }
     }
 }
