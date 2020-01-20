@@ -36,5 +36,10 @@ namespace Bechtle.A365.ConfigService.Implementations
         ///     [Optional] Root-Path that should be removed from all found Entries
         /// </summary>
         public string RemoveRoot { get; set; }
+
+        /// <summary>
+        ///     [Optional] Max-Version to use when retrieving data
+        /// </summary>
+        public long TargetVersion { get; set; }
     }
 }

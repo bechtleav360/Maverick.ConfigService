@@ -44,6 +44,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range);
 
         /// <summary>
+        ///     get a list of all Environments
+        /// </summary>
+        /// <param name="range"></param>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range, long version);
+
+        /// <summary>
         ///     get a list of possible next terms for the given key
         /// </summary>
         /// <param name="identifier"></param>
@@ -51,6 +59,16 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="range"></param>
         /// <returns></returns>
         Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
+
+        /// <summary>
+        ///     get a list of possible next terms for the given key
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="key"></param>
+        /// <param name="range"></param>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range, long version);
 
         /// <summary>
         ///     get the keys of an Environment as Objects

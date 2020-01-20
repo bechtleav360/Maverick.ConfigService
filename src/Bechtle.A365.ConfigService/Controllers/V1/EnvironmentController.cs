@@ -143,15 +143,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="offset"></param>
         /// <param name="length"></param>
+        /// <param name="targetVersion"></param>
         /// <returns></returns>
         [HttpGet(Name = "GetEnvironments")]
         [HttpGet("available", Name = "GetAvailableEnvironments")]
         public async Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
-                                                                  [FromQuery] int length = -1)
+                                                                  [FromQuery] int length = -1,
+                                                                  [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
-            var result = await _store.Environments.GetAvailable(range);
+            var result = await _store.Environments.GetAvailable(range, targetVersion);
 
             return Result(result);
         }
@@ -166,6 +168,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="root"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
+        /// <param name="targetVersion"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeys")]
         public async Task<IActionResult> GetKeys([FromRoute] string category,
@@ -174,7 +177,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                  [FromQuery] string preferExactMatch,
                                                  [FromQuery] string root,
                                                  [FromQuery] int offset = -1,
-                                                 [FromQuery] int length = -1)
+                                                 [FromQuery] int length = -1,
+                                                 [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
@@ -186,7 +190,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Filter = filter,
                 PreferExactMatch = preferExactMatch,
                 Range = range,
-                RemoveRoot = root
+                RemoveRoot = root,
+                TargetVersion = targetVersion
             });
 
             return result.IsError
@@ -202,13 +207,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="filter"></param>
         /// <param name="preferExactMatch"></param>
         /// <param name="root"></param>
+        /// <param name="targetVersion"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
                                                        [FromRoute] string name,
                                                        [FromQuery] string filter,
                                                        [FromQuery] string preferExactMatch,
-                                                       [FromQuery] string root)
+                                                       [FromQuery] string root,
+                                                       [FromQuery] long targetVersion = -1)
         {
             var identifier = new EnvironmentIdentifier(category, name);
 
@@ -218,7 +225,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Filter = filter,
                 PreferExactMatch = preferExactMatch,
                 Range = QueryRange.All,
-                RemoveRoot = root
+                RemoveRoot = root,
+                TargetVersion = targetVersion
             });
 
             if (result.IsError)
@@ -239,6 +247,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="root"></param>
         /// <param name="offset" />
         /// <param name="length" />
+        /// <param name="targetVersion"></param>
         /// <returns></returns>
         [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
@@ -247,7 +256,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                              [FromQuery] string preferExactMatch,
                                                              [FromQuery] string root,
                                                              [FromQuery] int offset = -1,
-                                                             [FromQuery] int length = -1)
+                                                             [FromQuery] int length = -1,
+                                                             [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
@@ -259,7 +269,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Filter = filter,
                 PreferExactMatch = preferExactMatch,
                 Range = range,
-                RemoveRoot = root
+                RemoveRoot = root,
+                TargetVersion = targetVersion
             });
 
             if (result.IsError)

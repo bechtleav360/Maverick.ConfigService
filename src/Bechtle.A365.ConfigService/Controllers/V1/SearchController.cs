@@ -34,19 +34,21 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="query"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
+        /// <param name="targetVersion"></param>
         /// <returns></returns>
         [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = "GetKeyAutocomplete")]
         public async Task<IActionResult> GetKeyAutocompleteList([FromRoute] string category,
                                                                 [FromRoute] string name,
                                                                 [FromQuery] string query = null,
                                                                 [FromQuery] int offset = -1,
-                                                                [FromQuery] int length = -1)
+                                                                [FromQuery] int length = -1,
+                                                                [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
             var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeyAutoComplete(identifier, query, range);
+            var result = await _store.Environments.GetKeyAutoComplete(identifier, query, range, targetVersion);
 
             return Result(result);
         }

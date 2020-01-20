@@ -119,13 +119,20 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range)
+        public Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range)
+            => GetAvailable(range, long.MaxValue);
+
+        /// <inheritdoc />
+        public async Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range, long version)
         {
             try
             {
                 _logger.LogDebug($"collecting available environments, range={range}");
 
-                var envList = await _domainObjectStore.ReplayObject<ConfigEnvironmentList>();
+                var envList = await (version <= 0
+                                         ? _domainObjectStore.ReplayObject<ConfigEnvironmentList>()
+                                         : _domainObjectStore.ReplayObject<ConfigEnvironmentList>(version));
+
                 List<EnvironmentIdentifier> identifiers;
 
                 if (envList.IsError)
@@ -149,9 +156,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
+        public Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier,
+                                                                               string key,
+                                                                               QueryRange range)
+            => GetKeyAutoComplete(identifier, key, range, long.MaxValue);
+
+        /// <inheritdoc />
         public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier,
                                                                                      string key,
-                                                                                     QueryRange range)
+                                                                                     QueryRange range,
+                                                                                     long version)
         {
             try
             {
@@ -161,7 +175,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 key = Uri.UnescapeDataString(key ?? string.Empty);
                 _logger.LogDebug($"using new key='{key}'");
 
-                var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
+                var envResult = await (version <= 0
+                                           ? _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString())
+                                           : _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString(), version));
+
                 if (envResult.IsError)
                     return Result.Error<IList<DtoConfigKeyCompletion>>(
                         "no environment found with (" +
@@ -472,7 +489,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                  $"{nameof(parameters.Range)}: {parameters.Range}, " +
                                  $"{nameof(parameters.RemoveRoot)}: {parameters.RemoveRoot}");
 
-                var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Environment), parameters.Environment.ToString());
+                // if TargetVersion is above 0, we try to find the specified version of ConfigEnvironment
+                var envResult = await (parameters.TargetVersion <= 0
+                                           ? _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Environment),
+                                                                             parameters.Environment.ToString())
+                                           : _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Environment),
+                                                                             parameters.Environment.ToString(),
+                                                                             parameters.TargetVersion));
                 if (envResult.IsError)
                     return Result.Error<TResult>(envResult.Message, envResult.Code);
 
