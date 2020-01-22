@@ -142,7 +142,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }
                 else
                 {
-                    identifiers = envList.Data.GetIdentifiers().ToList();
+                    identifiers = envList.Data
+                                         .GetIdentifiers()
+                                         .OrderBy(e => e.Category)
+                                         .ThenBy(e => e.Name)
+                                         .Skip(range.Offset)
+                                         .Take(range.Length)
+                                         .ToList();
+
                     _logger.LogDebug($"collected '{identifiers.Count}' identifiers");
                 }
 
