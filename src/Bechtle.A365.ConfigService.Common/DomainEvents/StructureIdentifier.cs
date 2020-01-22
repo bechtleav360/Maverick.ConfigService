@@ -8,6 +8,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class StructureIdentifier : Identifier, IEquatable<StructureIdentifier>
     {
         /// <inheritdoc />
+        public StructureIdentifier() : this(string.Empty, 0)
+        {
+        }
+
+        /// <inheritdoc />
         public StructureIdentifier(string name, int version)
         {
             Name = name;
@@ -17,12 +22,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     name of this structure, indicates uses the Configuration built from this and <see cref="StructureIdentifier" />
         /// </summary>
-        public string Name { get; }
+        public string Name { get; set; }
 
         /// <summary>
         ///     unique version of this Structure
         /// </summary>
-        public int Version { get; }
+        public int Version { get; set; }
 
         public static bool operator ==(StructureIdentifier left, StructureIdentifier right) => Equals(left, right);
 

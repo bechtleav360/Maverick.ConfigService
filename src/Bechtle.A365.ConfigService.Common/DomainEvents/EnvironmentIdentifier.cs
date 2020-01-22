@@ -8,6 +8,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentIdentifier : Identifier, IEquatable<EnvironmentIdentifier>
     {
         /// <inheritdoc />
+        public EnvironmentIdentifier() : this(string.Empty, string.Empty)
+        {
+        }
+
+        /// <inheritdoc />
         public EnvironmentIdentifier(string category, string name)
         {
             Category = category;
@@ -17,12 +22,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     Category for a group of Environments, think Folder / Tenant and the like
         /// </summary>
-        public string Category { get; }
+        public string Category { get; set; }
 
         /// <summary>
         ///     Unique name for an Environment within a <see cref="Category" />
         /// </summary>
-        public string Name { get; }
+        public string Name { get; set; }
 
         public static bool operator ==(EnvironmentIdentifier left, EnvironmentIdentifier right) => Equals(left, right);
 
