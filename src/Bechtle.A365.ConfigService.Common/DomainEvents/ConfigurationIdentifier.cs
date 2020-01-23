@@ -29,7 +29,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     Optional version of this Configuration
         /// </summary>
-        public long Version { get; }
+        public long Version { get; set; }
 
         public static bool operator ==(ConfigurationIdentifier left, ConfigurationIdentifier right) => Equals(left, right);
 
