@@ -1,6 +1,9 @@
 ﻿using System.Linq;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Newtonsoft.Json;
 using Xunit;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Bechtle.A365.ConfigService.Tests.Common
 {
@@ -60,5 +63,39 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [InlineData(null, null)]
         [InlineData("Foo", "Bar")]
         public void NoToStringExceptions(string category, string name) => Assert.NotNull(new EnvironmentIdentifier(category, name).ToString());
+
+        [Theory]
+        [InlineData(@"{ }", "", "")]
+        [InlineData(@"{ ""category"": """", ""name"": """" }", "", "")]
+        [InlineData(@"{ ""category"": """", ""name"": ""Bar"" }", "", "Bar")]
+        [InlineData(@"{ ""category"": ""Foo"", ""name"": """" }", "Foo", "")]
+        [InlineData(@"{ ""category"": ""Foo"", ""name"": ""Bar"" }", "Foo", "Bar")]
+        public void DeserializableUsingSystem(string json, string expectedCategory, string expectedName)
+        {
+            var identifier = JsonSerializer.Deserialize<EnvironmentIdentifier>(json, new JsonSerializerOptions
+            {
+                AllowTrailingCommas = true,
+                PropertyNameCaseInsensitive = true
+            });
+
+            Assert.NotNull(identifier);
+            Assert.Equal(expectedCategory, identifier.Category);
+            Assert.Equal(expectedName, identifier.Name);
+        }
+
+        [Theory]
+        [InlineData(@"{ }", "", "")]
+        [InlineData(@"{ ""category"": """", ""name"": """" }", "", "")]
+        [InlineData(@"{ ""category"": """", ""name"": ""Bar"" }", "", "Bar")]
+        [InlineData(@"{ ""category"": ""Foo"", ""name"": """" }", "Foo", "")]
+        [InlineData(@"{ ""category"": ""Foo"", ""name"": ""Bar"" }", "Foo", "Bar")]
+        public void DeserializableUsingNewtonsoft(string json, string expectedCategory, string expectedName)
+        {
+            var identifier = JsonConvert.DeserializeObject<EnvironmentIdentifier>(json);
+
+            Assert.NotNull(identifier);
+            Assert.Equal(expectedCategory, identifier.Category);
+            Assert.Equal(expectedName, identifier.Name);
+        }
     }
 }

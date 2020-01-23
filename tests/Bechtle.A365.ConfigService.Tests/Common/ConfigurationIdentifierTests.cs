@@ -1,6 +1,9 @@
 ﻿using System.Linq;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Newtonsoft.Json;
 using Xunit;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Bechtle.A365.ConfigService.Tests.Common
 {
@@ -61,5 +64,33 @@ namespace Bechtle.A365.ConfigService.Tests.Common
             => Assert.NotNull(new ConfigurationIdentifier(new EnvironmentIdentifier(envCategory, envName),
                                                           new StructureIdentifier(structName, structVersion),
                                                           version).ToString());
+
+        [Theory]
+        [InlineData(@"{ ""environment"": { ""category"": """", ""Name"": """" }, ""structure"": { ""name"": """", ""version"": 0 } }")]
+        [InlineData(@"{ ""environment"": { ""category"": """", ""Name"": ""Bar"" }, ""structure"": { ""name"": """", ""version"": 4711 } }")]
+        [InlineData(@"{ ""environment"": { ""category"": ""Foo"", ""Name"": """" }, ""structure"": { ""name"": ""Foo"", ""version"": 0 } }")]
+        [InlineData(@"{ ""environment"": { ""category"": ""Foo"", ""Name"": ""Bar"" }, ""structure"": { ""name"": ""Foo"", ""version"": 4711 } }")]
+        public void DeserializableUsingSystem(string json)
+        {
+            var identifier = JsonSerializer.Deserialize<ConfigurationIdentifier>(json, new JsonSerializerOptions
+            {
+                AllowTrailingCommas = true,
+                PropertyNameCaseInsensitive = true
+            });
+
+            Assert.NotNull(identifier);
+        }
+
+        [Theory]
+        [InlineData(@"{ ""environment"": { ""category"": """", ""Name"": """" }, ""structure"": { ""name"": """", ""version"": ""0"" } }")]
+        [InlineData(@"{ ""environment"": { ""category"": """", ""Name"": ""Bar"" }, ""structure"": { ""name"": """", ""version"": ""4711"" } }")]
+        [InlineData(@"{ ""environment"": { ""category"": ""Foo"", ""Name"": """" }, ""structure"": { ""name"": ""Foo"", ""version"": ""0"" } }")]
+        [InlineData(@"{ ""environment"": { ""category"": ""Foo"", ""Name"": ""Bar"" }, ""structure"": { ""name"": ""Foo"", ""version"": ""4711"" } }")]
+        public void DeserializableUsingNewtonsoft(string json)
+        {
+            var identifier = JsonConvert.DeserializeObject<ConfigurationIdentifier>(json);
+
+            Assert.NotNull(identifier);
+        }
     }
 }

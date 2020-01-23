@@ -1,6 +1,9 @@
 ﻿using System.Linq;
+using System.Text.Json;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Newtonsoft.Json;
 using Xunit;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Bechtle.A365.ConfigService.Tests.Common
 {
@@ -84,5 +87,39 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [InlineData("Foo", int.MinValue)]
         [InlineData("Foo", int.MaxValue)]
         public void NoToStringExceptions(string name, int version) => Assert.NotNull(new StructureIdentifier(name, version).ToString());
+
+        [Theory]
+        [InlineData(@"{ }", "", 0)]
+        [InlineData(@"{ ""name"": """", ""version"": 0 }", "", 0)]
+        [InlineData(@"{ ""name"": """", ""version"": 4711 }", "", 4711)]
+        [InlineData(@"{ ""name"": ""Foo"", ""version"": 0 }", "Foo", 0)]
+        [InlineData(@"{ ""name"": ""Foo"", ""version"": 4711 }", "Foo", 4711)]
+        public void DeserializableUsingSystem(string json, string expectedName, int expectedVersion)
+        {
+            var identifier = JsonSerializer.Deserialize<StructureIdentifier>(json, new JsonSerializerOptions
+            {
+                AllowTrailingCommas = true,
+                PropertyNameCaseInsensitive = true
+            });
+
+            Assert.NotNull(identifier);
+            Assert.Equal(expectedName, identifier.Name);
+            Assert.Equal(expectedVersion, identifier.Version);
+        }
+
+        [Theory]
+        [InlineData(@"{ }", "", 0)]
+        [InlineData(@"{ ""name"": """", ""version"": 0 }", "", 0)]
+        [InlineData(@"{ ""name"": """", ""version"": 4711 }", "", 4711)]
+        [InlineData(@"{ ""name"": ""Foo"", ""version"": 0 }", "Foo", 0)]
+        [InlineData(@"{ ""name"": ""Foo"", ""version"": 4711 }", "Foo", 4711)]
+        public void DeserializableUsingNewtonsoft(string json, string expectedName, int expectedVersion)
+        {
+            var identifier = JsonConvert.DeserializeObject<StructureIdentifier>(json);
+
+            Assert.NotNull(identifier);
+            Assert.Equal(expectedName, identifier.Name);
+            Assert.Equal(expectedVersion, identifier.Version);
+        }
     }
 }
