@@ -2,7 +2,7 @@
 
   <!-- Global Stuff -->
   <PropertyGroup>
-    <Version>2.3.0</Version>
+    <Version>2.3.1</Version>
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
     <TargetFramework>netcoreapp3.0</TargetFramework>
