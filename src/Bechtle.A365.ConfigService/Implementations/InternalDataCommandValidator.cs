@@ -21,6 +21,9 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public IResult ValidateDomainEvent(DomainEvent domainEvent)
         {
+            if(domainEvent is null)
+                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
+
             if (string.IsNullOrWhiteSpace(domainEvent.EventType))
                 return Result.Error("event does not contain EventType", ErrorCode.ValidationFailed);
 
@@ -112,9 +115,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private IResult ValidateDomainEvent(ConfigurationBuilt @event)
         {
-            if (@event is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -124,9 +124,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private IResult ValidateDomainEvent(DefaultEnvironmentCreated @event)
         {
-            if (@event is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -136,9 +133,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private IResult ValidateDomainEvent(EnvironmentCreated @event)
         {
-            if (@event is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -148,9 +142,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private IResult ValidateDomainEvent(EnvironmentDeleted @event)
         {
-            if (@event is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -160,9 +151,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private IResult ValidateDomainEvent(EnvironmentKeysImported @event)
         {
-            if (@event is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -176,9 +164,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private IResult ValidateDomainEvent(EnvironmentKeysModified @event)
         {
-            if (@event is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
@@ -192,9 +177,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private IResult ValidateDomainEvent(StructureCreated @event)
         {
-            if (@event is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
