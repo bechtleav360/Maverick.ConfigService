@@ -230,6 +230,7 @@ namespace Bechtle.A365.ConfigService
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)
                     .AddSingleton(_logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
+                    .AddHostedService<GracefulShutdownService>(_logger)
                     .AddHostedService<TemporaryKeyCleanupService>(_logger)
                     .AddHostedService<SnapshotService>(_logger)
                     .AddHostedService<IncrementalSnapshotService>(_logger);

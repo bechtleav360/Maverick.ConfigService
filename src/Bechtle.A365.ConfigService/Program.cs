@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading.Tasks;
 using App.Metrics;
 using App.Metrics.Formatters;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
@@ -31,7 +32,7 @@ namespace Bechtle.A365.ConfigService
         ///     Build the WebHost that runs this application
         /// </summary>
         /// <param name="args"></param>
-        public static void Main(string[] args) => CreateWebHostBuilder(args).Build().Run();
+        public static Task Main(string[] args) => CreateWebHostBuilder(args).Build().RunAsync();
 
         /// <summary>
         ///     Configure Kestrel to use Certificate-based Authentication
