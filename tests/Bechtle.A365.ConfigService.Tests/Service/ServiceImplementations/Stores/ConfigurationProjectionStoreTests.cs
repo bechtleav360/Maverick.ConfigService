@@ -424,7 +424,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(),
                                           It.IsAny<StructureCompilationInfo>(),
                                           It.IsAny<IConfigurationParser>()))
-                    .Returns((EnvironmentCompilationInfo envInfo, StructureCompilationInfo structInfo, IConfigurationParser parser)
+                    .Returns((EnvironmentCompilationInfo envInfo, StructureCompilationInfo structInfo, IConfigurationParser p)
                                  => new CompilationResult(new Dictionary<string, string>
                                  {
                                      {"Foo", "FooValue"},
@@ -518,7 +518,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(),
                                           It.IsAny<StructureCompilationInfo>(),
                                           It.IsAny<IConfigurationParser>()))
-                    .Returns((EnvironmentCompilationInfo envInfo, StructureCompilationInfo structInfo, IConfigurationParser parser)
+                    .Returns((EnvironmentCompilationInfo envInfo, StructureCompilationInfo structInfo, IConfigurationParser p)
                                  => new CompilationResult(new Dictionary<string, string>
                                  {
                                      {"Foo", "FooValue"},
@@ -612,7 +612,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(),
                                           It.IsAny<StructureCompilationInfo>(),
                                           It.IsAny<IConfigurationParser>()))
-                    .Returns((EnvironmentCompilationInfo envInfo, StructureCompilationInfo structInfo, IConfigurationParser parser)
+                    .Returns((EnvironmentCompilationInfo envInfo, StructureCompilationInfo structInfo, IConfigurationParser p)
                                  => new CompilationResult(new Dictionary<string, string>
                                  {
                                      {"Foo", "FooValue"},
