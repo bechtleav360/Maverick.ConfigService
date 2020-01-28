@@ -134,7 +134,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
                 Logger.LogError(e, $"failed to delete keys from Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed delete update keys");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed delete keys");
             }
         }
 
@@ -153,9 +153,21 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         {
             var range = QueryRange.Make(offset, length);
 
-            var result = await _store.Environments.GetAvailable(range, targetVersion);
+            try
+            {
+                var result = await _store.Environments.GetAvailable(range, targetVersion);
 
-            return Result(result);
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to retrieve available Environments (" +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length}; " +
+                                   $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available environments");
+            }
         }
 
         /// <summary>
@@ -183,20 +195,37 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var range = QueryRange.Make(offset, length);
 
             var identifier = new EnvironmentIdentifier(category, name);
-
-            var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            try
             {
-                Environment = identifier,
-                Filter = filter,
-                PreferExactMatch = preferExactMatch,
-                Range = range,
-                RemoveRoot = root,
-                TargetVersion = targetVersion
-            });
 
-            return result.IsError
-                       ? ProviderError(result)
-                       : Ok(result.Data.ToImmutableSortedDictionary());
+                var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+                {
+                    Environment = identifier,
+                    Filter = filter,
+                    PreferExactMatch = preferExactMatch,
+                    Range = range,
+                    RemoveRoot = root,
+                    TargetVersion = targetVersion
+                });
+
+                return result.IsError
+                           ? ProviderError(result)
+                           : Ok(result.Data.ToImmutableSortedDictionary());
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to retrieve Environment-Keys (" +
+                                   $"{nameof(category)}: {category}; " +
+                                   $"{nameof(name)}: {name}; " +
+                                   $"{nameof(filter)}: {filter}; " +
+                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
+                                   $"{nameof(root)}: {root}; " +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length}; " +
+                                   $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
+            }
         }
 
         /// <summary>
@@ -217,24 +246,40 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                        [FromQuery] string root,
                                                        [FromQuery] long targetVersion = -1)
         {
-            var identifier = new EnvironmentIdentifier(category, name);
-
-            var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            try
             {
-                Environment = identifier,
-                Filter = filter,
-                PreferExactMatch = preferExactMatch,
-                Range = QueryRange.All,
-                RemoveRoot = root,
-                TargetVersion = targetVersion
-            });
 
-            if (result.IsError)
-                return ProviderError(result);
+                var identifier = new EnvironmentIdentifier(category, name);
 
-            var json = _translator.ToJson(result.Data);
+                var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+                {
+                    Environment = identifier,
+                    Filter = filter,
+                    PreferExactMatch = preferExactMatch,
+                    Range = QueryRange.All,
+                    RemoveRoot = root,
+                    TargetVersion = targetVersion
+                });
 
-            return Ok(json);
+                if (result.IsError)
+                    return ProviderError(result);
+
+                var json = _translator.ToJson(result.Data);
+
+                return Ok(json);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to retrieve Environment-Keys (" +
+                                   $"{nameof(category)}: {category}; " +
+                                   $"{nameof(name)}: {name}; " +
+                                   $"{nameof(filter)}: {filter}; " +
+                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
+                                   $"{nameof(root)}: {root}; " +
+                                   $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment as json");
+            }
         }
 
         /// <summary>
@@ -259,32 +304,49 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                              [FromQuery] int length = -1,
                                                              [FromQuery] long targetVersion = -1)
         {
-            var range = QueryRange.Make(offset, length);
-
-            var identifier = new EnvironmentIdentifier(category, name);
-
-            var result = await _store.Environments.GetKeyObjects(new EnvironmentKeyQueryParameters
+            try
             {
-                Environment = identifier,
-                Filter = filter,
-                PreferExactMatch = preferExactMatch,
-                Range = range,
-                RemoveRoot = root,
-                TargetVersion = targetVersion
-            });
+                var range = QueryRange.Make(offset, length);
 
-            if (result.IsError)
-                return ProviderError(result);
+                var identifier = new EnvironmentIdentifier(category, name);
 
-            foreach (var item in result.Data)
-            {
-                if (item.Description is null)
-                    item.Description = string.Empty;
-                if (item.Type is null)
-                    item.Type = string.Empty;
+                var result = await _store.Environments.GetKeyObjects(new EnvironmentKeyQueryParameters
+                {
+                    Environment = identifier,
+                    Filter = filter,
+                    PreferExactMatch = preferExactMatch,
+                    Range = range,
+                    RemoveRoot = root,
+                    TargetVersion = targetVersion
+                });
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                foreach (var item in result.Data)
+                {
+                    if (item.Description is null)
+                        item.Description = string.Empty;
+                    if (item.Type is null)
+                        item.Type = string.Empty;
+                }
+
+                return Ok(result.Data);
             }
-
-            return Ok(result.Data);
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to retrieve Environment-Keys (" +
+                                   $"{nameof(category)}: {category}; " +
+                                   $"{nameof(name)}: {name}; " +
+                                   $"{nameof(filter)}: {filter}; " +
+                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
+                                   $"{nameof(root)}: {root}; " +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length}; " +
+                                   $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
+            }
         }
 
         /// <summary>
