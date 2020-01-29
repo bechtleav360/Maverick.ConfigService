@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -76,14 +77,25 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return BadRequest("uploaded file can't be mapped to object");
             }
 
-            var result = await _importer.Import(export);
+            try
+            {
+                var result = await _importer.Import(export);
 
-            if (result.IsError)
-                return ProviderError(result);
+                if (result.IsError)
+                    return ProviderError(result);
 
-            return AcceptedAtAction(nameof(EnvironmentController.GetAvailableEnvironments),
-                                    RouteUtilities.ControllerName<EnvironmentController>(),
-                                    new {version = ApiVersions.V1});
+                return AcceptedAtAction(nameof(EnvironmentController.GetAvailableEnvironments),
+                                        RouteUtilities.ControllerName<EnvironmentController>(),
+                                        new {version = ApiVersions.V1});
+            }
+            catch (Exception e)
+            {
+                var targetEnvironments = string.Join(", ", export.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
+
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, $"failed to export '{export.Environments.Length}' environments ({targetEnvironments})");
+                return StatusCode(HttpStatusCode.InternalServerError, $"failed to export environments '{targetEnvironments}'");
+            }
         }
     }
 }
