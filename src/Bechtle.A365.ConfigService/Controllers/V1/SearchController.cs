@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -44,13 +45,28 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                                 [FromQuery] int length = -1,
                                                                 [FromQuery] long targetVersion = -1)
         {
-            var range = QueryRange.Make(offset, length);
+            try
+            {
+                var range = QueryRange.Make(offset, length);
 
-            var identifier = new EnvironmentIdentifier(category, name);
+                var identifier = new EnvironmentIdentifier(category, name);
 
-            var result = await _store.Environments.GetKeyAutoComplete(identifier, query, range, targetVersion);
+                var result = await _store.Environments.GetKeyAutoComplete(identifier, query, range, targetVersion);
 
-            return Result(result);
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, $"failed to export retrieve autocomplete-data (" +
+                                   $"{nameof(category)}: {category}; " +
+                                   $"{nameof(name)}: {name}; " +
+                                   $"{nameof(query)}: {query}; " +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length}; " +
+                                   $"{nameof(targetVersion)}: {targetVersion};)");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve autocomplete-data");
+            }
         }
     }
 }
