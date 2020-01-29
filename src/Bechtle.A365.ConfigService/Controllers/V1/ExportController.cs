@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -43,23 +44,34 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (!definition.Environments.Any())
                 return BadRequest("no Environments listed in export-definition");
 
-            var result = await _exporter.Export(definition);
+            try
+            {
+                var result = await _exporter.Export(definition);
 
-            if (result.IsError)
-                return ProviderError(result);
+                if (result.IsError)
+                    return ProviderError(result);
 
-            var proposedName = "export_"
-                               + (definition.Environments.Length == 1
-                                      ? definition.Environments[0].Category + "-" + definition.Environments[0].Name
-                                      : definition.Environments.Length + "_envs")
-                               + ".json";
+                var proposedName = "export_"
+                                   + (definition.Environments.Length == 1
+                                          ? definition.Environments[0].Category + "-" + definition.Environments[0].Name
+                                          : definition.Environments.Length + "_envs")
+                                   + ".json";
 
-            return File(
-                new MemoryStream(
-                    Encoding.UTF8.GetBytes(
-                        JsonSerializer.Serialize(result.Data, new JsonSerializerOptions {WriteIndented = true}))),
-                "application/octet-stream",
-                proposedName);
+                return File(
+                    new MemoryStream(
+                        Encoding.UTF8.GetBytes(
+                            JsonSerializer.Serialize(result.Data, new JsonSerializerOptions {WriteIndented = true}))),
+                    "application/octet-stream",
+                    proposedName);
+            }
+            catch (Exception e)
+            {
+                var targetEnvironments = string.Join(", ", definition.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
+
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, $"failed to export '{definition.Environments.Length}' environments ({targetEnvironments})");
+                return StatusCode(HttpStatusCode.InternalServerError, $"failed to export environments '{targetEnvironments}'");
+            }
         }
     }
 }

@@ -19,16 +19,12 @@ using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
-    public class EnvironmentControllerTests
+    public class EnvironmentControllerTests : ControllerTests<EnvironmentController>
     {
         public EnvironmentControllerTests()
         {
-            _deferredConfiguration = new Dictionary<string, string>();
-
-            var configurationBuilder = new ConfigurationBuilder().AddInMemoryCollection(_deferredConfiguration);
-
             _services = new ServiceCollection().AddLogging()
-                                               .AddSingleton<IConfiguration>(p => configurationBuilder.Build())
+                                               .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
                                                .AddMetrics();
 
             _projectionStoreMock = new Mock<IProjectionStore>();
@@ -46,9 +42,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         private readonly Mock<IProjectionStore> _projectionStoreMock;
         private readonly Mock<IJsonTranslator> _jsonTranslatorMock;
         private readonly IServiceCollection _services;
-        private readonly IDictionary<string, string> _deferredConfiguration;
 
-        private EnvironmentController CreateController()
+        protected override EnvironmentController CreateController()
         {
             var provider = _services.BuildServiceProvider();
 
@@ -87,15 +82,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             var result = await TestAction<BadRequestObjectResult>(c => c.DeleteKeys(category, name, keys));
 
             Assert.NotNull(result.Value);
-        }
-
-        private async Task<TActionResult> TestAction<TActionResult>(Func<EnvironmentController, Task<IActionResult>> actionInvoker)
-        {
-            var result = await actionInvoker(CreateController());
-
-            Assert.IsType<TActionResult>(result);
-
-            return (TActionResult) result;
         }
 
         public static IEnumerable<object[]> InvalidKeyUpdateParameters => new[]
