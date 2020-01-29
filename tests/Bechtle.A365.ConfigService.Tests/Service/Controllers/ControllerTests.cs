@@ -9,10 +9,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
     {
         protected abstract TController CreateController();
 
-        protected async Task<TActionResult> TestAction<TActionResult>(
-            Func<TController, Task<IActionResult>> actionInvoker)
+        protected async Task<TActionResult> TestAction<TActionResult>(Func<TController, Task<IActionResult>> actionInvoker)
         {
             var result = await actionInvoker(CreateController());
+
+            Assert.IsType<TActionResult>(result);
+
+            return (TActionResult) result;
+        }
+
+        protected TActionResult TestAction<TActionResult>(Func<TController, IActionResult> actionInvoker)
+        {
+            var result = actionInvoker(CreateController());
 
             Assert.IsType<TActionResult>(result);
 
