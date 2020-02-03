@@ -188,6 +188,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                           [FromQuery] int offset = -1,
                                                           [FromQuery] int length = -1)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("no name provided");
+
+            if (structureVersion <= 0)
+                return BadRequest($"invalid version provided '{structureVersion}'");
+
             var range = QueryRange.Make(offset, length);
             var identifier = new StructureIdentifier(name, structureVersion);
 
