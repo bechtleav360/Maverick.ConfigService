@@ -159,26 +159,42 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                           [FromQuery] int offset = -1,
                                                           [FromQuery] int length = -1)
         {
-            var range = QueryRange.Make(offset, length);
-            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+            try
+            {
+                var range = QueryRange.Make(offset, length);
+                var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+                var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
+                var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
 
-            var result = await _store.Configurations.GetKeys(configId, when, range);
+                var result = await _store.Configurations.GetKeys(configId, when, range);
 
-            if (result.IsError)
-                return ProviderError(result);
+                if (result.IsError)
+                    return ProviderError(result);
 
-            var version = await _store.Configurations.GetVersion(configId, when);
+                var version = await _store.Configurations.GetVersion(configId, when);
 
-            if (version.IsError)
-                return ProviderError(version);
+                if (version.IsError)
+                    return ProviderError(version);
 
-            // add version to the response-headers
-            Response.Headers.Add("x-version", version.Data);
+                // add version to the response-headers
+                Response.Headers.Add("x-version", version.Data);
 
-            return Result(result);
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to add new environment at (" +
+                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
+                                   $"{nameof(environmentName)}: {environmentName}; " +
+                                   $"{nameof(structureName)}: {structureName}; " +
+                                   $"{nameof(structureVersion)}: {structureVersion}; " +
+                                   $"{nameof(when)}: {when}; " +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
+            }
         }
 
         /// <summary>
@@ -234,7 +250,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                    $"{nameof(structureName)}: {structureName}, " +
                                    $"{nameof(structureVersion)}: {structureVersion}, " +
                                    $"{nameof(when)}: {when:O})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
             }
         }
 
@@ -252,10 +268,22 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                            [FromQuery] int offset = -1,
                                                            [FromQuery] int length = -1)
         {
-            var range = QueryRange.Make(offset, length);
-            var result = await _store.Configurations.GetAvailable(when, range);
+            try
+            {
+                var range = QueryRange.Make(offset, length);
+                var result = await _store.Configurations.GetAvailable(when, range);
 
-            return Result(result);
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to add new environment at (" +
+                                   $"{nameof(when)}: {when}; " +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available configurations");
+            }
         }
 
         /// <summary>
@@ -268,10 +296,22 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetStaleConfigurations([FromQuery] int offset = -1,
                                                                 [FromQuery] int length = -1)
         {
-            var range = QueryRange.Make(offset, length);
-            var result = await _store.Configurations.GetStale(range);
+            try
+            {
 
-            return Result(result);
+                var range = QueryRange.Make(offset, length);
+                var result = await _store.Configurations.GetStale(range);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to add new environment at (" +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve stale configurations");
+            }
         }
 
         /// <summary>
@@ -296,19 +336,36 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                      [FromQuery] int offset = -1,
                                                      [FromQuery] int length = -1)
         {
-            var range = QueryRange.Make(offset, length);
-            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+            try
+            {
 
-            var result = await _store.Configurations.GetUsedConfigurationKeys(
-                             new ConfigurationIdentifier(
-                                 envIdentifier,
-                                 structureIdentifier,
-                                 default),
-                             when,
-                             range);
+                var range = QueryRange.Make(offset, length);
+                var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+                var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            return Result(result);
+                var result = await _store.Configurations.GetUsedConfigurationKeys(
+                                 new ConfigurationIdentifier(
+                                     envIdentifier,
+                                     structureIdentifier,
+                                     default),
+                                 when,
+                                 range);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to add new environment at (" +
+                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
+                                   $"{nameof(environmentName)}: {environmentName}; " +
+                                   $"{nameof(structureName)}: {structureName}; " +
+                                   $"{nameof(structureVersion)}: {structureVersion}; " +
+                                   $"{nameof(when)}: {when}; " +
+                                   $"{nameof(offset)}: {offset}; " +
+                                   $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve used keys in configuration");
+            }
         }
 
         /// <summary>
@@ -329,20 +386,35 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                     [FromRoute] int structureVersion,
                                                     [FromQuery] DateTime when)
         {
-            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
-            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+            try
+            {
 
-            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
+                var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+                var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
 
-            var version = await _store.Configurations.GetVersion(configId, when);
+                var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
 
-            if (version.IsError)
-                return ProviderError(version);
+                var version = await _store.Configurations.GetVersion(configId, when);
 
-            // add version to the response-headers
-            Response.Headers.Add("x-version", version.Data);
+                if (version.IsError)
+                    return ProviderError(version);
 
-            return Result(version);
+                // add version to the response-headers
+                Response.Headers.Add("x-version", version.Data);
+
+                return Result(version);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to add new environment at (" +
+                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
+                                   $"{nameof(environmentName)}: {environmentName}; " +
+                                   $"{nameof(structureName)}: {structureName}; " +
+                                   $"{nameof(structureVersion)}: {structureVersion}; " +
+                                   $"{nameof(when)}: {when})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration-version");
+            }
         }
 
         /// <summary>
