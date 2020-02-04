@@ -303,10 +303,10 @@ namespace Bechtle.A365.ConfigService
         {
             var storeRegistration = new[]
             {
-                TryAddPostgresSnapshotStore(services),
-                TryAddMsSqlSnapshotStore(services),
                 TryAddArangoSnapshotStore(services),
                 TryAddLocalSnapshotStore(services),
+                TryAddMsSqlSnapshotStore(services),
+                TryAddPostgresSnapshotStore(services),
                 TryAddVoidSnapshotStore(services)
             };
 

@@ -3,7 +3,7 @@
   <!-- Global Stuff -->
   <PropertyGroup>
     <Version>2.3.0</Version>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <Description>ASP.NET Core middleware that enables an application to support certificate authentication.</Description>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>

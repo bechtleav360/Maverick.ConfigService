@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -32,7 +34,7 @@ namespace Bechtle.A365.ConfigService
         ///     Build the WebHost that runs this application
         /// </summary>
         /// <param name="args"></param>
-        public static Task Main(string[] args) => CreateWebHostBuilder(args).Build().RunAsync();
+        public static void Main(string[] args) => CreateWebHostBuilder(args).Build().Run();
 
         /// <summary>
         ///     Configure Kestrel to use Certificate-based Authentication
@@ -171,11 +173,14 @@ namespace Bechtle.A365.ConfigService
                           })
                       .ConfigureLogging((context, builder) =>
                       {
-                          context.Configuration.ConfigureNLog();
-
                           builder.ClearProviders()
-                                 .SetMinimumLevel(LogLevel.Trace)
-                                 .AddNLog(context.Configuration.GetSection("LoggingConfiguration"));
+                                 .SetMinimumLevel(LogLevel.None);
+
+                          if (context.Configuration.GetSection("Migrations:DisableLogs").Get<bool>())
+                              return;
+
+                          context.Configuration.ConfigureNLog();
+                          builder.AddNLog(context.Configuration.GetSection("LoggingConfiguration"));
                       })
                       .UseKestrel(ConfigureKestrelCertAuth);
     }
