@@ -252,6 +252,18 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return BadRequest("invalid structure-body given (invalid type or null)");
             }
 
+            IDictionary<string, string> structKeys;
+
+            try
+            {
+                structKeys = _translator.ToDictionary(structure.Structure);
+            }
+            catch (Exception e)
+            {
+                Logger.LogWarning(e, "could not translate given json.Structure to dictionary");
+                return BadRequest("structure could not be mapped to a dictionary ($.Structure)");
+            }
+
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
             var envKeysResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
@@ -264,18 +276,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return ProviderError(envKeysResult);
 
             var envKeys = envKeysResult.Data;
-
-            IDictionary<string, string> structKeys;
-
-            try
-            {
-                structKeys = _translator.ToDictionary(structure.Structure);
-            }
-            catch (Exception e)
-            {
-                Logger.LogWarning(e, "could not translate given json.Structure to dictionary");
-                return BadRequest("structure could not be mapped to a dictionary ($.Structure)");
-            }
 
             CompilationResult compilationResult;
 
