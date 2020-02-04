@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
@@ -92,13 +93,26 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Variables = variableSnapshot
             };
 
-            var compiled = _compiler.Compile(environmentInfo,
-                                             structureInfo,
-                                             _parser);
+            try
+            {
+                var compiled = _compiler.Compile(environmentInfo,
+                                                 structureInfo,
+                                                 _parser);
 
-            var json = _translator.ToJson(compiled.CompiledConfiguration);
+                var json = _translator.ToJson(compiled.CompiledConfiguration);
 
-            return Ok(json);
+                return Ok(json);
+            }
+            catch (Exception e)
+            {
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Logger.LogError(e, "failed to add new environment at (" +
+                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
+                                   $"{nameof(environmentName)}: {environmentName}; " +
+                                   $"{nameof(structureName)}: {structureName}; " +
+                                   $"{nameof(structureVersion)}: {structureVersion})");
+                return Ok(JsonDocument.Parse("{}").RootElement);
+            }
         }
 
         /// <summary>
