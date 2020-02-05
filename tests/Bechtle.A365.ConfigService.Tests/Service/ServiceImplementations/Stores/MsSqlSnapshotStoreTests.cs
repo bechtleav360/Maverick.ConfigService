@@ -1,4 +1,5 @@
 ﻿using System;
+using Bechtle.A365.ConfigService.Common.DbContexts;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -14,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var provider = new ServiceCollection()
                            .AddLogging()
-                           .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
+                           .AddDbContext<SnapshotContext>(
                                builder => builder.EnableDetailedErrors()
                                                  .EnableSensitiveDataLogging()
                                                  .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
@@ -22,7 +23,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                            .BuildServiceProvider();
 
             Store = new MsSqlSnapshotStore(provider.GetRequiredService<ILogger<MsSqlSnapshotStore>>(),
-                                           provider.GetRequiredService<MsSqlSnapshotStore.MsSqlSnapshotContext>());
+                                           provider.GetRequiredService<SnapshotContext>());
         }
 
         /// <inheritdoc />

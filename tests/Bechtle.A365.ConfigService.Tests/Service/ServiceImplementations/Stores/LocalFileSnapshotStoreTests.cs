@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Bechtle.A365.ConfigService.Common.DbContexts;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -25,14 +26,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var provider = new ServiceCollection()
                            .AddLogging()
-                           .AddDbContext<LocalFileSnapshotStore.LocalFileSnapshotContext>(
+                           .AddDbContext<SnapshotContext>(
                                builder => builder.EnableDetailedErrors()
                                                  .EnableSensitiveDataLogging()
                                                  .UseSqlite(connectionStringBuilder.ToString()))
                            .BuildServiceProvider();
 
             Store = new LocalFileSnapshotStore(provider.GetRequiredService<ILogger<LocalFileSnapshotStore>>(),
-                                               provider.GetRequiredService<LocalFileSnapshotStore.LocalFileSnapshotContext>());
+                                               provider.GetRequiredService<SnapshotContext>());
         }
 
         /// <inheritdoc />

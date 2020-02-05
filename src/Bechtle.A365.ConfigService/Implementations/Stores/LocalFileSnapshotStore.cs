@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DbContexts;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +17,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// </summary>
     public sealed class LocalFileSnapshotStore : ISnapshotStore
     {
-        private readonly LocalFileSnapshotContext _context;
+        private readonly SnapshotContext _context;
         private readonly ILogger _logger;
 
         /// <inheritdoc cref="LocalFileSnapshotStore" />
-        public LocalFileSnapshotStore(ILogger<LocalFileSnapshotStore> logger, LocalFileSnapshotContext context)
+        public LocalFileSnapshotStore(ILogger<LocalFileSnapshotStore> logger, SnapshotContext context)
         {
             _logger = logger;
             _context = context;
@@ -93,7 +93,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 _context.SaveChanges();
 
-                _context.Snapshots.AddRange(snapshots.Select(s => new LocalFileSnapshot
+                _context.Snapshots.AddRange(snapshots.Select(s => new SqlSnapshot
                 {
                     Identifier = s.Identifier,
                     Version = s.Version,
@@ -133,7 +133,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="filter"></param>
         /// <param name="maxVersion"></param>
         /// <returns></returns>
-        private async Task<IResult<DomainObjectSnapshot>> GetInternal(Expression<Func<LocalFileSnapshot, bool>> filter, long maxVersion)
+        private async Task<IResult<DomainObjectSnapshot>> GetInternal(Expression<Func<SqlSnapshot, bool>> filter, long maxVersion)
         {
             try
             {
@@ -158,35 +158,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogWarning(e, "could not retrieve snapshot from Postgres");
                 return Result.Error<DomainObjectSnapshot>("could not retrieve snapshot from Postgres", ErrorCode.DbQueryError);
             }
-        }
-
-        /// <summary>
-        ///     DbContext for <see cref="LocalFileSnapshotStore" />
-        /// </summary>
-        public class LocalFileSnapshotContext : DbContext
-        {
-            /// <inheritdoc />
-            public LocalFileSnapshotContext(DbContextOptions options) : base(options)
-            {
-            }
-
-            internal DbSet<LocalFileSnapshot> Snapshots { get; set; }
-        }
-
-        internal class LocalFileSnapshot
-        {
-            public string DataType { get; set; }
-
-            [Key]
-            public Guid Id { get; set; }
-
-            public string Identifier { get; set; }
-
-            public string JsonData { get; set; }
-
-            public long MetaVersion { get; set; }
-
-            public long Version { get; set; }
         }
     }
 }

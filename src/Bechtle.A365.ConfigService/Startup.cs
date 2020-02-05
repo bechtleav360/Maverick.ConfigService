@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
+using Bechtle.A365.ConfigService.Common.DbContexts;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Implementations;
@@ -148,6 +149,34 @@ namespace Bechtle.A365.ConfigService
             RegisterHealthEndpoints(services);
         }
 
+        private void RegisterArangoSnapshotStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISnapshotStore, ArangoSnapshotStore>(_logger)
+                       .AddHttpClient("Arango", (provider, client) =>
+                       {
+                           var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
+
+                           var rawUri = config.GetSection("Uri").Get<string>();
+                           if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
+                           {
+                               _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango:Uri='{rawUri}'");
+                               return;
+                           }
+
+                           client.BaseAddress = arangoUri;
+
+                           var user = config.GetSection("User").Get<string>();
+                           var password = config.GetSection("Password").Get<string>();
+
+                           if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
+                           {
+                               _logger.LogWarning("unable to locate User / Password (SnapshotConfiguration:Stores:Arango:[User|Password])");
+                               return;
+                           }
+
+                           client.DefaultRequestHeaders.Authorization =
+                               new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
+                       });
+
         private void RegisterAuthentication(IServiceCollection services)
         {
             if (!_environment.EnvironmentName.Equals("docker", StringComparison.OrdinalIgnoreCase))
@@ -276,6 +305,18 @@ namespace Bechtle.A365.ConfigService
             });
         }
 
+        private void RegisterLocalSnapshotStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISnapshotStore, LocalFileSnapshotStore>(_logger)
+                       .AddDbContext<SnapshotContext>(
+                           _logger,
+                           (provider, builder) => { builder.UseSqlite(section.GetSection("ConnectionString").Get<string>()); });
+
+        private void RegisterMsSqlSnapshotStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
+                       .AddDbContext<SnapshotContext>(
+                           _logger,
+                           (provider, builder) => { builder.UseSqlServer(section.GetSection("ConnectionString").Get<string>()); });
+
         private void RegisterMvc(IServiceCollection services)
         {
             _logger.LogInformation("registering MVC-Middleware with metrics-support");
@@ -299,23 +340,66 @@ namespace Bechtle.A365.ConfigService
             services.Configure<EventStoreConnectionConfiguration>(Configuration.GetSection("EventStoreConnection"));
         }
 
+        /*private void RegisterOracleSnapshotStore(IConfigurationSection section, IServiceCollection services)
+        {
+            services.AddScoped<ISnapshotStore, OracleSnapshotStore>(_logger)
+                    .AddDbContext<SnapshotContext>(
+                        _logger,
+                        (provider, builder) => { builder.UseOracle(section.GetSection("ConnectionString").Get<string>()); });
+        }*/
+
+        private void RegisterPostgresSnapshotStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
+                       .AddDbContext<SnapshotContext>(
+                           _logger,
+                           (provider, builder) => { builder.UseNpgsql(section.GetSection("ConnectionString").Get<string>()); });
+
         private void RegisterSnapshotStores(IServiceCollection services)
         {
-            var storeRegistration = new[]
+            var storeBaseSection = "SnapshotConfiguration:Stores";
+
+            // define section => func that will be evaluated in order
+            var storeRegistrations = new (string Section, Action<IConfigurationSection, IServiceCollection> RegistryFunc)[]
             {
-                TryAddArangoSnapshotStore(services),
-                TryAddLocalSnapshotStore(services),
-                TryAddMsSqlSnapshotStore(services),
-                TryAddPostgresSnapshotStore(services),
-                TryAddVoidSnapshotStore(services)
+                ("Arango", RegisterArangoSnapshotStore),
+                ("Local", RegisterLocalSnapshotStore),
+                ("MsSql", RegisterMsSqlSnapshotStore),
+                /*("Oracle", RegisterOracleSnapshotStore,)*/
+                ("Postgres", RegisterPostgresSnapshotStore),
+                ("Void", RegisterVoidSnapshotStore)
             };
 
-            // if no SnapshotStore was registered, register Memory-Store as fallback
-            if (storeRegistration.Any(r => r))
-                return;
+            _logger.LogInformation($"looking for an enabled SnapshotStore ({storeBaseSection}:{{Store}}:[Enabled]) " +
+                                   $"in this order ({string.Join(", ", storeRegistrations.Select(t => $"{t.Section}"))})");
 
-            _logger.LogWarning($"no actual snapshot-stores have been registered, using {nameof(MemorySnapshotStore)} as fallback");
-            services.AddScoped<ISnapshotStore, MemorySnapshotStore>(_logger);
+            // look for all enabled stores, and collect some metadata
+            var selectedStores = storeRegistrations.Select(t =>
+                                                   {
+                                                       var (section, registryFunc) = t;
+
+                                                       var storeSection = Configuration.GetSection($"{storeBaseSection}:{section}");
+                                                       return (SectionName: section,
+                                                                  RegistryFunc: registryFunc,
+                                                                  Section: storeSection,
+                                                                  Enabled: storeSection.GetSection("Enabled")
+                                                                                       .Get<bool>());
+                                                   })
+                                                   .Where(t => t.Enabled)
+                                                   .ToList();
+
+            if (selectedStores.Count == 0)
+            {
+                _logger.LogWarning($"no actual snapshot-stores have been registered, using {nameof(MemorySnapshotStore)} as fallback");
+                services.AddScoped<ISnapshotStore, MemorySnapshotStore>(_logger);
+                return;
+            }
+
+            if (selectedStores.Count > 1)
+                _logger.LogError("multiple stores have been enabled (" +
+                                 string.Join(", ", selectedStores.Select(t => t.SectionName)) +
+                                 $"), but only one will be registered ({selectedStores.First().SectionName})");
+
+            selectedStores[0].RegistryFunc?.Invoke(selectedStores[0].Section, services);
         }
 
         private void RegisterSwagger(IServiceCollection services)
@@ -354,93 +438,7 @@ namespace Bechtle.A365.ConfigService
                     });
         }
 
-        private bool TryAddArangoSnapshotStore(IServiceCollection services)
-        {
-            var arangoSection = Configuration.GetSection("SnapshotConfiguration:Stores:Arango");
-            if (!arangoSection.GetSection("Enabled").Get<bool>())
-                return false;
-
-            services.AddScoped<ISnapshotStore, ArangoSnapshotStore>(_logger)
-                    .AddHttpClient("Arango", (provider, client) =>
-                    {
-                        var config = provider.GetRequiredService<IConfiguration>().GetSection("SnapshotConfiguration:Stores:Arango");
-
-                        var rawUri = config.GetSection("Uri").Get<string>();
-                        if (!Uri.TryCreate(rawUri, UriKind.Absolute, out var arangoUri))
-                        {
-                            _logger.LogWarning($"unable to create URI from SnapshotConfiguration:Stores:Arango:Uri='{rawUri}'");
-                            return;
-                        }
-
-                        client.BaseAddress = arangoUri;
-
-                        var user = config.GetSection("User").Get<string>();
-                        var password = config.GetSection("Password").Get<string>();
-
-                        if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
-                        {
-                            _logger.LogWarning("unable to locate User / Password (SnapshotConfiguration:Stores:Arango:[User|Password])");
-                            return;
-                        }
-
-                        client.DefaultRequestHeaders.Authorization =
-                            new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
-                    });
-
-            return true;
-        }
-
-        private bool TryAddLocalSnapshotStore(IServiceCollection services)
-        {
-            var localSection = Configuration.GetSection("SnapshotConfiguration:Stores:Local");
-            if (!localSection.GetSection("Enabled").Get<bool>())
-                return false;
-
-            services.AddScoped<ISnapshotStore, LocalFileSnapshotStore>(_logger)
-                    .AddDbContext<LocalFileSnapshotStore.LocalFileSnapshotContext>(
-                        _logger,
-                        (provider, builder) => { builder.UseSqlite(localSection.GetSection("ConnectionString").Get<string>()); });
-
-            return true;
-        }
-
-        private bool TryAddMsSqlSnapshotStore(IServiceCollection services)
-        {
-            var mssqlSection = Configuration.GetSection("SnapshotConfiguration:Stores:MsSql");
-            if (!mssqlSection.GetSection("Enabled").Get<bool>())
-                return false;
-
-            services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
-                    .AddDbContext<MsSqlSnapshotStore.MsSqlSnapshotContext>(
-                        _logger,
-                        (provider, builder) => { builder.UseSqlServer(mssqlSection.GetSection("ConnectionString").Get<string>()); });
-
-            return true;
-        }
-
-        private bool TryAddPostgresSnapshotStore(IServiceCollection services)
-        {
-            var postgresSection = Configuration.GetSection("SnapshotConfiguration:Stores:Postgres");
-            if (!postgresSection.GetSection("Enabled").Get<bool>())
-                return false;
-
-            services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
-                    .AddDbContext<PostgresSnapshotStore.PostgresSnapshotContext>(
-                        _logger,
-                        (provider, builder) => { builder.UseNpgsql(postgresSection.GetSection("ConnectionString").Get<string>()); });
-
-            return true;
-        }
-
-        private bool TryAddVoidSnapshotStore(IServiceCollection services)
-        {
-            var voidSection = Configuration.GetSection("SnapshotConfiguration:Stores:Void");
-            if (!voidSection.GetSection("Enabled").Get<bool>())
-                return false;
-
-            services.AddScoped<ISnapshotStore, VoidSnapshotStore>(_logger);
-
-            return true;
-        }
+        private void RegisterVoidSnapshotStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISnapshotStore, VoidSnapshotStore>(_logger);
     }
 }
