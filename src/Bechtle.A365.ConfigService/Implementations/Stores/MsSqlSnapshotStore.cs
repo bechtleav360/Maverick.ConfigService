@@ -17,15 +17,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// </summary>
     public sealed class MsSqlSnapshotStore : ISnapshotStore
     {
-        private readonly SnapshotContext _context;
+        private readonly MsSqlSnapshotContext _context;
         private readonly ILogger _logger;
 
         /// <inheritdoc cref="MsSqlSnapshotStore" />
-        public MsSqlSnapshotStore(ILogger<MsSqlSnapshotStore> logger, SnapshotContext context)
+        public MsSqlSnapshotStore(ILogger<MsSqlSnapshotStore> logger, MsSqlSnapshotContext context)
         {
             _logger = logger;
             _context = context;
-            _context.Database.EnsureCreated();
+            _context.Database.Migrate();
         }
 
         /// <inheritdoc />

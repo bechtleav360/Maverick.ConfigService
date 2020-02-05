@@ -17,15 +17,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// </summary>
     public sealed class PostgresSnapshotStore : ISnapshotStore
     {
-        private readonly SnapshotContext _context;
+        private readonly PostgresSnapshotContext _context;
         private readonly ILogger _logger;
 
         /// <inheritdoc cref="PostgresSnapshotStore" />
-        public PostgresSnapshotStore(ILogger<PostgresSnapshotStore> logger, SnapshotContext context)
+        public PostgresSnapshotStore(ILogger<PostgresSnapshotStore> logger, PostgresSnapshotContext context)
         {
             _logger = logger;
             _context = context;
-            _context.Database.EnsureCreated();
+            _context.Database.Migrate();
         }
 
         /// <inheritdoc />

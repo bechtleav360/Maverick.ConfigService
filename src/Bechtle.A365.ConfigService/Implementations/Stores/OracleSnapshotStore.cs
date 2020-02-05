@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DbContexts;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.EntityFrameworkCore;
@@ -13,25 +14,19 @@ using Microsoft.Extensions.Logging;
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <summary>
-    ///     App-Local file-based snapshot-store
+    ///     SnapshotStore based on a SQL-Db used through EF-Core.
     /// </summary>
-    public sealed class LocalFileSnapshotStore : ISnapshotStore
+    public sealed class OracleSnapshotStore : ISnapshotStore
     {
-        private readonly SqliteSnapshotContext _context;
+        private readonly OracleSnapshotContext _context;
         private readonly ILogger _logger;
 
-        /// <inheritdoc cref="LocalFileSnapshotStore" />
-        public LocalFileSnapshotStore(ILogger<LocalFileSnapshotStore> logger, SqliteSnapshotContext context)
+        /// <inheritdoc cref="OracleSnapshotStore" />
+        public OracleSnapshotStore(ILogger<OracleSnapshotStore> logger, OracleSnapshotContext context)
         {
             _logger = logger;
             _context = context;
-            _context.Database.Migrate();
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            _context?.Dispose();
+            _context.Database.EnsureCreated();
         }
 
         /// <inheritdoc />
@@ -39,6 +34,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             if (_context != null)
                 await _context.DisposeAsync();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _context?.Dispose();
         }
 
         /// <inheritdoc />
@@ -56,8 +57,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
             catch (Exception e)
             {
-                _logger.LogWarning(e, "could not retrieve highest snapshot-number from Postgres");
-                return Result.Error<long>("could not retrieve highest snapshot-number from Postgres", ErrorCode.DbQueryError);
+                _logger.LogWarning(e, "could not retrieve highest snapshot-number from MsSql");
+                return Result.Error<long>("could not retrieve highest snapshot-number from MsSql", ErrorCode.DbQueryError);
             }
         }
 
@@ -113,7 +114,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogWarning(e, "could not save Snapshots in DB");
                 await transaction.RollbackAsync();
 
-                return Result.Error("could not save Snapshots in Postgres", ErrorCode.DbUpdateError);
+                return Result.Error("could not save Snapshots in MsSql", ErrorCode.DbUpdateError);
             }
         }
 
@@ -158,6 +159,36 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogWarning(e, "could not retrieve snapshot from Postgres");
                 return Result.Error<DomainObjectSnapshot>("could not retrieve snapshot from Postgres", ErrorCode.DbQueryError);
             }
+        }
+
+        /// <summary>
+        ///     DbContext for <see cref="OracleSnapshotStore" />
+        /// </summary>
+        public class OracleSnapshotContext : DbContext
+        {
+            /// <inheritdoc />
+            public OracleSnapshotContext(DbContextOptions options) : base(options)
+            {
+            }
+
+            internal DbSet<SqlSnapshot> Snapshots { get; set; }
+        }
+
+        [Table(nameof(SqlSnapshot), Schema = "ConfigService")]
+        internal class SqlSnapshot
+        {
+            public string DataType { get; set; }
+
+            [Key]
+            public Guid Id { get; set; }
+
+            public string Identifier { get; set; }
+
+            public string JsonData { get; set; }
+
+            public long MetaVersion { get; set; }
+
+            public long Version { get; set; }
         }
     }
 }

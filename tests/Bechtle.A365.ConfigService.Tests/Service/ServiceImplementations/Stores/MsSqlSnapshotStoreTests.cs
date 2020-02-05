@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var provider = new ServiceCollection()
                            .AddLogging()
-                           .AddDbContext<SnapshotContext>(
+                           .AddDbContext<MsSqlSnapshotContext>(
                                builder => builder.EnableDetailedErrors()
                                                  .EnableSensitiveDataLogging()
                                                  .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
@@ -23,7 +23,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                            .BuildServiceProvider();
 
             Store = new MsSqlSnapshotStore(provider.GetRequiredService<ILogger<MsSqlSnapshotStore>>(),
-                                           provider.GetRequiredService<SnapshotContext>());
+                                           provider.GetRequiredService<MsSqlSnapshotContext>());
         }
 
         /// <inheritdoc />

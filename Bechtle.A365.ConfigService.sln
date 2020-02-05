@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Configuration", "src\Bechtle.A365.ConfigService.Configuration\Bechtle.A365.ConfigService.Configuration.csproj", "{1D384849-D2C6-4FB5-B7CF-4A66CA847724}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Migrations", "src\Bechtle.A365.ConfigService.Migrations\Bechtle.A365.ConfigService.Migrations.csproj", "{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -96,6 +98,14 @@ Global
 		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Release|x86.ActiveCfg = Release|Any CPU
 		{1D384849-D2C6-4FB5-B7CF-4A66CA847724}.Release|x86.Build.0 = Release|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Debug|x86.Build.0 = Debug|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Release|x86.ActiveCfg = Release|Any CPU
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -109,6 +119,7 @@ Global
 		{4BB3D014-C9D6-402B-ADCF-0407B85A7BF7} = {14CB50C7-3090-42D6-9EB6-F2033A65590B}
 		{534CDB40-DF3D-4A11-A0E5-CCB738E5E327} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 		{1D384849-D2C6-4FB5-B7CF-4A66CA847724} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
+		{67AF1D40-7BD2-4062-AA5B-5856F2F4535B} = {991BBA62-8478-471F-960C-4AD6D4E8F637}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1726AC6-C9A5-48E9-AEC6-B29C0E7BDC87}

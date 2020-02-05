@@ -26,14 +26,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var provider = new ServiceCollection()
                            .AddLogging()
-                           .AddDbContext<SnapshotContext>(
+                           .AddDbContext<SqliteSnapshotContext>(
                                builder => builder.EnableDetailedErrors()
                                                  .EnableSensitiveDataLogging()
                                                  .UseSqlite(connectionStringBuilder.ToString()))
                            .BuildServiceProvider();
 
             Store = new LocalFileSnapshotStore(provider.GetRequiredService<ILogger<LocalFileSnapshotStore>>(),
-                                               provider.GetRequiredService<SnapshotContext>());
+                                               provider.GetRequiredService<SqliteSnapshotContext>());
         }
 
         /// <inheritdoc />

@@ -28,6 +28,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -147,6 +148,14 @@ namespace Bechtle.A365.ConfigService
             RegisterDiServices(services);
             RegisterSnapshotStores(services);
             RegisterHealthEndpoints(services);
+        }
+
+        private void ConfigureDbContext<TBuilder, TExtension>(RelationalDbContextOptionsBuilder<TBuilder, TExtension> options)
+            where TBuilder : RelationalDbContextOptionsBuilder<TBuilder, TExtension>
+            where TExtension : RelationalOptionsExtension, new()
+        {
+            options.MigrationsAssembly("Bechtle.A365.ConfigService.Migrations");
+            options.MigrationsHistoryTable("__EFMigrationsHistory", SnapshotContext.Schema);
         }
 
         private void RegisterArangoSnapshotStore(IConfigurationSection section, IServiceCollection services)
@@ -307,15 +316,15 @@ namespace Bechtle.A365.ConfigService
 
         private void RegisterLocalSnapshotStore(IConfigurationSection section, IServiceCollection services)
             => services.AddScoped<ISnapshotStore, LocalFileSnapshotStore>(_logger)
-                       .AddDbContext<SnapshotContext>(
+                       .AddDbContext<SqliteSnapshotContext>(
                            _logger,
-                           (provider, builder) => { builder.UseSqlite(section.GetSection("ConnectionString").Get<string>()); });
+                           (provider, builder) => builder.UseSqlite(section.GetSection("ConnectionString").Get<string>(), ConfigureDbContext));
 
         private void RegisterMsSqlSnapshotStore(IConfigurationSection section, IServiceCollection services)
             => services.AddScoped<ISnapshotStore, MsSqlSnapshotStore>(_logger)
-                       .AddDbContext<SnapshotContext>(
+                       .AddDbContext<MsSqlSnapshotContext>(
                            _logger,
-                           (provider, builder) => { builder.UseSqlServer(section.GetSection("ConnectionString").Get<string>()); });
+                           (provider, builder) => builder.UseSqlServer(section.GetSection("ConnectionString").Get<string>(), ConfigureDbContext));
 
         private void RegisterMvc(IServiceCollection services)
         {
@@ -350,9 +359,9 @@ namespace Bechtle.A365.ConfigService
 
         private void RegisterPostgresSnapshotStore(IConfigurationSection section, IServiceCollection services)
             => services.AddScoped<ISnapshotStore, PostgresSnapshotStore>(_logger)
-                       .AddDbContext<SnapshotContext>(
+                       .AddDbContext<PostgresSnapshotContext>(
                            _logger,
-                           (provider, builder) => { builder.UseNpgsql(section.GetSection("ConnectionString").Get<string>()); });
+                           (provider, builder) => builder.UseNpgsql(section.GetSection("ConnectionString").Get<string>(), ConfigureDbContext));
 
         private void RegisterSnapshotStores(IServiceCollection services)
         {
