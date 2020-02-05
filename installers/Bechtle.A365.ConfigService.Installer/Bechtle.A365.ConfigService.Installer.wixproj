@@ -52,13 +52,13 @@
   </Target>
   <Target Name="BeforeBuild">
     <Exec Command="dotnet publish ..\..\src\Bechtle.A365.ConfigService -c $(Configuration)" />
-    <GetAssemblyIdentity AssemblyFiles="..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.0\publish\Bechtle.A365.ConfigService.dll">
+    <GetAssemblyIdentity AssemblyFiles="..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.1\publish\Bechtle.A365.ConfigService.dll">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
     </GetAssemblyIdentity>
     <PropertyGroup>
-      <LinkerBaseInputPaths>..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.0\publish</LinkerBaseInputPaths>
-      <DefineConstants>BasePath=..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.0\publish</DefineConstants>
+      <LinkerBaseInputPaths>..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.1\publish</LinkerBaseInputPaths>
+      <DefineConstants>BasePath=..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.1\publish</DefineConstants>
     </PropertyGroup>
-    <HeatDirectory OutputFile="apppublish.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="App_Publish" SuppressCom="true" Directory="..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.0\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="true" GenerateGuidsNow="false" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" />
+    <HeatDirectory OutputFile="apppublish.wxs" DirectoryRefId="INSTALLFOLDER" ComponentGroupName="App_Publish" SuppressCom="true" Directory="..\..\src\Bechtle.A365.ConfigService\bin\$(Configuration)\netcoreapp3.1\publish" SuppressFragments="true" SuppressRegistry="true" SuppressRootDirectory="true" AutoGenerateGuids="true" GenerateGuidsNow="false" ToolPath="$(WixToolPath)" PreprocessorVariable="var.BasePath" />
   </Target>
 </Project>

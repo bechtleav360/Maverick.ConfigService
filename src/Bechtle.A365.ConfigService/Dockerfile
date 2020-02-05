@@ -1,8 +1,8 @@
 ﻿ARG SERVICENAME=Bechtle.A365.ConfigService
-FROM maverick.azurecr.io/dotnet/core/sdk:3.0 AS base
+FROM maverick.azurecr.io/dotnet/core/sdk:3.1 AS base
 WORKDIR /app
 
-FROM maverick.azurecr.io/dotnet/core/sdk:3.0 AS build
+FROM maverick.azurecr.io/dotnet/core/sdk:3.1 AS build
 ARG SERVICENAME
 WORKDIR /src
 COPY . .
