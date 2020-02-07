@@ -29,7 +29,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                            .AddDbContext<SqliteSnapshotContext>(
                                builder => builder.EnableDetailedErrors()
                                                  .EnableSensitiveDataLogging()
-                                                 .UseSqlite(connectionStringBuilder.ToString()))
+                                                 .UseSqlite(connectionStringBuilder.ToString(),
+                                                            options => options.MigrationsAssembly("Bechtle.A365.ConfigService.Migrations")))
                            .BuildServiceProvider();
 
             Store = new LocalFileSnapshotStore(provider.GetRequiredService<ILogger<LocalFileSnapshotStore>>(),

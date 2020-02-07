@@ -25,7 +25,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger = logger;
             _context = context;
-            _context.Database.Migrate();
+
+            try
+            {
+                _context.Database.Migrate();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "couldn't migrate database");
+            }
         }
 
         /// <inheritdoc />
