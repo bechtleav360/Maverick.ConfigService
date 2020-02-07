@@ -8,11 +8,11 @@ namespace Bechtle.A365.ConfigService.Migrations.Migrations.Postgres
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "ConfigService");
+                name: "Mav_Config");
 
             migrationBuilder.CreateTable(
                 name: "Snapshots",
-                schema: "ConfigService",
+                schema: "Mav_Config",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Migrations.Migrations.Postgres
         {
             migrationBuilder.DropTable(
                 name: "Snapshots",
-                schema: "ConfigService");
+                schema: "Mav_Config");
         }
     }
 }
