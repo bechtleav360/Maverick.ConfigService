@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Configuration", "src\Bechtle.A365.ConfigService.Configuration\Bechtle.A365.ConfigService.Configuration.csproj", "{1D384849-D2C6-4FB5-B7CF-4A66CA847724}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bechtle.A365.ConfigService.Migrations", "src\Bechtle.A365.ConfigService.Migrations\Bechtle.A365.ConfigService.Migrations.csproj", "{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Migrations", "src\Bechtle.A365.ConfigService.Migrations\Bechtle.A365.ConfigService.Migrations.csproj", "{67AF1D40-7BD2-4062-AA5B-5856F2F4535B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
