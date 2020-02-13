@@ -109,3 +109,10 @@ stages:
             publicPrefix: 'maverick.azurecr.io/'
             privateRegistry: MaverickLocal
             privatePrefix: 'registry.egov.local/'
+        
+        # build Helm
+        - template: build-helm-chart.yaml@templates
+          parameters:
+            projectFilePath: '$(Build.SourcesDirectory)/src/Bechtle.A365.ConfigService/Bechtle.A365.ConfigService.csproj'
+            chartBasePath: deploy
+            chartName: config

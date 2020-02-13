@@ -1,0 +1,302 @@
+{
+    "Environments": [
+        {
+            "Category": "{{ .Values.configuration.category }}",
+            "Name": "{{ .Values.configuration.name }}",
+            "Keys": [
+                {
+                    "Key": "NamedEndpoints/IdentityService/Address",
+                    "Value": "identity"
+                },
+                {
+                    "Key": "ApplicationEndpoints/Minio/Secret",
+                    "Value": "{{.Values.minio.password}}"
+                },
+                {
+                    "Key": "NamedEndpoints/IdentityService/Protocol",
+                    "Value": "http"
+                },
+                {
+                    "Key": "NamedEndpoints/AdminService-External/Address",
+                    "Value": "admin. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/AdminService-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/AdminService-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                    "Key": "NamedEndpoints/ChatService-External/Address",
+                    "Value": "chat. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/ChatService-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/ChatService-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                    "Key": "NamedEndpoints/IdentityService/Port",
+                    "Value": "80"
+                },
+                {
+                    "Key": "NamedEndpoints/IdentityService-External/Address",
+                    "Value": "identity. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/IdentityService-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/IdentityService-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                    "Key": "NamedEndpoints/PreviewService-External/Address",
+                    "Value": "previews. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "ApplicationEndpoints/Bonnea/ServerIp",
+                    "Value": "http://bonnea/bonneaws"
+                },
+                {
+                    "Key": "NamedEndpoints/SignalR/Address",
+                    "Value": "{{- include "Config.websocketserver" . -}}"
+                },
+                {
+                    "Key": "NamedEndpoints/SignalR/Port",
+                    "Value": "80"
+                },
+                {
+                    "Key":"ApplicationEndpoints/RabbitMQ/ManagementPort",
+                    "Value" : "15672"
+                },
+                {
+                    "Key": "NamedEndpoints/SignalR-External/Address",
+                    "Value": "websocket. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/EventStoreService/Address",
+                    "Value": "admin:{{.Values.eventstore.admin.password}}@{{- include "Config.eventstoreserver" . -}}"
+                },
+                {
+                    "Key": "NamedEndpoints/UserProfileService-External/Address",
+                    "Value": "userprofileservice. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/UserProfileService/Address",
+                    "Value": "userprofile"
+                },
+                {
+                    "Key": "NamedEndpoints/UserProfileService/Port",
+                    "Value": "80"
+                },
+                {
+                    "Key": "NamedEndpoints/WebDav-External/Address",
+                    "Value": "fileservice. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/ChatService-External/Address",
+                    "Value": "chatservice. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/ConfigService-External/Address",
+                    "Value": "configservice. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "Connections/Minio/Properties/Secret",
+                    "Value": "{{ required "A valid minio secret is required." .Values.minio.password -}}"
+                },
+                {
+                    "Key": "Connections/Minio/Properties/User",
+                    "Value": "{{ required "A valid minio username is required." .Values.minio.user -}}"
+                },
+                {
+                    "Key": "Connections/Minio/Properties/Hostname",
+                    "Value": "{{ required "A valid minio server is required." .Values.minio.server -}}"
+                },
+                {
+                    "Key": "Connections/Minio/Properties/Https",
+                    "Value": "{{ required "A valid minio protocol setting is required." .Values.minio.https -}}"
+                },
+                {
+                    "Key": "Connections/Minio/Properties/Port",
+                    "Value": "{{ required "A valid minio port is required." .Values.minio.port -}}"
+                },
+                {
+                    "Key": "ApplicationEndpoints/RabbitMQ/HostName",
+                    "Value": "{{- include "Config.rabbitmqserver" . -}}"
+                },
+                {
+                    "Key": "ApplicationEndpoints/RabbitMQ/User",
+                    "Value": "{{- .Values.rabbitmq.rabbitmq.username -}}"
+                },
+                {
+                    "Key": "ApplicationEndpoints/RabbitMQ/Password",
+                    "Value": "{{- .Values.rabbitmq.rabbitmq.password -}}"
+                },
+                {
+                    "Key": "ApplicationEndpoints/Redis/Address",
+                    "Value": "{{- include "Config.redisserver" . -}}"
+                },
+                {
+                    "Description": "string",
+                    "Key": "Connections/Sql/Properties/ConnectionString",
+                    "Type": "string",
+                    "Value": "Data Source={{- .Values.sql.server -}}; Integrated Security=False; User Id={{ required "A valid sql username is required." .Values.sql.username -}}; Password={{ required "A valid sql password is required." .Values.sql.password -}};"
+                },
+                {
+                    "Key": "ApplicationEndpoints/SQLServer/PartialConnectionString",
+                    "Value": "Data Source={{ required "A valid sql server is required." .Values.sql.server -}};Integrated Security=False;User Id={{ required "A valid sql username is required." .Values.sql.username -}};Password={{ required "A valid sql password is required." .Values.sql.password -}};"
+                },
+                {
+                    "Description": "string",
+                    "Key": "ApplicationEndpoints/Redis/ConnectionString",
+                    "Type": "string",
+                    "Value": "{{"{{"}}$this/Address}}:{{"{{"}}$this/Port}},Password={{ required "A valid redis password is required." .Values.redis.password -}},ConnectTimeout=10000,ConnectRetry=4"
+                },
+                {
+                    "Key": "Connections/Arango/Properties/Server",
+                    "Value": "{{ required "A valid arango db server name is required." .Values.arango.server }}"
+                },
+                {
+                    "Key": "Connections/Arango/Properties/Username",
+                    "Value": "{{ required "A valid arango db user is required." .Values.arango.username }}"
+                },
+                {
+                    "Key": "Connections/Arango/Properties/Password",
+                    "Value": "{{ required "A valid arango db password is required." .Values.arango.password }}"
+                },
+                {
+                    "Key": "Connections/Arango/Properties/Port",
+                    "Value": "{{ required "A valid arango db port is required." .Values.arango.port }}"
+                },
+                {
+                    "Key": "Connections/Arango/UserProfileServiceDatabaseName",
+                    "Value": "{{ required "A valid arango db database name is required." .Values.arango.upsdatabase }}"
+                },
+                {
+                    "Key": "Connections/Sql/ChatService",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.chat.main}}"
+                },
+                {
+                    "Key": "Connections/Sql/ChatServiceSlots",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.chat.slots}}"
+                },
+                {
+                    "Key": "Connections/Sql/FileService",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.file}}"
+                },
+                {
+                    "Key": "Connections/Sql/IdentityService",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.identity}}"
+                },
+                {
+                    "Key": "Connections/Sql/MailService",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.mail}}"
+                },
+                {
+                    "Key": "Connections/Sql/MaverickCommand",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.command}}"
+                },
+                {
+                    "Key": "Connections/Sql/MaverickDms",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.dms}}"
+                },
+                {
+                    "Key": "Connections/Sql/MaverickEvents",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.events}}"
+                },
+                {
+                    "Key": "Connections/Sql/MaverickQuery",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.query}};"
+                },
+                {
+                    "Key": "Connections/Sql/MaverickReferences",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.references}};"
+                },
+                {
+                    "Key": "Connections/Sql/MaverickShortener",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.shortener}}"
+                },
+                {
+                    "Key": "Connections/Sql/MaverickTemp",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.temp}};"
+                },
+                {
+                    "Key": "Connections/Sql/TaskService",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.task}};"
+                },
+                {
+                    "Key": "Connections/Minio/ChatServiceGroupFiles",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.chatgroup}}"
+                },
+                {
+                    "Key": "Connections/Minio/ChatServicePrivateFiles",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.chatprivate}}"
+                },
+                {
+                    "Key": "Connections/Minio/MaverickCommand",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.corecommand}}"
+                },
+                {
+                    "Key": "Connections/Minio/MaverickTemporary",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.coretemporary}}"
+                },
+                {
+                    "Key": "Connections/Minio/TemplateService",
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.template}}"
+                },
+                {
+                    "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/AuthenticationMethod",
+                    "Value": "{{ required "A valid identity authentication method is required." .Values.identity.openid.authenticationmethod }}"
+                },
+                {
+                    "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/Authority",
+                    "Value": "{{ required "A valid identity authority is required." .Values.identity.openid.authority }}"
+                },
+                {
+                    "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/CallbackPath",
+                    "Value": "{{ required "A valid identity callback path is required." .Values.identity.openid.callbackpath }}"
+                },
+                {
+                    "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/ClientId",
+                    "Value": "{{ required "A valid identity clientid is required." .Values.identity.openid.clientid }}"
+                },
+                {
+                    "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/ClientSecret",
+                    "Value": "{{ required "A valid identity client secret is required." .Values.identity.openid.clientsecret }}"
+                },
+                {
+                    "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/RemoteSignOutPath",
+                    "Value": "{{ required "A valid identity remote signout path is required." .Values.identity.openid.remotesignoutpath }}"
+                },
+                {
+                    "Key": "ServiceSettings/IdentityService/IssuerUri",
+                    "Value": "{{.Values.identity.issueruri}}"
+                },
+                {
+                    "Key": "ServiceSettings/IdentityService/PublicOrigin",
+                    "Value": "{{.Values.identity.publicorigin}}"
+                },
+                {
+                    "Key": "ServiceSettings/IdentityService/HandleForwaredHeaders",
+                    "Value": "{{.Values.identity.handleforwardedheaders}}"
+                },
+                {
+                    "Key": "NamedEndpoints/Elasticsearch/Address",
+                    "Value": "{{ required "A valid elasticsearch server is required." .Values.elasticsearch.server }}"
+                },
+                {
+                    "Key": "NamedEndpoints/Elasticsearch/Port",
+                    "Value": "{{ required "A valid elasticsearch port is required." .Values.elasticsearch.port }}"
+                }
+            ]
+        }
+    ]
+}

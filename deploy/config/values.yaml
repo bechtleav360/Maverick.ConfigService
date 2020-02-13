@@ -1,0 +1,187 @@
+# Default values for Config.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: maverick.azurecr.io/configservice
+  pullPolicy: IfNotPresent
+  configservicecli:
+    repository: maverick.azurecr.io/configservice-cli
+  curl:
+    repository: curlimages/curl 
+    tag: 7.66.0
+  postgres:
+    repository: postgres
+    tag: latest
+
+
+#Settings fo configure sub charts
+#**************************************************
+websocket:
+  enabled: true
+
+redis:
+  enabled: true
+  usePassword: true
+  password: changeit!
+  cluster:
+    enabled: false
+    slaveCount: 0
+  master:
+    persistence:
+      enabled: false
+
+postgres:
+  enabled: true
+
+rabbitmq:
+  enabled: true
+  rabbitmq:
+    username: 
+    password: 
+    erlangcookie:
+
+eventstore:
+  enabled: true
+  admin:
+    password: changeit!
+#**************************************************
+
+
+#Settings to overwrite configuration
+#**************************************************
+environment:
+  cloud: local
+  domain: k8.maverick.local
+
+configuration:
+  configservice: "http://config"
+  category: "k8"
+  name: "default"
+
+sql:
+  server:
+  username:
+  password:
+  databases:
+    chat:
+      main: Chat
+      slots: ChatSlots
+    file: File
+    identity: Identity
+    mail: Mail
+    task: Task
+    bonnea: bonneabmz23
+    core:
+      command: Command
+      dms: Command
+      events: Events
+      query: Query
+      references: References
+      shortener: Shortener
+      temp: Temp
+
+arango:
+  server:
+  port:
+  username:
+  password:
+  upsdatabase:
+  samueldatabase:
+
+minio: 
+  server:
+  port: 
+  https: 
+  user:
+  password:
+  databases:
+    chatgroup: chatgroups
+    chatprivate: chatprivate
+    template: templates
+    corecommand: corecommand
+    coretemporary: coretemporary
+
+identity:
+  issueruri:
+  publicorigin:
+  handleforwardedheaders: true
+  openid:
+    authenticationmethod:
+    authority:
+    callbackpath:
+    clientid:
+    clientsecret:
+    remotesignoutpath: 
+
+elasticsearch:
+  enabled: true
+  server:
+  port:
+#**************************************************
+
+
+
+#Settings to configure configuration service
+#**************************************************
+config:
+  snapshotstore:
+    type: memory
+    server: postgres
+    port: 5432
+    user: sa
+    password: changeit!
+  eventstore:
+    server: #configured automatically if sub chart is enabled
+    user: admin
+  eventbus:
+    server: #configured automatically if sub chart is enabled
+  rabbitmq:
+    server:  #configured automatically if sub chart is enabled
+  redis:
+    server: #configured automatically if sub chart is enabled
+#**************************************************
+
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  externalTrafficPolicy: 
+  port: 80
+  annotations: {}
+  # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+resources:
+  limits:
+    memory: 500Mi
+  requests:
+    memory: 250Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

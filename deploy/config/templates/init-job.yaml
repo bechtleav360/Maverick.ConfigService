@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "Config.fullname" . }}-configservice-init
+  labels: {{ include "Config.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade 
+    "helm.sh/hook-weight": "6"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels: {{ include "Config.selectorLabelsWorker" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+      - image: {{ .Values.image.configservicecli.repository }}: {{- .Chart.AppVersion }}
+        name: {{ .Chart.Name }}-configservice-init
+        command: ["/bin/bash", "-c"]
+        args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ .Chart.Name }} -f export_presales.json -f config/config-overwrite.json"]
+        volumeMounts:
+        - name: config-env
+          mountPath: /app/config
+      initContainers:
+      - name: {{ .Chart.Name }}-init-configservice
+        image: {{.Values.image.curl.repository}}: {{- .Values.image.curl.tag}}
+        command: ['sh', '-c', 'until curl http://{{ .Chart.Name }}; do echo waiting for configservice; sleep 5; done;']
+      volumes:
+        - name: config-env
+          configMap:
+            name: configservice-environment
+            items:
+            - key: config
+              path: config.tar.gz
+            - key: config-overwrite
+              path: config-overwrite.json
+      restartPolicy: OnFailure
+status: {}

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configservice-environment
+binaryData:
+  config-overwrite: {{ tpl (.Files.Get "configuration/env-overwrite.json") . | b64enc }}
+  config: {{ .Files.Get "configuration/configuration.tar.gz" | b64enc }}

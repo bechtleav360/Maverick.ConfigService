@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "Config.fullname" . }}
+  labels: {{ include "Config.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{ include "Config.selectorLabelsService" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{ include "Config.selectorLabelsService" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ include "Config.serviceAccountName" . }}
+      securityContext: {{ toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+      - name: init-eventstore
+        image: {{.Values.image.curl.repository}}: {{- .Values.image.curl.tag}}
+        command: ['sh', '-c', 'until curl http://{{ include "Config.eventstoreserver" . }}:2113 -u "{{- .Values.config.eventstore.user -}}:{{- .Values.config.eventstore.password -}}"; do echo waiting for eventstore; sleep 2; done;']
+      {{ if eq .Values.config.snapshotstore.type "postgres" }}
+      - name: init-postgres
+        image: {{.Values.image.postgres.repository}}: {{- .Values.image.postgres.tag}}
+        command: ['sh', '-c', 'until pg_isready -h {{- .Values.config.snapshotstore.server -}} -p {{- .Values.config.snapshotstore.port -}}; do echo waiting for postgres; sleep 2; done;']
+      {{ end }}
+      containers:
+      - env:
+        - name: ASPNETCORE_URLS
+          value: http://*:80
+        - name: EventstoreConnection__Uri
+          value: tcp://{{.Values.config.eventstore.user}}:{{.Values.eventstore.admin.password}}@{{ include "Config.eventstoreserver" . }}:1113
+        - name: MemoryCache__Redis__Connectionstring
+          value: {{ include "Config.redisserver" . }}:6379,password={{.Values.redis.password}}
+        - name: EventBusConnection__Server
+          value: http://{{include "Config.websocketserver" . }}
+        - name: MemoryCache__Local__SizeLimitInMb
+          value: "64"
+        - name: MemoryCache__Local__Duration
+          value: "00:05:00"
+        {{ if eq .Values.config.snapshotstore.type "postgres" }}
+        - name: SnapshotConfiguration__Stores__Postgres__Enabled
+          value: "true"
+        - name: SnapshotConfiguration__Stores__Postgres__ConnectionString
+          value: Host={{.Values.config.snapshotstore.server}};Database=ConfigProjection;Port={{.Values.config.snapshotstore.port}};Id={{.Values.config.snapshotstore.user}};Password={{.Values.config.snapshotstore.password}};
+        {{ else if eq .Values.config.snapshotstore.type "local" }}  
+        - name: SnapshotConfiguration__Stores__Local__Enabled
+          value: "true"          
+        {{ else if eq .Values.config.snapshotstore.type "memory" }}  
+        - name: SnapshotConfiguration__Stores__Memory__Enabled
+          value: "true"          
+        {{ else }}    
+        - name: SnapshotConfiguration__Stores__Void__Enabled
+          value: "true"          
+        {{ end }}
+        - name: SnapshotConfiguration__Snapshots__Complete__0
+          value: ""
+        - name: SnapshotConfiguration__Snapshots__Complete__1
+          value: ""
+        - name: LoggingConfiguration__NLog__variables__RabbitMqHost
+          value: {{include "Config.rabbitmqserver" . | quote}}
+        - name: LoggingConfiguration__NLog__variables__RabbitMqUser
+          value: {{.Values.rabbitmq.user | quote }}
+        - name: LoggingConfiguration__NLog__variables__RabbitMqPassword
+          value: {{.Values.rabbitmq.password | quote }}
+        - name: LoggingConfiguration__NLog__variables__RabbitMqPort
+          value: '5672'
+        - name: LoggingConfiguration__NLog__internalLogLevel
+          value: Trace
+        - name: LoggingConfiguration__NLog__throwConfigExceptions
+          value: 'True'      
+        - name: LoggingConfiguration__NLog__Rules__2__writeTo    
+          value: "" 
+        - name: LoggingConfiguration__NLog__Rules__4__minLevel
+          value: Trace
+        - name: EnableLegacyRedirect
+          value: "false"
+        name: {{ .Chart.Name }}
+        securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        resources: {{ toYaml .Values.resources | nindent 12 }}
+      restartPolicy: Always
+    {{- with .Values.nodeSelector }}
+      nodeSelector: {{ toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity: {{ toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations: {{ toYaml . | nindent 8 }}
+    {{- end }}
