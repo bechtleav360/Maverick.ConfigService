@@ -32,9 +32,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             using var service = new OnDemandSnapshotTrigger();
 
+            // closure is never null because Assert.Raises<T> will execute
+            // 'attach' and 'detach' before and after 'testCode' respectively, before returning
+            // ReSharper disable AccessToDisposedClosure
             Assert.Raises<EventArgs>(handler => service.SnapshotTriggered += handler,
                                      handler => service.SnapshotTriggered -= handler,
                                      () => { TestAction<AcceptedResult>(c => c.TriggerSnapshot()); });
+            // ReSharper restore AccessToDisposedClosure
         }
     }
 }
