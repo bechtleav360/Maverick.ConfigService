@@ -49,7 +49,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
                 Logger.LogError(e, "failed to translate dictionary to json");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }
@@ -75,7 +75,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
                 Logger.LogError(e, "failed to translate json to dictionary");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }

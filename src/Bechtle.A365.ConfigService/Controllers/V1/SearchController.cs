@@ -57,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType()?.Name ?? string.Empty);
+                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
                 Logger.LogError(e, $"failed to export retrieve autocomplete-data (" +
                                    $"{nameof(category)}: {category}; " +
                                    $"{nameof(name)}: {name}; " +
