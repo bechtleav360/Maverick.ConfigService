@@ -22,11 +22,11 @@
 
   <!-- Config-Dependent Metadata -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\netcoreapp3.0\Bechtle.A365.ConfigService.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\netcoreapp3.1\Bechtle.A365.ConfigService.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\netcoreapp3.0\Bechtle.A365.ConfigService.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netcoreapp3.1\Bechtle.A365.ConfigService.xml</DocumentationFile>
   </PropertyGroup>
 
   <!-- Package Dependencies -->
