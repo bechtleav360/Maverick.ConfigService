@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Caching.Memory;
@@ -40,16 +40,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
+        public void Dispose()
+        {
+            _snapshotStore?.Dispose();
+        }
+
+        /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
             if (_snapshotStore != null)
                 await _snapshotStore.DisposeAsync();
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            _snapshotStore?.Dispose();
         }
 
         /// <inheritdoc />
@@ -67,6 +67,24 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier, long maxVersion) where T : DomainObject
             => ReplayObjectInternal(domainObject, identifier, maxVersion, identifier, true);
+
+        private async Task ApplyLatestSnapshot<T>(T domainObject, string identifier, long maxVersion, string cacheKey)
+            where T : DomainObject
+        {
+            _logger.LogDebug($"no cached item for key '{cacheKey}' found, attempting to " +
+                             $"retrieve latest snapshot below or at version {maxVersion} for '{identifier}'");
+
+            var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
+
+            if (latestSnapshot.IsError)
+                return;
+
+            _logger.LogDebug($"snapshot for '{identifier}' found, " +
+                             $"version '{latestSnapshot.Data.Version}', " +
+                             $"meta '{latestSnapshot.Data.MetaVersion}'");
+
+            domainObject.ApplySnapshot(latestSnapshot.Data);
+        }
 
         private TimeSpan GetCacheTime()
         {
@@ -94,35 +112,18 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                if (_memoryCache.TryGetValue(cacheKey, out T cachedInstance))
-                {
-                    _logger.LogDebug($"retrieved cached item for key '{cacheKey}'");
-
-                    if (cachedInstance.CurrentVersion <= maxVersion)
-                        domainObject = cachedInstance;
-                    else
-                        _logger.LogDebug($"cached item for key '{cacheKey}' " +
-                                         $"is beyond maximum allowed version {cachedInstance.CurrentVersion} > {maxVersion}");
-                }
+                if (TryGetCachedItem(cacheKey, maxVersion, out T cachedInstance))
+                    domainObject = cachedInstance;
                 else
-                {
-                    _logger.LogDebug($"no cached item for key '{cacheKey}' found, " +
-                                     $"attempting to retrieve latest snapshot below or at version {maxVersion} for '{identifier}'");
-
-                    var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
-
-                    if (!latestSnapshot.IsError)
-                    {
-                        _logger.LogDebug($"snapshot for '{identifier}' found, " +
-                                         $"version '{latestSnapshot.Data.Version}', " +
-                                         $"meta '{latestSnapshot.Data.MetaVersion}'");
-                        domainObject.ApplySnapshot(latestSnapshot.Data);
-                    }
-                }
+                    await ApplyLatestSnapshot(domainObject, identifier, maxVersion, cacheKey);
 
                 _logger.LogDebug($"replaying events for '{identifier}', " +
-                                 $"'{domainObject.MetaVersion}' => '{maxVersion}'{(useMetadataFilter ? "" : " not")} using metadata-filter");
-                await StreamObjectToVersion(domainObject, maxVersion, identifier, useMetadataFilter);
+                                 $"'{domainObject.MetaVersion}' => '{maxVersion}'" +
+                                 $"{(useMetadataFilter ? "" : " not")} using metadata-filter");
+
+                // if the target-object is in any way streamed we save a snapshot of it
+                if ((await StreamObjectToVersion(domainObject, maxVersion, identifier, useMetadataFilter)).Any())
+                    IncrementalSnapshotService.QueueSnapshot(domainObject.CreateSnapshot());
 
                 var size = domainObject.CalculateCacheSize();
                 var priority = domainObject.GetCacheItemPriority();
@@ -159,25 +160,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
         }
 
-        private async Task StreamObjectToVersion(DomainObject domainObject, long maxVersion, string identifier, bool useMetadataFilter)
+        private async Task<List<long>> StreamObjectToVersion(DomainObject domainObject, long maxVersion, string identifier, bool useMetadataFilter)
         {
             // skip streaming entirely if the object is at or above the desired version
             if (domainObject.MetaVersion >= maxVersion)
-                return;
+                return new List<long>();
 
-            var handledEvents = domainObject.GetHandledEvents();
             var appliedEvents = new List<long>();
 
             await _eventStore.ReplayEventsAsStream(
-                tuple =>
-                {
-                    var (recordedEvent, metadata) = tuple;
-
-                    if (useMetadataFilter && metadata[KnownDomainEventMetadata.Identifier].Equals(identifier))
-                        return true;
-
-                    return handledEvents.Contains(recordedEvent.EventType);
-                },
                 tuple =>
                 {
                     var (recordedEvent, domainEvent) = tuple;
@@ -205,6 +196,25 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }, startIndex: domainObject.MetaVersion);
 
             _logger.LogDebug($"applied {appliedEvents.Count} events to '{identifier}': {string.Join(", ", appliedEvents)}");
+            return appliedEvents;
+        }
+
+        private bool TryGetCachedItem<T>(string cacheKey, long maxVersion, out T item)
+            where T : DomainObject
+        {
+            if (!_memoryCache.TryGetValue(cacheKey, out item))
+            {
+                item = null;
+                return false;
+            }
+
+            _logger.LogDebug($"retrieved cached item for key '{cacheKey}'");
+
+            if (item.CurrentVersion <= maxVersion)
+                return true;
+
+            _logger.LogDebug($"cached item for key '{cacheKey}' is beyond maximum allowed version {item.CurrentVersion} > {maxVersion}");
+            return false;
         }
     }
 }

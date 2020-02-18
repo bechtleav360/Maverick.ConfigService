@@ -43,6 +43,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                       .Verifiable();
 
             var snapshotStore = new Mock<ISnapshotStore>(MockBehavior.Strict);
+            snapshotStore.Setup(s => s.GetSnapshot<ConfigEnvironmentList>(It.IsAny<string>(), It.IsAny<long>()))
+                         .ReturnsAsync(() => Result.Error<DomainObjectSnapshot>("no snapshot found", ErrorCode.DbQueryError))
+                         .Verifiable("snapshot not retrieved");
 
             var item = new ConfigEnvironmentList();
             item.ApplyEvent(new ReplayedEvent
