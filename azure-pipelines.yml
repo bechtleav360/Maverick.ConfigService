@@ -84,6 +84,17 @@ stages:
       - job: Docker
         pool: 'Docker'
         steps:
+        # Login to Docker-Registries
+        - task: Docker@2
+          inputs:
+            containerRegistry: 'Maverick'
+            command: 'login'
+
+        - task: Docker@2
+          inputs:
+            containerRegistry: 'MaverickLocal'
+            command: 'login'
+
         # build Service
         - template: build-project-container.yaml@templates
           parameters:
