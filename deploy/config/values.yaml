@@ -90,6 +90,7 @@ arango:
   password:
   upsdatabase:
   samueldatabase:
+  samueltrackerdatabase:
 
 minio: 
   server:
