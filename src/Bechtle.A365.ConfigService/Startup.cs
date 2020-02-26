@@ -252,6 +252,12 @@ namespace Bechtle.A365.ConfigService
                     {
                         var config = provider.GetRequiredService<IOptionsMonitor<EventBusConnectionConfiguration>>().CurrentValue;
 
+                        if (string.IsNullOrWhiteSpace(config.Server))
+                            throw new ArgumentException("EventBusConfiguration.Server is null or empty");
+
+                        if (string.IsNullOrWhiteSpace(config.Hub))
+                            throw new ArgumentException("EventBusConfiguration.Hub is null or empty");
+
                         return new WebSocketEventBusClient(new Uri(new Uri(config.Server), config.Hub).ToString(),
                                                            provider.GetService<ILoggerFactory>());
                     })
