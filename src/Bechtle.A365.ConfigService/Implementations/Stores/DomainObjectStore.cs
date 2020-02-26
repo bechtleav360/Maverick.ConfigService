@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         /// <inheritdoc />
         public Task<IResult<T>> ReplayObject<T>(long maxVersion) where T : DomainObject, new()
-            => ReplayObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name, false);
+            => ReplayObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name);
 
         /// <inheritdoc />
         public Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier) where T : DomainObject
@@ -66,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         /// <inheritdoc />
         public Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier, long maxVersion) where T : DomainObject
-            => ReplayObjectInternal(domainObject, identifier, maxVersion, identifier, true);
+            => ReplayObjectInternal(domainObject, identifier, maxVersion, identifier);
 
         private async Task ApplyLatestSnapshot<T>(T domainObject, string identifier, long maxVersion, string cacheKey)
             where T : DomainObject
@@ -106,8 +106,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private async Task<IResult<T>> ReplayObjectInternal<T>(T domainObject,
                                                                string identifier,
                                                                long maxVersion,
-                                                               string cacheKey,
-                                                               bool useMetadataFilter)
+                                                               string cacheKey)
             where T : DomainObject
         {
             try
@@ -117,12 +116,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 else
                     await ApplyLatestSnapshot(domainObject, identifier, maxVersion, cacheKey);
 
-                _logger.LogDebug($"replaying events for '{identifier}', " +
-                                 $"'{domainObject.MetaVersion}' => '{maxVersion}'" +
-                                 $"{(useMetadataFilter ? "" : " not")} using metadata-filter");
+                _logger.LogDebug($"replaying events for '{identifier}', '{domainObject.MetaVersion}' => '{maxVersion}'");
 
                 // if the target-object is in any way streamed we save a snapshot of it
-                if ((await StreamObjectToVersion(domainObject, maxVersion, identifier, useMetadataFilter)).Any())
+                if ((await StreamObjectToVersion(domainObject, maxVersion, identifier)).Any())
                     IncrementalSnapshotService.QueueSnapshot(domainObject.CreateSnapshot());
 
                 var size = domainObject.CalculateCacheSize();
@@ -154,13 +151,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogWarning(e, $"failed to retrieve {typeof(T).Name} from EventStore (" +
                                       $"{nameof(identifier)}: {identifier}, " +
                                       $"{nameof(maxVersion)}: {maxVersion}, " +
-                                      $"{nameof(cacheKey)}: {cacheKey}, " +
-                                      $"{nameof(useMetadataFilter)}: {useMetadataFilter})");
+                                      $"{nameof(cacheKey)}: {cacheKey})");
                 return Result.Error<T>($"failed to retrieve {typeof(T).Name} from EventStore", ErrorCode.FailedToRetrieveItem);
             }
         }
 
-        private async Task<List<long>> StreamObjectToVersion(DomainObject domainObject, long maxVersion, string identifier, bool useMetadataFilter)
+        private async Task<List<long>> StreamObjectToVersion(DomainObject domainObject, long maxVersion, string identifier)
         {
             // skip streaming entirely if the object is at or above the desired version
             if (domainObject.MetaVersion >= maxVersion)
