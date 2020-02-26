@@ -183,7 +183,9 @@ namespace Bechtle.A365.ConfigService
                            }
 
                            client.DefaultRequestHeaders.Authorization =
-                               new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
+                               new AuthenticationHeaderValue(
+                                   "Basic",
+                                   Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
                        });
 
         private void RegisterAuthentication(IServiceCollection services)
