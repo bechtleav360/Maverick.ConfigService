@@ -44,11 +44,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <summary>
-        ///     flag indicating if this Configuration has been created with a <see cref="ConfigurationBuilt"/> event
-        /// </summary>
-        public bool Created { get; protected set; }
-
-        /// <summary>
         ///     flag indicating if this Configuration has been built or not
         /// </summary>
         public bool Built { get; protected set; }
@@ -57,6 +52,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     Data-Version from which this Configuration was built
         /// </summary>
         public long ConfigurationVersion { get; protected set; }
+
+        /// <summary>
+        ///     flag indicating if this Configuration has been created with a <see cref="ConfigurationBuilt" /> event
+        /// </summary>
+        public bool Created { get; protected set; }
 
         /// <inheritdoc cref="ConfigurationIdentifier" />
         public ConfigurationIdentifier Identifier { get; protected set; }
@@ -126,7 +126,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <param name="translator"></param>
         /// <param name="logger">optional logger to pass during the compilation-phase</param>
         /// <param name="assumeLatestVersion">
-        ///     set to true, to use latest available versions of Environment and Structure instead of <see cref="DomainObject.CurrentVersion"/>
+        ///     set to true, to use latest available versions of Environment and Structure instead of <see cref="DomainObject.CurrentVersion" />
         /// </param>
         /// <returns></returns>
         public async Task<IResult> Compile(IDomainObjectStore store,
@@ -139,10 +139,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (Built)
                 return Result.Success();
 
-            if (store is null) throw new ArgumentNullException(nameof(store));
-            if (compiler is null) throw new ArgumentNullException(nameof(compiler));
-            if (parser is null) throw new ArgumentNullException(nameof(parser));
-            if (translator is null) throw new ArgumentNullException(nameof(translator));
+            CheckCompileParameters(store, compiler, parser, translator);
 
             var compilationVersion = assumeLatestVersion ? long.MaxValue : CurrentVersion;
 
@@ -222,6 +219,17 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         /// <inheritdoc />
         protected override string GetSnapshotIdentifier() => Identifier.ToString();
+
+        private void CheckCompileParameters(IDomainObjectStore store,
+                                            IConfigurationCompiler compiler,
+                                            IConfigurationParser parser,
+                                            IJsonTranslator translator)
+        {
+            if (store is null) throw new ArgumentNullException(nameof(store));
+            if (compiler is null) throw new ArgumentNullException(nameof(compiler));
+            if (parser is null) throw new ArgumentNullException(nameof(parser));
+            if (translator is null) throw new ArgumentNullException(nameof(translator));
+        }
 
         private bool HandleConfigurationBuiltEvent(ReplayedEvent replayedEvent)
         {
