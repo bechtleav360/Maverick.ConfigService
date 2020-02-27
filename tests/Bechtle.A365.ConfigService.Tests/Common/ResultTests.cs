@@ -96,20 +96,38 @@ namespace Bechtle.A365.ConfigService.Tests.Common
 
         [Theory]
         [MemberData(nameof(ResultData))]
-        public void NoExceptionsInError(ErrorCode code, bool error, string message) => Result.Error(message, code);
+        public void NoExceptionsInError(ErrorCode code, bool error, string message)
+        {
+            // shut-up about unused parameters
+            Assert.Equal(error, error);
+            Result.Error(message, code);
+        }
 
         [Theory]
         [MemberData(nameof(ResultData))]
-        public void NoExceptionsInTypedError(ErrorCode code, bool error, string message) => Result.Error(message, code, DateTime.UtcNow);
+        public void NoExceptionsInTypedError(ErrorCode code, bool error, string message)
+        {
+            // shut-up about unused parameters
+            Assert.Equal(error, error);
+            Result.Error(message, code, DateTime.UtcNow);
+        }
 
         [Theory]
         [MemberData(nameof(ResultData))]
-        public void NoExceptionsInTypedErrorWithoutData(ErrorCode code, bool error, string message) => Result.Error<DateTime>(message, code);
+        public void NoExceptionsInTypedErrorWithoutData(ErrorCode code, bool error, string message)
+        {
+            // shut-up about unused parameters
+            Assert.Equal(error, error);
+            Result.Error<DateTime>(message, code);
+        }
 
         [Theory]
         [MemberData(nameof(ResultData))]
         public void ValuesAssignedInError(ErrorCode code, bool error, string message)
         {
+            // shut-up about unused parameters
+            Assert.Equal(error, error);
+
             var result = Result.Error(message, code);
 
             Assert.True(result.IsError);
@@ -121,6 +139,9 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [MemberData(nameof(ResultData))]
         public void ValuesAssignedInTypedError(ErrorCode code, bool error, string message)
         {
+            // shut-up about unused parameters
+            Assert.Equal(error, error);
+
             var data = DateTime.UtcNow;
 
             var result = Result.Error(message, code, data);
@@ -135,6 +156,9 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [MemberData(nameof(ResultData))]
         public void ValuesAssignedInTypedErrorWithoutData(ErrorCode code, bool error, string message)
         {
+            // shut-up about unused parameters
+            Assert.Equal(error, error);
+
             var result = Result.Error<DateTime>(message, code);
 
             Assert.True(result.IsError);
