@@ -34,7 +34,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
-                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
                                  It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
@@ -89,7 +88,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
-                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
                                  It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
@@ -137,7 +135,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
-                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
                                  It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
@@ -189,7 +186,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
-                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
                                  It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
@@ -266,7 +262,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
-                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
                                  It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
@@ -319,7 +314,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
-                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
                                  It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
@@ -364,53 +358,15 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
-                                 It.IsAny<Func<(StoredEvent, DomainEventMetadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
                                  It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
-                      .Returns((Func<(StoredEvent, DomainEventMetadata), bool> filter,
-                                Func<(StoredEvent, DomainEvent), bool> stream,
+                      .Returns((Func<(StoredEvent, DomainEvent), bool> stream,
                                 int batch,
                                 StreamDirection direction,
                                 long maxVersion) =>
                       {
-                          var metadata = new[]
-                          {
-                              (new StoredEvent
-                                  {
-                                      Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
-                                      EventNumber = 1,
-                                      EventType = nameof(EnvironmentCreated),
-                                      Metadata = new byte[0],
-                                      UtcTime = DateTime.UtcNow
-                                  },
-                                  new DomainEventMetadata {Filters = {{KnownDomainEventMetadata.Identifier, "Foo/Bar"}}}),
-                              (new StoredEvent
-                                  {
-                                      Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
-                                      EventNumber = 2,
-                                      EventType = nameof(EnvironmentCreated),
-                                      Metadata = new byte[0],
-                                      UtcTime = DateTime.UtcNow
-                                  },
-                                  new DomainEventMetadata {Filters = {{KnownDomainEventMetadata.Identifier, "Foo/Baz"}}}),
-                              (new StoredEvent
-                                  {
-                                      Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
-                                      EventNumber = 3,
-                                      EventType = nameof(EnvironmentCreated),
-                                      Metadata = new byte[0],
-                                      UtcTime = DateTime.UtcNow
-                                  },
-                                  new DomainEventMetadata {Filters = {{KnownDomainEventMetadata.Identifier, "Foo/Foo"}}})
-                          };
-
-                          foreach (var tuple in metadata) filter(tuple);
-
                           var events = new[]
                           {
                               (new StoredEvent
