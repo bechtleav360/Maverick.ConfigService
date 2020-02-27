@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Migrations.Migrations.Sqlite
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("Mav_Config")
+                .HasDefaultSchema("mavconfig")
                 .HasAnnotation("ProductVersion", "3.1.1");
 
             modelBuilder.Entity("Bechtle.A365.ConfigService.Common.DbContexts.SqlSnapshot", b =>

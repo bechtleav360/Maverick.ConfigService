@@ -8,11 +8,11 @@ namespace Bechtle.A365.ConfigService.Migrations.Migrations.Sqlite
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "Mav_Config");
+                name: "mavconfig");
 
             migrationBuilder.CreateTable(
                 name: "Snapshots",
-                schema: "Mav_Config",
+                schema: "mavconfig",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Migrations.Migrations.Sqlite
         {
             migrationBuilder.DropTable(
                 name: "Snapshots",
-                schema: "Mav_Config");
+                schema: "mavconfig");
         }
     }
 }

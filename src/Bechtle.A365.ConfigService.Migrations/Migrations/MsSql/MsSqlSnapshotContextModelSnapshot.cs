@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Migrations.Migrations.MsSql
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("Mav_Config")
+                .HasDefaultSchema("mavconfig")
                 .HasAnnotation("ProductVersion", "3.1.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);

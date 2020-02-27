@@ -7,7 +7,7 @@ namespace Bechtle.A365.ConfigService.Common.DbContexts
     /// </summary>
     public class SnapshotContext : DbContext
     {
-        public static readonly string Schema = "Mav_Config";
+        public static readonly string Schema = "mavconfig";
 
         /// <inheritdoc />
         public SnapshotContext(DbContextOptions options) : base(options)

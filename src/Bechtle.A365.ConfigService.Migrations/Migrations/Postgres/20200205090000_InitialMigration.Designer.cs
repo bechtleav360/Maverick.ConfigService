@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Migrations.Migrations.Postgres
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("Mav_Config")
+                .HasDefaultSchema("mavconfig")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
                 .HasAnnotation("ProductVersion", "3.1.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
