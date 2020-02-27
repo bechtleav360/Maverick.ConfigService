@@ -158,9 +158,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             string fileContent;
             try
             {
-                using (var file = File.OpenRead(path))
-                using (var reader = new StreamReader(file, Encoding.UTF8))
+                await using (var file = File.OpenRead(path))
                 {
+                    using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen: true);
                     fileContent = await reader.ReadToEndAsync();
                 }
 

@@ -38,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         /// <inheritdoc />
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             try
             {
@@ -48,6 +48,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             {
                 // ¯\_(ツ)_/¯
             }
+
+            base.Dispose(disposing);
         }
     }
 }

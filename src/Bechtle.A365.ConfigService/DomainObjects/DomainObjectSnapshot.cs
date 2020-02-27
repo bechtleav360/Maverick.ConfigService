@@ -66,7 +66,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public bool Equals(DomainObjectSnapshot other)
+        public virtual bool Equals(DomainObjectSnapshot other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

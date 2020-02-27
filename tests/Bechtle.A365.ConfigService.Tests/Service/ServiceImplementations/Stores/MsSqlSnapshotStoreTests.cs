@@ -25,10 +25,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             Store = new MsSqlSnapshotStore(provider.GetRequiredService<ILogger<MsSqlSnapshotStore>>(),
                                            provider.GetRequiredService<MsSqlSnapshotContext>());
         }
-
-        /// <inheritdoc />
-        public override void Dispose()
-        {
-        }
     }
 }

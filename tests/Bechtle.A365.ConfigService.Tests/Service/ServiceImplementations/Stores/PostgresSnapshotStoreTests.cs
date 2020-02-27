@@ -25,10 +25,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             Store = new PostgresSnapshotStore(provider.GetRequiredService<ILogger<PostgresSnapshotStore>>(),
                                               provider.GetRequiredService<PostgresSnapshotContext>());
         }
-
-        /// <inheritdoc />
-        public override void Dispose()
-        {
-        }
     }
 }

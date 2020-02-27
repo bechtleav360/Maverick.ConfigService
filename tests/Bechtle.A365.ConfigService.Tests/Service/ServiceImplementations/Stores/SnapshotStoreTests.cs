@@ -12,7 +12,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
     public abstract class SnapshotStoreTests : IDisposable
     {
         /// <inheritdoc />
-        public abstract void Dispose();
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            // Cleanup
+        }
 
         protected ISnapshotStore Store { get; set; }
 

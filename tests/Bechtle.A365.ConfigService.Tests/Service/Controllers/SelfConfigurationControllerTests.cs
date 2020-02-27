@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
-    public class SelfConfigurationControllerTests : ControllerTests<SelfConfigurationController>, IDisposable
+    public sealed class SelfConfigurationControllerTests : ControllerTests<SelfConfigurationController>, IDisposable
     {
         /// <inheritdoc />
         public void Dispose()

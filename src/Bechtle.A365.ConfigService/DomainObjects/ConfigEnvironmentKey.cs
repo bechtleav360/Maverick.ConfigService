@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public long Version { get; }
 
         /// <inheritdoc />
-        public bool Equals(ConfigEnvironmentKey other)
+        public virtual bool Equals(ConfigEnvironmentKey other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

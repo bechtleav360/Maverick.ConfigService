@@ -16,10 +16,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Store = instance;
         }
-
-        /// <inheritdoc />
-        public override void Dispose()
-        {
-        }
     }
 }
