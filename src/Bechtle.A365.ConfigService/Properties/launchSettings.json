@@ -11,27 +11,17 @@
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
-      "launchUrl": "api/values",
       "environmentVariables": {
-        "ASPNETCORE_SSLCERT_PATH": "D:/TFS/Certs/w10lcl02/w10lcl02.crt",
-        "ASPNETCORE_SSL_PORT": "8456",
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "Bechtle.A365.ConfigService": {
-      "commandName": "Project",
-      "launchUrl": "api/values",
-      "environmentVariables": {
-        "ASPNETCORE_SSLCERT_PATH": "D:/TFS/Certs/w10lcl02/w10lcl02.crt",
-        "ASPNETCORE_SSL_PORT": "8456",
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": ""
+      "commandName": "Project"
     },
     "Docker": {
       "commandName": "Docker",
       "launchBrowser": true,
-      "launchUrl": "{Scheme}://localhost:{ServicePort}/api/values"
+      "launchUrl": "{Scheme}://localhost:{ServicePort}/"
     }
   }
 }
