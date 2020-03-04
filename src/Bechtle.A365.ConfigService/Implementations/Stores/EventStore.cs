@@ -61,11 +61,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         public static ConnectionState ConnectionState { get; private set; } = ConnectionState.Disconnected;
 
         /// <inheritdoc />
-        public ValueTask DisposeAsync()
-        {
-            Dispose();
-            return new ValueTask(Task.CompletedTask);
-        }
+        public event EventHandler<(StoreSubscription Subscription, StoredEvent StoredEvent)> EventAppeared;
 
         /// <inheritdoc />
         public void Dispose()
@@ -75,7 +71,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public event EventHandler<(StoreSubscription Subscription, StoredEvent StoredEvent)> EventAppeared;
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return new ValueTask(Task.CompletedTask);
+        }
 
         /// <inheritdoc />
         public async Task<long> GetCurrentEventNumber()
@@ -93,7 +93,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                          int readSize = 64,
                                          StreamDirection direction = StreamDirection.Forwards,
                                          long startIndex = -1)
-            => ReplayEventsAsStream(_ => true, streamProcessor, readSize, direction, startIndex);
+            => ReplayEventsAsStream(null, streamProcessor, readSize, direction, startIndex);
 
         /// <inheritdoc />
         public async Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool> streamFilter,
@@ -108,74 +108,30 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (streamProcessor is null)
                 return;
 
-            // readSize must be below 4096
-            readSize = Math.Min(readSize, 4096);
-
-            var streamOrigin = direction == StreamDirection.Forwards
-                                   ? StreamPosition.Start
-                                   : StreamPosition.End;
-
-            // use either the given start-position (if startIndex positive or 0), or the Beginning (depending on Direction)
-            var currentPosition = startIndex >= 0
-                                      ? startIndex
-                                      : streamOrigin;
-
-            var stream = _eventStoreConfiguration.CurrentValue.Stream;
-            bool continueReading;
-
-            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read, " +
-                             (direction == StreamDirection.Forwards ? "forwards from the start" : "backwards from the end"));
-
-            do
+            await StreamEvents(storedEvent =>
             {
-                var slice = await (direction == StreamDirection.Forwards
-                                       ? _eventStore.ReadStreamEventsForwardAsync(stream, currentPosition, readSize, true)
-                                       : _eventStore.ReadStreamEventsBackwardAsync(stream, currentPosition, readSize, true));
+                // initialize to default value if we can't deserialize successfully
+                if (!_eventDeserializer.ToMetadata(storedEvent, out var metadata))
+                    metadata = new DomainEventMetadata();
 
-                _logger.LogDebug($"read '{slice.Events.Length}' events " +
-                                 $"{slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber} {direction}");
-
-                _metrics.Measure.Counter.Increment(KnownMetrics.EventsRead, slice.Events.Length);
-
-                foreach (var item in slice.Events)
+                // skip this event entirely if filter evaluates to false
+                if (streamFilter != null && !streamFilter((StoredEvent: storedEvent, Metadata: metadata)))
                 {
-                    var storedEvent = new StoredEvent
-                    {
-                        EventId = item.Event.EventId,
-                        Data = item.Event.Data,
-                        Metadata = item.Event.Metadata,
-                        EventType = item.Event.EventType,
-                        EventNumber = item.Event.EventNumber,
-                        UtcTime = item.Event.Created.ToUniversalTime()
-                    };
-
-                    // initialize to default value if we can't deserialize successfully
-                    if (!_eventDeserializer.ToMetadata(storedEvent, out var metadata))
-                        metadata = new DomainEventMetadata();
-
-                    // skip this event entirely if filter evaluates to false
-                    if (!streamFilter((StoredEvent: storedEvent, Metadata: metadata)))
-                    {
-                        _metrics.Measure.Counter.Increment(KnownMetrics.EventsFiltered, item.Event.EventType);
-                        continue;
-                    }
-
-                    if (!_eventDeserializer.ToDomainEvent(storedEvent, out var domainEvent))
-                    {
-                        _logger.LogWarning($"event {item.Event.EventId}#{item.Event.EventNumber} could not be deserialized");
-                        continue;
-                    }
-
-                    _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, domainEvent.EventType);
-
-                    // stop streaming events once streamProcessor returns false
-                    if (!streamProcessor.Invoke((storedEvent, domainEvent)))
-                        return;
+                    _metrics.Measure.Counter.Increment(KnownMetrics.EventsFiltered, storedEvent.EventType);
+                    return true;
                 }
 
-                currentPosition = slice.NextEventNumber;
-                continueReading = !slice.IsEndOfStream;
-            } while (continueReading);
+                if (!_eventDeserializer.ToDomainEvent(storedEvent, out var domainEvent))
+                {
+                    _logger.LogWarning($"event {storedEvent.EventId}#{storedEvent.EventNumber} could not be deserialized");
+                    return true;
+                }
+
+                _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, domainEvent.EventType);
+
+                // stop streaming events once streamProcessor returns false
+                return streamProcessor.Invoke((storedEvent, domainEvent));
+            }, readSize, direction, startIndex);
         }
 
         /// <inheritdoc />
@@ -333,5 +289,69 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private (byte[] Data, byte[] Metadata) SerializeDomainEvent(DomainEvent domainEvent)
             => ((IDomainEventConverter) _provider.GetService(typeof(IDomainEventConverter<>).MakeGenericType(domainEvent.GetType())))
                 .Serialize(domainEvent);
+
+        /// <summary>
+        ///     read n-events at a time from the configured EventStore.
+        ///     for each item, execute <paramref name="streamProcessor" />, until no more items are available or <paramref name="streamProcessor" /> returns false
+        /// </summary>
+        /// <param name="streamProcessor"></param>
+        /// <param name="readSize"></param>
+        /// <param name="direction"></param>
+        /// <param name="startIndex"></param>
+        /// <returns></returns>
+        private async Task StreamEvents(Func<StoredEvent, bool> streamProcessor,
+                                        int readSize = 64,
+                                        StreamDirection direction = StreamDirection.Forwards,
+                                        long startIndex = -1)
+        {
+            // readSize must be below 4096
+            // seems to cause problems with increasing number of items
+            // will be limited to 128 for now
+            readSize = Math.Min(readSize, 128);
+
+            var streamOrigin = direction == StreamDirection.Forwards
+                                   ? StreamPosition.Start
+                                   : StreamPosition.End;
+
+            // use either the given start-position (if startIndex positive or 0), or the Beginning (depending on Direction)
+            var currentPosition = startIndex >= 0
+                                      ? startIndex
+                                      : streamOrigin;
+
+            var stream = _eventStoreConfiguration.CurrentValue.Stream;
+            bool continueReading;
+
+            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read, " +
+                             (direction == StreamDirection.Forwards ? "forwards from the start" : "backwards from the end"));
+
+            do
+            {
+                var slice = await (direction == StreamDirection.Forwards
+                                       ? _eventStore.ReadStreamEventsForwardAsync(stream, currentPosition, readSize, true)
+                                       : _eventStore.ReadStreamEventsBackwardAsync(stream, currentPosition, readSize, true));
+
+                _logger.LogDebug($"read '{slice.Events.Length}' events " +
+                                 $"{slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber} {direction}");
+
+                _metrics.Measure.Counter.Increment(KnownMetrics.EventsRead, slice.Events.Length);
+
+                if (slice.Events
+                         .Select(e => new StoredEvent
+                         {
+                             EventId = e.Event.EventId,
+                             Data = e.Event.Data,
+                             Metadata = e.Event.Metadata,
+                             EventType = e.Event.EventType,
+                             EventNumber = e.Event.EventNumber,
+                             UtcTime = e.Event.Created.ToUniversalTime()
+                         })
+                         // if any streamProcessor returns false, stop streaming
+                         .Any(storedEvent => !streamProcessor(storedEvent)))
+                    return;
+
+                currentPosition = slice.NextEventNumber;
+                continueReading = !slice.IsEndOfStream;
+            } while (continueReading);
+        }
     }
 }
