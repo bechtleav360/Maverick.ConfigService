@@ -36,7 +36,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="provider"></param>
         /// <param name="eventDeserializer"></param>
         /// <param name="eventStoreConfiguration"></param>
-        /// <param name="metrics"></param>
         public EventStore(ILogger<EventStore> logger,
                           ESLogger eventStoreLogger,
                           IServiceProvider provider,

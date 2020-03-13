@@ -234,8 +234,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                foreach (var temp in keys.Entries)
-                    KnownMetrics.TemporaryKeyCreated.Inc();
+                KnownMetrics.TemporaryKeyCreated.Inc(keys.Entries.Length);
 
                 await _eventBus.Connect();
 
