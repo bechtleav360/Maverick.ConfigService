@@ -36,6 +36,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using NLog.Web;
+using Prometheus;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using CertificateValidator = Bechtle.A365.ConfigService.Implementations.CertificateValidator;
@@ -78,6 +79,7 @@ namespace Bechtle.A365.ConfigService
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
             => app.StartTweakingWith(_logger, Configuration)
                   .Tweak(a => a.UseRouting(), "adding routing")
+                  .Tweak(a => a.UseHttpMetrics(), "adding http-metrics")
                   .TweakWhen(c => c.GetSection("EnableLegacyRedirect"),
                              a => a.UseMiddleware<V0RedirectMiddleware>(),
                              "adding V0-Redirect-Middleware")
@@ -114,15 +116,8 @@ namespace Bechtle.A365.ConfigService
                              action = "Status"
                          })),
                          "adding Health-Middleware")
-                  .Tweak(a => a.UseMetricsActiveRequestMiddleware(), "adding active-request metrics")
-                  .Tweak(a => a.UseMetricsApdexTrackingMiddleware(), "adding apdex metrics")
-                  .Tweak(a => a.UseMetricsErrorTrackingMiddleware(), "adding error metrics")
-                  .Tweak(a => a.UseMetricsOAuth2TrackingMiddleware(), "adding oauth metrics")
-                  .Tweak(a => a.UseMetricsPostAndPutSizeTrackingMiddleware(), "adding request-size metrics")
-                  .Tweak(a => a.UseMetricsRequestTrackingMiddleware(), "adding request-path metrics")
-                  .Tweak(a => a.UseMetricsTextEndpoint(), "adding text-metrics endpoint")
-                  .Tweak(a => a.UseMetricsEndpoint(), "adding metrics endpoint")
                   .Tweak(a => a.UseEndpoints(builder => builder.MapControllers()), "adding controller-endpoints")
+                  .Tweak(a => a.UseEndpoints(builder => builder.MapMetrics()), "adding metrics-endpoints")
                   .Tweak(_ =>
                   {
                       ChangeToken.OnChange(Configuration.GetReloadToken,
@@ -352,7 +347,6 @@ namespace Bechtle.A365.ConfigService
                         options.JsonSerializerOptions.AllowTrailingCommas = true;
                         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                     })
-                    .AddMetrics()
                     .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
         }
 

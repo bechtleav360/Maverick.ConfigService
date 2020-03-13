@@ -1,5 +1,4 @@
-﻿using App.Metrics;
-using App.Metrics.Counter;
+﻿using Prometheus;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -8,101 +7,64 @@ namespace Bechtle.A365.ConfigService
     /// </summary>
     internal static class KnownMetrics
     {
-        public static readonly CounterOptions ConnectionInfo = new CounterOptions
-        {
-            Name = "Connection-Infos",
-            MeasurementUnit = Unit.Calls,
-            Context = KnownMetricContexts.ConnectionInfos
-        };
+        public static readonly Counter ConnectionInfo = Metrics.CreateCounter(
+            "connection_infos_retrieved",
+            "How often Connection-Infos have been retrieved",
+            new CounterConfiguration());
 
-        public static readonly CounterOptions Conversion = new CounterOptions
-        {
-            Name = "Convert Configuration",
-            MeasurementUnit = Unit.Calls,
-            Context = KnownMetricContexts.ConversionCalls
-        };
+        public static readonly Counter Conversion = Metrics.CreateCounter(
+            "convert_configuration",
+            "Configurations converted from one to another representation",
+            new CounterConfiguration {LabelNames = new[] {"direction"}});
 
-        public static readonly CounterOptions EventsFiltered = new CounterOptions
-        {
-            Name = "DomainEvents Filtered before Deserialization",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventStore
-        };
+        public static readonly Counter EventsFiltered = Metrics.CreateCounter(
+            "domain_events_filtered_before_deserialization",
+            "DomainEvents Filtered before Deserialization",
+            new CounterConfiguration {LabelNames = new[] { "event_type" }});
 
-        public static readonly CounterOptions EventsRead = new CounterOptions
-        {
-            Name = "DomainEvents Read",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventStore
-        };
+        public static readonly Counter EventsRead = Metrics.CreateCounter(
+            "domain_events_read",
+            "DomainEvents Read",
+            new CounterConfiguration { LabelNames = new[] { "event_type" } });
 
-        public static readonly CounterOptions EventsStreamed = new CounterOptions
-        {
-            Name = "DomainEvents Streamed",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventStore
-        };
+        public static readonly Counter EventsStreamed = Metrics.CreateCounter(
+            "domain_events_streamed",
+            "DomainEvents Streamed",
+            new CounterConfiguration { LabelNames = new[] { "event_type" } });
 
-        public static readonly CounterOptions EventStoreConnected = new CounterOptions
-        {
-            Name = "EventStore Connection established",
-            MeasurementUnit = Unit.Custom("Times"),
-            Context = KnownMetricContexts.EventStore
-        };
+        public static readonly Counter EventStoreConnected = Metrics.CreateCounter(
+            "eventstore_connection_established",
+            "EventStore Connection established",
+            new CounterConfiguration());
 
-        public static readonly CounterOptions EventStoreDisconnected = new CounterOptions
-        {
-            Name = "EventStore Connection lost",
-            MeasurementUnit = Unit.Custom("Times"),
-            Context = KnownMetricContexts.EventStore
-        };
+        public static readonly Counter EventStoreDisconnected = Metrics.CreateCounter(
+            "eventstore_connection_lost",
+            "EventStore Connection lost",
+            new CounterConfiguration());
 
-        public static readonly CounterOptions EventStoreReconnected = new CounterOptions
-        {
-            Name = "EventStore Connection Re-Established",
-            MeasurementUnit = Unit.Custom("Times"),
-            Context = KnownMetricContexts.EventStore
-        };
+        public static readonly Counter EventStoreReconnected = Metrics.CreateCounter(
+            "eventstore_connection_reestablished",
+            "EventStore Connection Re-Established",
+            new CounterConfiguration());
 
-        public static readonly CounterOptions EventsValidated = new CounterOptions
-        {
-            Name = "DomainEvents Valildated",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventValidation
-        };
+        public static readonly Counter EventsValidated = Metrics.CreateCounter(
+            "domain_events_validated",
+            "DomainEvents Valildated",
+            new CounterConfiguration { LabelNames = new[] { "validity" } });
 
-        public static readonly CounterOptions EventsWritten = new CounterOptions
-        {
-            Name = "DomainEvents Written",
-            MeasurementUnit = Unit.Events,
-            Context = KnownMetricContexts.EventStore
-        };
+        public static readonly Counter EventsWritten = Metrics.CreateCounter(
+            "domain_events_written",
+            "DomainEvents Written",
+            new CounterConfiguration { LabelNames = new[] { "event_type" } });
 
-        public static readonly CounterOptions Exception = new CounterOptions
-        {
-            Name = "Internal Exceptions",
-            MeasurementUnit = Unit.Items,
-            Context = KnownMetricContexts.Exceptions
-        };
+        public static readonly Counter Exception = Metrics.CreateCounter(
+            "internal_exceptions",
+            "Internal Exceptions",
+            new CounterConfiguration { LabelNames = new[] { "exception_type" } });
 
-        public static readonly CounterOptions TemporaryKeyCreated = new CounterOptions
-        {
-            Name = "Temporary-Key Set",
-            MeasurementUnit = Unit.Items,
-            Context = KnownMetricContexts.TemporaryKeys
-        };
-    }
-
-    internal static class KnownMetricContexts
-    {
-        private static readonly string Generics = "Application";
-        public static readonly string ConnectionInfos = $"{Generics}.ConnectionInfos";
-        private static readonly string Internals = "Application.Internals";
-        public static readonly string ConversionCalls = $"{Internals}.Conversions";
-        public static readonly string EventHistoryStatus = $"{Generics}.EventHistoryStatus";
-        public static readonly string EventStore = $"{Generics}.EventStore";
-        public static readonly string EventValidation = $"{Generics}.EventValidation";
-        public static readonly string Exceptions = $"{Generics}.Errors";
-        public static readonly string TemporaryKeys = $"{Generics}.TemporaryKeys";
+        public static readonly Counter TemporaryKeyCreated = Metrics.CreateCounter(
+            "temporary_keys_set",
+            "Temporary-Key Set",
+            new CounterConfiguration());
     }
 }

@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 var targetEnvironments = string.Join(", ", definition.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
 
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, $"failed to export '{definition.Environments.Length}' environments ({targetEnvironments})");
                 return StatusCode(HttpStatusCode.InternalServerError, $"failed to export environments '{targetEnvironments}'");
             }

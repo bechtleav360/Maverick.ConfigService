@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -26,7 +25,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly IOptionsMonitor<EventStoreConnectionConfiguration> _eventStoreConfiguration;
         private readonly ESLogger _eventStoreLogger;
         private readonly ILogger _logger;
-        private readonly IMetrics _metrics;
         private readonly IServiceProvider _provider;
 
         private IEventStoreConnection _eventStore;
@@ -43,8 +41,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                           ESLogger eventStoreLogger,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer,
-                          IOptionsMonitor<EventStoreConnectionConfiguration> eventStoreConfiguration,
-                          IMetrics metrics)
+                          IOptionsMonitor<EventStoreConnectionConfiguration> eventStoreConfiguration)
         {
             _connectionLock = new object();
             _logger = logger;
@@ -52,7 +49,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _provider = provider;
             _eventDeserializer = eventDeserializer;
             _eventStoreConfiguration = eventStoreConfiguration;
-            _metrics = metrics;
 
             _eventStoreConfiguration.OnChange(_ => Connect(true));
         }
@@ -117,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 // skip this event entirely if filter evaluates to false
                 if (streamFilter != null && !streamFilter((StoredEvent: storedEvent, Metadata: metadata)))
                 {
-                    _metrics.Measure.Counter.Increment(KnownMetrics.EventsFiltered, storedEvent.EventType);
+                    KnownMetrics.EventsFiltered.WithLabels(storedEvent.EventType).Inc();
                     return true;
                 }
 
@@ -127,7 +123,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return true;
                 }
 
-                _metrics.Measure.Counter.Increment(KnownMetrics.EventsStreamed, domainEvent.EventType);
+                KnownMetrics.EventsStreamed.WithLabels(domainEvent.EventType).Inc();
 
                 // stop streaming events once streamProcessor returns false
                 return streamProcessor.Invoke((storedEvent, domainEvent));
@@ -168,7 +164,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                                eventData);
 
             foreach (var item in domainEvents)
-                _metrics.Measure.Counter.Increment(KnownMetrics.EventsWritten, item.EventType);
+                KnownMetrics.EventsWritten.WithLabels(item.EventType).Inc();
 
             _logger.LogDebug($"sent {domainEvents.Count} events '{eventList}': " +
                              $"NextExpectedVersion: {result.NextExpectedVersion}; " +
@@ -270,19 +266,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args)
         {
-            _metrics.Measure.Counter.Increment(KnownMetrics.EventStoreConnected);
+            KnownMetrics.EventStoreConnected.Inc();
             ConnectionState = ConnectionState.Connected;
         }
 
         private void OnEventStoreDisconnected(object sender, ClientConnectionEventArgs args)
         {
-            _metrics.Measure.Counter.Increment(KnownMetrics.EventStoreDisconnected);
+            KnownMetrics.EventStoreDisconnected.Inc();
             ConnectionState = ConnectionState.Disconnected;
         }
 
         private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args)
         {
-            _metrics.Measure.Counter.Increment(KnownMetrics.EventStoreReconnected);
+            KnownMetrics.EventStoreReconnected.Inc();
             ConnectionState = ConnectionState.Reconnecting;
         }
 
@@ -333,7 +329,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogDebug($"read '{slice.Events.Length}' events " +
                                  $"{slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber} {direction}");
 
-                _metrics.Measure.Counter.Increment(KnownMetrics.EventsRead, slice.Events.Length);
+                KnownMetrics.EventsRead.Inc(slice.Events.Length);
 
                 if (slice.Events
                          .Select(e => new StoredEvent

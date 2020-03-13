@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("events", Name = "GetEventConnection")]
         public IActionResult GetEventConnection()
         {
-            Metrics.Measure.Counter.Increment(KnownMetrics.ConnectionInfo);
+            KnownMetrics.ConnectionInfo.Inc();
 
             HttpContext.Response.OnStarting(state =>
             {

@@ -184,7 +184,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, "failed to add new environment at (" +
                                    $"{nameof(environmentCategory)}: {environmentCategory}; " +
                                    $"{nameof(environmentName)}: {environmentName}; " +
@@ -277,7 +277,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, "failed to add new environment at (" +
                                    $"{nameof(when)}: {when}; " +
                                    $"{nameof(offset)}: {offset}; " +
@@ -306,7 +306,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, "failed to add new environment at (" +
                                    $"{nameof(offset)}: {offset}; " +
                                    $"{nameof(length)}: {length})");
@@ -355,7 +355,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, "failed to add new environment at (" +
                                    $"{nameof(environmentCategory)}: {environmentCategory}; " +
                                    $"{nameof(environmentName)}: {environmentName}; " +
@@ -406,7 +406,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, "failed to add new environment at (" +
                                    $"{nameof(environmentCategory)}: {environmentCategory}; " +
                                    $"{nameof(environmentName)}: {environmentName}; " +

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Prometheus;
 
 namespace Bechtle.A365.ConfigService.Controllers.V1
 {
@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     public class ControllerBase : Controller
     {
         /// <summary>
-        ///     Prefix before all inheritig Controllers
+        ///     Prefix before all inherited Controllers
         /// </summary>
         protected const string ApiBaseRoute = "v{version:apiVersion}/";
 
@@ -41,11 +41,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         protected IRegionEncryptionCertProvider EncryptionCertProvider;
 
         /// <summary>
-        ///     <see cref="IMetrics" /> to record various application-specific metrics
-        /// </summary>
-        protected IMetrics Metrics;
-
-        /// <summary>
         ///     IServiceProvider for late service retrieval
         /// </summary>
         protected IServiceProvider Provider;
@@ -57,7 +52,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         {
             Provider = provider;
             Logger = logger;
-            Metrics = Provider.GetRequiredService<IMetrics>();
 
             if (provider.GetRequiredService<IConfiguration>()
                         .GetSection("Protection:Enabled")

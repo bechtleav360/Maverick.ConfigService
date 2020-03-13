@@ -36,7 +36,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                           .Build();
 
             var provider = new ServiceCollection().AddLogging()
-                                                  .AddMetrics()
                                                   .AddSingleton<IConfiguration>(configuration)
                                                   .BuildServiceProvider();
 

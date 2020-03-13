@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Interfaces;
@@ -10,14 +9,6 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// <inheritdoc />
     public class InternalDataCommandValidator : ICommandValidator
     {
-        private readonly IMetrics _metrics;
-
-        /// <inheritdoc cref="InternalDataCommandValidator" />
-        public InternalDataCommandValidator(IMetrics metrics)
-        {
-            _metrics = metrics;
-        }
-
         /// <inheritdoc />
         public IResult ValidateDomainEvent(DomainEvent domainEvent)
         {
@@ -41,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 _ => Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed)
             };
 
-            _metrics.Measure.Counter.Increment(KnownMetrics.EventsValidated, result.IsError ? "Invalid" : "Valid");
+            KnownMetrics.EventsValidated.WithLabels(result.IsError ? "Invalid" : "Valid").Inc();
 
             return result;
         }

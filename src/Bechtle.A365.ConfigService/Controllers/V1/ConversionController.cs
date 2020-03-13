@@ -43,13 +43,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var result = _translator.ToJson(dictionary, separator ?? JsonTranslatorDefaultSettings.Separator);
 
-                Metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Map => Json");
+                KnownMetrics.Conversion.WithLabels("Map => Json").Inc();
 
                 return Ok(result);
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, "failed to translate dictionary to json");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }
@@ -69,13 +69,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 var result = _translator.ToDictionary(json, separator ?? JsonTranslatorDefaultSettings.Separator);
 
-                Metrics.Measure.Counter.Increment(KnownMetrics.Conversion, "Json => Map");
+                KnownMetrics.Conversion.WithLabels("Json => Map").Inc();
 
                 return Ok(result ?? new Dictionary<string, string>());
             }
             catch (Exception e)
             {
-                Metrics.Measure.Counter.Increment(KnownMetrics.Exception, e.GetType().Name);
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(e, "failed to translate json to dictionary");
                 return StatusCode(HttpStatusCode.InternalServerError, e.ToString());
             }

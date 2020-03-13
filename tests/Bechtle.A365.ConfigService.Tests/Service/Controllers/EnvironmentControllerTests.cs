@@ -24,8 +24,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public EnvironmentControllerTests()
         {
             _services = new ServiceCollection().AddLogging()
-                                               .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
-                                               .AddMetrics();
+                                               .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
 
             _projectionStoreMock = new Mock<IProjectionStore>();
             _jsonTranslatorMock = new Mock<IJsonTranslator>();

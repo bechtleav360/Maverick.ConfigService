@@ -235,7 +235,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return ProviderError(result);
 
                 foreach (var temp in keys.Entries)
-                    Metrics.Measure.Counter.Increment(KnownMetrics.TemporaryKeyCreated, temp.Key);
+                    KnownMetrics.TemporaryKeyCreated.Inc();
 
                 await _eventBus.Connect();
 

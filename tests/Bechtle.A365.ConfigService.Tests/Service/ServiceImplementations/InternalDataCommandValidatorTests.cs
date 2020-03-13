@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using App.Metrics;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Implementations;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -12,11 +10,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 {
     public class InternalDataCommandValidatorTests
     {
-        private InternalDataCommandValidator CreateValidator() => new InternalDataCommandValidator(CreateDefaultMetrics());
-
-        private IMetrics CreateDefaultMetrics() => new ServiceCollection().AddMetrics()
-                                                                          .BuildServiceProvider()
-                                                                          .GetService<IMetrics>();
+        private InternalDataCommandValidator CreateValidator() => new InternalDataCommandValidator();
 
         public static IEnumerable<object[]> InvalidEventIdentifiers => new[]
         {
