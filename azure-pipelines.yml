@@ -132,6 +132,15 @@ stages:
             privateRegistry: $(privateRegistry)
 
         # build Helm
+        - task: ArchiveFiles@2
+          displayName: Compress export_presales.json
+          inputs:
+            rootFolderOrFile: '$(Build.SourcesDirectory)/deploy/config/configuration/export_presales.json'
+            includeRootFolder: false
+            archiveType: 'tar'
+            archiveFile: '$(Build.SourceDirectory)/deploy/config/configuration/configuration.tar.gz'
+            replaceExistingArchive: true
+
         - template: build-helm-chart.yaml@templates
           parameters:
             projectFilePath: '$(Build.SourcesDirectory)/$(projectLocation)/$(projectFile)'
