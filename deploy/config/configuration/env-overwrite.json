@@ -41,8 +41,16 @@
                     "Value": "https"
                 },
                 {
-                    "Key": "NamedEndpoints/IdentityService/Port",
-                    "Value": "80"
+                    "Key": "NamedEndpoints/WebDav-External/Address",
+                    "Value": "file. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/WebDav-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/WebDav-External/Protocol",
+                    "Value": "https"
                 },
                 {
                     "Key": "NamedEndpoints/IdentityService-External/Address",
@@ -57,28 +65,148 @@
                     "Value": "https"
                 },
                 {
-                    "Key": "NamedEndpoints/PreviewService-External/Address",
-                    "Value": "previews. {{- .Values.environment.domain }}"
+                  "Description": "",
+                  "Key": "NamedEndpoints/EntityBits-External/Address",
+                  "Type": "",
+                  "Value": "core. {{- .Values.environment.domain }}"
                 },
                 {
-                    "Key": "ApplicationEndpoints/Bonnea/ServerIp",
-                    "Value": "http://bonnea/bonneaws"
+                    "Key": "NamedEndpoints/EntityBits-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/EntityBits-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/EntitySources-External/Address",
+                  "Type": "",
+                  "Value": "core. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/EntitySources-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/EntitySources-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/FeedbackMail-External/Address",
+                  "Type": "",
+                  "Value": "core. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/FeedbackMail-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/FeedbackMail-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/Help-External/Address",
+                  "Type": "",
+                  "Value": "core. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/Help-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/Help-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/Maverick-External/Address",
+                  "Type": "",
+                  "Value": "core. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/Maverick-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/Maverick-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/TaskService-External/Address",
+                  "Type": "",
+                  "Value": "task. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/TaskService-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/TaskService-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/WopiService-External/Address",
+                  "Type": "",
+                  "Value": "wopi. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/WopiService-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/WopiService-External/Protocol",
+                    "Value": "https"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/Xmpp-External/Address",
+                  "Type": "",
+                  "Value": "chat. {{- .Values.environment.domain }}"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/Xmpp-External/Port",
+                  "Type": "",
+                  "Value": "443"
+                },
+                {
+                  "Description": "",
+                  "Key": "NamedEndpoints/Xmpp-External/Protocol",
+                  "Type": "",
+                  "Value": "wss"
+                },
+                {
+                    "Key": "NamedEndpoints/PreviewService-External/Address",
+                    "Value": "preview. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/PreviewService-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/PreviewService-External/Protocol",
+                    "Value": "https"
                 },
                 {
                     "Key": "NamedEndpoints/SignalR/Address",
                     "Value": "{{- include "Config.websocketserver" . -}}"
                 },
                 {
-                    "Key": "NamedEndpoints/SignalR/Port",
-                    "Value": "80"
-                },
-                {
-                    "Key":"ApplicationEndpoints/RabbitMQ/ManagementPort",
-                    "Value" : "15672"
-                },
-                {
                     "Key": "NamedEndpoints/SignalR-External/Address",
                     "Value": "websocket. {{- .Values.environment.domain }}"
+                },
+                {
+                    "Key": "NamedEndpoints/SignalR-External/Port",
+                    "Value": "443"
+                },
+                {
+                    "Key": "NamedEndpoints/SignalR-External/Protocol",
+                    "Value": "https"
                 },
                 {
                     "Key": "NamedEndpoints/EventStoreService/Address",
@@ -89,24 +217,20 @@
                     "Value": "userprofileservice. {{- .Values.environment.domain }}"
                 },
                 {
-                    "Key": "NamedEndpoints/UserProfileService/Address",
-                    "Value": "userprofile"
+                    "Key": "NamedEndpoints/UserProfileService-External/Port",
+                    "Value": "443"
                 },
                 {
-                    "Key": "NamedEndpoints/UserProfileService/Port",
-                    "Value": "80"
+                    "Key": "NamedEndpoints/UserProfileService-External/Protocol",
+                    "Value": "https"
                 },
                 {
-                    "Key": "NamedEndpoints/WebDav-External/Address",
-                    "Value": "fileservice. {{- .Values.environment.domain }}"
+                    "Key": "ApplicationEndpoints/Bonnea/ServerIp",
+                    "Value": "http://bonnea/bonneaws"
                 },
                 {
-                    "Key": "NamedEndpoints/ChatService-External/Address",
-                    "Value": "chatservice. {{- .Values.environment.domain }}"
-                },
-                {
-                    "Key": "NamedEndpoints/ConfigService-External/Address",
-                    "Value": "configservice. {{- .Values.environment.domain }}"
+                    "Key":"ApplicationEndpoints/RabbitMQ/ManagementPort",
+                    "Value" : "15672"
                 },
                 {
                     "Key": "Connections/Minio/Properties/Secret",
@@ -295,7 +419,19 @@
                 {
                     "Key": "NamedEndpoints/Elasticsearch/Port",
                     "Value": "{{ required "A valid elasticsearch port is required." .Values.elasticsearch.port }}"
-                }
+                },
+                {
+                    "key": "ServiceSettings/IdentityService/clients/0004/AllowedCorsOrigins/0002",
+                    "value": "https://admin.{{- .Values.environment.domain -}}"
+                },
+                {
+                    "key": "ServiceSettings/IdentityService/clients/0000/AllowedCorsOrigins/0001", 
+                    "value": "https://chatservice.{{- .Values.environment.domain -}}"
+                },
+                {
+                    "key": "ServiceSettings/IdentityService/clients/0000/RedirectUris/0001",
+                    "value": "https://identity.{{- .Values.environment.domain -}}/signin-oidc"
+                }    
             ]
         }
     ]
