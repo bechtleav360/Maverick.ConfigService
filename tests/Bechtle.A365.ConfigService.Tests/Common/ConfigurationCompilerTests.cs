@@ -320,6 +320,24 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     Assert.Equal(string.Empty, compiled["B"]);
                 });
 
+        [Fact]
+        public void LongCyclicReference()
+            => CheckCompilationResult(
+                new Dictionary<string, string>
+                {
+                    {"A", "{{B}}"},
+                    {"B", "{{C}}"},
+                    {"C", "{{D}}"},
+                    {"D", "{{E}}"},
+                    {"E", "{{F}}"},
+                    {"F", "{{G}}"},
+                    {"G", "{{H}}"},
+                    {"H", "{{A}}"}
+                },
+                new Dictionary<string, string> {{"A", "{{A}}"}},
+                new Dictionary<string, string>(),
+                result => { Assert.Equal("", result.CompiledConfiguration["A"]); });
+
         /// <summary>
         ///     don't fail when there is nothing to do
         /// </summary>
