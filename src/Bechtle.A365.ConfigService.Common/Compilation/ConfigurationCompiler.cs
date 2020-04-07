@@ -9,11 +9,15 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 {
     public class ConfigurationCompiler : IConfigurationCompiler
     {
+        private readonly ISecretConfigValueProvider _secretProvider;
         private readonly ILogger<ConfigurationCompiler> _logger;
         private readonly ILogger<IValueResolver> _resolverLogger;
 
-        public ConfigurationCompiler(ILogger<ConfigurationCompiler> logger, ILogger<IValueResolver> resolverLogger)
+        public ConfigurationCompiler(ISecretConfigValueProvider secretProvider,
+                                     ILogger<ConfigurationCompiler> logger,
+                                     ILogger<IValueResolver> resolverLogger)
         {
+            _secretProvider = secretProvider;
             _logger = logger;
             _resolverLogger = resolverLogger;
         }
@@ -33,6 +37,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                                .UseLogger(_resolverLogger)
                                                .UseEnvironmentKeyProvider()
                                                .UseStructureVariableProvider()
+                                               .UseSecretProvider(_secretProvider)
                                                .BuildDefault();
 
             var configuration = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

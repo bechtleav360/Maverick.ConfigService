@@ -101,6 +101,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             => UseValueProvider(ConfigValueProviderType.StructVariables, new StructureVariableValueProvider(_structure.Variables));
 
         /// <summary>
+        ///     use the given <see cref="ISecretConfigValueProvider"/> for providing Secrets
+        /// </summary>
+        /// <param name="secretProvider"></param>
+        /// <returns></returns>
+        public ValueResolverBuilder UseSecretProvider(ISecretConfigValueProvider secretProvider)
+            => UseValueProvider(ConfigValueProviderType.SecretStore, secretProvider);
+
+        /// <summary>
         ///     register a specific <see cref="IConfigValueProvider" /> for the given slot
         /// </summary>
         /// <param name="type"></param>
