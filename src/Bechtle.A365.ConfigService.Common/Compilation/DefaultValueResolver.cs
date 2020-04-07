@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Compilation.Introspection;
@@ -19,20 +20,17 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         private readonly EnvironmentCompilationInfo _environmentInfo;
         private readonly ILogger _logger;
         private readonly StructureCompilationInfo _structureInfo;
-        private readonly Dictionary<ConfigValueProviderType, IConfigValueProvider> _valueProviders;
+        private readonly IDictionary<ConfigValueProviderType, IConfigValueProvider> _valueProviders;
 
         public DefaultValueResolver(EnvironmentCompilationInfo environmentInfo,
                                     StructureCompilationInfo structureInfo,
+                                    IDictionary<ConfigValueProviderType, IConfigValueProvider> valueProviders,
                                     ILogger logger)
         {
             _environmentInfo = environmentInfo;
             _structureInfo = structureInfo;
             _logger = logger;
-            _valueProviders = new Dictionary<ConfigValueProviderType, IConfigValueProvider>
-            {
-                {ConfigValueProviderType.Environment, new EnvironmentValueProvider(_environmentInfo.Keys)},
-                {ConfigValueProviderType.StructVariables, new StructureVariableValueProvider(_structureInfo.Variables)}
-            };
+            _valueProviders = valueProviders;
         }
 
         // do an initial check to see if we're dealing with a range-query or not

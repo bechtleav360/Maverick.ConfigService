@@ -10,10 +10,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
     public class ConfigurationCompiler : IConfigurationCompiler
     {
         private readonly ILogger<ConfigurationCompiler> _logger;
+        private readonly ILogger<IValueResolver> _resolverLogger;
 
-        public ConfigurationCompiler(ILogger<ConfigurationCompiler> logger)
+        public ConfigurationCompiler(ILogger<ConfigurationCompiler> logger, ILogger<IValueResolver> resolverLogger)
         {
             _logger = logger;
+            _resolverLogger = resolverLogger;
         }
 
         /// <inheritdoc />
@@ -25,12 +27,17 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                    $"and structure '{structure.Name}' ({structure.Keys.Count} entries)");
 
             ICompilationTracer compilationTracer = new CompilationTracer();
+            var resolver = ValueResolverBuilder.CreateNew()
+                                               .UseEnvironment(environment)
+                                               .UseStructure(structure)
+                                               .UseLogger(_resolverLogger)
+                                               .UseEnvironmentKeyProvider()
+                                               .UseStructureVariableProvider()
+                                               .BuildDefault();
 
             var configuration = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var (key, value) in structure.Keys)
             {
-                IValueResolver resolver = new DefaultValueResolver(environment, structure, _logger);
-
                 var result = resolver.Resolve(key, value, compilationTracer.AddKey(key, value), parser).RunSync();
                 if (result.IsError)
                     _logger.LogWarning(result.Message);

@@ -304,6 +304,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // will be limited to 128 for now
             readSize = Math.Min(readSize, 128);
 
+            // @HACK: reads beyond 32 seem to cause connection-losses in ES
+            //        this has steadily decreased time and again there is probably some underlying issue here
+            readSize = 16;
+
             var streamOrigin = direction == StreamDirection.Forwards
                                    ? StreamPosition.Start
                                    : StreamPosition.End;
@@ -341,7 +345,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                              UtcTime = e.Event.Created.ToUniversalTime()
                          })
                          // if any streamProcessor returns false, stop streaming
-                         .Any(storedEvent => !streamProcessor(storedEvent)))
+                         .Any(storedEvent =>
+                         {
+                             _logger.LogCritical($"processing event #{storedEvent.EventNumber}");
+                             return !streamProcessor(storedEvent);
+                         }))
                     return;
 
                 currentPosition = slice.NextEventNumber;

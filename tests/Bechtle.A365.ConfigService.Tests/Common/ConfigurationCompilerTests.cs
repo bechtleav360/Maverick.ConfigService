@@ -16,10 +16,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common
     {
         public ConfigurationCompilerTests()
         {
-            _compiler = new ConfigurationCompiler(
-                new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
-                                       .BuildServiceProvider()
-                                       .GetRequiredService<ILogger<ConfigurationCompiler>>());
+            var provider = new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
+                                                  .BuildServiceProvider();
+
+            var compilerLogger = provider.GetRequiredService<ILogger<ConfigurationCompiler>>();
+            var resolverLogger = provider.GetRequiredService<ILogger<IValueResolver>>();
+
+            _compiler = new ConfigurationCompiler(compilerLogger, resolverLogger);
 
             _parser = new AntlrConfigurationParser();
         }

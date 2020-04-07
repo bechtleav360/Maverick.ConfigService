@@ -10,7 +10,7 @@
   <!-- Package Dependencies -->
   <ItemGroup>
     <PackageReference Include="Bechtle.A365.Core.EventBus" Version="3.0.0.6" />
-    <PackageReference Include="EventStore.Client" Version="5.0.6" />
+    <PackageReference Include="EventStore.Client" Version="5.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="3.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.2" />
