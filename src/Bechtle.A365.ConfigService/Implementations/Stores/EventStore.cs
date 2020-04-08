@@ -306,7 +306,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             // @HACK: reads beyond 32 seem to cause connection-losses in ES
             //        this has steadily decreased time and again there is probably some underlying issue here
-            readSize = 16;
+            readSize = 1;
 
             var streamOrigin = direction == StreamDirection.Forwards
                                    ? StreamPosition.Start

@@ -230,6 +230,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             var aliasResolved = false;
             do
             {
+                // @TODO: add hard-coded $this alias that resolves to ($path/$value => $path)
                 // replace all $alias with their collected replacements
                 // do until we don't find any more replacements
                 foreach (var (aliasName, @using) in context.Aliases)
@@ -321,12 +322,15 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             var actualResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var referencePath = ResolvePathAliases(context, reference.Commands[ReferenceCommand.Path]);
-            var provider = SelectConfigValueProvider(context, referencePath);
+            var (provider, newPath) = SelectConfigValueProvider(context, referencePath);
             if (provider is null)
             {
                 _logger.LogWarning(WithContext(context, "could not resolve any ValueProvider"));
                 return (resultType, intermediateResult);
             }
+
+            // removes $stuff from the beginning of referencePath, if a suitable provider could be found
+            referencePath = newPath;
 
             var rangeTracer = context.Tracer.AddPathResolution(referencePath);
 
@@ -423,9 +427,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             });
         }
 
-        private IConfigValueProvider SelectConfigValueProvider(KeyResolveContext context, string path)
+        private (IConfigValueProvider, string) SelectConfigValueProvider(KeyResolveContext context, string path)
         {
+            // will be set once a valid provider is found
             IConfigValueProvider provider = null;
+            var modifiedPath = path;
 
             var providerTypeAssociations = new Dictionary<string, ConfigValueProviderType>
             {
@@ -440,10 +446,16 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             foreach (var (typeHandle, type) in providerTypeAssociations)
                 // if we need a specific provider but it isn't registered for this key => that's a problem
                 if (path.StartsWith(typeHandle, StringComparison.OrdinalIgnoreCase))
-                    if (!_valueProviders.TryGetValue(type, out provider))
+                    if (_valueProviders.TryGetValue(type, out provider))
+                    {
+                        // remove $stuff/ from the beginning of path
+                        modifiedPath = path.Substring(typeHandle.Length)
+                                           .TrimStart('/');
+                    }
+                    else
                     {
                         _logger.LogWarning(WithContext(context, $"no provider registered for type '{type}'"));
-                        return null;
+                        return (null, null);
                     }
 
             // if no fallbackprovider can be resolved it's another - more serious - problem
@@ -451,10 +463,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 if (!_valueProviders.TryGetValue(fallbackProviderType, out provider))
                 {
                     _logger.LogWarning(WithContext(context, "no default-provider found"));
-                    return null;
+                    return (null, null);
                 }
 
-            return provider;
+            return (provider, modifiedPath);
         }
 
         private void UpdateContextAliases(KeyResolveContext context, ReferencePart reference)
