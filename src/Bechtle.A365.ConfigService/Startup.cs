@@ -353,10 +353,14 @@ namespace Bechtle.A365.ConfigService
 
         private void RegisterOptions(IServiceCollection services)
         {
+            // misc stuff
             services.Configure<KestrelAuthenticationConfiguration>(Configuration.GetSection("Authentication:Kestrel"));
             services.Configure<EventBusConnectionConfiguration>(Configuration.GetSection("EventBusConnection"));
             services.Configure<ProtectedConfiguration>(Configuration.GetSection("Protection"));
             services.Configure<EventStoreConnectionConfiguration>(Configuration.GetSection("EventStoreConnection"));
+
+            // secret-stores
+            services.Configure<ConfiguredSecretStoreConfiguration>(Configuration.GetSection("SecretConfiguration:Stores:Configuration"));
         }
 
         private void RegisterPostgresSnapshotStore(IConfigurationSection section, IServiceCollection services)
@@ -460,7 +464,7 @@ namespace Bechtle.A365.ConfigService
         }
 
         private void RegisterConfiguredSecretStore(IConfigurationSection section, IServiceCollection services)
-            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>(p => new ConfiguredSecretStore(section));
+            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>();
 
         private void RegisterSwagger(IServiceCollection services)
         {

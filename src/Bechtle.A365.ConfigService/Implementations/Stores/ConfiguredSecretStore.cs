@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
+using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
@@ -13,23 +14,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public class ConfiguredSecretStore : DictionaryValueProvider, ISecretConfigValueProvider
     {
         /// <inheritdoc cref="ConfiguredSecretStore" />
-        public ConfiguredSecretStore(IConfigurationSection configuration)
-            : base(ParseSecretConfiguration(configuration), "Configured-Secrets")
+        public ConfiguredSecretStore(IOptions<ConfiguredSecretStoreConfiguration> configuration)
+            : base(configuration.Value.Secrets, "Configured-Secrets")
         {
-        }
-
-        private static Dictionary<string, string> ParseSecretConfiguration(IConfigurationSection configuration)
-        {
-            var secretSection = "Secrets";
-
-            var pathIndex = (configuration.Path + ":" + secretSection).Length;
-
-            return configuration.GetSection(secretSection)
-                                .AsEnumerable()
-                                .ToDictionary(kvp => kvp.Key
-                                                        .Substring(pathIndex)
-                                                        .TrimStart(':'),
-                                              kvp => kvp.Value);
         }
 
         /// <inheritdoc />
