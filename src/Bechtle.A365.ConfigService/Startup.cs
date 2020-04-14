@@ -449,7 +449,7 @@ namespace Bechtle.A365.ConfigService
             if (selectedStores.Count == 0)
             {
                 _logger.LogWarning($"no actual secret-stores have been registered, using {nameof(MemorySnapshotStore)} as fallback");
-                services.AddScoped<ISnapshotStore, MemorySnapshotStore>(_logger);
+                services.AddScoped<ISecretConfigValueProvider, VoidSecretStore>(_logger);
                 return;
             }
 
