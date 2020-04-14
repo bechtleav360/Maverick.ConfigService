@@ -425,10 +425,7 @@ namespace Bechtle.A365.ConfigService
             var storeRegistrations = new (string Section, Action<IConfigurationSection, IServiceCollection> RegistryFunc)[]
             {
                 ("Configuration", RegisterConfiguredSecretStore),
-                ("Azure", RegisterAzureSecretStore),
-                /*("Vault", ),
-                ("Hook", ),
-                ("EnvVars", ),*/
+                ("Azure", RegisterAzureSecretStore)
             };
 
             _logger.LogInformation($"looking for an enabled SecretStore ({storeBaseSection}:{{Store}}:[Enabled]) " +
