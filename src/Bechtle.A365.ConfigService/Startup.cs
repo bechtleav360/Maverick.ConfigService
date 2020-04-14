@@ -462,10 +462,10 @@ namespace Bechtle.A365.ConfigService
         }
 
         private void RegisterAzureSecretStore(IConfigurationSection section, IServiceCollection services)
-            => services.AddScoped<ISecretConfigValueProvider, AzureSecretStore>();
+            => services.AddScoped<ISecretConfigValueProvider, AzureSecretStore>(_logger);
 
         private void RegisterConfiguredSecretStore(IConfigurationSection section, IServiceCollection services)
-            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>();
+            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>(_logger);
 
         private void RegisterSwagger(IServiceCollection services)
         {
