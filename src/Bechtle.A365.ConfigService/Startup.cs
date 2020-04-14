@@ -209,6 +209,12 @@ namespace Bechtle.A365.ConfigService
             }
         }
 
+        private void RegisterAzureSecretStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISecretConfigValueProvider, AzureSecretStore>(_logger);
+
+        private void RegisterConfiguredSecretStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>(_logger);
+
         private void RegisterDbContextSnapshotStore<TStore, TContext>(IServiceCollection services,
                                                                       Action<IServiceProvider, DbContextOptionsBuilder> optionsAction)
             where TStore : class, ISnapshotStore
@@ -369,6 +375,50 @@ namespace Bechtle.A365.ConfigService
                 services,
                 (provider, builder) => builder.UseNpgsql(section.GetSection("ConnectionString").Get<string>(), ConfigureDbContext));
 
+        private void RegisterSecretStores(IServiceCollection services)
+        {
+            var storeBaseSection = "SecretConfiguration:Stores";
+
+            // define section => func that will be evaluated in order
+            var storeRegistrations = new (string Section, Action<IConfigurationSection, IServiceCollection> RegistryFunc)[]
+            {
+                ("Configuration", RegisterConfiguredSecretStore),
+                ("Azure", RegisterAzureSecretStore)
+            };
+
+            _logger.LogInformation($"looking for an enabled SecretStore ({storeBaseSection}:{{Store}}:[Enabled]) " +
+                                   $"in this order ({string.Join(", ", storeRegistrations.Select(t => $"{t.Section}"))})");
+
+            // look for all enabled stores, and collect some metadata
+            var selectedStores = storeRegistrations.Select(t =>
+                                                   {
+                                                       var (section, registryFunc) = t;
+
+                                                       var storeSection = Configuration.GetSection($"{storeBaseSection}:{section}");
+                                                       return (SectionName: section,
+                                                                  RegistryFunc: registryFunc,
+                                                                  Section: storeSection,
+                                                                  Enabled: storeSection.GetSection("Enabled")
+                                                                                       .Get<bool>());
+                                                   })
+                                                   .Where(t => t.Enabled)
+                                                   .ToList();
+
+            if (selectedStores.Count == 0)
+            {
+                _logger.LogWarning($"no actual secret-stores have been registered, using {nameof(MemorySnapshotStore)} as fallback");
+                services.AddScoped<ISecretConfigValueProvider, VoidSecretStore>(_logger);
+                return;
+            }
+
+            if (selectedStores.Count > 1)
+                _logger.LogError("multiple stores have been enabled (" +
+                                 string.Join(", ", selectedStores.Select(t => t.SectionName)) +
+                                 $"), but only one will be registered ({selectedStores.First().SectionName})");
+
+            selectedStores[0].RegistryFunc?.Invoke(selectedStores[0].Section, services);
+        }
+
         private void RegisterSnapshotStores(IServiceCollection services)
         {
             var storeBaseSection = "SnapshotConfiguration:Stores";
@@ -416,56 +466,6 @@ namespace Bechtle.A365.ConfigService
 
             selectedStores[0].RegistryFunc?.Invoke(selectedStores[0].Section, services);
         }
-
-        private void RegisterSecretStores(IServiceCollection services)
-        {
-            var storeBaseSection = "SecretConfiguration:Stores";
-
-            // define section => func that will be evaluated in order
-            var storeRegistrations = new (string Section, Action<IConfigurationSection, IServiceCollection> RegistryFunc)[]
-            {
-                ("Configuration", RegisterConfiguredSecretStore),
-                ("Azure", RegisterAzureSecretStore)
-            };
-
-            _logger.LogInformation($"looking for an enabled SecretStore ({storeBaseSection}:{{Store}}:[Enabled]) " +
-                                   $"in this order ({string.Join(", ", storeRegistrations.Select(t => $"{t.Section}"))})");
-
-            // look for all enabled stores, and collect some metadata
-            var selectedStores = storeRegistrations.Select(t =>
-                                                   {
-                                                       var (section, registryFunc) = t;
-
-                                                       var storeSection = Configuration.GetSection($"{storeBaseSection}:{section}");
-                                                       return (SectionName: section,
-                                                                  RegistryFunc: registryFunc,
-                                                                  Section: storeSection,
-                                                                  Enabled: storeSection.GetSection("Enabled")
-                                                                                       .Get<bool>());
-                                                   })
-                                                   .Where(t => t.Enabled)
-                                                   .ToList();
-
-            if (selectedStores.Count == 0)
-            {
-                _logger.LogWarning($"no actual secret-stores have been registered, using {nameof(MemorySnapshotStore)} as fallback");
-                services.AddScoped<ISecretConfigValueProvider, VoidSecretStore>(_logger);
-                return;
-            }
-
-            if (selectedStores.Count > 1)
-                _logger.LogError("multiple stores have been enabled (" +
-                                 string.Join(", ", selectedStores.Select(t => t.SectionName)) +
-                                 $"), but only one will be registered ({selectedStores.First().SectionName})");
-
-            selectedStores[0].RegistryFunc?.Invoke(selectedStores[0].Section, services);
-        }
-
-        private void RegisterAzureSecretStore(IConfigurationSection section, IServiceCollection services)
-            => services.AddScoped<ISecretConfigValueProvider, AzureSecretStore>(_logger);
-
-        private void RegisterConfiguredSecretStore(IConfigurationSection section, IServiceCollection services)
-            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>(_logger);
 
         private void RegisterSwagger(IServiceCollection services)
         {
