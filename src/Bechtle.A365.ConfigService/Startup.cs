@@ -361,6 +361,7 @@ namespace Bechtle.A365.ConfigService
 
             // secret-stores
             services.Configure<ConfiguredSecretStoreConfiguration>(Configuration.GetSection("SecretConfiguration:Stores:Configuration"));
+            services.Configure<AzureSecretStoreConfiguration>(Configuration.GetSection("SecretConfiguration:Stores:Azure"));
         }
 
         private void RegisterPostgresSnapshotStore(IConfigurationSection section, IServiceCollection services)
@@ -424,8 +425,8 @@ namespace Bechtle.A365.ConfigService
             var storeRegistrations = new (string Section, Action<IConfigurationSection, IServiceCollection> RegistryFunc)[]
             {
                 ("Configuration", RegisterConfiguredSecretStore),
-                /*("Azure", ),
-                ("Vault", ),
+                ("Azure", RegisterAzureSecretStore),
+                /*("Vault", ),
                 ("Hook", ),
                 ("EnvVars", ),*/
             };
@@ -462,6 +463,9 @@ namespace Bechtle.A365.ConfigService
 
             selectedStores[0].RegistryFunc?.Invoke(selectedStores[0].Section, services);
         }
+
+        private void RegisterAzureSecretStore(IConfigurationSection section, IServiceCollection services)
+            => services.AddScoped<ISecretConfigValueProvider, AzureSecretStore>();
 
         private void RegisterConfiguredSecretStore(IConfigurationSection section, IServiceCollection services)
             => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>();
