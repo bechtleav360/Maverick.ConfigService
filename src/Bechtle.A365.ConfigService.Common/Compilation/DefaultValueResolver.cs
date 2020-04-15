@@ -227,10 +227,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         {
             var currentResolvedPath = path;
 
-            var aliasResolved = false;
+            bool aliasResolved;
             do
             {
-                // @TODO: add hard-coded $this alias that resolves to ($path/$value => $path)
+                aliasResolved = false;
+
                 // replace all $alias with their collected replacements
                 // do until we don't find any more replacements
                 foreach (var (aliasName, @using) in context.Aliases)
@@ -310,11 +311,13 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var result = await resolveValueTask;
                 if (!result.IsError)
                     successAction?.Invoke(result.Data);
+                else
+                {
+                    context.Tracer.AddError(result.Message);
+                    _logger.LogWarning(WithContext(context, $"could not resolve values: ({result.Code:G}) {result.Message}"));
 
-                context.Tracer.AddError($"could not resolve path '{context.BasePath}' ({result.Message})");
-                _logger.LogWarning(WithContext(context, $"could not resolve values: ({result.Code:G}) {result.Message}"));
-
-                fallbackAction?.Invoke();
+                    fallbackAction?.Invoke();
+                }
             }
 
             var resultType = ReferenceEvaluationType.None;
@@ -361,6 +364,29 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                            FallbackAction);
 
                 resultType = ReferenceEvaluationType.ResolvedDirectReference;
+            }
+
+            // replace $this while we still know what its supposed to represent
+            // once we leave this stack-frame, we lose the correct context of $this
+            foreach (var key in intermediateResult.Keys.ToArray())
+            {
+                if (!intermediateResult[key].Contains("$this", StringComparison.OrdinalIgnoreCase)) 
+                    continue;
+
+                var oldValue = intermediateResult[key];
+                string newValue;
+                if (referencePath.Contains('/', StringComparison.OrdinalIgnoreCase))
+                {
+                    newValue = oldValue.Replace("$this", referencePath.Substring(0, referencePath.LastIndexOf('/')));
+                }
+                else
+                {
+                    _logger.LogDebug(WithContext(context, "'$this' alias used in key without parent paths"));
+                    context.Tracer.AddWarning("'$this' alias used in key without parent paths");
+                    newValue = oldValue.Replace("$this", "", StringComparison.OrdinalIgnoreCase);
+                }
+
+                intermediateResult[key] = newValue;
             }
 
             foreach (var (nextKey, nextValue) in intermediateResult)
