@@ -204,7 +204,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         paths.Select(p => new DtoConfigKeyCompletion
                              {
                                  HasChildren = p.Children.Any(),
-                                 FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                                 FullPath = p.FullPath,
                                  Completion = p.Path
                              })
                              .OrderBy(p => p.Completion)

@@ -171,7 +171,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         }
 
         [Fact]
-        public void GenerateCorrectKeyPaths()
+        public void GenerateCorrectKeyPathsSimple()
         {
             var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
 
@@ -186,7 +186,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             var paths = item.KeyPaths;
 
-            Assert.True(paths.Count == 3, "paths.Count == 3");
             Assert.Contains(paths, p => p.FullPath == "Foo");
             Assert.Contains(paths, p => p.FullPath == "Jar/");
             Assert.Contains(paths, p => p.FullPath == "Guy/");
@@ -199,6 +198,32 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.Contains(guy.Children, p => p.FullPath == "Guy/0001");
             Assert.Contains(guy.Children, p => p.FullPath == "Guy/0002");
             Assert.Contains(guy.Children, p => p.FullPath == "Guy/0003");
+        }
+
+        [Fact]
+        public void GenerateCorrectKeyPathsNestedObject()
+        {
+            static T AssertAndGet<T>(ICollection<T> enumerable, Func<T, bool> predicate)
+            {
+                Assert.Contains(enumerable, i => predicate(i));
+                return enumerable.First(predicate);
+            }
+
+            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
+
+            item.ImportKeys(new[]
+            {
+                new ConfigEnvironmentKey("A/B/C", "1", "", "", 1),
+                new ConfigEnvironmentKey("A/B/D/E", "2", "", "", 1),
+                new ConfigEnvironmentKey("A/B/D/F", "3", "", "", 1),
+            });
+
+            var a = AssertAndGet(item.KeyPaths, p => p.Path == "A");
+            var b = AssertAndGet(a?.Children, p => p.FullPath == "A/B/" && p.Path == "B");
+            var c = AssertAndGet(b?.Children, p => p.FullPath == "A/B/C" && p.Path == "C");
+            var d = AssertAndGet(b?.Children, p => p.FullPath == "A/B/D/" && p.Path == "D");
+            var e = AssertAndGet(d?.Children, p => p.FullPath == "A/B/D/E" && p.Path == "E");
+            var f = AssertAndGet(d?.Children, p => p.FullPath == "A/B/D/F" && p.Path == "F");
         }
 
         [Fact]
