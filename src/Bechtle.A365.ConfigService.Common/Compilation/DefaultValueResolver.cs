@@ -490,12 +490,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     }
 
             // if no fallbackprovider can be resolved it's another - more serious - problem
-            if (provider is null)
-                if (!_valueProviders.TryGetValue(fallbackProviderType, out provider))
-                {
-                    _logger.LogWarning(WithContext(context, "no default-provider found"));
-                    return (null, null);
-                }
+            if (provider is null && !_valueProviders.TryGetValue(fallbackProviderType, out provider))
+            {
+                _logger.LogError(WithContext(context, "no default-provider found"));
+                return (null, null);
+            }
 
             return (provider, modifiedPath);
         }
