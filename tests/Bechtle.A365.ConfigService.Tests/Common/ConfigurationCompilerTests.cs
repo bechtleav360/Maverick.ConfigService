@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Bechtle.A365.ConfigService.Common.Compilation;
-using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Parsing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -51,6 +50,15 @@ namespace Bechtle.A365.ConfigService.Tests.Common
             var compiled = compileFunc?.Invoke(compiler, parser, env, structure) ?? compiler.Compile(env, structure, parser);
 
             assertions(compiled);
+        }
+
+        private class TestSecretProvider : DictionaryValueProvider, ISecretConfigValueProvider
+        {
+            /// <inheritdoc />
+            public TestSecretProvider(IDictionary<string, string> repository)
+                : base(repository, "Test-Secrets")
+            {
+            }
         }
 
         /// <summary>
@@ -166,10 +174,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                 {
                     CompilationResult r = null;
 
-                    var thread = new Thread(() =>
-                    {
-                        r = compiler.Compile(env, structure, parser);
-                    });
+                    var thread = new Thread(() => { r = compiler.Compile(env, structure, parser); });
 
                     thread.Start();
 
@@ -240,6 +245,22 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                 });
 
         /// <summary>
+        ///     check if $secret paths will be taken from the configured SecretStore
+        /// </summary>
+        [Fact]
+        public void CompileSecrets() => CheckCompilationResult(
+            new Dictionary<string, string>(),
+            new Dictionary<string, string> {{"Foo", "{{$secret/Bar}}"}},
+            new Dictionary<string, string>(),
+            new Dictionary<string, string> {{"Bar", "Secret"}},
+            result =>
+            {
+                var compiled = result.CompiledConfiguration;
+
+                Assert.Equal("Secret", compiled["Foo"]);
+            });
+
+        /// <summary>
         ///     resolve a simple reference to env
         /// </summary>
         [Fact]
@@ -303,6 +324,40 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     Assert.NotEmpty(compiled);
                     Assert.Equal("SV", compiled["S"]);
                 });
+
+        /// <summary>
+        ///     check if $this paths point to the correct parent-path at top-level
+        /// </summary>
+        [Fact]
+        public void DereferenceThis()
+            => CheckCompilationResult(
+                new Dictionary<string, string>
+                {
+                    {"A", "{{$this/B}}"},
+                    {"B", "true"}
+                },
+                new Dictionary<string, string> {{"A", "{{A}}"}},
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                result => Assert.Equal("true", result.CompiledConfiguration["A"]));
+
+        /// <summary>
+        ///     check if $this paths point to the correct parent-path at sub-levels
+        /// </summary>
+        [Fact]
+        public void DereferenceThisIndirect()
+            => CheckCompilationResult(
+                new Dictionary<string, string>
+                {
+                    {"A/B/C", "{{$this/D}}"},
+                    {"A/B/D", "true"},
+                    {"A/D", "false"},
+                    {"D", "false"}
+                },
+                new Dictionary<string, string> {{"A", "{{A/B/C}}"}},
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                result => Assert.Equal("true", result.CompiledConfiguration["A"]));
 
         /// <summary>
         ///     references to null will be replaced empty string for safety
@@ -400,64 +455,5 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     Assert.Null(compiled["A/Second"]);
                     Assert.Equal(string.Empty, compiled["B"]);
                 });
-
-        /// <summary>
-        ///     check if $secret paths will be taken from the configured SecretStore
-        /// </summary>
-        [Fact]
-        public void CompileSecrets() => CheckCompilationResult(
-            new Dictionary<string, string>(),
-            new Dictionary<string, string> {{"Foo", "{{$secret/Bar}}"}},
-            new Dictionary<string, string>(),
-            new Dictionary<string, string> {{"Bar", "Secret"}},
-            result =>
-            {
-                var compiled = result.CompiledConfiguration;
-
-                Assert.Equal("Secret", compiled["Foo"]);
-            });
-
-        /// <summary>
-        ///     check if $this paths point to the correct parent-path at top-level
-        /// </summary>
-        [Fact]
-        public void DereferenceThis()
-            => CheckCompilationResult(
-                new Dictionary<string, string>
-                {
-                    {"A", "{{$this/B}}"},
-                    {"B", "true"}
-                },
-                new Dictionary<string, string> { { "A", "{{A}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
-                result => Assert.Equal("true", result.CompiledConfiguration["A"]));
-
-        /// <summary>
-        ///     check if $this paths point to the correct parent-path at sub-levels
-        /// </summary>
-        [Fact]
-        public void DereferenceThisIndirect()
-            => CheckCompilationResult(
-                new Dictionary<string, string>
-                {
-                    {"A/B/C", "{{$this/D}}"},
-                    {"A/B/D", "true"},
-                    {"A/D", "false"},
-                    {"D", "false"},
-                },
-                new Dictionary<string, string> {{"A", "{{A/B/C}}"}},
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
-                result => Assert.Equal("true", result.CompiledConfiguration["A"]));
-
-        private class TestSecretProvider : DictionaryValueProvider, ISecretConfigValueProvider
-        {
-            /// <inheritdoc />
-            public TestSecretProvider(IDictionary<string, string> repository)
-                : base(repository, "Test-Secrets")
-            {
-            }
-        }
     }
 }

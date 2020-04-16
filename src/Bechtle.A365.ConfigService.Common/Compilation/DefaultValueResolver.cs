@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Compilation.Introspection;
@@ -310,7 +309,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             {
                 var result = await resolveValueTask;
                 if (!result.IsError)
+                {
                     successAction?.Invoke(result.Data);
+                }
                 else
                 {
                     context.Tracer.AddError(result.Message);
