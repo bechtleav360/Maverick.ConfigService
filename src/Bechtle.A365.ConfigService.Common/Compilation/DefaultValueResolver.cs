@@ -370,7 +370,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             // once we leave this stack-frame, we lose the correct context of $this
             foreach (var key in intermediateResult.Keys.ToArray())
             {
-                if (!intermediateResult[key].Contains("$this", StringComparison.OrdinalIgnoreCase)) 
+                // skip for null values, or where $this can't be found
+                if (intermediateResult[key]?.Contains("$this", StringComparison.OrdinalIgnoreCase) != true)
                     continue;
 
                 var oldValue = intermediateResult[key];
@@ -383,7 +384,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 {
                     _logger.LogDebug(WithContext(context, "'$this' alias used in key without parent paths"));
                     context.Tracer.AddWarning("'$this' alias used in key without parent paths");
-                    newValue = oldValue.Replace("$this", "", StringComparison.OrdinalIgnoreCase);
+
+                    // in case of paths like "$this/Foo" which would end up as "/Foo"
+                    newValue = oldValue.Replace("$this/", "", StringComparison.OrdinalIgnoreCase)
+                                       .Replace("$this", "", StringComparison.OrdinalIgnoreCase);
                 }
 
                 intermediateResult[key] = newValue;

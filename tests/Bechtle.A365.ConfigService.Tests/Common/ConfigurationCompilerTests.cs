@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
             IDictionary<string, string> structVars,
             IDictionary<string, string> secrets,
             Action<CompilationResult> assertions,
-            Func<EnvironmentCompilationInfo, StructureCompilationInfo, CompilationResult> compileFunc = null,
+            Func<IConfigurationCompiler, IConfigurationParser, EnvironmentCompilationInfo, StructureCompilationInfo, CompilationResult> compileFunc = null,
             [CallerMemberName] string testName = null)
         {
             var provider = new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                 Name = $"{testName}-Structure"
             };
 
-            var compiled = compileFunc?.Invoke(env, structure) ?? compiler.Compile(env, structure, parser);
+            var compiled = compileFunc?.Invoke(compiler, parser, env, structure) ?? compiler.Compile(env, structure, parser);
 
             assertions(compiled);
         }
@@ -162,11 +162,14 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     Assert.NotEmpty(compiled);
                     Assert.Equal("", compiled["A"]);
                 },
-                (env, structure) =>
+                (compiler, parser, env, structure) =>
                 {
                     CompilationResult r = null;
 
-                    var thread = new Thread(() => { /*r = compiler.Compile(env, structure, parser);*/ });
+                    var thread = new Thread(() =>
+                    {
+                        r = compiler.Compile(env, structure, parser);
+                    });
 
                     thread.Start();
 
@@ -398,6 +401,9 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     Assert.Equal(string.Empty, compiled["B"]);
                 });
 
+        /// <summary>
+        ///     check if $secret paths will be taken from the configured SecretStore
+        /// </summary>
         [Fact]
         public void CompileSecrets() => CheckCompilationResult(
             new Dictionary<string, string>(),
@@ -410,6 +416,40 @@ namespace Bechtle.A365.ConfigService.Tests.Common
 
                 Assert.Equal("Secret", compiled["Foo"]);
             });
+
+        /// <summary>
+        ///     check if $this paths point to the correct parent-path at top-level
+        /// </summary>
+        [Fact]
+        public void DereferenceThis()
+            => CheckCompilationResult(
+                new Dictionary<string, string>
+                {
+                    {"A", "{{$this/B}}"},
+                    {"B", "true"}
+                },
+                new Dictionary<string, string> { { "A", "{{A}}" } },
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                result => Assert.Equal("true", result.CompiledConfiguration["A"]));
+
+        /// <summary>
+        ///     check if $this paths point to the correct parent-path at sub-levels
+        /// </summary>
+        [Fact]
+        public void DereferenceThisIndirect()
+            => CheckCompilationResult(
+                new Dictionary<string, string>
+                {
+                    {"A/B/C", "{{$this/D}}"},
+                    {"A/B/D", "true"},
+                    {"A/D", "false"},
+                    {"D", "false"},
+                },
+                new Dictionary<string, string> {{"A", "{{A/B/C}}"}},
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                result => Assert.Equal("true", result.CompiledConfiguration["A"]));
 
         private class TestSecretProvider : DictionaryValueProvider, ISecretConfigValueProvider
         {
