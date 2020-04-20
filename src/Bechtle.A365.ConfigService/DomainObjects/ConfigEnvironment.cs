@@ -160,7 +160,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     get the values of <see cref="Keys" /> as a simple <see cref="Dictionary{String,String}" />
         /// </summary>
         /// <returns></returns>
-        public IDictionary<string, string> GetKeysAsDictionary() => Keys.Values.ToDictionary(e => e.Key, e => e.Value);
+        public IDictionary<string, string> GetKeysAsDictionary() => Keys.Values.ToDictionary(e => e.Key, e => e.Value, StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         ///     overwrite all existing keys with the ones in <paramref name="keysToImport" />
@@ -174,7 +174,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
             try
             {
-                var newKeys = keysToImport.ToDictionary(k => k.Key, k => k);
+                var newKeys = keysToImport.ToDictionary(k => k.Key, k => k, StringComparer.OrdinalIgnoreCase);
 
                 Created = true;
                 Keys = newKeys;

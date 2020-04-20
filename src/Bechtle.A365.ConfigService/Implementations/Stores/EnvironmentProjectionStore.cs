@@ -567,7 +567,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 {
                     _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
                     return Result.Success((IDictionary<string, string>) keys.ToDictionary(kvp => kvp.Key.Substring(root.Length),
-                                                                                          kvp => kvp.Value));
+                                                                                          kvp => kvp.Value,
+                                                                                          StringComparer.OrdinalIgnoreCase));
                 }
 
                 _logger.LogDebug($"could not remove root '{root}' from all entries - not all items share same root");
