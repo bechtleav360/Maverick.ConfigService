@@ -508,6 +508,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 var environment = envResult.Data;
 
+                if (!environment.Created)
+                    return Result.Error<TResult>($"environment '{environment.Identifier}' does not exist", ErrorCode.NotFound);
+
                 var query = environment.Keys
                                        .Values
                                        .AsQueryable();
