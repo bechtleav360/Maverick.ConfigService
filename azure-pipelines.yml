@@ -43,7 +43,7 @@ stages:
           displayName: 'build test-project'
           inputs:
             command: 'build'
-            projects: 'tests/**/*.Tests.csproj'
+            projects: 'tests/**/*.UnitTests.csproj'
             arguments: '-c $(buildConfiguration)'
 
         # execute unit tests
@@ -51,7 +51,7 @@ stages:
           displayName: 'execute unit tests via VSTest'
           inputs:
             testSelector: 'testAssemblies'
-            testAssemblyVer2: 'tests/**/bin/**/*.Tests.dll'
+            testAssemblyVer2: 'tests/**/bin/**/*.UnitTests.dll'
             searchFolder: '$(System.DefaultWorkingDirectory)'
             rerunFailedTests: true
             rerunType: basedOnTestFailurePercentage
