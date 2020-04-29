@@ -345,11 +345,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                              UtcTime = e.Event.Created.ToUniversalTime()
                          })
                          // if any streamProcessor returns false, stop streaming
-                         .Any(storedEvent =>
-                         {
-                             _logger.LogCritical($"processing event #{storedEvent.EventNumber}");
-                             return !streamProcessor(storedEvent);
-                         }))
+                         .Any(storedEvent => !streamProcessor(storedEvent)))
                     return;
 
                 currentPosition = slice.NextEventNumber;
