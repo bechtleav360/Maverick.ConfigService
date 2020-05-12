@@ -85,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         /// <inheritdoc />
         public Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
-                                         int readSize = 64,
+                                         int readSize = 128,
                                          StreamDirection direction = StreamDirection.Forwards,
                                          long startIndex = -1)
             => ReplayEventsAsStream(null, streamProcessor, readSize, direction, startIndex);
@@ -93,7 +93,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool> streamFilter,
                                                Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
-                                               int readSize = 64,
+                                               int readSize = 128,
                                                StreamDirection direction = StreamDirection.Forwards,
                                                long startIndex = -1)
         {
@@ -212,7 +212,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                                                 .PerformOnAnyNode()
                                                                                 .PreferRandomNode()
                                                                                 .KeepReconnecting()
-                                                                                .LimitRetriesForOperationTo(6)
+                                                                                .LimitRetriesForOperationTo(10)
+                                                                                .LimitConcurrentOperationsTo(1)
+                                                                                .SetOperationTimeoutTo(TimeSpan.FromSeconds(30))
+                                                                                .SetReconnectionDelayTo(TimeSpan.FromSeconds(1))
+                                                                                .SetHeartbeatTimeout(TimeSpan.FromSeconds(30))
+                                                                                .SetHeartbeatInterval(TimeSpan.FromSeconds(60))
                                                                                 .UseCustomLogger(_eventStoreLogger),
                                                               MakeConnectionName());
                 }
@@ -302,11 +307,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // readSize must be below 4096
             // seems to cause problems with increasing number of items
             // will be limited to 128 for now
-            readSize = Math.Min(readSize, 128);
-
-            // @HACK: reads beyond 32 seem to cause connection-losses in ES
-            //        this has steadily decreased time and again there is probably some underlying issue here
-            // readSize = 1;
+            readSize = Math.Min(readSize, 256);
 
             var streamOrigin = direction == StreamDirection.Forwards
                                    ? StreamPosition.Start
