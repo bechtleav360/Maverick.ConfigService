@@ -9,6 +9,7 @@ using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
 using Bechtle.A365.Utilities.Rest.Receivers;
 using McMaster.Extensions.CommandLineUtils;
+using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
@@ -28,6 +29,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
         [Option("-u|--hide-used", "hide all keys that are used by at least one Structure", CommandOptionType.NoValue)]
         public bool HideUsedKeys { get; set; } = false;
+
+        [Option("-d|--display", "set the display-mode to either Table or Json", CommandOptionType.SingleValue)]
+        public DisplayType Display { get; set; } = DisplayType.Table;
 
         protected override bool CheckParameters()
         {
@@ -82,39 +86,49 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                     return 1;
                 }
 
-                Output.WriteTable(environments.OrderBy(e => e.Key)
-                                              .Where(e => !e.Structures.Any() || !HideUsedKeys),
-                                  e => new Dictionary<string, object>
-                                  {
-                                      {"Key", e.Key},
-                                      {"Structures (Count)", e.Structures.Count},
-                                      {"Value (Length)", $"{e.Value?.Length.ToString() ?? "null"}"}
-                                  },
-                                  new Dictionary<string, TextAlign>
-                                  {
-                                      {"Key", TextAlign.Left},
-                                      {"Structures (Count)", TextAlign.Center},
-                                      {"Value (Length)", TextAlign.Right}
-                                  });
+                var results = environments.OrderBy(e => e.Key)
+                                          .Where(e => !e.Structures.Any() || !HideUsedKeys)
+                                          .ToList();
 
-                if (request.HttpResponseMessage.Headers.TryGetValues("x-omitted-configs", out var headerValues)
-                    && headerValues.First() is string headerValue)
+                if (Display == DisplayType.Table)
                 {
-                    var omittedConfigs = headerValue.Split(";");
+                    Output.WriteTable(results,
+                                      e => new Dictionary<string, object>
+                                      {
+                                          {"Key", e.Key},
+                                          {"Structures (Count)", e.Structures.Count},
+                                          {"Value (Length)", $"{e.Value?.Length.ToString() ?? "null"}"}
+                                      },
+                                      new Dictionary<string, TextAlign>
+                                      {
+                                          {"Key", TextAlign.Left},
+                                          {"Structures (Count)", TextAlign.Center},
+                                          {"Value (Length)", TextAlign.Right}
+                                      });
 
-                    Output.WriteTable(omittedConfigs.Select(oc =>
+                    if (request.HttpResponseMessage.Headers.TryGetValues("x-omitted-configs", out var headerValues)
+                        && headerValues.First() is string headerValue)
                     {
-                        var s = oc.Split("/", 2);
-                        return new {Category = s[0], Name = s[1]};
-                    }), o => new Dictionary<string, object>
-                    {
-                        {"Category", o.Category},
-                        {"Name", o.Name},
-                    }, new Dictionary<string, TextAlign>
-                    {
-                        {"Category", TextAlign.Left},
-                        {"Name", TextAlign.Left},
-                    });
+                        var omittedConfigs = headerValue.Split(";");
+
+                        Output.WriteTable(omittedConfigs.Select(oc =>
+                        {
+                            var s = oc.Split("/", 2);
+                            return new {Category = s[0], Name = s[1]};
+                        }), o => new Dictionary<string, object>
+                        {
+                            {"Category", o.Category},
+                            {"Name", o.Name},
+                        }, new Dictionary<string, TextAlign>
+                        {
+                            {"Category", TextAlign.Left},
+                            {"Name", TextAlign.Left},
+                        });
+                    }
+                }
+                else
+                {
+                    Output.Write(JsonConvert.SerializeObject(results.Select(e => e.Key)));
                 }
 
                 return 0;
@@ -149,6 +163,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             ///     Current Value
             /// </summary>
             public string Value { get; set; } = string.Empty;
+        }
+
+        public enum DisplayType
+        {
+            Table,
+            Json
         }
     }
 }
