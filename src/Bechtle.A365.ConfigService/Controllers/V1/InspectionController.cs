@@ -115,10 +115,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (configResult.IsError)
                 return ProviderError(configResult);
 
-            return Result(await AnnotateEnvironmentKeys(envKeys,
-                                                        configResult.Data
-                                                                    .GroupBy(c => c.Structure.Name)
-                                                                    .Select(g => g.OrderByDescending(c => c.Structure.Version).First())));
+            var selectedConfigs = configResult.Data
+                                              .GroupBy(configId => configId.Structure.Name)
+                                              .Select(group => group.OrderByDescending(c => c.Structure.Version)
+                                                                    .First());
+
+            var annotatedEnvKeys = await AnnotateEnvironmentKeys(envKeys, selectedConfigs);
+
+            if (annotatedEnvKeys.IsError)
+                return ProviderError(annotatedEnvKeys);
+
+            return Ok(annotatedEnvKeys.Data.OrderBy(k => k.Key));
         }
 
         /// <summary>
