@@ -376,9 +376,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var results = tasks.Select(t => (t.ConfigId, t.Task.Result)).ToList();
             var errors = results.Where(r => r.Result.IsError).ToList();
+            var successes = results.Where(r => !r.Result.IsError).ToList();
 
-            if (errors.Any(r => r.Result.IsError))
-                return Common.Result.Error<List<AnnotatedEnvironmentKey>>(errors.First().Result.Message, errors.First().Result.Code);
+            foreach (var (_, error) in errors)
+                Logger.LogError($"{error.Code} - {error.Message}");
 
             var annotatedEnv = new List<AnnotatedEnvironmentKey>(environment.Select(kvp => new AnnotatedEnvironmentKey
             {
@@ -388,13 +389,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             // go through each built configuration, and annotate the used Environment-Keys with their Structure-Id
             // at the end we have a list of Keys and Values, each with a list of structures that used this key
-            results.AsParallel()
-                   .ForAll(t => t.Result
-                                 .Data
-                                 .AsParallel()
-                                 .ForAll(key => annotatedEnv.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
-                                                            ?.Structures
-                                                            .Add(t.ConfigId.Structure)));
+            successes.AsParallel()
+                     .ForAll(t => t.Result
+                                   .Data
+                                   .AsParallel()
+                                   .ForAll(key => annotatedEnv.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
+                                                              ?.Structures
+                                                              .Add(t.ConfigId.Structure)));
 
             return Common.Result.Success(annotatedEnv);
         }
