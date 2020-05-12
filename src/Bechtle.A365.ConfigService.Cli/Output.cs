@@ -109,7 +109,7 @@ namespace Bechtle.A365.ConfigService.Cli
             => WriteSeparatorInternal(_console.Out, ConsoleColor.White);
 
         /// <inheritdoc />
-        public void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector)
+        public void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector, Dictionary<string, TextAlign> cellAlignments)
         {
             var columns = new List<TableColumn>();
 
@@ -119,11 +119,17 @@ namespace Bechtle.A365.ConfigService.Cli
                 var properties = propertySelector.Invoke(item);
                 foreach (var prop in properties)
                     if (columns.All(c => c.Name != prop.Key))
+                    {
+                        var alignment = TextAlign.Left;
+                        cellAlignments?.TryGetValue(prop.Key, out alignment);
+
                         columns.Add(new TableColumn
                         {
                             Name = prop.Key,
-                            Values = new List<string>()
+                            Values = new List<string>(),
+                            Alignment = alignment
                         });
+                    }
 
                 foreach (var prop in properties)
                     columns.First(c => c.Name == prop.Key)
@@ -152,10 +158,14 @@ namespace Bechtle.A365.ConfigService.Cli
             for (var i = 0; i < entries; ++i)
             {
                 foreach (var column in columns)
-                    WriteTableCell(column.Values[i], column.Width);
+                    WriteTableCell(column.Values[i], column.Width, column.Alignment);
                 WriteTableRowEnd();
             }
         }
+
+        /// <inheritdoc />
+        public void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector)
+            => WriteTable(items, propertySelector, null);
 
         /// <inheritdoc />
         public void WriteVerbose(string str, int level = 0, ConsoleColor color = ConsoleColor.White)
@@ -219,13 +229,39 @@ namespace Bechtle.A365.ConfigService.Cli
         private void WriteSeparatorInternal(TextWriter writer, ConsoleColor color)
             => WriteInternal(writer, "\r\n------------------------------------\r\n\r\n", 0, color, 0);
 
-        private void WriteTableCell(string value, int columnWidth)
+        private void WriteTableCell(string value, int columnWidth) => WriteTableCell(value, columnWidth, TextAlign.Center);
+
+        private void WriteTableCell(string value, int columnWidth, TextAlign alignment)
         {
             Write("|");
 
-            var totalPadding = Math.Max(columnWidth + 2, value.Length + 2) - value.Length;
-            var leftPadding = totalPadding / 2;
-            var rightPadding = leftPadding + totalPadding % 2;
+            int leftPadding = 0;
+            int rightPadding = 0;
+            int totalPadding = 0;
+
+            switch (alignment)
+            {
+                case TextAlign.Left:
+                    totalPadding = Math.Max(columnWidth + 2, value.Length + 2) - value.Length;
+                    leftPadding = 1;
+                    rightPadding = totalPadding;
+                    break;
+
+                case TextAlign.Center:
+                    totalPadding = Math.Max(columnWidth + 2, value.Length + 2) - value.Length;
+                    leftPadding = totalPadding / 2;
+                    rightPadding = leftPadding + totalPadding % 2;
+                    break;
+
+                case TextAlign.Right:
+                    totalPadding = Math.Max(columnWidth + 2, value.Length + 2) - value.Length;
+                    leftPadding = totalPadding;
+                    rightPadding = 1;
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(alignment), alignment, null);
+            }
 
             Write(new string(' ', leftPadding) + value + new string(' ', rightPadding));
         }
@@ -265,6 +301,11 @@ namespace Bechtle.A365.ConfigService.Cli
             ///     maximum width of this column
             /// </summary>
             public int Width => _width ??= Math.Max(Values?.Max(x => x.Length) ?? 0, Name.Length);
+
+            /// <summary>
+            ///     Text Alignment for this cell
+            /// </summary>
+            public TextAlign Alignment { get; set; }
         }
     }
 }

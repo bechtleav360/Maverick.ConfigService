@@ -35,6 +35,8 @@ namespace Bechtle.A365.ConfigService.Cli
 
         void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector);
 
+        void WriteTable<T>(IEnumerable<T> items, Func<T, Dictionary<string, object>> propertySelector, Dictionary<string, TextAlign> cellAlignments);
+
         void WriteVerbose(string str, int level = 0, ConsoleColor color = ConsoleColor.White);
 
         void WriteVerbose(Stream stream);

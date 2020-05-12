@@ -1,4 +1,5 @@
-﻿using Bechtle.A365.ConfigService.Cli.Commands;
+﻿using System;
+using Bechtle.A365.ConfigService.Cli.Commands;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,8 @@ namespace Bechtle.A365.ConfigService.Cli
                     // override how we get our ApplicationSettings to inject IConfiguration-data
                     .AddSingleton(p => p.GetService<IConfiguration>()?.Get<ApplicationSettings>() ?? new ApplicationSettings())
                     .AddSingleton<IOutput, Output>();
+
+            services.AddHttpClient<BrowseUnusedEnvironmentKeysCommand>(client => client.Timeout = TimeSpan.FromMinutes(2));
 
             return services;
         }
