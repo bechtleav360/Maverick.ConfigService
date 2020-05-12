@@ -385,8 +385,18 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var errors = results.Where(r => r.Result.IsError).ToList();
             var successes = results.Where(r => !r.Result.IsError).ToList();
 
-            foreach (var (_, error) in errors)
-                Logger.LogError($"{error.Code} - {error.Message}");
+            if (errors.Any())
+            {
+                Response.OnStarting(_ =>
+                {
+                    var joinedFailedConfigs = string.Join(";", errors.Select(e => $"{e.ConfigId.Structure.Name}/{e.ConfigId.Structure.Version}"));
+                    Response.Headers.Add("x-omitted-configs", joinedFailedConfigs);
+                    return Task.CompletedTask;
+                }, null);
+
+                foreach (var (_, error) in errors)
+                    Logger.LogError($"{error.Code} - {error.Message}");
+            }
 
             var annotatedEnv = new List<AnnotatedEnvironmentKey>(environment.Select(kvp => new AnnotatedEnvironmentKey
             {
