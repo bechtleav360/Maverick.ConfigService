@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
@@ -25,6 +25,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
         [Option("-e|--environment", Description = "Environment to export, given in \"{Category}/{Name}\" form")]
         public string[] Environments { get; set; }
+
+        [Option("-z|--structure",
+                Description = "Structure to export for, given in \"{Name}/{Version}\" form. If set, only Keys used by the given Structures will be exported.")]
+        public string[] Structures { get; set; }
 
         [Option("-o|--output", Description = "location to export data to")]
         public string OutputFile { get; set; }
@@ -63,6 +67,22 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 return false;
             }
 
+            // Structures may be null or empty - but if not, all entries need to be in correct format
+            if (Structures?.Any() == true)
+            {
+                // if environment doesn't contain '/' or contains multiple of them...
+                var errStructures = Structures.Where(s => !s.Contains('/') ||
+                                                          s.IndexOf('/') != s.LastIndexOf('/'))
+                                              .ToArray();
+
+                // ... complain about them
+                if (errStructures.Any())
+                {
+                    Output.WriteError($"given structures contain errors: {string.Join("; ", errStructures)}");
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -72,25 +92,26 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             if (!CheckParameters())
                 return 1;
 
-            var exportDefinition = new ExportDefinition
-            {
-                Environments = Environments.Select(e =>
-                                           {
-                                               var split = e.Split('/');
+            var selectedEnvironments = new List<EnvironmentExportDefinition>(Environments.Length);
 
-                                               return new EnvironmentIdentifier(split[0], split[1]);
-                                           })
-                                           .ToArray()
-            };
+            foreach (var environment in Environments)
+                try
+                {
+                    selectedEnvironments.Add(await CreateExportDefinition(environment));
+                }
+                catch (Exception e)
+                {
+                    Output.WriteError(e.Message);
+                    return 1;
+                }
+
+            var exportDefinition = new ExportDefinition {Environments = selectedEnvironments.ToArray()};
 
             var request = await RestRequest.Make(Output)
                                            .Post(new Uri(new Uri(ConfigServiceEndpoint), "v1/export"),
                                                  new StringContent(
                                                      JsonSerializer.Serialize(exportDefinition,
-                                                                              new JsonSerializerOptions
-                                                                              {
-                                                                                  WriteIndented = true
-                                                                              }),
+                                                                              new JsonSerializerOptions {WriteIndented = false}),
                                                      Encoding.UTF8,
                                                      "application/json"))
                                            .ReceiveString();
@@ -126,6 +147,52 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
         }
 
+        /// <summary>
+        ///     environment-id in {Category}/{Name} format
+        /// </summary>
+        /// <param name="environmentIdentifier"></param>
+        /// <returns></returns>
+        private async Task<EnvironmentExportDefinition> CreateExportDefinition(string environmentIdentifier)
+        {
+            var envSplit = environmentIdentifier.Split('/');
+
+            var envCategory = envSplit[0];
+            var envName = envSplit[1];
+            var selectedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (Structures?.Any() == true)
+            {
+                foreach (var structure in Structures)
+                {
+                    var structSplit = structure.Split('/');
+                    var structName = structSplit[0];
+                    var structVersion = structSplit[1];
+
+                    var request = await RestRequest.Make(Output)
+                                                   .Post(new Uri(new Uri(ConfigServiceEndpoint),
+                                                                 $"v1/inspect/structure/compile/{envCategory}/{envName}/{structName}/{structVersion}"),
+                                                         new StringContent(string.Empty, Encoding.UTF8))
+                                                   .ReceiveObject<StructureInspectionResult>()
+                                                   .ReceiveString();
+
+                    var inspectionResult = await request.Take<StructureInspectionResult>();
+
+                    if (inspectionResult is null)
+                        throw new Exception($"could not analyze used keys of '{structName}/{structVersion}' in '{envCategory}/{envName}', " +
+                                            "no data received from service");
+
+                    if (!inspectionResult.CompilationSuccessful)
+                        throw new Exception($"could not analyze used keys of '{structName}/{structVersion}' in '{envCategory}/{envName}', " +
+                                            "compilation unsuccessful");
+
+                    foreach (var usedKey in inspectionResult.UsedKeys)
+                        selectedKeys.Add(usedKey);
+                }
+            }
+
+            return new EnvironmentExportDefinition(envCategory, envName, selectedKeys.ToList());
+        }
+
         private string Reformat(string raw, ReformatKind format)
         {
             try
@@ -150,6 +217,37 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 Output.WriteError($"can't re-interpret result: {e}");
                 return raw;
             }
+        }
+
+        /// <summary>
+        ///     Details about the Compilation of a Structure with an Environment
+        /// </summary>
+        private class StructureInspectionResult
+        {
+            /// <summary>
+            ///     flag indicating if the compilation was successful or not
+            /// </summary>
+            public bool CompilationSuccessful { get; set; } = false;
+
+            /// <summary>
+            ///     resulting compiled configuration
+            /// </summary>
+            public IDictionary<string, string> CompiledConfiguration { get; set; } = new Dictionary<string, string>();
+
+            /// <summary>
+            ///     Path => Error dictionary
+            /// </summary>
+            public Dictionary<string, List<string>> Errors { get; set; } = new Dictionary<string, List<string>>();
+
+            /// <summary>
+            ///     Path => Warning dictionary
+            /// </summary>
+            public Dictionary<string, List<string>> Warnings { get; set; } = new Dictionary<string, List<string>>();
+
+            /// <summary>
+            ///     List of Environment-Keys used to compile this Configuration
+            /// </summary>
+            public List<string> UsedKeys { get; set; }
         }
     }
 }

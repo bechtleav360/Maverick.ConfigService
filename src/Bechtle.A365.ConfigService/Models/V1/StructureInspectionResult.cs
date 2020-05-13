@@ -29,5 +29,10 @@ namespace Bechtle.A365.ConfigService.Models.V1
         ///     Path => Warning dictionary
         /// </summary>
         public Dictionary<string, List<string>> Warnings { get; set; }
+
+        /// <summary>
+        ///     List of Environment-Keys used to compile this Configuration
+        /// </summary>
+        public List<string> UsedKeys { get; set; }
     }
 }
