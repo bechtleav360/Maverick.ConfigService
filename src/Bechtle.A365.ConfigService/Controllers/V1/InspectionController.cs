@@ -363,7 +363,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     StaticValuesUsed = traceList.OfType<ValueTraceResult>().Count()
                 },
                 Warnings = warnings,
-                Errors = errors
+                Errors = errors,
+                UsedKeys = compilationResult.GetUsedKeys().ToList()
             };
 
             return result;
