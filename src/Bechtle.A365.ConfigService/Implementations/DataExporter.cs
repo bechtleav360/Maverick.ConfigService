@@ -74,9 +74,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             // if the list is null or empty we will export everything
             // if some data is available, we will filter the current Env for those keys
             if (envExport.Keys is null || !envExport.Keys.Any())
-                selector = entry => envExport.Keys.Any(export => export.Equals(entry.Key, StringComparison.OrdinalIgnoreCase));
-            else
                 selector = _ => true;
+            else
+                selector = entry => envExport.Keys.Any(export => export.Equals(entry.Key, StringComparison.OrdinalIgnoreCase));
 
             return new EnvironmentExport
             {
