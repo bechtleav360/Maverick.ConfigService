@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Parsing", "src\Bechtle.A365.ConfigService.Parsing\Bechtle.A365.ConfigService.Parsing.csproj", "{2FFC115B-80A3-42C8-B77B-E65894B1A60E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.UnitTests", "tests\Bechtle.A365.ConfigService.Tests\Bechtle.A365.ConfigService.UnitTests.csproj", "{A9D007E1-AE8A-4D5F-90EC-60D70019C852}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Tests", "tests\Bechtle.A365.ConfigService.Tests\Bechtle.A365.ConfigService.Tests.csproj", "{A9D007E1-AE8A-4D5F-90EC-60D70019C852}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bechtle.A365.ConfigService.Authentication.Certificates", "src\Bechtle.A365.ConfigService.Authentication.Certificates\Bechtle.A365.ConfigService.Authentication.Certificates.csproj", "{BD232C51-1133-4A01-AAAA-F3B04F61D572}"
 EndProject
