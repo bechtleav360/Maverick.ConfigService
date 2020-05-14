@@ -4,10 +4,12 @@ namespace Bechtle.A365.ConfigService.Common.Objects
 {
     public class EnvironmentExportDefinition
     {
-        public EnvironmentExportDefinition(string category, string name)
+        public EnvironmentExportDefinition() : this(string.Empty, string.Empty, new List<string>())
         {
-            Category = category;
-            Name = name;
+        }
+
+        public EnvironmentExportDefinition(string category, string name) : this(category, name, new List<string>())
+        {
         }
 
         public EnvironmentExportDefinition(string category, string name, List<string> keys)
