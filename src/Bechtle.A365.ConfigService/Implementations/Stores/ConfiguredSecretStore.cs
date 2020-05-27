@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
@@ -15,7 +16,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     {
         /// <inheritdoc cref="ConfiguredSecretStore" />
         public ConfiguredSecretStore(IOptions<ConfiguredSecretStoreConfiguration> configuration)
-            : base(configuration.Value.Secrets, "Configured-Secrets")
+            : base(configuration.Value
+                                .Secrets
+                                .ToDictionary(kvp => NormalizePath(kvp.Key),
+                                              kvp => kvp.Value),
+                   "Configured-Secrets")
         {
         }
 
@@ -25,6 +30,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         Task<IResult<Dictionary<string, string>>> IConfigValueProvider.TryGetRange(string query) => base.TryGetRange(NormalizePath(query));
 
-        private string NormalizePath(string path) => path.Replace('/', ':');
+        private static string NormalizePath(string path) => path.Replace('/', ':');
     }
 }
