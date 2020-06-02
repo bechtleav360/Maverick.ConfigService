@@ -29,12 +29,12 @@ namespace Bechtle.A365.ConfigService.Cli
                 case LogLevel.Debug:
                 case LogLevel.Information:
                 case LogLevel.Warning:
-                    _console.WriteLine(formatter?.Invoke(state, exception));
+                    _console.WriteLine(formatter?.Invoke(state, exception) ?? string.Empty);
                     break;
 
                 case LogLevel.Error:
                 case LogLevel.Critical:
-                    _console.Error.WriteLine(formatter?.Invoke(state, exception));
+                    _console.Error.WriteLine(formatter?.Invoke(state, exception) ?? string.Empty);
                     break;
 
                 case LogLevel.None:

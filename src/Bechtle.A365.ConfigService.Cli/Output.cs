@@ -235,9 +235,9 @@ namespace Bechtle.A365.ConfigService.Cli
         {
             Write("|");
 
-            int leftPadding = 0;
-            int rightPadding = 0;
-            int totalPadding = 0;
+            int leftPadding;
+            int rightPadding;
+            int totalPadding;
 
             switch (alignment)
             {

@@ -220,6 +220,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         protected override string GetSnapshotIdentifier() => Identifier.ToString();
 
+        // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
         private void CheckCompileParameters(IDomainObjectStore store,
                                             IConfigurationCompiler compiler,
                                             IConfigurationParser parser,
@@ -230,6 +231,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (parser is null) throw new ArgumentNullException(nameof(parser));
             if (translator is null) throw new ArgumentNullException(nameof(translator));
         }
+        // ReSharper restore ParameterOnlyUsedForPreconditionCheck.Local
 
         private bool HandleConfigurationBuiltEvent(ReplayedEvent replayedEvent)
         {

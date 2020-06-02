@@ -48,7 +48,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                if (!IncrementalSnapshotQueue.TryDequeue(out var snapshot) || snapshot is null)
+                if (!IncrementalSnapshotQueue.TryDequeue(out var snapshot))
                     continue;
 
                 try

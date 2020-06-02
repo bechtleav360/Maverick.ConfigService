@@ -107,7 +107,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                       });
 
                     if (request.HttpResponseMessage.Headers.TryGetValues("x-omitted-configs", out var headerValues)
-                        && headerValues.First() is string headerValue)
+                        && headerValues.First() is { } headerValue)
                     {
                         var omittedConfigs = headerValue.Split(";");
 
