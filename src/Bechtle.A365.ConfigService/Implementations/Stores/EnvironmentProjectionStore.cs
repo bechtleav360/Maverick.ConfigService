@@ -343,6 +343,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             var environment = envResult.Data;
 
+            if (!environment.Created)
+                return Result.Error("environment does not exist", ErrorCode.NotFound);
+
             _logger.LogDebug($"transforming DTOs to '{nameof(ConfigEnvironmentKey)}'");
             var updates = keys.Select(dto => new ConfigEnvironmentKey(dto.Key, dto.Value, dto.Type, dto.Description, 0))
                               .ToList();
