@@ -27,7 +27,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         public string[] Environments { get; set; }
 
         [Option("-z|--structure",
-                Description = "Structure to export for, given in \"{Name}/{Version}\" form. If set, only Keys used by the given Structures will be exported.")]
+                Description = "Structure to export for, given in \"{Name}/{Version}\" form. " +
+                              "If set, only Keys used by the given Structures will be exported. " +
+                              "Can be given multiple times")]
         public string[] Structures { get; set; }
 
         [Option("-o|--output", Description = "location to export data to")]
