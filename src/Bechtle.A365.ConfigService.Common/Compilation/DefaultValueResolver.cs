@@ -343,11 +343,15 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 await ResolveValueInternal(provider.TryGetRange(referencePath),
                                            data =>
                                            {
+                                               var referenceBase = referencePath.TrimEnd('*').TrimEnd('/');
+
                                                foreach (var (key, value) in data)
                                                {
-                                                   var compositePath = $"{context.BasePath}/{key.TrimStart('/')}";
+                                                   var trimmedKey = key.TrimStart('/');
+                                                   var compositePath = $"{context.BasePath}/{trimmedKey}";
+
                                                    intermediateResult[compositePath] = value;
-                                                   rangeTracer.AddPathResult(compositePath, value);
+                                                   rangeTracer.AddPathResult($"{referenceBase}/{trimmedKey}", value);
                                                }
                                            },
                                            FallbackAction);
