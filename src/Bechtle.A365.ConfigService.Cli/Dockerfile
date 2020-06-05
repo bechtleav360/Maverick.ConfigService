@@ -18,6 +18,4 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
 
-RUN sed -i 's/\r$//' startup.sh && chmod +x startup.sh
-
 ENTRYPOINT ["dotnet" "Bechtle.A365.ConfigService.Cli.dll"]
