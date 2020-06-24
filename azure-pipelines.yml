@@ -5,6 +5,37 @@
 
 name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)_$(Rev:rrrr)
 
+variables:
+  - group: Docker Nuget
+  - group: Docker Maverick
+  - name: buildConfiguration
+    value: 'Release'
+  - name: buildRuntime
+    value: 'win10-x64'
+  - name: netcoreSdkVersion
+    value: '3.1.100'
+  - name: buildRevision
+    value: $[counter(format('{0}-{1}', variables['Build.Repository.Name'], variables['Build.SourceBranchName']), 1)]
+  # Helm
+  - name: chartPath
+    value: deploy
+  - name: chartName
+    value: config
+  # Service
+  - name: projectLocation
+    value: src/Bechtle.A365.ConfigService
+  - name: projectFile
+    value: Bechtle.A365.ConfigService.csproj
+  - name: containerName
+    value: configservice
+  # Cli
+  - name: projectLocationCli
+    value: src/Bechtle.A365.ConfigService.Cli
+  - name: projectFileCli
+    value: Bechtle.A365.ConfigService.Cli.csproj
+  - name: containerNameCli
+    value: configservice-cli
+
 trigger:
   branches:
     include:
@@ -22,11 +53,6 @@ resources:
 
 stages:
   - stage: Build
-    variables:
-      buildConfiguration: 'Release'
-      buildRuntime: 'win10-x64'
-      netcoreSdkVersion: '3.1.100'
-      buildRevision: $[counter(format('{0}-{1}', variables['Build.Repository.Name'], variables['Build.SourceBranchName']), 1)]
     jobs:
       - job: Application
         pool: 'A365VSTS'
@@ -38,12 +64,26 @@ stages:
             packageType: 'sdk'
             version: '$(netcoreSdkVersion)'
 
+        # build Service
+        - template: build-project.yaml@templates
+          parameters:
+            projectLocation: $(projectLocation)
+            projectFile: $(projectFile)
+
+        # build CLI
+        - template: build-project.yaml@templates
+          parameters:
+            projectLocation: $(projectLocationCli)
+            projectFile: $(projectFileCli)
+            projectName: 'Cli'
+            buildArguments: '-r $(buildRuntime)'
+
         # build test-project
         - task: DotNetCoreCLI@2
           displayName: 'build test-project'
           inputs:
             command: 'build'
-            projects: 'tests/**/*.Tests.csproj'
+            projects: '*[Tt]est?(s)/**/*.[Tt]est?(s).csproj'
             arguments: '-c $(buildConfiguration)'
 
         # execute unit tests
@@ -51,27 +91,12 @@ stages:
           displayName: 'execute unit tests via VSTest'
           inputs:
             testSelector: 'testAssemblies'
-            testAssemblyVer2: 'tests/**/bin/**/*.Tests.dll'
+            testAssemblyVer2: '[Tt]est?(s)/**/bin/**/*.[Tt]est?(s).dll'
             searchFolder: '$(System.DefaultWorkingDirectory)'
             rerunFailedTests: true
             rerunType: basedOnTestFailurePercentage
             rerunFailedThreshold: '33'
             rerunMaxAttempts: '3'
-
-        # build Service
-        - template: build-project.yaml@templates
-          parameters:
-            projectLocation: 'src/Bechtle.A365.ConfigService'
-            projectFile: 'Bechtle.A365.ConfigService.csproj'
-            projectName: 'Service'
-
-        # build CLI
-        - template: build-project.yaml@templates
-          parameters:
-            projectLocation: 'src/Bechtle.A365.ConfigService.Cli'
-            projectFile: 'Bechtle.A365.ConfigService.Cli.csproj'
-            projectName: 'Cli'
-            buildArguments: '-r $(buildRuntime)'
 
         # publish the release-binaries back to AzureDevOps
         - task: PublishBuildArtifacts@1
@@ -84,46 +109,31 @@ stages:
       - job: Docker
         pool: 'Docker'
         steps:
-        # Login to Docker-Registries
-        - task: Docker@2
-          inputs:
-            containerRegistry: 'Maverick'
-            command: 'login'
-
-        - task: Docker@2
-          inputs:
-            containerRegistry: 'MaverickLocal'
-            command: 'login'
 
         # build Service
         - template: build-project-container.yaml@templates
           parameters:
-            projectLocation: '$(Build.SourcesDirectory)/src/Bechtle.A365.ConfigService'
-            projectFile: 'Bechtle.A365.ConfigService.csproj'
-            projectName: 'Service'
-            containerName: 'maverick/configservice'
+            projectLocation: '$(Build.SourcesDirectory)/$(projectLocation)'
+            projectFile: $(projectFile)
+            containerName: '$(containerRepo)/$(containerName)'
             nugetPassword: '$(nuget_password)'
-            publicRegistry: Maverick
-            publicPrefix: 'maverick.azurecr.io/'
-            privateRegistry: MaverickLocal
-            privatePrefix: 'registry.egov.local/'
+            publicRegistry: $(publicRegistry)
+            privateRegistry: $(privateRegistry)
 
         # build Cli
         - template: build-project-container.yaml@templates
           parameters:
-            projectLocation: '$(Build.SourcesDirectory)/src/Bechtle.A365.ConfigService.Cli'
-            projectFile: 'Bechtle.A365.ConfigService.Cli.csproj'
             projectName: 'Cli'
-            containerName: 'maverick/configservice-cli'
+            projectLocation: '$(Build.SourcesDirectory)/$(projectLocationCli)'
+            projectFile: $(projectFileCli)
+            containerName: '$(containerRepo)/$(containerNameCli)'
             nugetPassword: '$(nuget_password)'
-            publicRegistry: Maverick
-            publicPrefix: 'maverick.azurecr.io/'
-            privateRegistry: MaverickLocal
-            privatePrefix: 'registry.egov.local/'
-        
+            publicRegistry: $(publicRegistry)
+            privateRegistry: $(privateRegistry)
+
         # build Helm
         - template: build-helm-chart.yaml@templates
           parameters:
-            projectFilePath: '$(Build.SourcesDirectory)/src/Bechtle.A365.ConfigService/Bechtle.A365.ConfigService.csproj'
-            chartBasePath: deploy
-            chartName: config
+            projectFilePath: '$(Build.SourcesDirectory)/$(projectLocation)/$(projectFile)'
+            chartBasePath: $(chartPath)
+            chartName: $(chartName)
