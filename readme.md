@@ -18,7 +18,7 @@ Der neue ConfigService basiert auf der Idee, dass eine Konfiguration aus Umgebun
 
 ### Struktur
 
-Eine Struktur im kontext des ConfigServices beschreibt wie Umgebungsvariablen zusammengesetzt werden um eine Funktionierende Konfiguration zu erstellen.
+Eine Struktur im Kontext des ConfigServices beschreibt wie Umgebungsvariablen zusammengesetzt werden um eine Funktionierende Konfiguration zu erstellen.
 Eine Struktur kann komplett aus festen Werten bestehen, oder aus Referenzen auf die Umgebungsvariablen, oder aus einer Mischung dieser.
 
 Eine Struktur wird dem ConfigService als `JSON` bekannt gemacht und sieht in etwa so aus:
@@ -65,11 +65,11 @@ Eine Konfiguration wird aus einer Struktur und einem Environment erstellt, und i
 
 ## Installation
 
-Durch die Zertifikat-basierte Authentifizierung ist die installation nicht so Straight-Forward wie bei vielen anderen Services.
+Durch die Zertifikat-basierte Authentifizierung ist die Installation nicht so straight-forward wie bei vielen anderen Services.
 
 Der ConfigService benötigt:
 
-1. Ein Gültiges Zertifikat
+1. Ein gültiges Zertifikat
 2. Erreichbar unter HTTPS
 3. Host (Kestrel / IIS / Azure) und ggf. andere Reverse Proxies müssen korrekt eingestellt sein
 
@@ -131,7 +131,7 @@ Wenn dies vorbereitet werden soll, kann eine neue Struktur mit `POST /structures
 
 ### Anbindung von Services
 
-Um einen Service an den neuen ConfigService2.0 anzubinden muss folgende liste befolgt werden:
+Um einen Service an den neuen ConfigService 2.0 anzubinden muss folgende liste befolgt werden:
 
 1. Der Service muss die [Client-Library](https://shdebonvtfs1.bechtle.net/DefaultCollection/A365/_git/a365.RestClient.ConfigService) referenzieren und beim Programm-Start zu seinem `IConfigurationBuilder` hinzufügen
 
@@ -207,7 +207,7 @@ Der ConfigService2.0 besteht aus zwei teilen.
 1. Service / HTTP-Rest API
 2. Projektion
 
-Der Service nimmt anfragen entgegen, validiert sie wenn möglich und schickt sie als DomainEvents an den darunterliegenden [EventStore](https://eventstore.org/).
+Der Service nimmt Anfragen entgegen, validiert sie wenn möglich und schickt sie als DomainEvents an den darunterliegenden [EventStore](https://eventstore.org/).
 
 Die Projektion bearbeitet diese DomainEvents und schreibt / löscht / ändert daten in einem öffentlichen Store - aktuell SQLServer.
 
