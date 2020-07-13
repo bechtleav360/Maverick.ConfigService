@@ -69,7 +69,7 @@ Durch die Zertifikat-basierte Authentifizierung ist die installation nicht so St
 
 Der ConfigService benötigt:
 
-1. Ein Gültiges Zertifikat
+1. Ein gültiges Zertifikat
 2. Erreichbar unter HTTPS
 3. Host (Kestrel / IIS / Azure) und ggf. andere Reverse Proxies müssen korrekt eingestellt sein
 
@@ -113,20 +113,20 @@ Wenn der ConfigService mit Azure oder anderen Proxies genutzt werden soll, lies 
 
 ## Nutzung
 
-> Die nutzung durch Swagger ist wesentlich leichter als im ConfigService1.0.
+> Die Nutzung durch Swagger ist wesentlich leichter als im ConfigService1.0.
 
-Eine ConfigUI ist in entwicklung, und ist [hier](http://url-zum-repo.com) verfügbar.
+Eine ConfigUI ist in Entwicklung, und ist [hier](http://url-zum-repo.com) in Zukunft verfügbar. (Update folgt)
 
-Bevor ein Environment bearbeitet werden kann muss es erstellt werden, die entsprechenden endpunkte befinden sich unter `/environments/`.
+Bevor ein Environment bearbeitet werden kann muss es erstellt werden, die entsprechenden Endpunkte befinden sich unter `/environments/`.
 Vorbereitete Environments können als `JSON` oder als `Key=>Value` map deployed werden.
-Änderungen müssen mit `Key=>Value` angaben gemacht werden.
+Änderungen müssen mit `Key=>Value` Angaben gemacht werden.
 
 Strukturen können unter `/structures` hinzugefügt werden.
 Services die die [Client-Library](https://shdebonvtfs1.bechtle.net/DefaultCollection/A365/_git/a365.RestClient.ConfigService) laden ihre aktuelle Struktur selbst hoch und bauen sich ihre Konfiguration falls notwendig.
 Wenn dies vorbereitet werden soll, kann eine neue Struktur mit `POST /structures` hochgeladen werden.
 
 > - Strukturen können nicht gelöscht oder bearbeitet werden  
-> - Um änderungen durchzuführen muss eine neue Struktur hochgeladen werden  
+> - Um Änderungen durchzuführen muss eine neue Struktur hochgeladen werden  
 > - Um einen fest eingestellten Wert in einer Strukture zu verändern muss ein neue Key mit dem vollen Pfad im Environment erstellt werden.
 
 ### Anbindung von Services
@@ -175,7 +175,7 @@ private static void ConfigureApp(WebHostBuilderContext builderContext,
 }
 ```
 
-2. In einer der sources die für die `preConfig` genutzt werden muss folgene information vorhanden seind:
+2. In einer der Sources die für die `preConfig` genutzt werden muss folgene information vorhanden seind:
 
 ``` json
 {
@@ -202,14 +202,14 @@ private static void ConfigureApp(WebHostBuilderContext builderContext,
 
 ### Technischer Overview
 
-Der ConfigService2.0 besteht aus zwei teilen.
+Der ConfigService2.0 besteht aus zwei Teilen.
 
 1. Service / HTTP-Rest API
 2. Projektion
 
-Der Service nimmt anfragen entgegen, validiert sie wenn möglich und schickt sie als DomainEvents an den darunterliegenden [EventStore](https://eventstore.org/).
+Der Service nimmt Anfragen entgegen, validiert diese wenn möglich und schickt sie als DomainEvents an den darunterliegenden [EventStore](https://eventstore.org/).
 
-Die Projektion bearbeitet diese DomainEvents und schreibt / löscht / ändert daten in einem öffentlichen Store - aktuell SQLServer.
+Die Projektion bearbeitet diese DomainEvents und schreibt / löscht / ändert Daten in einem öffentlichen Store - aktuell im MS SQLServer.
 
 ### Referenzen / Parsing
 
@@ -332,22 +332,22 @@ Alle Pfade sind technisch korrekt, die "Fehlerhafte Darstellung" führt allerdin
 }
 ```
 
-Der ConfigService2.0 verwandelt JSON automatisch in das Korrekte format wenn der Endpunkt `/environments/{category}/{name}/json` genutzt wird.  
-Alternativ steht noch der Endpunkt `/environments/{category}/{name}/keys` zur verfügung, dort wird allerdings davon ausgegangen dass die übertragenen Werte korrekt sind.  
-Über die Endpunkte `/convert/json/map` und `/convert/map/json` können JSON und `Dictionary<string, string>` beliebig umgewandelt werden, falls der client diese aufgabe nicht übernehmen will.
+Der ConfigService2.0 wandelt JSON automatisch in das korrekte Format wenn der Endpunkt `/environments/{category}/{name}/json` genutzt wird.
+Alternativ steht noch der Endpunkt `/environments/{category}/{name}/keys` zur Verfügung - dort wird allerdings davon ausgegangen dass die übertragenen Werte korrekt sind.  
+Über die Endpunkte `/convert/json/map` und `/convert/map/json` können JSON und `Dictionary<string, string>` beliebig umgewandelt werden, falls der Client diese Aufgabe nicht übernehmen will.
 
 ## DB-Migrations
 
-Änderungen an dem DB-Schema werden über migrations versioniert und durchgeführt.
-Das ausführen von migrations ist näher in der ConfigService.Cli-Readme dokumentiert.
+Änderungen an dem DB-Schema werden über Migrations versioniert und durchgeführt.
+Das Ausführen von Migrations ist näher in der ConfigService.Cli-Readme dokumentiert.
 
-Um mit migrations zu arbeiten müssen folgende schritte befolgt werden:
+Um mit Migrations zu arbeiten müssen folgende Schritte befolgt werden:
 
-- ins verzeichnis Bechtle.A365.ConfigSerivce/src/Bechtle.A365.ConfigService.Cli springen
-- konsole öffnen
-- dotnet 'ef' befehle mit diesen parametern ausführen '--context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations'
+- ins Verzeichnis Bechtle.A365.ConfigSerivce/src/Bechtle.A365.ConfigService.Cli springen
+- Konsole öffnen
+- dotnet 'ef' Befehle mit diesen Parametern ausführen '--context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations'
 
-z.B. so, um alle migrations anzuzeigen: 
+z.B. so, um alle Migrations anzuzeigen: 
 
 ```
 dotnet ef migrations list --context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations
