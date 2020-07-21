@@ -125,9 +125,9 @@ Strukturen können unter `/structures` hinzugefügt werden.
 Services die die [Client-Library](https://shdebonvtfs1.bechtle.net/DefaultCollection/A365/_git/a365.RestClient.ConfigService) laden ihre aktuelle Struktur selbst hoch und bauen sich ihre Konfiguration falls notwendig.
 Wenn dies vorbereitet werden soll, kann eine neue Struktur mit `POST /structures` hochgeladen werden.
 
-> - Strukturen können nicht gelöscht oder bearbeitet werden  
-> - Um Änderungen durchzuführen muss eine neue Struktur hochgeladen werden  
-> - Um einen fest eingestellten Wert in einer Strukture zu verändern muss ein neue Key mit dem vollen Pfad im Environment erstellt werden.
+> - Strukturen können nicht gelöscht oder bearbeitet werden
+> - Um Änderungen durchzuführen, muss eine neue Struktur hochgeladen werden
+> - Um einen fest eingestellten Wert in einer Strukture zu verändern, muss ein neuer Key mit dem absoluten Pfad im Environment erstellt werden.
 
 ### Anbindung von Services
 
@@ -175,7 +175,7 @@ private static void ConfigureApp(WebHostBuilderContext builderContext,
 }
 ```
 
-2. In einer der Sources die für die `preConfig` genutzt werden muss folgene information vorhanden seind:
+2. In einer der Sources die für die `preConfig` genutzt werden, müssen folgende Informationen vorhanden sein:
 
 ``` json
 {
@@ -215,7 +215,7 @@ Die Projektion bearbeitet diese DomainEvents und schreibt / löscht / ändert Da
 
 Das Parsen der Config-Werte um Referenzen zu finden wird vom `IConfigurationParser` und der Konkreten implementation im `ConfigurationParser` übernommen.
 
-Referenzen sind Key-Globale Instruktionen um einen wert anzupassen.  
+Referenzen sind Key-Globale Instruktionen um einen Wert anzupassen.  
 Damit ist folgendes gemeint:
 
 > - Instruktionen in Referenzen können einen Kontext verändern der für diesen Key gilt.
@@ -240,16 +240,16 @@ Sollte Value mit `/*` enden wird dieser Value durch alle Keys ausgetauscht die V
 
 #### Using &  Alias
 
-Diese Kommandos können nur zusammen genutzt werden und haben alleine keine auswirkungen
+Diese Kommandos können nur zusammen genutzt werden und haben alleine keine Auswirkungen
 
 Beispiel:  
 Folgende Referenz:  
 `{{ Using: some/path/to/narnia; Alias: narnia; }}`
 
-erstellt einen Eintrag:  
+Erstellt einen Eintrag:  
 `$narnia => 'some/path/to/narnia'`
 
-Dieser Eintrag kann dann innerhalb des selben Kontexts (Selber Value) mit angabe des Alias' genutzt werden:  
+Dieser Eintrag kann dann innerhalb des selben Kontexts (Selber Value) mit Angabe des Alias' genutzt werden:  
 `{{$narnia/forest/castle/dungeon/cell}}`
 
 Vollständiger Wert:  
@@ -260,7 +260,7 @@ Fertiger Wert:
 
 ### Feste Aliases
 
-Beim Parsen einer Referenz stellt der ConfigService2.0 bestimmte Aliases zur verfügung, ohne dass diese vorher defeniert werden müssen.
+Beim Parsen einer Referenz stellt der ConfigService2.0 bestimmte Aliases zur Verfügung, ohne dass diese vorher definiert werden müssen.
 
 - `$this`
 - `$struct`
@@ -278,15 +278,15 @@ Beim Parsen einer Referenz stellt der ConfigService2.0 bestimmte Aliases zur ver
 
 #### Struct
 
-`$struct` ist insofern speziell, als dass es zugriff auf das `variables` objekt innerhalb einer Struktur erlaubt.
+`$struct` ist insofern speziell, als dass es Zugriff auf das `variables` objekt innerhalb einer Struktur erlaubt.
 
 `{{$struct/MyVariable}}` greift auf `MyVariable` innerhalb der aktuellen Struktur zu.
 
 ## Known Issues
 
-### Bestimmte zeichen in JSON-Properties führen zu falschen Konfigurationen
+### Bestimmte Zeichen in JSON-Properties führen zu falschen Konfigurationen
 
-JSON-Properties die `'/'` enthalten können zu problemen führen wenn sie nicht korrekt an den ConfigService übergeben werden.
+JSON-Properties die `'/'` enthalten können zu Problemen führen, wenn sie nicht korrekt an den ConfigService übergeben werden.
 
 ``` json
 {
@@ -298,7 +298,7 @@ JSON-Properties die `'/'` enthalten können zu problemen führen wenn sie nicht 
 }
 ```
 
-Dieses JSON, als `Dictionary<string, string>` dargestellt, kann unterschiedliche ergebnisse haben.
+Dieses JSON, als `Dictionary<string, string>` dargestellt, kann unterschiedliche Ergebnisse haben.
 
 Fehlerhafte Darstellung:
 > ``` json
@@ -341,9 +341,9 @@ Alternativ steht noch der Endpunkt `/environments/{category}/{name}/keys` zur Ve
 Änderungen an dem DB-Schema werden über Migrations versioniert und durchgeführt.
 Das Ausführen von Migrations ist näher in der ConfigService.Cli-Readme dokumentiert.
 
-Um mit Migrations zu arbeiten müssen folgende Schritte befolgt werden:
+Um mit Migrations zu arbeiten, müssen folgende Schritte befolgt werden:
 
-- ins Verzeichnis Bechtle.A365.ConfigSerivce/src/Bechtle.A365.ConfigService.Cli springen
+- Ins Verzeichnis Bechtle.A365.ConfigSerivce/src/Bechtle.A365.ConfigService.Cli springen
 - Konsole öffnen
 - dotnet 'ef' Befehle mit diesen Parametern ausführen '--context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations'
 
