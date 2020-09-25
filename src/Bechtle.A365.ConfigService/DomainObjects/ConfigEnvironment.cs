@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Deleted = false;
             Identifier = new EnvironmentIdentifier(identifier.Category, identifier.Name);
             IsDefault = false;
-            Keys = new Dictionary<string, ConfigEnvironmentKey>();
+            Keys = new Dictionary<string, ConfigEnvironmentKey>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>

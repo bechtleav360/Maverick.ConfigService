@@ -214,7 +214,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        Data = new byte[0],
                                        EventId = Guid.NewGuid(),
                                        EventNumber = 2,
-                                       EventType = nameof(EnvironmentCreated),
+                                       EventType = nameof(EnvironmentKeysModified),
                                        Metadata = new byte[0],
                                        UtcTime = DateTime.UtcNow
                                    },
@@ -228,7 +228,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        Data = new byte[0],
                                        EventId = Guid.NewGuid(),
                                        EventNumber = 3,
-                                       EventType = nameof(EnvironmentCreated),
+                                       EventType = nameof(EnvironmentKeysModified),
                                        Metadata = new byte[0],
                                        UtcTime = DateTime.UtcNow
                                    },

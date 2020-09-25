@@ -6,12 +6,12 @@
     public enum ErrorCode
     {
         /// <summary>
-        ///     no Error occured
+        ///     no Error occurred
         /// </summary>
         None = 0,
 
         /// <summary>
-        ///     undefined Error occured
+        ///     undefined Error occurred
         /// </summary>
         Undefined = 1,
 
@@ -63,6 +63,11 @@
         /// <summary>
         ///     could not retrieve StreamedObject from EventStore
         /// </summary>
-        FailedToRetrieveItem = 11
+        FailedToRetrieveItem = 11,
+
+        /// <summary>
+        ///     Resource could not be found, but might be available after evaluating some indirection. Additional data may be give as context.
+        /// </summary>
+        NotFoundPossibleIndirection = 12
     }
 }
