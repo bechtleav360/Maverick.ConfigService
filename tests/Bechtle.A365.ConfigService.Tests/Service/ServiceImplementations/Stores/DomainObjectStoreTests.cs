@@ -80,7 +80,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                            .BuildServiceProvider();
 
             var config = new ConfigurationBuilder()
-                         .AddInMemoryCollection(new[] {new KeyValuePair<string, string>("MemoryCache:Local:Duration", "00:00:05")})
+                         .AddInMemoryCollection(new[] {new KeyValuePair<string, string>("MemoryCache:Local:Duration", "00:00:03")})
                          .Build();
 
             var logger = provider.GetRequiredService<ILogger<DomainObjectStore>>();

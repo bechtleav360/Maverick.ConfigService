@@ -185,7 +185,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             if (context.OriginalValue is null)
                 return Result.Success<IDictionary<string, string>>(new Dictionary<string, string> {{context.BasePath, null}});
 
-            var parts = context.Parser.Parse(context.OriginalValue);
+            var parts = context.OriginalValue.Contains("$this")
+                            ? context.Parser.Parse(ResolveThisAlias(context, context.BasePath, context.OriginalValue))
+                            : context.Parser.Parse(context.OriginalValue);
 
             var plan = AnalyzeCompilation(context, parts);
 
@@ -301,26 +303,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 return true;
             }
 
-            // this is basically a structuring for later
-            // - use some action to get values
-            // - check if operation succeeded
-            // - if it failed, execute given fallback
-            async Task ResolveValueInternal<T>(Task<IResult<T>> resolveValueTask, Action<T> successAction, Func<bool> fallbackAction)
-            {
-                var result = await resolveValueTask;
-                if (!result.IsError)
-                {
-                    successAction?.Invoke(result.Data);
-                }
-                else
-                {
-                    context.Tracer.AddError(result.Message);
-                    _logger.LogWarning(WithContext(context, $"could not resolve values: ({result.Code:G}) {result.Message}"));
-
-                    fallbackAction?.Invoke();
-                }
-            }
-
             var resultType = ReferenceEvaluationType.None;
             var intermediateResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var actualResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -340,63 +322,90 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             if (referencePath.EndsWith('*'))
             {
-                await ResolveValueInternal(provider.TryGetRange(referencePath),
-                                           data =>
-                                           {
-                                               var referenceBase = referencePath.TrimEnd('*').TrimEnd('/');
+                var result = await provider.TryGetRange(referencePath);
+                if (!result.IsError)
+                {
+                    var referenceBase = referencePath.TrimEnd('*').TrimEnd('/');
 
-                                               foreach (var (key, value) in data)
-                                               {
-                                                   var trimmedKey = key.TrimStart('/');
-                                                   var compositePath = $"{context.BasePath}/{trimmedKey}";
+                    foreach (var (key, value) in result.Data)
+                    {
+                        var trimmedKey = key.TrimStart('/');
+                        var compositePath = $"{context.BasePath}/{trimmedKey}";
 
-                                                   intermediateResult[compositePath] = value;
-                                                   rangeTracer.AddPathResult($"{referenceBase}/{trimmedKey}", value);
-                                               }
-                                           },
-                                           FallbackAction);
+                        intermediateResult[compositePath] = value;
+                        rangeTracer.AddPathResult($"{referenceBase}/{trimmedKey}", value);
+                    }
+                }
+                else
+                {
+                    context.Tracer.AddError(result.Message);
+                    _logger.LogWarning(WithContext(context, $"could not resolve values: ({result.Code:G}) {result.Message}"));
+
+                    if (FallbackAction())
+                    {
+                        var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
+                        intermediateResult[context.BasePath] = fallbackValue;
+                        rangeTracer.AddPathResult(fallbackValue);
+                    }
+                }
 
                 resultType = ReferenceEvaluationType.ResolvedRangeQuery;
             }
             else
             {
-                await ResolveValueInternal(provider.TryGetValue(referencePath),
-                                           data =>
-                                           {
-                                               intermediateResult[context.BasePath] = data;
-                                               rangeTracer.AddPathResult(data);
-                                           },
-                                           FallbackAction);
+                var result = await provider.TryGetValue(referencePath);
+                if (!result.IsError)
+                {
+                    intermediateResult[context.BasePath] = result.Data;
+                    rangeTracer.AddPathResult(result.Data);
+                }
+                else
+                {
+                    var indirectionResolved = false;
+
+                    // path might only make sense if given alternative is de-referenced
+                    if (result.Code == ErrorCode.NotFoundPossibleIndirection && !string.IsNullOrWhiteSpace(result.Data))
+                    {
+                        var indirectionValueResult = await provider.TryGetValue(result.Data);
+
+                        if (!indirectionValueResult.IsError)
+                        {
+                            var indirectionResolveResult = await ResolveInternal(new KeyResolveContext(result.Data,
+                                                                                                       indirectionValueResult.Data,
+                                                                                                       rangeTracer,
+                                                                                                       context.Parser));
+
+                            if (!indirectionResolveResult.IsError
+                                && indirectionResolveResult.Data.TryGetValue(referencePath, out var resolvedIndirection))
+                            {
+                                // value has been successfully resolved through the indirection
+                                intermediateResult[context.BasePath] = resolvedIndirection;
+                                rangeTracer.AddPathResult(resolvedIndirection);
+                                indirectionResolved = true;
+                            }
+                        }
+                    }
+
+                    if (!indirectionResolved)
+                    {
+                        context.Tracer.AddError(result.Message);
+                        _logger.LogWarning(WithContext(context, $"could not resolve values: ({result.Code:G}) {result.Message}"));
+
+                        if (FallbackAction())
+                        {
+                            var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
+                            intermediateResult[context.BasePath] = fallbackValue;
+                            rangeTracer.AddPathResult(fallbackValue);
+                        }
+                    }
+                }
 
                 resultType = ReferenceEvaluationType.ResolvedDirectReference;
             }
 
             // replace $this while we still know what its supposed to represent
             // once we leave this stack-frame, we lose the correct context of $this
-            foreach (var key in intermediateResult.Keys.ToArray())
-            {
-                // skip for null values, or where $this can't be found
-                if (intermediateResult[key]?.Contains("$this", StringComparison.OrdinalIgnoreCase) != true)
-                    continue;
-
-                var oldValue = intermediateResult[key];
-                string newValue;
-                if (referencePath.Contains('/', StringComparison.OrdinalIgnoreCase))
-                {
-                    newValue = oldValue.Replace("$this", referencePath.Substring(0, referencePath.LastIndexOf('/')));
-                }
-                else
-                {
-                    _logger.LogDebug(WithContext(context, "'$this' alias used in key without parent paths"));
-                    context.Tracer.AddWarning("'$this' alias used in key without parent paths");
-
-                    // in case of paths like "$this/Foo" which would end up as "/Foo"
-                    newValue = oldValue.Replace("$this/", "", StringComparison.OrdinalIgnoreCase)
-                                       .Replace("$this", "", StringComparison.OrdinalIgnoreCase);
-                }
-
-                intermediateResult[key] = newValue;
-            }
+            ResolveThisAlias(context, referencePath, intermediateResult);
 
             foreach (var (nextKey, nextValue) in intermediateResult)
             {
@@ -413,6 +422,44 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
 
             return (resultType, actualResult);
+        }
+
+        /// <summary>
+        ///     replace '$this'-reference with the actual value, taken from 'referencePath'
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="referencePath"></param>
+        /// <param name="keys"></param>
+        private void ResolveThisAlias(KeyResolveContext context, string referencePath, IDictionary<string, string> keys)
+        {
+            foreach (var key in keys.Keys.ToArray())
+            {
+                // skip for null values, or where $this can't be found
+                if (keys[key]?.Contains("$this", StringComparison.OrdinalIgnoreCase) != true)
+                    continue;
+
+                keys[key] = ResolveThisAlias(context, referencePath, keys[key]);
+            }
+        }
+
+        /// <summary>
+        ///     replace '$this'-reference with the actual value, taken from 'referencePath'
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="referencePath"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private string ResolveThisAlias(KeyResolveContext context, string referencePath, string value)
+        {
+            if (referencePath.Contains('/', StringComparison.OrdinalIgnoreCase))
+                return value.Replace("$this", referencePath.Substring(0, referencePath.LastIndexOf('/')));
+
+            _logger.LogDebug(WithContext(context, "'$this' alias used in key without parent paths"));
+            context.Tracer.AddWarning("'$this' alias used in key without parent paths");
+
+            // in case of paths like "$this/Foo" which would end up as "/Foo"
+            return value.Replace("$this/", "", StringComparison.OrdinalIgnoreCase)
+                        .Replace("$this", "", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

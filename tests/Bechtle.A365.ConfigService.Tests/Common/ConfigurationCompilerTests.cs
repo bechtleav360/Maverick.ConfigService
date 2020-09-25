@@ -389,6 +389,24 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                 });
 
         [Fact]
+        public void IntermediateReferenceSections()
+            => CheckCompilationResult(
+                new Dictionary<string, string>
+                {
+                    {"NamedEndpoints/IdentityService-External", "{{$this/IdentityService/*}}"},
+                    {"NamedEndpoints/IdentityService/Address", "identity.foo.bar"},
+                    {"NamedEndpoints/IdentityService/Name", "identityService"},
+                    {"NamedEndpoints/IdentityService/Port", "443"},
+                    {"NamedEndpoints/IdentityService/Protocol", "https"},
+                    {"NamedEndpoints/IdentityService/RootPath", ""},
+                    {"NamedEndpoints/IdentityService/Uri", "{{$this/Protocol}}://{{$this/Address}}:{{$this/Port}}{{$this/RootPath}}"}
+                },
+                new Dictionary<string, string> {{"IdentityService", "{{NamedEndpoints/IdentityService-External/Uri}}"}},
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                result => Assert.Equal("https://identity.foo.bar:443", result.CompiledConfiguration["IdentityService"]));
+
+        [Fact]
         public void LongCyclicReference()
             => CheckCompilationResult(
                 new Dictionary<string, string>
