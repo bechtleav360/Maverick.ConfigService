@@ -284,7 +284,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                     new Dictionary<string, string> {{"Foo", null}},
                     new Dictionary<string, string>()));
 
-            Assert.True(result.IsError);
+            Assert.False(result.IsError);
         }
 
         [Fact]

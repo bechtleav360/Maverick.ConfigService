@@ -92,7 +92,9 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <returns></returns>
         private IResult ValidateDictionary(IDictionary<string, string> dict)
         {
-            var errors = dict.Select(kvp => ValidateStringPair(kvp.Key, kvp.Value))
+            var errors = dict.Select(kvp => string.IsNullOrWhiteSpace(kvp.Key)
+                                                ? Result.Error("invalid data: key is null / empty", ErrorCode.ValidationFailed)
+                                                : Result.Success())
                              .Where(r => r.IsError)
                              .ToList();
 
@@ -266,23 +268,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (identifier.Version <= 0)
                 return Result.Error("invalid StructureIdentifier.Version (x <= 0)", ErrorCode.ValidationFailed);
-
-            return Result.Success();
-        }
-
-        /// <summary>
-        ///     validate a single Key=>Value pair from within a Dictionary; see <see cref="ValidateDictionary" />
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private IResult ValidateStringPair(string key, string value)
-        {
-            if (string.IsNullOrWhiteSpace(key))
-                return Result.Error("invalid data: key is null / empty", ErrorCode.ValidationFailed);
-
-            if (value is null)
-                return Result.Error($"invalid data: value of '{key}' is null", ErrorCode.ValidationFailed);
 
             return Result.Success();
         }
