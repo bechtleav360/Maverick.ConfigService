@@ -260,18 +260,28 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         }
 
         [Fact]
-        public void ValidateStructureCreatedKeys()
+        public void ValidateStructureCreatedKeys_KeyEmpty()
         {
             var validator = CreateValidator();
 
             var result = validator.ValidateDomainEvent(
                 new StructureCreated(
                     new StructureIdentifier("Foo", 42),
-                    new Dictionary<string, string>
-                    {
-                        {string.Empty, "Bar"},
-                        {"Foo", null}
-                    },
+                    new Dictionary<string, string> {{string.Empty, "Bar"},},
+                    new Dictionary<string, string>()));
+
+            Assert.True(result.IsError);
+        }
+
+        [Fact]
+        public void ValidateStructureCreatedKeys_KeyNull()
+        {
+            var validator = CreateValidator();
+
+            var result = validator.ValidateDomainEvent(
+                new StructureCreated(
+                    new StructureIdentifier("Foo", 42),
+                    new Dictionary<string, string> {{"Foo", null}},
                     new Dictionary<string, string>()));
 
             Assert.True(result.IsError);
