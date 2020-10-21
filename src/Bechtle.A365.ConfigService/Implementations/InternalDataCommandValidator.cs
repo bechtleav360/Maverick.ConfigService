@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public IResult ValidateDomainEvent(DomainEvent domainEvent)
         {
-            if(domainEvent is null)
+            if (domainEvent is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
 
             if (string.IsNullOrWhiteSpace(domainEvent.EventType))
@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        private IResult ValidateConfigKeyAction(ConfigKeyAction action)
+        private static IResult ValidateConfigKeyAction(ConfigKeyAction action)
         {
             if (action is null)
                 return Result.Error("invalid data: action is null", ErrorCode.ValidationFailed);
@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// </summary>
         /// <param name="actions"></param>
         /// <returns></returns>
-        private IResult ValidateConfigKeyActions(ConfigKeyAction[] actions)
+        private static IResult ValidateConfigKeyActions(ConfigKeyAction[] actions)
         {
             if (actions is null || !actions.Any())
                 return Result.Error("invalid data: no modified keys", ErrorCode.ValidationFailed);
@@ -90,7 +90,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// </summary>
         /// <param name="dict"></param>
         /// <returns></returns>
-        private IResult ValidateDictionary(IDictionary<string, string> dict)
+        private static IResult ValidateDictionary(IDictionary<string, string> dict)
         {
             var errors = dict.Select(kvp => string.IsNullOrWhiteSpace(kvp.Key)
                                                 ? Result.Error("invalid data: key is null / empty", ErrorCode.ValidationFailed)
@@ -106,7 +106,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(ConfigurationBuilt @event)
+        private static IResult ValidateDomainEvent(ConfigurationBuilt @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -115,7 +115,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(DefaultEnvironmentCreated @event)
+        private static IResult ValidateDomainEvent(DefaultEnvironmentCreated @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -124,7 +124,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(EnvironmentCreated @event)
+        private static IResult ValidateDomainEvent(EnvironmentCreated @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -133,7 +133,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(EnvironmentDeleted @event)
+        private static IResult ValidateDomainEvent(EnvironmentDeleted @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -142,20 +142,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(EnvironmentKeysImported @event)
-        {
-            var identifierResult = ValidateIdentifier(@event.Identifier);
-            if (identifierResult.IsError)
-                return identifierResult;
-
-            var keyResult = ValidateConfigKeyActions(@event.ModifiedKeys);
-            if (keyResult.IsError)
-                return keyResult;
-
-            return Result.Success();
-        }
-
-        private IResult ValidateDomainEvent(EnvironmentKeysModified @event)
+        private static IResult ValidateDomainEvent(EnvironmentKeysImported @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -168,7 +155,20 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(StructureCreated @event)
+        private static IResult ValidateDomainEvent(EnvironmentKeysModified @event)
+        {
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            var keyResult = ValidateConfigKeyActions(@event.ModifiedKeys);
+            if (keyResult.IsError)
+                return keyResult;
+
+            return Result.Success();
+        }
+
+        private static IResult ValidateDomainEvent(StructureCreated @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -185,7 +185,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(StructureDeleted @event)
+        private static IResult ValidateDomainEvent(StructureDeleted @event)
         {
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
@@ -197,7 +197,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private IResult ValidateDomainEvent(StructureVariablesModified @event)
+        private static IResult ValidateDomainEvent(StructureVariablesModified @event)
         {
             if (@event is null)
                 return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
@@ -218,7 +218,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        private IResult ValidateIdentifier(ConfigurationIdentifier identifier)
+        private static IResult ValidateIdentifier(ConfigurationIdentifier identifier)
         {
             if (identifier is null)
                 return Result.Error("invalid identifier (null", ErrorCode.ValidationFailed);
@@ -239,7 +239,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        private IResult ValidateIdentifier(EnvironmentIdentifier identifier)
+        private static IResult ValidateIdentifier(EnvironmentIdentifier identifier)
         {
             if (identifier is null)
                 return Result.Error("invalid EnvironmentIdentifier (null)", ErrorCode.ValidationFailed);
@@ -258,7 +258,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// </summary>
         /// <param name="identifier"></param>
         /// <returns></returns>
-        private IResult ValidateIdentifier(StructureIdentifier identifier)
+        private static IResult ValidateIdentifier(StructureIdentifier identifier)
         {
             if (identifier is null)
                 return Result.Error("invalid StructureIdentifier (null)", ErrorCode.ValidationFailed);
