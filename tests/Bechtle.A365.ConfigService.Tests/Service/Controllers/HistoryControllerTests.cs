@@ -57,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        EventNumber = 1,
                                        EventType = nameof(EnvironmentCreated),
                                        Metadata = new byte[0],
-                                       UtcTime = DateTime.UtcNow
+                                       UtcTime = DateTime.UtcNow.AddSeconds(-2)
                                    },
                                    new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar"))),
                                (new StoredEvent
@@ -67,7 +67,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        EventNumber = 2,
                                        EventType = nameof(EnvironmentCreated),
                                        Metadata = new byte[0],
-                                       UtcTime = DateTime.UtcNow
+                                       UtcTime = DateTime.UtcNow.AddSeconds(-1)
                                    },
                                    new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", "Baz"), new[]
                                    {
@@ -126,7 +126,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                               EventNumber = 1,
                                               EventType = nameof(EnvironmentCreated),
                                               Metadata = new byte[0],
-                                              UtcTime = DateTime.UtcNow
+                                              UtcTime = DateTime.UtcNow.AddSeconds(-2)
                                           },
                                           new DomainEventMetadata
                                           {
@@ -145,7 +145,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                               EventNumber = 1,
                                               EventType = nameof(EnvironmentKeysModified),
                                               Metadata = new byte[0],
-                                              UtcTime = DateTime.UtcNow
+                                              UtcTime = DateTime.UtcNow.AddSeconds(-1)
                                           },
                                           new DomainEventMetadata
                                           {
@@ -206,7 +206,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        EventNumber = 1,
                                        EventType = nameof(EnvironmentCreated),
                                        Metadata = new byte[0],
-                                       UtcTime = DateTime.UtcNow
+                                       UtcTime = DateTime.UtcNow.AddSeconds(-2)
                                    },
                                    new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar"))),
                                (new StoredEvent
@@ -216,7 +216,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        EventNumber = 2,
                                        EventType = nameof(EnvironmentKeysModified),
                                        Metadata = new byte[0],
-                                       UtcTime = DateTime.UtcNow
+                                       UtcTime = DateTime.UtcNow.AddSeconds(-1)
                                    },
                                    new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", "Baz"), new[]
                                    {
@@ -275,7 +275,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                               EventNumber = 1,
                                               EventType = nameof(EnvironmentCreated),
                                               Metadata = new byte[0],
-                                              UtcTime = DateTime.UtcNow
+                                              UtcTime = DateTime.UtcNow.AddSeconds(-2)
                                           },
                                           new DomainEventMetadata
                                           {
@@ -294,7 +294,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                               EventNumber = 1,
                                               EventType = nameof(EnvironmentKeysModified),
                                               Metadata = new byte[0],
-                                              UtcTime = DateTime.UtcNow
+                                              UtcTime = DateTime.UtcNow.AddSeconds(-1)
                                           },
                                           new DomainEventMetadata
                                           {
@@ -355,7 +355,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        EventNumber = 1,
                                        EventType = nameof(EnvironmentCreated),
                                        Metadata = new byte[0],
-                                       UtcTime = DateTime.UtcNow
+                                       UtcTime = DateTime.UtcNow.AddSeconds(-2)
                                    },
                                    new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar"))),
                                (new StoredEvent
@@ -365,7 +365,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                        EventNumber = 2,
                                        EventType = nameof(EnvironmentCreated),
                                        Metadata = new byte[0],
-                                       UtcTime = DateTime.UtcNow
+                                       UtcTime = DateTime.UtcNow.AddSeconds(-1)
                                    },
                                    new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", "Baz"), new[]
                                    {
