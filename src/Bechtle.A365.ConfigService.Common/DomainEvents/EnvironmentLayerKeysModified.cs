@@ -4,42 +4,44 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <inheritdoc cref="DomainEvent" />
     /// <summary>
-    ///     an environment with accompanying keys has been imported
+    ///     a number of keys within an EnvironmentLayer have been changed
     /// </summary>
-    public class EnvironmentKeysImported : DomainEvent, IEquatable<EnvironmentKeysImported>
+    public class EnvironmentLayerKeysModified : DomainEvent, IEquatable<EnvironmentLayerKeysModified>
     {
         /// <inheritdoc />
-        public EnvironmentKeysImported(EnvironmentIdentifier identifier, ConfigKeyAction[] modifiedKeys)
+        public EnvironmentLayerKeysModified(LayerIdentifier identifier, ConfigKeyAction[] modifiedKeys)
         {
             Identifier = identifier;
             ModifiedKeys = modifiedKeys;
         }
 
-        /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; }
+        /// <inheritdoc cref="LayerIdentifier" />
+        public LayerIdentifier Identifier { get; }
 
         /// <summary>
         ///     list of Actions that have been applied to the keys
         /// </summary>
         public ConfigKeyAction[] ModifiedKeys { get; }
 
-        public static bool operator ==(EnvironmentKeysImported left, EnvironmentKeysImported right) => Equals(left, right);
+        public static bool operator ==(EnvironmentLayerKeysModified left, EnvironmentLayerKeysModified right) => Equals(left, right);
 
-        public static bool operator !=(EnvironmentKeysImported left, EnvironmentKeysImported right) => !Equals(left, right);
+        public static bool operator !=(EnvironmentLayerKeysModified left, EnvironmentLayerKeysModified right) => !Equals(left, right);
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((EnvironmentKeysImported) obj);
+            return Equals((EnvironmentLayerKeysModified) obj);
         }
 
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentKeysImported, strict);
+        /// <inheritdoc />
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentLayerKeysModified, strict);
 
-        public virtual bool Equals(EnvironmentKeysImported other) => Equals(other, false);
+        public virtual bool Equals(EnvironmentLayerKeysModified other) => Equals(other, false);
 
-        public virtual bool Equals(EnvironmentKeysImported other, bool _)
+        public virtual bool Equals(EnvironmentLayerKeysModified other, bool _)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
@@ -47,6 +49,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                    && Equals(ModifiedKeys, other.ModifiedKeys);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked
@@ -55,6 +58,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         }
 
+        /// <inheritdoc />
         public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
         {
             Filters =

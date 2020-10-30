@@ -4,42 +4,42 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
     /// <inheritdoc cref="DomainEvent" />
     /// <summary>
-    ///     a number of keys within an Environment have been changed
+    ///     a Layer with accompanying keys has been imported
     /// </summary>
-    public class EnvironmentKeysModified : DomainEvent, IEquatable<EnvironmentKeysModified>
+    public class EnvironmentLayerKeysImported : DomainEvent, IEquatable<EnvironmentLayerKeysImported>
     {
         /// <inheritdoc />
-        public EnvironmentKeysModified(EnvironmentIdentifier identifier, ConfigKeyAction[] modifiedKeys)
+        public EnvironmentLayerKeysImported(LayerIdentifier identifier, ConfigKeyAction[] modifiedKeys)
         {
             Identifier = identifier;
             ModifiedKeys = modifiedKeys;
         }
 
-        /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; }
+        /// <inheritdoc cref="LayerIdentifier" />
+        public LayerIdentifier Identifier { get; }
 
         /// <summary>
         ///     list of Actions that have been applied to the keys
         /// </summary>
         public ConfigKeyAction[] ModifiedKeys { get; }
 
-        public static bool operator ==(EnvironmentKeysModified left, EnvironmentKeysModified right) => Equals(left, right);
+        public static bool operator ==(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => Equals(left, right);
 
-        public static bool operator !=(EnvironmentKeysModified left, EnvironmentKeysModified right) => !Equals(left, right);
+        public static bool operator !=(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => !Equals(left, right);
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((EnvironmentKeysModified) obj);
+            return Equals((EnvironmentLayerKeysImported) obj);
         }
 
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentKeysModified, strict);
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentLayerKeysImported, strict);
 
-        public virtual bool Equals(EnvironmentKeysModified other) => Equals(other, false);
+        public virtual bool Equals(EnvironmentLayerKeysImported other) => Equals(other, false);
 
-        public virtual bool Equals(EnvironmentKeysModified other, bool _)
+        public virtual bool Equals(EnvironmentLayerKeysImported other, bool _)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

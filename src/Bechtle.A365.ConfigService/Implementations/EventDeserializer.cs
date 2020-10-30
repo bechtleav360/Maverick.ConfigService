@@ -19,8 +19,11 @@ namespace Bechtle.A365.ConfigService.Implementations
             {DomainEvent.GetEventType<DefaultEnvironmentCreated>(), typeof(IDomainEventConverter<DefaultEnvironmentCreated>)},
             {DomainEvent.GetEventType<EnvironmentCreated>(), typeof(IDomainEventConverter<EnvironmentCreated>)},
             {DomainEvent.GetEventType<EnvironmentDeleted>(), typeof(IDomainEventConverter<EnvironmentDeleted>)},
-            {DomainEvent.GetEventType<EnvironmentKeysModified>(), typeof(IDomainEventConverter<EnvironmentKeysModified>)},
-            {DomainEvent.GetEventType<EnvironmentKeysImported>(), typeof(IDomainEventConverter<EnvironmentKeysImported>)},
+            {DomainEvent.GetEventType<EnvironmentLayersModified>(), typeof(IDomainEventConverter<EnvironmentLayersModified>)},
+            {DomainEvent.GetEventType<EnvironmentLayerCreated>(), typeof(IDomainEventConverter<EnvironmentLayerCreated>)},
+            {DomainEvent.GetEventType<EnvironmentLayerDeleted>(), typeof(IDomainEventConverter<EnvironmentLayerDeleted>)},
+            {DomainEvent.GetEventType<EnvironmentLayerKeysModified>(), typeof(IDomainEventConverter<EnvironmentLayerKeysModified>)},
+            {DomainEvent.GetEventType<EnvironmentLayerKeysImported>(), typeof(IDomainEventConverter<EnvironmentLayerKeysImported>)},
             {DomainEvent.GetEventType<StructureCreated>(), typeof(IDomainEventConverter<StructureCreated>)},
             {DomainEvent.GetEventType<StructureDeleted>(), typeof(IDomainEventConverter<StructureDeleted>)},
             {DomainEvent.GetEventType<StructureVariablesModified>(), typeof(IDomainEventConverter<StructureVariablesModified>)}
