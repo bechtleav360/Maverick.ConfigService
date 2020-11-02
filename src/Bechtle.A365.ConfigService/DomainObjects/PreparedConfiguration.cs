@@ -162,11 +162,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
             try
             {
+                var environmentDataResult = await environment.GetKeysAsDictionary(store);
+                if (environmentDataResult.IsError)
+                    return environmentDataResult;
+
                 var compilationResult = compiler.Compile(
                     new EnvironmentCompilationInfo
                     {
                         Name = $"{Identifier.Environment.Category}/{Identifier.Environment.Name}",
-                        Keys = environment.GetKeysAsDictionary()
+                        Keys = environmentDataResult.Data
                     },
                     new StructureCompilationInfo
                     {

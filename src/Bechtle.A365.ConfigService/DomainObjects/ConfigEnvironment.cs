@@ -116,30 +116,25 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public override CacheItemPriority GetCacheItemPriority() => CacheItemPriority.Normal;
 
         /// <summary>
-        ///     resolve all layers and collect their Keys/Values
+        ///     get all key-objects in this environment, in their end-result form (override-rules applied)
         /// </summary>
         /// <param name="objectStore"></param>
         /// <returns></returns>
-        public async Task<IResult<Dictionary<LayerIdentifier, List<ConfigEnvironmentKey>>>> GetKeys(IDomainObjectStore objectStore)
+        public async Task<IResult<IList<ConfigEnvironmentKey>>> GetKeys(IDomainObjectStore objectStore)
         {
-            if (!Created)
-                return Result.Error<Dictionary<LayerIdentifier, List<ConfigEnvironmentKey>>>("environment does not exist", ErrorCode.NotFound);
+            var layerDataResult = await GetLayers(objectStore);
 
-            var layerData = Layers.ToDictionary(layer => layer, _ => new List<ConfigEnvironmentKey>());
+            if (layerDataResult.IsError)
+                return Result.Error<IList<ConfigEnvironmentKey>>(layerDataResult.Message, layerDataResult.Code);
 
-            foreach (var (layerId, data) in layerData)
-            {
-                var result = await objectStore.ReplayObject(new EnvironmentLayer(layerId),
-                                                            layerId.ToString(),
-                                                            CurrentVersion);
+            var layerData = layerDataResult.Data;
+            var result = new Dictionary<string, ConfigEnvironmentKey>(StringComparer.OrdinalIgnoreCase);
 
-                if (result.IsError)
-                    return Result.Error<Dictionary<LayerIdentifier, List<ConfigEnvironmentKey>>>(result.Message, result.Code);
+            foreach (var layer in Layers)
+            foreach (var entry in layerData.First(l => l.Identifier == layer).Keys)
+                result[entry.Key] = entry.Value;
 
-                layerData[layerId] = result.Data.Keys.Values.ToList();
-            }
-
-            return Result.Success(layerData);
+            return Result.Success(result.Values.ToList() as IList<ConfigEnvironmentKey>);
         }
 
         /// <summary>
@@ -148,21 +143,48 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <param name="objectStore"></param>
         /// <returns></returns>
-        public async Task<IResult<Dictionary<string, string>>> GetKeysAsDictionary(IDomainObjectStore objectStore)
+        public async Task<IResult<IDictionary<string, string>>> GetKeysAsDictionary(IDomainObjectStore objectStore)
         {
-            var layerDataResult = await GetKeys(objectStore);
+            var layerDataResult = await GetLayers(objectStore);
 
             if (layerDataResult.IsError)
-                return Result.Error<Dictionary<string, string>>(layerDataResult.Message, layerDataResult.Code);
+                return Result.Error<IDictionary<string, string>>(layerDataResult.Message, layerDataResult.Code);
 
             var layerData = layerDataResult.Data;
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            IDictionary<string, string> result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var layer in Layers)
-            foreach (var entry in layerData[layer])
-                result[entry.Key] = entry.Value;
+            foreach (var entry in layerData.First(l => l.Identifier == layer).Keys)
+                result[entry.Key] = entry.Value.Value;
 
             return Result.Success(result);
+        }
+
+        /// <summary>
+        ///     resolve all layers and collect their Keys/Values
+        /// </summary>
+        /// <param name="objectStore"></param>
+        /// <returns></returns>
+        public async Task<IResult<List<EnvironmentLayer>>> GetLayers(IDomainObjectStore objectStore)
+        {
+            if (!Created)
+                return Result.Error<List<EnvironmentLayer>>("environment does not exist", ErrorCode.NotFound);
+
+            var list = new List<EnvironmentLayer>(Layers.Count);
+
+            foreach (var layerId in Layers)
+            {
+                var result = await objectStore.ReplayObject(new EnvironmentLayer(layerId),
+                                                            layerId.ToString(),
+                                                            CurrentVersion);
+
+                if (result.IsError)
+                    return Result.Error<List<EnvironmentLayer>>(result.Message, result.Code);
+
+                list.Add(result.Data);
+            }
+
+            return Result.Success(list);
         }
 
         /// <inheritdoc />

@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public LayerIdentifier Identifier { get; set; }
 
         /// <summary>
-        ///     Trees of Paths that represent all Keys in the Environment
+        ///     Trees of Paths that represent all Keys in this Layer
         /// </summary>
         public List<ConfigEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
