@@ -29,14 +29,6 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult> Delete(EnvironmentIdentifier identifier);
 
         /// <summary>
-        ///     remove a number of keys from the given Environment
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="keysToDelete"></param>
-        /// <returns></returns>
-        Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete);
-
-        /// <summary>
         ///     get a list of all Environments
         /// </summary>
         /// <param name="range"></param>
@@ -83,13 +75,5 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="parameters"></param>
         /// <returns></returns>
         Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters);
-
-        /// <summary>
-        ///     add or update a number of keys in the given Environmenet
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        Task<IResult> UpdateKeys(EnvironmentIdentifier identifier, ICollection<DtoConfigKey> keys);
     }
 }

@@ -91,34 +91,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult> DeleteKeys(EnvironmentIdentifier identifier, ICollection<string> keysToDelete)
-        {
-            _logger.LogDebug($"attempting to delete '{keysToDelete.Count}' keys from '{identifier}'");
-
-            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            var environment = envResult.Data;
-
-            _logger.LogDebug($"deleting '{keysToDelete.Count}' keys from environment '{identifier}'");
-            var result = environment.DeleteKeys(keysToDelete);
-            if (result.IsError)
-                return result;
-
-            _logger.LogDebug("validating resulting events");
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
-        }
-
-        /// <inheritdoc />
         public Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range)
             => GetAvailable(range, long.MaxValue);
 
@@ -168,6 +140,22 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                                                QueryRange range)
             => GetKeyAutoComplete(identifier, key, range, long.MaxValue);
 
+        private void MergePaths(IList<ConfigEnvironmentKeyPath> paths, ConfigEnvironmentKeyPath entry)
+        {
+            var existingEntry = paths.FirstOrDefault(e => e.Path == entry.Path);
+            if (existingEntry is null)
+            {
+                paths.Add(entry);
+            }
+            else
+            {
+                foreach (var child in entry.Children)
+                {
+                    MergePaths(existingEntry.Children, child);
+                }
+            }
+        }
+
         /// <inheritdoc />
         public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier,
                                                                                      string key,
@@ -194,7 +182,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         ErrorCode.NotFound);
 
                 var environment = envResult.Data;
-                var paths = environment.KeyPaths;
+
+                var layerResult = await environment.GetLayers(_domainObjectStore);
+                if (layerResult.IsError)
+                    return Result.Error<IList<DtoConfigKeyCompletion>>(layerResult.Message, layerResult.Code);
+                var layers = layerResult.Data;
+
+                var paths = new List<ConfigEnvironmentKeyPath>();
+
+                foreach (var entry in layers.SelectMany(layer => layer.KeyPaths))
+                    MergePaths(paths, entry);
 
                 // send auto-completion data for all roots
                 if (string.IsNullOrWhiteSpace(key))
@@ -318,8 +315,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                item => item,
                                                item => item.Key,
                                                keys => (IDictionary<string, string>) keys.ToImmutableDictionary(item => item.Key,
-                                                                                                                item => item.Value,
-                                                                                                                StringComparer.OrdinalIgnoreCase));
+                                                   item => item.Value,
+                                                   StringComparer.OrdinalIgnoreCase));
 
             if (result.IsError)
                 return result;
@@ -330,42 +327,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
 
             return result;
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult> UpdateKeys(EnvironmentIdentifier identifier, ICollection<DtoConfigKey> keys)
-        {
-            _logger.LogDebug($"attempting to update {keys.Count} keys in '{identifier}'");
-
-            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            var environment = envResult.Data;
-
-            if (!environment.Created)
-                return Result.Error("environment does not exist", ErrorCode.NotFound);
-
-            _logger.LogDebug($"transforming DTOs to '{nameof(ConfigEnvironmentKey)}'");
-            var updates = keys.Select(dto => new ConfigEnvironmentKey(dto.Key, dto.Value, dto.Type, dto.Description, 0))
-                              .ToList();
-
-            _logger.LogDebug("updating environment keys");
-            var result = environment.UpdateKeys(updates);
-
-            if (result.IsError)
-                return result;
-
-            _logger.LogDebug("validating generated events");
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
         }
 
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
@@ -514,9 +475,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (!environment.Created)
                     return Result.Error<TResult>($"environment '{environment.Identifier}' does not exist", ErrorCode.NotFound);
 
-                var query = environment.Keys
-                                       .Values
-                                       .AsQueryable();
+                var keyResult = await environment.GetKeys(_domainObjectStore);
+                if (keyResult.IsError)
+                    return Result.Error<TResult>(keyResult.Message, keyResult.Code);
+
+                var query = keyResult.Data
+                                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(parameters.Filter))
                 {
