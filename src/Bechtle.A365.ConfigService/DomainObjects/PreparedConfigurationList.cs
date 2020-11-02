@@ -56,8 +56,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             => new Dictionary<Type, Func<ReplayedEvent, bool>>
             {
                 {typeof(ConfigurationBuilt), HandleConfigurationBuiltEvent},
-                {typeof(EnvironmentKeysImported), HandleEnvironmentKeysImportedEvent},
-                {typeof(EnvironmentKeysModified), HandleEnvironmentKeysModifiedEvent},
                 {typeof(StructureVariablesModified), HandleStructureVariablesModifiedEvent}
             };
 
@@ -77,28 +75,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 ValidFrom = built.ValidFrom,
                 ValidTo = built.ValidTo
             };
-
-            return true;
-        }
-
-        private bool HandleEnvironmentKeysImportedEvent(ReplayedEvent replayedEvent)
-        {
-            if (!(replayedEvent.DomainEvent is EnvironmentKeysImported imported))
-                return false;
-
-            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedEnvironment == imported.Identifier))
-                info.Stale = true;
-
-            return true;
-        }
-
-        private bool HandleEnvironmentKeysModifiedEvent(ReplayedEvent replayedEvent)
-        {
-            if (!(replayedEvent.DomainEvent is EnvironmentKeysModified modified))
-                return false;
-
-            foreach (var (_, info) in InfoLookup.Where(l => l.Value.UsedEnvironment == modified.Identifier))
-                info.Stale = true;
 
             return true;
         }

@@ -41,7 +41,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 {typeof(DefaultEnvironmentCreated), HandleDefaultEnvironmentCreatedEvent},
                 {typeof(EnvironmentCreated), HandleEnvironmentCreatedEvent},
                 {typeof(EnvironmentDeleted), HandleEnvironmentDeletedEvent},
-                {typeof(EnvironmentKeysImported), HandleEnvironmentKeysImportedEvent}
             };
 
         private bool HandleDefaultEnvironmentCreatedEvent(ReplayedEvent replayedEvent)
@@ -69,15 +68,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
             if (Identifiers.Contains(deleted.Identifier))
                 Identifiers.Remove(deleted.Identifier);
-            return true;
-        }
-
-        private bool HandleEnvironmentKeysImportedEvent(ReplayedEvent replayedEvent)
-        {
-            if (!(replayedEvent.DomainEvent is EnvironmentKeysImported imported))
-                return false;
-
-            Identifiers.Add(imported.Identifier);
             return true;
         }
     }
