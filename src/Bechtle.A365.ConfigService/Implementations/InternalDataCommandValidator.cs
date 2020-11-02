@@ -9,34 +9,6 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// <inheritdoc />
     public class InternalDataCommandValidator : ICommandValidator
     {
-        /// <inheritdoc />
-        public IResult ValidateDomainEvent(DomainEvent domainEvent)
-        {
-            if (domainEvent is null)
-                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
-
-            if (string.IsNullOrWhiteSpace(domainEvent.EventType))
-                return Result.Error("event does not contain EventType", ErrorCode.ValidationFailed);
-
-            var result = domainEvent switch
-            {
-                ConfigurationBuilt @event => ValidateDomainEvent(@event),
-                DefaultEnvironmentCreated @event => ValidateDomainEvent(@event),
-                EnvironmentCreated @event => ValidateDomainEvent(@event),
-                EnvironmentDeleted @event => ValidateDomainEvent(@event),
-                EnvironmentKeysImported @event => ValidateDomainEvent(@event),
-                EnvironmentKeysModified @event => ValidateDomainEvent(@event),
-                StructureCreated @event => ValidateDomainEvent(@event),
-                StructureDeleted @event => ValidateDomainEvent(@event),
-                StructureVariablesModified @event => ValidateDomainEvent(@event),
-                _ => Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed)
-            };
-
-            KnownMetrics.EventsValidated.WithLabels(result.IsError ? "Invalid" : "Valid").Inc();
-
-            return result;
-        }
-
         /// <summary>
         ///     validate a single <see cref="ConfigKeyAction" />
         /// </summary>
@@ -142,7 +114,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private static IResult ValidateDomainEvent(EnvironmentKeysImported @event)
+        private static IResult ValidateDomainEvent(EnvironmentLayerKeysImported @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -155,7 +127,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private static IResult ValidateDomainEvent(EnvironmentKeysModified @event)
+        private static IResult ValidateDomainEvent(EnvironmentLayerKeysModified @event)
         {
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
@@ -268,6 +240,81 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (identifier.Version <= 0)
                 return Result.Error("invalid StructureIdentifier.Version (x <= 0)", ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+
+        private static IResult ValidateIdentifier(LayerIdentifier identifier)
+        {
+            if (identifier is null)
+                return Result.Error("invalid StructureIdentifier (null)", ErrorCode.ValidationFailed);
+
+            if (string.IsNullOrWhiteSpace(identifier.Name))
+                return Result.Error("invalid StructureIdentifier.Name (empty / null)", ErrorCode.ValidationFailed);
+
+            return Result.Success();
+        }
+
+        /// <inheritdoc />
+        public IResult ValidateDomainEvent(DomainEvent domainEvent)
+        {
+            if (domainEvent is null)
+                return Result.Error("invalid data: null event", ErrorCode.ValidationFailed);
+
+            if (string.IsNullOrWhiteSpace(domainEvent.EventType))
+                return Result.Error("event does not contain EventType", ErrorCode.ValidationFailed);
+
+            var result = domainEvent switch
+            {
+                ConfigurationBuilt @event => ValidateDomainEvent(@event),
+                DefaultEnvironmentCreated @event => ValidateDomainEvent(@event),
+                EnvironmentCreated @event => ValidateDomainEvent(@event),
+                EnvironmentDeleted @event => ValidateDomainEvent(@event),
+                EnvironmentLayersModified @event => ValidateDomainEvent(@event),
+                EnvironmentLayerCreated @event => ValidateDomainEvent(@event),
+                EnvironmentLayerDeleted @event => ValidateDomainEvent(@event),
+                EnvironmentLayerKeysImported @event => ValidateDomainEvent(@event),
+                EnvironmentLayerKeysModified @event => ValidateDomainEvent(@event),
+                StructureCreated @event => ValidateDomainEvent(@event),
+                StructureDeleted @event => ValidateDomainEvent(@event),
+                StructureVariablesModified @event => ValidateDomainEvent(@event),
+                _ => Result.Error($"DomainEvent '{domainEvent.GetType().Name}' can't be validated; not supported", ErrorCode.ValidationFailed)
+            };
+
+            KnownMetrics.EventsValidated.WithLabels(result.IsError ? "Invalid" : "Valid").Inc();
+
+            return result;
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentLayerDeleted @event)
+        {
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentLayerCreated @event)
+        {
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentLayersModified @event)
+        {
+            var identifierResult = ValidateIdentifier(@event.Identifier);
+            if (identifierResult.IsError)
+                return identifierResult;
+
+            if (@event.Layers is null)
+                return Result.Error("invalid data: layers is null", ErrorCode.ValidationFailed);
+
+            if (@event.Layers.Distinct().Count() != @event.Layers.Count)
+                return Result.Error("invalid data: layers-entries are not unique", ErrorCode.ValidationFailed);
 
             return Result.Success();
         }
