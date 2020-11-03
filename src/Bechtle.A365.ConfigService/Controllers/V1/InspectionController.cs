@@ -62,9 +62,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeyResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            var envKeyResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
             {
-                Environment = envId,
+                Identifier = envId,
                 Range = QueryRange.All
             });
 
@@ -99,9 +99,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeyResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            var envKeyResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
             {
-                Environment = envId,
+                Identifier = envId,
                 Range = QueryRange.All
             });
 
@@ -157,9 +157,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structId = new StructureIdentifier(structureName, structureVersion);
 
-            var envKeysResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            var envKeysResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
             {
-                Environment = envId,
+                Identifier = envId,
                 Range = QueryRange.All
             });
 
@@ -273,9 +273,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeysResult = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            var envKeysResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
             {
-                Environment = envId,
+                Identifier = envId,
                 Range = QueryRange.All
             });
 

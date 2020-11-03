@@ -7,16 +7,39 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public sealed class ProjectionStore : IProjectionStore
     {
         /// <inheritdoc cref="ProjectionStore" />
+        /// <param name="layerStore"></param>
         /// <param name="structureStore"></param>
         /// <param name="environmentStore"></param>
         /// <param name="configurationStore"></param>
-        public ProjectionStore(IStructureProjectionStore structureStore,
+        public ProjectionStore(ILayerProjectionStore layerStore,
+                               IStructureProjectionStore structureStore,
                                IEnvironmentProjectionStore environmentStore,
                                IConfigurationProjectionStore configurationStore)
         {
+            Layers = layerStore;
             Structures = structureStore;
             Environments = environmentStore;
             Configurations = configurationStore;
+        }
+
+        /// <inheritdoc />
+        public IConfigurationProjectionStore Configurations { get; }
+
+        /// <inheritdoc />
+        public IEnvironmentProjectionStore Environments { get; }
+
+        /// <inheritdoc />
+        public ILayerProjectionStore Layers { get; }
+
+        /// <inheritdoc />
+        public IStructureProjectionStore Structures { get; }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Configurations?.Dispose();
+            Environments?.Dispose();
+            Structures?.Dispose();
         }
 
         /// <inheritdoc />
@@ -31,22 +54,5 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (Structures != null)
                 await Structures.DisposeAsync();
         }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            Configurations?.Dispose();
-            Environments?.Dispose();
-            Structures?.Dispose();
-        }
-
-        /// <inheritdoc />
-        public IConfigurationProjectionStore Configurations { get; }
-
-        /// <inheritdoc />
-        public IEnvironmentProjectionStore Environments { get; }
-
-        /// <inheritdoc />
-        public IStructureProjectionStore Structures { get; }
     }
 }

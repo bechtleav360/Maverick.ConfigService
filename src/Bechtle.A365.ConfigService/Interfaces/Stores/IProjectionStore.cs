@@ -13,6 +13,9 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <inheritdoc cref="IEnvironmentProjectionStore" />
         IEnvironmentProjectionStore Environments { get; }
 
+        /// <inheritdoc cref="ILayerProjectionStore" />
+        ILayerProjectionStore Layers { get; }
+
         /// <inheritdoc cref="IStructureProjectionStore" />
         IStructureProjectionStore Structures { get; }
     }

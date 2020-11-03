@@ -53,9 +53,9 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var id = new EnvironmentIdentifier(envExport.Category, envExport.Name);
 
-            var env = await _store.Environments.GetKeyObjects(new EnvironmentKeyQueryParameters
+            var env = await _store.Environments.GetKeyObjects(new KeyQueryParameters<EnvironmentIdentifier>
             {
-                Environment = id,
+                Identifier = id,
                 Range = QueryRange.All
             });
 

@@ -278,9 +278,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(EnvironmentKeyQueryParameters parameters)
+        public async Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<EnvironmentIdentifier> parameters)
         {
-            _logger.LogDebug($"retrieving keys for {parameters.Environment} to return as objects");
+            _logger.LogDebug($"retrieving keys for {parameters.Identifier} to return as objects");
 
             var result = await GetKeysInternal(parameters,
                                                item => new DtoConfigKey
@@ -307,9 +307,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetKeys(EnvironmentKeyQueryParameters parameters)
+        public async Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<EnvironmentIdentifier> parameters)
         {
-            _logger.LogDebug($"retrieving keys of environment '{parameters.Environment}'");
+            _logger.LogDebug($"retrieving keys of environment '{parameters.Identifier}'");
 
             var result = await GetKeysInternal(parameters,
                                                item => item,
@@ -321,7 +321,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (result.IsError)
                 return result;
 
-            _logger.LogDebug($"got {result.Data.Count} keys for '{parameters.Environment}'");
+            _logger.LogDebug($"got {result.Data.Count} keys for '{parameters.Identifier}'");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
@@ -445,7 +445,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="keySelector">selector pointing to the 'Key' property of the intermediate representation</param>
         /// <param name="transform">final transformation applied to the result-set</param>
         /// <returns></returns>
-        private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(EnvironmentKeyQueryParameters parameters,
+        private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(KeyQueryParameters<EnvironmentIdentifier> parameters,
                                                                              Expression<Func<ConfigEnvironmentKey, TItem>> selector,
                                                                              Func<TItem, string> keySelector,
                                                                              Func<IEnumerable<TItem>, TResult> transform)
@@ -454,7 +454,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 _logger.LogDebug("retrieving keys using parameters:" +
-                                 $"{nameof(parameters.Environment)}: {parameters.Environment}, " +
+                                 $"{nameof(parameters.Identifier)}: {parameters.Identifier}, " +
                                  $"{nameof(parameters.Filter)}: {parameters.Filter}, " +
                                  $"{nameof(parameters.PreferExactMatch)}: {parameters.PreferExactMatch}, " +
                                  $"{nameof(parameters.Range)}: {parameters.Range}, " +
@@ -462,10 +462,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 // if TargetVersion is above 0, we try to find the specified version of ConfigEnvironment
                 var envResult = await (parameters.TargetVersion <= 0
-                                           ? _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Environment),
-                                                                             parameters.Environment.ToString())
-                                           : _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Environment),
-                                                                             parameters.Environment.ToString(),
+                                           ? _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Identifier),
+                                                                             parameters.Identifier.ToString())
+                                           : _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Identifier),
+                                                                             parameters.Identifier.ToString(),
                                                                              parameters.TargetVersion));
                 if (envResult.IsError)
                     return Result.Error<TResult>(envResult.Message, envResult.Code);
@@ -508,8 +508,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to retrieve keys for environment ({parameters.Environment})");
-                return Result.Error<TResult>($"failed to retrieve keys for environment ({parameters.Environment})", ErrorCode.DbQueryError);
+                _logger.LogError(e, $"failed to retrieve keys for environment ({parameters.Identifier})");
+                return Result.Error<TResult>($"failed to retrieve keys for environment ({parameters.Identifier})", ErrorCode.DbQueryError);
             }
         }
 

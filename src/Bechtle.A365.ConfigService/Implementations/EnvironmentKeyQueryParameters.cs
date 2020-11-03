@@ -4,17 +4,15 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 namespace Bechtle.A365.ConfigService.Implementations
 {
     /// <summary>
-    ///     structured parameters for
-    ///     <see cref="Interfaces.Stores.IEnvironmentProjectionStore.GetKeys" />
-    ///     and
-    ///     <see cref="Interfaces.Stores.IEnvironmentProjectionStore.GetKeyObjects(EnvironmentKeyQueryParameters)" />
+    ///     structured parameters for retrieving keys from an Environment or Layer
     /// </summary>
-    public struct EnvironmentKeyQueryParameters
+    public struct KeyQueryParameters<T>
+        where T : Identifier
     {
         /// <summary>
-        ///     [Required] Environment-Id whose keys should be retrieved
+        ///     [Required] Id whose keys should be retrieved
         /// </summary>
-        public EnvironmentIdentifier Environment { get; set; }
+        public T Identifier { get; set; }
 
         /// <summary>
         ///     [Optional] Filter to apply to all Keys

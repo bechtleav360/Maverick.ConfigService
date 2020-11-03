@@ -100,45 +100,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
-        ///     delete keys from the environment
-        /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        [HttpDelete("{category}/{name}/keys", Name = "DeleteFromEnvironment")]
-        public async Task<IActionResult> DeleteKeys([FromRoute] string category,
-                                                    [FromRoute] string name,
-                                                    [FromBody] string[] keys)
-        {
-            if (string.IsNullOrWhiteSpace(category))
-                return BadRequest($"{nameof(category)} is empty");
-
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest($"{nameof(name)} is empty");
-
-            if (keys == null || !keys.Any())
-                return BadRequest("no keys received");
-
-            try
-            {
-                var result = await _store.Environments.DeleteKeys(new EnvironmentIdentifier(category, name), keys);
-                if (result.IsError)
-                    return ProviderError(result);
-
-                return AcceptedAtAction(nameof(GetKeys),
-                                        RouteUtilities.ControllerName<EnvironmentController>(),
-                                        new {version = ApiVersions.V1, category, name});
-            }
-            catch (Exception e)
-            {
-                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to delete keys from Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed delete keys");
-            }
-        }
-
-        /// <summary>
         ///     get a list of available environments
         /// </summary>
         /// <param name="offset"></param>
@@ -198,9 +159,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             try
             {
 
-                var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+                var result = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
                 {
-                    Environment = identifier,
+                    Identifier = identifier,
                     Filter = filter,
                     PreferExactMatch = preferExactMatch,
                     Range = range,
@@ -251,9 +212,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var identifier = new EnvironmentIdentifier(category, name);
 
-                var result = await _store.Environments.GetKeys(new EnvironmentKeyQueryParameters
+                var result = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
                 {
-                    Environment = identifier,
+                    Identifier = identifier,
                     Filter = filter,
                     PreferExactMatch = preferExactMatch,
                     Range = QueryRange.All,
@@ -310,9 +271,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var identifier = new EnvironmentIdentifier(category, name);
 
-                var result = await _store.Environments.GetKeyObjects(new EnvironmentKeyQueryParameters
+                var result = await _store.Environments.GetKeyObjects(new KeyQueryParameters<EnvironmentIdentifier>
                 {
-                    Environment = identifier,
+                    Identifier = identifier,
                     Filter = filter,
                     PreferExactMatch = preferExactMatch,
                     Range = range,
@@ -346,53 +307,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                    $"{nameof(length)}: {length}; " +
                                    $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
-            }
-        }
-
-        /// <summary>
-        ///     add or update keys in the environment
-        /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        [HttpPut("{category}/{name}/keys", Name = "UpdateEnvironment")]
-        public async Task<IActionResult> UpdateKeys([FromRoute] string category,
-                                                    [FromRoute] string name,
-                                                    [FromBody] DtoConfigKey[] keys)
-        {
-            if (string.IsNullOrWhiteSpace(category))
-                return BadRequest($"{nameof(category)} is empty");
-
-            if (string.IsNullOrWhiteSpace(name))
-                return BadRequest($"{nameof(name)} is empty");
-
-            if (keys == null || !keys.Any())
-                return BadRequest("no keys received");
-
-            var groups = keys.GroupBy(k => k.Key)
-                             .ToArray();
-
-            if (groups.Any(g => g.Count() > 1))
-                return BadRequest("duplicate keys received: " +
-                                  string.Join(';',
-                                              groups.Where(g => g.Count() > 1)
-                                                    .Select(g => $"'{g.Key}'")));
-
-            try
-            {
-                var result = await _store.Environments.UpdateKeys(new EnvironmentIdentifier(category, name), keys);
-                if (result.IsError)
-                    return ProviderError(result);
-
-                return AcceptedAtAction(nameof(GetKeys),
-                                        RouteUtilities.ControllerName<EnvironmentController>(),
-                                        new {version = ApiVersions.V1, category, name});
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e, $"failed to update keys of Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
             }
         }
     }
