@@ -99,7 +99,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="targetVersion"></param>
         /// <returns></returns>
         [HttpGet(Name = "GetLayers")]
-        [HttpGet("available", Name = "GetAvailableLayers")]
         public async Task<IActionResult> GetAvailableLayers([FromQuery] int offset = -1,
                                                             [FromQuery] int length = -1,
                                                             [FromQuery] long targetVersion = -1)

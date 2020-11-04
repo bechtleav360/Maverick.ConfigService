@@ -144,8 +144,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 {
                     identifiers = envList.Data
                                          .GetIdentifiers()
-                                         .OrderBy(e => e.Category)
-                                         .ThenBy(e => e.Name)
+                                         .OrderBy(e => e.Name)
                                          .Skip(range.Offset)
                                          .Take(range.Length)
                                          .ToList();
