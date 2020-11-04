@@ -250,6 +250,7 @@ namespace Bechtle.A365.ConfigService
                         options.Configuration = connectionString;
                     })
                     .AddTransient<IProjectionStore, ProjectionStore>(_logger)
+                    .AddTransient<ILayerProjectionStore, LayerProjectionStore>(_logger)
                     .AddTransient<IStructureProjectionStore, StructureProjectionStore>(_logger)
                     .AddTransient<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
                     .AddTransient<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)
