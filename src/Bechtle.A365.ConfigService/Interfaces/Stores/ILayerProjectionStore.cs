@@ -28,6 +28,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult> Delete(LayerIdentifier identifier);
 
         /// <summary>
+        ///     remove a number of keys from the given Layer
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="keysToDelete"></param>
+        /// <returns></returns>
+        Task<IResult> DeleteKeys(LayerIdentifier identifier, ICollection<string> keysToDelete);
+
+        /// <summary>
         ///     get a list of all Layers
         /// </summary>
         /// <param name="range"></param>
@@ -74,5 +82,13 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="parameters"></param>
         /// <returns></returns>
         Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters);
+
+        /// <summary>
+        ///     add or update a number of keys in the given Layer
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        Task<IResult> UpdateKeys(LayerIdentifier identifier, ICollection<DtoConfigKey> keys);
     }
 }
