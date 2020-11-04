@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -75,5 +76,28 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="parameters"></param>
         /// <returns></returns>
         Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<EnvironmentIdentifier> parameters);
+
+        /// <summary>
+        ///     get the ordered list of assigned layers for the given <see cref="EnvironmentIdentifier"/>
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     get the ordered list of assigned layers for the given <see cref="EnvironmentIdentifier"/> at the given Version
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version);
+
+        /// <summary>
+        ///     assign the given list of layers in the given order to an Environment
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <param name="layers"></param>
+        /// <returns></returns>
+        Task<IResult> AssignLayers(EnvironmentIdentifier identifier, IList<LayerIdentifier> layers);
     }
 }

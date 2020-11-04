@@ -158,7 +158,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var identifier = new EnvironmentIdentifier(category, name);
             try
             {
-
                 var result = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
                 {
                     Identifier = identifier,
@@ -209,7 +208,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         {
             try
             {
-
                 var identifier = new EnvironmentIdentifier(category, name);
 
                 var result = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
@@ -307,6 +305,55 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                    $"{nameof(length)}: {length}; " +
                                    $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
+            }
+        }
+
+        /// <summary>
+        ///     assign the given layers in their given order as the content of this Environment
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="layers">ordered list of Layers to be assigned</param>
+        /// <returns></returns>
+        [HttpPut("{category}/{name}/layers", Name = "AssignLayers")]
+        public async Task<IActionResult> AssignLayers([FromRoute] string category,
+                                                      [FromRoute] string name,
+                                                      [FromBody] LayerIdentifier[] layers)
+        {
+            try
+            {
+                return Result(
+                    await _store.Environments.AssignLayers(
+                        new EnvironmentIdentifier(category, name),
+                        layers));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, $"failed to assign Layers to Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to assign layers to environment");
+            }
+        }
+
+        /// <summary>
+        ///     get the assigned layers and their order for this Environment
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet("{category}/{name}/layers", Name = "GetAssignedLayers")]
+        public async Task<IActionResult> GetAssignedLayers([FromRoute] string category,
+                                                           [FromRoute] string name)
+        {
+            try
+            {
+                return Result(await _store.Environments.GetAssignedLayers(new EnvironmentIdentifier(category, name)));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, $"failed to retrieve assigned Layers for Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve assigned layers for environment");
             }
         }
     }

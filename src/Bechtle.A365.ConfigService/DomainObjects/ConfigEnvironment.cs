@@ -30,6 +30,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Deleted = false;
             Identifier = new EnvironmentIdentifier(identifier.Category, identifier.Name);
             IsDefault = false;
+            Layers = new List<LayerIdentifier>();
         }
 
         /// <summary>
@@ -206,7 +207,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 {typeof(DefaultEnvironmentCreated), HandleDefaultEnvironmentCreatedEvent},
                 {typeof(EnvironmentCreated), HandleEnvironmentCreatedEvent},
                 {typeof(EnvironmentDeleted), HandleEnvironmentDeletedEvent},
-                {typeof(EnvironmentLayersModified), HandleEnvironmentLayersModified}
+                {typeof(EnvironmentLayersModified), HandleEnvironmentLayersModified},
+                {typeof(EnvironmentLayerKeysImported), HandleEnvironmentLayerKeysImported},
+                {typeof(EnvironmentLayerKeysModified), HandleEnvironmentLayerKeysModified}
             };
 
         /// <inheritdoc />
@@ -241,6 +244,22 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Deleted = true;
             return true;
         }
+
+        /// <summary>
+        ///     check if a layer that is currently being used is being updated.
+        ///     updates to the used layers need to increase <see cref="DomainObject.CurrentVersion" />, so we see an accurate representation of our Layers
+        /// </summary>
+        private bool HandleEnvironmentLayerKeysImported(ReplayedEvent replayedEvent)
+            => replayedEvent.DomainEvent is EnvironmentLayerKeysImported imported
+               && Layers.Contains(imported.Identifier);
+
+        /// <summary>
+        ///     check if a layer that is currently being used is being updated.
+        ///     updates to the used layers need to increase <see cref="DomainObject.CurrentVersion" />, so we see an accurate representation of our Layers
+        /// </summary>
+        private bool HandleEnvironmentLayerKeysModified(ReplayedEvent replayedEvent)
+            => replayedEvent.DomainEvent is EnvironmentLayerKeysModified modified
+               && Layers.Contains(modified.Identifier);
 
         private bool HandleEnvironmentLayersModified(ReplayedEvent replayedEvent)
         {

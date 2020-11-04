@@ -17,9 +17,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc />
     public sealed class EnvironmentProjectionStore : IEnvironmentProjectionStore
     {
+        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IEventStore _eventStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
-        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc cref="EnvironmentProjectionStore" />
@@ -32,6 +32,49 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _validators = validators.ToList();
             _eventStore = eventStore;
             _domainObjectStore = domainObjectStore;
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> AssignLayers(EnvironmentIdentifier identifier, IList<LayerIdentifier> layers)
+        {
+            _logger.LogDebug($"attempting to assign {layers.Count} layers to '{identifier}'");
+
+            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
+            if (envResult.IsError)
+                return envResult;
+
+            if (!envResult.Data.Created)
+                return Result.Error("environment does not exist", ErrorCode.NotFound);
+
+            var environment = envResult.Data;
+
+            // check if all layers are valid and can be assigned right now
+            foreach (var layerId in layers)
+            {
+                var layerResult = await _domainObjectStore.ReplayObject(new EnvironmentLayer(layerId), layerId.ToString());
+                if (layerResult.IsError)
+                    return layerResult;
+
+                if (!layerResult.Data.Created)
+                    return Result.Error($"layer {layerId} does not exist", ErrorCode.NotFound);
+            }
+
+            _logger.LogDebug("assigning layers");
+            var result = environment.AssignLayers(layers);
+
+            if (result.IsError)
+                return result;
+
+            _logger.LogDebug("validating generated events");
+            var errors = environment.Validate(_validators);
+            if (errors.Any())
+                return Result.Error("failed to validate generated DomainEvents",
+                                    ErrorCode.ValidationFailed,
+                                    errors.Values
+                                          .SelectMany(_ => _)
+                                          .ToList());
+
+            return await environment.WriteRecordedEvents(_eventStore);
         }
 
         /// <inheritdoc />
@@ -91,6 +134,44 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
+        public void Dispose()
+        {
+            _domainObjectStore?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            if (_domainObjectStore != null)
+                await _domainObjectStore.DisposeAsync();
+        }
+
+        /// <inheritdoc />
+        public Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier) => GetAssignedLayers(identifier, int.MaxValue);
+
+        /// <inheritdoc />
+        public async Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version)
+        {
+            var envResult = await (version <= 0
+                                       ? _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString())
+                                       : _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString(), version));
+
+            if (envResult.IsError)
+                return Result.Error<IList<LayerIdentifier>>(
+                    "no environment found with (" +
+                    $"{nameof(identifier.Category)}: {identifier.Category}; " +
+                    $"{nameof(identifier.Name)}: {identifier.Name})",
+                    ErrorCode.NotFound);
+
+            var environment = envResult.Data;
+
+            return Result.Success<IList<LayerIdentifier>>(environment.Layers
+                                                                     ?.OrderBy(l => l.Name)
+                                                                     ?.ToList()
+                                                          ?? new List<LayerIdentifier>());
+        }
+
+        /// <inheritdoc />
         public Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range)
             => GetAvailable(range, long.MaxValue);
 
@@ -140,22 +221,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                                                QueryRange range)
             => GetKeyAutoComplete(identifier, key, range, long.MaxValue);
 
-        private void MergePaths(IList<ConfigEnvironmentKeyPath> paths, ConfigEnvironmentKeyPath entry)
-        {
-            var existingEntry = paths.FirstOrDefault(e => e.Path == entry.Path);
-            if (existingEntry is null)
-            {
-                paths.Add(entry);
-            }
-            else
-            {
-                foreach (var child in entry.Children)
-                {
-                    MergePaths(existingEntry.Children, child);
-                }
-            }
-        }
-
         /// <inheritdoc />
         public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier,
                                                                                      string key,
@@ -166,7 +231,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 _logger.LogDebug($"attempting to retrieve next paths in '{identifier}' for path '{key}', range={range}");
 
-                _logger.LogDebug($"removing escape-sequences from key");
+                _logger.LogDebug("removing escape-sequences from key");
                 key = Uri.UnescapeDataString(key ?? string.Empty);
                 _logger.LogDebug($"using new key='{key}'");
 
@@ -219,7 +284,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 // if the user is searching within the roots
                 if (!parts.Any())
                 {
-                    _logger.LogDebug($"no further parts found, returning direct children");
+                    _logger.LogDebug("no further parts found, returning direct children");
 
                     var possibleRoots = paths.Where(p => p.Path.Contains(rootPart))
                                              .ToList();
@@ -387,7 +452,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     continue;
                 }
 
-                _logger.LogDebug($"no matches found, suggesting ");
+                _logger.LogDebug("no matches found, suggesting ");
                 var suggested = current.Children
                                        .Where(c => c.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
                                        .ToList();
@@ -513,6 +578,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
         }
 
+        private void MergePaths(IList<ConfigEnvironmentKeyPath> paths, ConfigEnvironmentKeyPath entry)
+        {
+            var existingEntry = paths.FirstOrDefault(e => e.Path == entry.Path);
+            if (existingEntry is null)
+                paths.Add(entry);
+            else
+                foreach (var child in entry.Children)
+                    MergePaths(existingEntry.Children, child);
+        }
+
         /// <summary>
         ///     remove the 'root' portion of each given key
         /// </summary>
@@ -593,19 +668,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogError(e, $"could not remove root '{root}' from all ConfigKeys");
                 return Result.Error<IEnumerable<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys", ErrorCode.Undefined);
             }
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            _domainObjectStore?.Dispose();
-        }
-
-        /// <inheritdoc />
-        public async ValueTask DisposeAsync()
-        {
-            if (_domainObjectStore != null)
-                await _domainObjectStore.DisposeAsync();
         }
     }
 }
