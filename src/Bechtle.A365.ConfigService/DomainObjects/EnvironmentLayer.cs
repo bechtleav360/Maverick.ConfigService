@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     flag this layer as existing, and create the appropriate events for that
         /// </summary>
         /// <returns></returns>
-        public IResult Create(bool isDefault = false)
+        public IResult Create()
         {
             if (Created)
                 return Result.Success();
