@@ -13,8 +13,8 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// <inheritdoc />
     public class DataImporter : IDataImporter
     {
-        private readonly IEventStore _eventStore;
         private readonly IDomainObjectStore _domainObjectStore;
+        private readonly IEventStore _eventStore;
         private readonly ICommandValidator[] _validators;
 
         /// <inheritdoc cref="DataImporter" />
@@ -33,6 +33,38 @@ namespace Bechtle.A365.ConfigService.Implementations
             if (export is null)
                 return Result.Error($"{nameof(export)} must not be null", ErrorCode.InvalidData);
 
+            foreach (var layerExport in export.Layers)
+            {
+                var identifier = new LayerIdentifier(layerExport.Name);
+
+                var layerResult = await _domainObjectStore.ReplayObject(new EnvironmentLayer(identifier), identifier.ToString());
+                if (layerResult.IsError)
+                    return layerResult;
+
+                var layer = layerResult.Data;
+
+                if (!layer.Created)
+                    layer.Create();
+
+                layer.ImportKeys(layerExport.Keys
+                                            .Select(k => new ConfigEnvironmentKey(k.Key, k.Value, k.Type, k.Description, 0))
+                                            .ToList());
+
+                var errors = layer.Validate(_validators);
+                if (errors.Any())
+                {
+                    var errorMessages = string.Join("\r\n", errors.Values
+                                                                  .SelectMany(_ => _)
+                                                                  .Select(r => r.Message));
+
+                    return Result.Error($"data-validation failed; {errorMessages}", ErrorCode.ValidationFailed);
+                }
+
+                var result = await layer.WriteRecordedEvents(_eventStore);
+                if (result.IsError)
+                    return result;
+            }
+
             foreach (var envExport in export.Environments)
             {
                 var identifier = new EnvironmentIdentifier(envExport.Category, envExport.Name);
@@ -42,10 +74,10 @@ namespace Bechtle.A365.ConfigService.Implementations
                     return envResult;
 
                 var environment = envResult.Data;
+                if (!environment.Created)
+                    environment.Create();
 
-                //environment.ImportKeys(envExport.Keys
-                //                                .Select(k => new ConfigEnvironmentKey(k.Key, k.Value, k.Type, k.Description, 0))
-                //                                .ToList());
+                environment.AssignLayers(envExport.Layers);
 
                 var errors = environment.Validate(_validators);
                 if (errors.Any())
