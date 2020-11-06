@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
-        [Option("-i|--input", Description = "location of environment-dump")]
+        [Option("-i|--input", Description = "location of layer-dump")]
         public string InputFile { get; set; }
 
         [Option("-m|--mode", Description = "which operations should be executed to match the target-environment. " +
@@ -83,11 +83,11 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return 1;
         }
 
-        private IList<EnvironmentComparison> DeserializeInput(string json)
+        private IList<LayerComparison> DeserializeInput(string json)
         {
             try
             {
-                return JsonSerializer.Deserialize<List<EnvironmentComparison>>(json, new JsonSerializerOptions
+                return JsonSerializer.Deserialize<List<LayerComparison>>(json, new JsonSerializerOptions
                 {
                     Converters =
                     {
@@ -101,11 +101,11 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             catch (JsonException e)
             {
                 Output.WriteError($"could not deserialize json: {e.Message}");
-                return new List<EnvironmentComparison>();
+                return new List<LayerComparison>();
             }
         }
 
-        private Task ExecuteActions(EnvironmentIdentifier identifier, IEnumerable<ConfigKeyAction> actions)
+        private Task ExecuteActions(LayerIdentifier identifier, IEnumerable<ConfigKeyAction> actions)
         {
             try
             {
@@ -133,14 +133,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
                 if ((Mode & ComparisonMode.Delete) != 0 && deletions.Any())
                     return RestRequest.Make(Output)
-                                      .Delete(new Uri(new Uri(ConfigServiceEndpoint), $"v1/environments/{identifier.Category}/{identifier.Name}/keys"),
+                                      .Delete(new Uri(new Uri(ConfigServiceEndpoint), $"v1/layers/{identifier.Name}/keys"),
                                               new StringContent(serializedDeletions,
                                                                 Encoding.UTF8,
                                                                 "application/json"));
 
                 if ((Mode & ComparisonMode.Add) != 0 && changes.Any())
                     return RestRequest.Make(Output)
-                                      .Put(new Uri(new Uri(ConfigServiceEndpoint), $"v1/environments/{identifier.Category}/{identifier.Name}/keys"),
+                                      .Put(new Uri(new Uri(ConfigServiceEndpoint), $"v1/layers/{identifier.Name}/keys"),
                                            new StringContent(serializedChanges,
                                                              Encoding.UTF8,
                                                              "application/json"));

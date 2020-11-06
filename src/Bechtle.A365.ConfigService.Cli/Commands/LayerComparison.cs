@@ -4,11 +4,11 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
-    public class EnvironmentComparison
+    public class LayerComparison
     {
-        public EnvironmentIdentifier Source { get; set; }
+        public LayerIdentifier Source { get; set; }
 
-        public EnvironmentIdentifier Target { get; set; }
+        public LayerIdentifier Target { get; set; }
 
         public List<ConfigKeyAction> RequiredActions { get; set; }
     }

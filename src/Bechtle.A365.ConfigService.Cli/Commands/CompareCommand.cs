@@ -24,17 +24,17 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
-        [Option("-e|--environment", Description = "Environment to compare against the Input-Environment, given in \"{Category}/{Name}\" form")]
-        public string[] Environments { get; set; } = new string[0];
+        [Option("-l|--layer", Description = "Layer to compare against the Input-Layer")]
+        public string[] Layers { get; set; } = new string[0];
 
-        [Option("-i|--input", Description = "location of environment-dump")]
+        [Option("-i|--input", Description = "location of layer-dump")]
         public string InputFile { get; set; } = string.Empty;
 
         [Option("--keep-null-properties", CommandOptionType.NoValue,
-            Description = "set this flag to retain null-values if present. otherwise they are replaced with \"\"")]
+                Description = "set this flag to retain null-values if present. otherwise they are replaced with \"\"")]
         public bool KeepNullProperties { get; set; } = false;
 
-        [Option("-m|--mode", Description = "which operations should be executed to match the target-environment. " +
+        [Option("-m|--mode", Description = "which operations should be executed to match the target-layer. " +
                                            "\n\t\t- 'Add'   : add keys which are new in source. " +
                                            "\n\t\t- 'Delete': remove keys that have been deleted in source. " +
                                            "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
@@ -43,10 +43,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         [Option("-o|--output", Description = "location to export data to")]
         public string OutputFile { get; set; } = string.Empty;
 
-        [Option("-u|--use-environment", Description = "Environment to use from the ones available in <InputFile> or <stdin> if multiple defined. " +
-                                                      "given in \"{Category}/{Name}\" form. " +
-                                                      "Can be left out if only one is defined.")]
-        public string UseInputEnvironment { get; set; } = string.Empty;
+        [Option("-u|--use-layer", Description = "Layer to use from the ones available in <InputFile> or <stdin> if multiple defined. " +
+                                                "Can be left out if only one is defined.")]
+        public string UseInputLayer { get; set; } = string.Empty;
 
         /// <inheritdoc />
         protected override bool CheckParameters()
@@ -55,16 +54,16 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             if (!base.CheckParameters())
                 return false;
 
-            if (Environments is null || !Environments.Any())
+            if (Layers is null || !Layers.Any())
             {
-                Output.WriteError($"no {nameof(Environments)} given -- see help for more information");
+                Output.WriteError($"no {nameof(Layers)} given -- see help for more information");
                 return false;
             }
 
             // if environment doesn't contain '/' or contains multiple of them...
-            var errEnvironments = Environments.Where(e => !e.Contains('/') ||
-                                                          e.IndexOf('/') != e.LastIndexOf('/'))
-                                              .ToArray();
+            var errEnvironments = Layers.Where(e => !e.Contains('/') ||
+                                                    e.IndexOf('/') != e.LastIndexOf('/'))
+                                        .ToArray();
 
             // ... complain about them
             if (errEnvironments.Any())
@@ -73,10 +72,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 return false;
             }
 
-            // if UseInputEnvironment is given we have to check for the correct format
-            if (!string.IsNullOrWhiteSpace(UseInputEnvironment)
-                && (!UseInputEnvironment.Contains('/') ||
-                    UseInputEnvironment.IndexOf('/') != UseInputEnvironment.LastIndexOf('/')))
+            // if UseInputLayer is given we have to check for the correct format
+            if (!string.IsNullOrWhiteSpace(UseInputLayer)
+                && (!UseInputLayer.Contains('/') ||
+                    UseInputLayer.IndexOf('/') != UseInputLayer.LastIndexOf('/')))
             {
                 Output.WriteError("parameter '-u|--use-environment' is invalid, see 'compare --help' for the required format");
                 return false;
@@ -107,12 +106,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 return 1;
             }
 
-            var targetEnvironments = await GetEnvironmentKeys(Environments.Select(e =>
-            {
-                var split = e.Split('/');
-
-                return new EnvironmentIdentifier(split[0], split[1]);
-            }));
+            var targetEnvironments = await GetLayerKeys(Layers.Select(name => new LayerIdentifier(name)));
 
             if (targetEnvironments is null)
             {
@@ -120,7 +114,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 return 1;
             }
 
-            var comparisons = CompareEnvironments(sourceEnvironment, targetEnvironments);
+            var comparisons = CompareLayers(sourceEnvironment, targetEnvironments);
 
             if (comparisons is null || !comparisons.Any())
             {
@@ -134,22 +128,21 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     compare the source-env with all target-envs and return the necessary actions to reach each target
         /// </summary>
-        /// <param name="targetEnvironment"></param>
-        /// <param name="sourceEnvironments"></param>
+        /// <param name="targetLayer"></param>
+        /// <param name="sourceLayers"></param>
         /// <returns></returns>
-        private IList<EnvironmentComparison> CompareEnvironments(EnvironmentExport targetEnvironment,
-                                                                 IDictionary<EnvironmentIdentifier, DtoConfigKey[]> sourceEnvironments)
+        private IList<LayerComparison> CompareLayers(LayerExport targetLayer, IDictionary<LayerIdentifier, DtoConfigKey[]> sourceLayers)
         {
-            var comparisons = new List<EnvironmentComparison>();
+            var comparisons = new List<LayerComparison>();
 
             try
             {
-                foreach (var (id, sourceKeys) in sourceEnvironments)
+                foreach (var (id, sourceKeys) in sourceLayers)
                 {
-                    Output.WriteVerboseLine($"comparing '{targetEnvironment.Category}/{targetEnvironment.Name}' <=> '{id}'");
+                    Output.WriteVerboseLine($"comparing '{targetLayer.Name}' <=> '{id}'");
 
                     var changedKeys = (Mode & ComparisonMode.Add) != 0
-                                          ? targetEnvironment.Keys.Where(key =>
+                                          ? targetLayer.Keys.Where(key =>
                                           {
                                               // if the given key does not exist in the target environment or is somehow changed
                                               // we add it to the list of changed keys for review
@@ -168,13 +161,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                           {
                                               // if any target-key doesn't exist in the source any more,
                                               // we add it to the list of deleted keys for review
-                                              return targetEnvironment.Keys.All(tk => !tk.Key.Equals(sk.Key));
+                                              return targetLayer.Keys.All(tk => !tk.Key.Equals(sk.Key));
                                           }).ToList()
                                           : new List<DtoConfigKey>();
 
-                    comparisons.Add(new EnvironmentComparison
+                    comparisons.Add(new LayerComparison
                     {
-                        Source = new EnvironmentIdentifier(targetEnvironment.Category, targetEnvironment.Name),
+                        Source = new LayerIdentifier(targetLayer.Name),
                         Target = id,
                         RequiredActions = changedKeys.Select(c => KeepNullProperties
                                                                       ? ConfigKeyAction.Set(c.Key, c.Value, c.Description, c.Type)
@@ -189,8 +182,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
             catch (Exception e)
             {
-                Output.WriteLine($"error while comparing environments: {e}");
-                return new List<EnvironmentComparison>();
+                Output.WriteLine($"error while comparing layers: {e}");
+                return new List<LayerComparison>();
             }
 
             return comparisons;
@@ -201,9 +194,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="envIds"></param>
         /// <returns></returns>
-        private async Task<Dictionary<EnvironmentIdentifier, DtoConfigKey[]>> GetEnvironmentKeys(IEnumerable<EnvironmentIdentifier> envIds)
+        private async Task<Dictionary<LayerIdentifier, DtoConfigKey[]>> GetLayerKeys(IEnumerable<LayerIdentifier> envIds)
         {
-            var results = new Dictionary<EnvironmentIdentifier, DtoConfigKey[]>();
+            var results = new Dictionary<LayerIdentifier, DtoConfigKey[]>();
 
             try
             {
@@ -211,7 +204,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 {
                     var request = await RestRequest.Make(Output)
                                                    .Get(new Uri(new Uri(ConfigServiceEndpoint),
-                                                                $"v1/environments/{target.Category}/{target.Name}/keys/objects"))
+                                                                $"v1/layers/{target.Name}/objects"))
                                                    .ReceiveString()
                                                    .ReceiveObject<List<DtoConfigKey>>();
 
@@ -235,29 +228,24 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="export"></param>
         /// <returns></returns>
-        private EnvironmentExport GetExportedEnvironment(ConfigExport export)
+        private LayerExport GetExportedEnvironment(ConfigExport export)
         {
             if (export.Environments.Length > 1)
             {
-                if (string.IsNullOrWhiteSpace(UseInputEnvironment))
+                if (string.IsNullOrWhiteSpace(UseInputLayer))
                 {
-                    Output.WriteError("multiple Environments defined in given export, but no '-u|--use-environment' parameter given");
+                    Output.WriteError("multiple Layers defined in given export, but no '-u|--use-layer' parameter given");
                     return null;
                 }
 
-                var useSplit = UseInputEnvironment.Split('/');
-                var usedEnvironmentId = new EnvironmentIdentifier(useSplit[0], useSplit[1]);
+                var usedLayerId = new LayerIdentifier(UseInputLayer);
 
-                return export.Environments
-                             .FirstOrDefault(e => string.Equals(e.Category,
-                                                                usedEnvironmentId.Category,
-                                                                StringComparison.OrdinalIgnoreCase)
-                                                  && string.Equals(e.Name,
-                                                                   usedEnvironmentId.Name,
-                                                                   StringComparison.OrdinalIgnoreCase));
+                return export.Layers
+                             .FirstOrDefault(layer => string.Equals(layer.Name, usedLayerId.Name,
+                                                                    StringComparison.OrdinalIgnoreCase));
             }
 
-            return export.Environments.FirstOrDefault();
+            return export.Layers.FirstOrDefault();
         }
 
         /// <summary>
@@ -374,7 +362,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="comparisons"></param>
         /// <returns></returns>
-        private async Task<int> WriteResult(IEnumerable<EnvironmentComparison> comparisons)
+        private async Task<int> WriteResult(IEnumerable<LayerComparison> comparisons)
         {
             try
             {
