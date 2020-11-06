@@ -1,4 +1,6 @@
-﻿namespace Bechtle.A365.ConfigService.Common.Objects
+﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
+
+namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     a single Environment, exported for later import
@@ -15,6 +17,6 @@
 
         /// <summary>
         /// </summary>
-        public EnvironmentKeyExport[] Keys { get; set; }
+        public LayerIdentifier[] Layers { get; set; }
     }
 }

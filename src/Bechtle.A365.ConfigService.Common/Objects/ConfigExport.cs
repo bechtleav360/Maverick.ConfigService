@@ -7,5 +7,8 @@
     {
         /// <inheritdoc cref="EnvironmentExport"/>
         public EnvironmentExport[] Environments { get; set; }
+
+        /// <inheritdoc cref="LayerExport"/>
+        public LayerExport[] Layers { get; set; }
     }
 }

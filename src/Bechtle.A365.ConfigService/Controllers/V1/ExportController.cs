@@ -51,26 +51,21 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var proposedName = "export_"
-                                   + (definition.Environments.Length == 1
-                                          ? definition.Environments[0].Category + "-" + definition.Environments[0].Name
-                                          : definition.Environments.Length + "_envs")
-                                   + ".json";
-
                 return File(
                     new MemoryStream(
                         Encoding.UTF8.GetBytes(
                             JsonSerializer.Serialize(result.Data, new JsonSerializerOptions {WriteIndented = true}))),
                     "application/octet-stream",
-                    proposedName);
+                    "export.json");
             }
             catch (Exception e)
             {
                 var targetEnvironments = string.Join(", ", definition.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
+                var targetLayers = string.Join(", ", definition.Layers.Select(l => l.Name));
 
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to export '{definition.Environments.Length}' environments ({targetEnvironments})");
-                return StatusCode(HttpStatusCode.InternalServerError, $"failed to export environments '{targetEnvironments}'");
+                Logger.LogError(e, $"failed to export environments ({targetEnvironments}), and layers ({targetLayers})");
+                return StatusCode(HttpStatusCode.InternalServerError, $"failed to export environments ({targetEnvironments}), and layers ({targetLayers})");
             }
         }
     }

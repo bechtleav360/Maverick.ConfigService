@@ -1,4 +1,6 @@
-﻿namespace Bechtle.A365.ConfigService.Common.Objects
+﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
+
+namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     definition of what should be exported
@@ -8,6 +10,11 @@
         /// <summary>
         ///     list of environments that should be exported
         /// </summary>
-        public EnvironmentExportDefinition[] Environments { get; set; }
+        public EnvironmentIdentifier[] Environments { get; set; }
+
+        /// <summary>
+        ///     list of layers that should be exported
+        /// </summary>
+        public LayerIdentifier[] Layers { get; set; }
     }
 }
