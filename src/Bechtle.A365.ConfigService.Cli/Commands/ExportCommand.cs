@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.Utilities.Rest;
 using Bechtle.A365.Utilities.Rest.Extensions;
@@ -17,6 +18,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
     [Command("export", Description = "export data from the targeted ConfigService")]
     public class ExportCommand : SubCommand<Program>
     {
+        public enum ReformatKind
+        {
+            None,
+            Compress,
+            Indent
+        }
+
         /// <inheritdoc />
         public ExportCommand(IConsole console)
             : base(console)
@@ -26,24 +34,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         [Option("-e|--environment", Description = "Environment to export, given in \"{Category}/{Name}\" form")]
         public string[] Environments { get; set; }
 
-        [Option("-z|--structure",
-                Description = "Structure to export for, given in \"{Name}/{Version}\" form. " +
-                              "If set, only Keys used by the given Structures will be exported. " +
-                              "Can be given multiple times")]
-        public string[] Structures { get; set; }
-
-        [Option("-o|--output", Description = "location to export data to")]
-        public string OutputFile { get; set; }
-
         [Option("--format", Description = "interpret export and format it")]
         public ReformatKind Format { get; set; } = ReformatKind.None;
 
-        public enum ReformatKind
-        {
-            None,
-            Compress,
-            Indent,
-        }
+        [Option("-l|--layer", Description = "Layer to export")]
+        public string[] Layers { get; set; }
+
+        [Option("-o|--output", Description = "location to export data to")]
+        public string OutputFile { get; set; }
 
         /// <inheritdoc />
         protected override bool CheckParameters()
@@ -69,22 +67,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 return false;
             }
 
-            // Structures may be null or empty - but if not, all entries need to be in correct format
-            if (Structures?.Any() == true)
-            {
-                // if environment doesn't contain '/' or contains multiple of them...
-                var errStructures = Structures.Where(s => !s.Contains('/') ||
-                                                          s.IndexOf('/') != s.LastIndexOf('/'))
-                                              .ToArray();
-
-                // ... complain about them
-                if (errStructures.Any())
-                {
-                    Output.WriteError($"given structures contain errors: {string.Join("; ", errStructures)}");
-                    return false;
-                }
-            }
-
             return true;
         }
 
@@ -94,12 +76,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             if (!CheckParameters())
                 return 1;
 
-            var selectedEnvironments = new List<EnvironmentExportDefinition>(Environments.Length);
+            var selectedEnvironments = new List<EnvironmentIdentifier>(Environments.Length);
+            var selectedLayers = Layers.Select(l => new LayerIdentifier(l)).ToArray();
 
             foreach (var environment in Environments)
                 try
                 {
-                    selectedEnvironments.Add(await CreateExportDefinition(environment));
+                    selectedEnvironments.Add(CreateExportDefinition(environment));
                 }
                 catch (Exception e)
                 {
@@ -107,7 +90,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                     return 1;
                 }
 
-            var exportDefinition = new ExportDefinition {Environments = selectedEnvironments.ToArray()};
+            var exportDefinition = new ExportDefinition {Environments = selectedEnvironments.ToArray(), Layers = selectedLayers};
 
             var request = await RestRequest.Make(Output)
                                            .Post(new Uri(new Uri(ConfigServiceEndpoint), "v1/export"),
@@ -154,45 +137,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="environmentIdentifier"></param>
         /// <returns></returns>
-        private async Task<EnvironmentExportDefinition> CreateExportDefinition(string environmentIdentifier)
+        private EnvironmentIdentifier CreateExportDefinition(string environmentIdentifier)
         {
             var envSplit = environmentIdentifier.Split('/');
 
             var envCategory = envSplit[0];
             var envName = envSplit[1];
-            var selectedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            if (Structures?.Any() == true)
-            {
-                foreach (var structure in Structures)
-                {
-                    var structSplit = structure.Split('/');
-                    var structName = structSplit[0];
-                    var structVersion = structSplit[1];
-
-                    var request = await RestRequest.Make(Output)
-                                                   .Post(new Uri(new Uri(ConfigServiceEndpoint),
-                                                                 $"v1/inspect/structure/compile/{envCategory}/{envName}/{structName}/{structVersion}"),
-                                                         new StringContent(string.Empty, Encoding.UTF8))
-                                                   .ReceiveObject<StructureInspectionResult>()
-                                                   .ReceiveString();
-
-                    var inspectionResult = await request.Take<StructureInspectionResult>();
-
-                    if (inspectionResult is null)
-                        throw new Exception($"could not analyze used keys of '{structName}/{structVersion}' in '{envCategory}/{envName}', " +
-                                            "no data received from service");
-
-                    if (!inspectionResult.CompilationSuccessful)
-                        throw new Exception($"could not analyze used keys of '{structName}/{structVersion}' in '{envCategory}/{envName}', " +
-                                            "compilation unsuccessful");
-
-                    foreach (var usedKey in inspectionResult.UsedKeys)
-                        selectedKeys.Add(usedKey);
-                }
-            }
-
-            return new EnvironmentExportDefinition(envCategory, envName, selectedKeys.ToList());
+            return new EnvironmentIdentifier(envCategory, envName);
         }
 
         private string Reformat(string raw, ReformatKind format)
@@ -219,37 +171,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 Output.WriteError($"can't re-interpret result: {e}");
                 return raw;
             }
-        }
-
-        /// <summary>
-        ///     Details about the Compilation of a Structure with an Environment
-        /// </summary>
-        private class StructureInspectionResult
-        {
-            /// <summary>
-            ///     flag indicating if the compilation was successful or not
-            /// </summary>
-            public bool CompilationSuccessful { get; set; } = false;
-
-            /// <summary>
-            ///     resulting compiled configuration
-            /// </summary>
-            public IDictionary<string, string> CompiledConfiguration { get; set; } = new Dictionary<string, string>();
-
-            /// <summary>
-            ///     Path => Error dictionary
-            /// </summary>
-            public Dictionary<string, List<string>> Errors { get; set; } = new Dictionary<string, List<string>>();
-
-            /// <summary>
-            ///     Path => Warning dictionary
-            /// </summary>
-            public Dictionary<string, List<string>> Warnings { get; set; } = new Dictionary<string, List<string>>();
-
-            /// <summary>
-            ///     List of Environment-Keys used to compile this Configuration
-            /// </summary>
-            public List<string> UsedKeys { get; set; }
         }
     }
 }
