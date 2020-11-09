@@ -10,6 +10,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class PreparedConfigurationList : DomainObject
     {
+        public Dictionary<EnvironmentIdentifier, List<LayerIdentifier>> EnvironmentLayers { get; set; }
+            = new Dictionary<EnvironmentIdentifier, List<LayerIdentifier>>();
+
         /// <summary>
         ///     internal InformationLookup for IdentifierLookup
         /// </summary>
@@ -56,6 +59,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             => new Dictionary<Type, Func<ReplayedEvent, bool>>
             {
                 {typeof(ConfigurationBuilt), HandleConfigurationBuiltEvent},
+                {typeof(EnvironmentLayersModified), HandleEnvironmentLayersModifiedEvent},
+                {typeof(EnvironmentLayerKeysModified), HandleEnvironmentLayerKeysModifiedEvent},
+                {typeof(EnvironmentLayerKeysImported), HandleEnvironmentLayerKeysImportedEvent},
                 {typeof(StructureVariablesModified), HandleStructureVariablesModifiedEvent}
             };
 
@@ -75,6 +81,48 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 ValidFrom = built.ValidFrom,
                 ValidTo = built.ValidTo
             };
+
+            return true;
+        }
+
+        private bool HandleEnvironmentLayerKeysImportedEvent(ReplayedEvent replayedEvent)
+        {
+            if (!(replayedEvent.DomainEvent is EnvironmentLayerKeysImported imported))
+                return false;
+
+            var staleEnvs = EnvironmentLayers.Where(kvp => kvp.Value.Contains(imported.Identifier)).Select(kvp => kvp.Key)
+                                             .Distinct()
+                                             .ToList();
+
+            foreach (var info in InfoLookup.Values)
+                if (staleEnvs.Contains(info.UsedEnvironment))
+                    info.Stale = true;
+
+            return true;
+        }
+
+        private bool HandleEnvironmentLayerKeysModifiedEvent(ReplayedEvent replayedEvent)
+        {
+            if (!(replayedEvent.DomainEvent is EnvironmentLayerKeysModified modified))
+                return false;
+
+            var staleEnvs = EnvironmentLayers.Where(kvp => kvp.Value.Contains(modified.Identifier)).Select(kvp => kvp.Key)
+                                             .Distinct()
+                                             .ToList();
+
+            foreach (var info in InfoLookup.Values)
+                if (staleEnvs.Contains(info.UsedEnvironment))
+                    info.Stale = true;
+
+            return true;
+        }
+
+        private bool HandleEnvironmentLayersModifiedEvent(ReplayedEvent replayedEvent)
+        {
+            if (!(replayedEvent.DomainEvent is EnvironmentLayersModified modified))
+                return false;
+
+            EnvironmentLayers[modified.Identifier] = modified.Layers;
 
             return true;
         }
