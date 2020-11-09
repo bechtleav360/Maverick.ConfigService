@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Controllers.V1;
 using Bechtle.A365.ConfigService.Interfaces;
@@ -54,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                         {
                             Category = "Foo",
                             Name = "Bar",
-                            Keys = new[] {new EnvironmentKeyExport {Key = "Foo", Value = "Bar"}}
+                            Layers = new[] {new LayerIdentifier("Foo")}
                         }
                     }
                 });
@@ -85,7 +86,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                         {
                             Category = "Foo",
                             Name = "Bar",
-                            Keys = new[] {new EnvironmentKeyExport {Key = "Foo", Value = "Bar"}}
+                            Layers = new[] {new LayerIdentifier("Foo")}
                         }
                     }
                 });
@@ -118,7 +119,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                         {
                             Category = "Foo",
                             Name = "Bar",
-                            Keys = new[] {new EnvironmentKeyExport {Key = "Foo", Value = "Bar"}}
+                            Layers = new[] {new LayerIdentifier("Foo")}
                         }
                     }
                 });

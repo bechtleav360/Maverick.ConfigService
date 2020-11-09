@@ -61,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
             item.Create();
-            item.ImportKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Jar", "Jar", "", "", 4711)});
+            item.AssignLayers(new[] {new LayerIdentifier("Foo")});
 
             var snapshot = item.CreateSnapshot();
 
@@ -102,11 +102,11 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             await item.WriteRecordedEvents(eventStore.Object);
             var firstSnapshot = item.CreateSnapshot();
 
-            item.UpdateKeys(new[] {new ConfigEnvironmentKey("Foo", "1", "", "", 1)});
+            item.AssignLayers(new[] {new LayerIdentifier("Foo")});
             await item.WriteRecordedEvents(eventStore.Object);
             var secondSnapshot = item.CreateSnapshot();
 
-            item.UpdateKeys(new[] {new ConfigEnvironmentKey("Foo", "2", "", "", 2)});
+            item.AssignLayers(new[] {new LayerIdentifier("Bar")});
             await item.WriteRecordedEvents(eventStore.Object);
             var thirdSnapshot = item.CreateSnapshot();
 
@@ -133,11 +133,11 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             await item.WriteRecordedEvents(eventStore.Object);
             var firstSnapshot = item.CreateSnapshot();
 
-            item.UpdateKeys(new[] {new ConfigEnvironmentKey("Foo", "1", "", "", 1)});
+            item.AssignLayers(new[] {new LayerIdentifier("Foo")});
             await item.WriteRecordedEvents(eventStore.Object);
             var secondSnapshot = item.CreateSnapshot();
 
-            item.UpdateKeys(new[] {new ConfigEnvironmentKey("Foo", "2", "", "", 2)});
+            item.AssignLayers(new[] {new LayerIdentifier("Bar")});
             await item.WriteRecordedEvents(eventStore.Object);
             var thirdSnapshot = item.CreateSnapshot();
 
@@ -154,7 +154,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
             item.Create();
-            item.ImportKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Jar", "Jar", "", "", 4711)});
+            item.AssignLayers(new[] {new LayerIdentifier("Foo")});
 
             var snapshot = item.CreateSnapshot();
 

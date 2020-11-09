@@ -361,6 +361,42 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
+        public async Task GetConfigVersion()
+        {
+            var (logger, domainObjectStore, compiler, parser, translator, eventStore, validators) = CreateMocks();
+
+            domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<PreparedConfiguration>(), It.IsAny<string>()))
+                             .ReturnsAsync((PreparedConfiguration config, string identifier) =>
+                             {
+                                 config.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new ConfigurationBuilt(config.Identifier, config.ValidFrom, config.ValidTo),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 0
+                                 });
+
+                                 return Result.Success(config);
+                             })
+                             .Verifiable("new PreparedConfiguration not replayed");
+
+            var store = new ConfigurationProjectionStore(logger,
+                                                         domainObjectStore.Object,
+                                                         compiler.Object,
+                                                         parser.Object,
+                                                         translator.Object,
+                                                         eventStore.Object,
+                                                         validators);
+
+            var result = await store.GetVersion(CreateConfigurationIdentifier(), DateTime.Now);
+
+            VerifySetups(domainObjectStore, compiler, parser, translator, eventStore);
+
+            Assert.Empty(result.Message);
+            Assert.False(result.IsError, "result.IsError");
+            Assert.NotEmpty(result.Data);
+        }
+
+        [Fact]
         public async Task GetJson()
         {
             var (logger, domainObjectStore, compiler, parser, translator, eventStore, validators) = CreateMocks();
@@ -379,23 +415,44 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable("new PreparedConfiguration not replayed");
 
+            domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<EnvironmentLayer>(), It.IsAny<string>(), It.IsAny<long>()))
+                             .ReturnsAsync((EnvironmentLayer layer, string identifier, long version) =>
+                             {
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerCreated(layer.Identifier),
+                                     UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                                     Version = 1
+                                 });
+
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysImported(layer.Identifier, new[]
+                                     {
+                                         ConfigKeyAction.Set("Foo", "FooValue"),
+                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue")
+                                     }),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 2
+                                 });
+
+                                 return Result.Success(layer);
+                             }).Verifiable("Layers not retrieved");
+
             domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
                              .ReturnsAsync((ConfigEnvironment env, string identifier, long version) =>
                              {
                                  env.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentCreated(env.Identifier),
-                                     UtcTime = DateTime.UtcNow,
+                                     UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
                                      Version = 1
                                  });
+
                                  env.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentKeysImported(env.Identifier, new[]
-                                     {
-                                         ConfigKeyAction.Set("Foo", "FooValue"),
-                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue"),
-                                     }),
+                                     DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 2
                                  });
@@ -473,23 +530,44 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable("new PreparedConfiguration not replayed");
 
+            domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<EnvironmentLayer>(), It.IsAny<string>(), It.IsAny<long>()))
+                             .ReturnsAsync((EnvironmentLayer layer, string identifier, long version) =>
+                             {
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerCreated(layer.Identifier),
+                                     UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                                     Version = 1
+                                 });
+
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysImported(layer.Identifier, new[]
+                                     {
+                                         ConfigKeyAction.Set("Foo", "FooValue"),
+                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue")
+                                     }),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 2
+                                 });
+
+                                 return Result.Success(layer);
+                             }).Verifiable("Layers not retrieved");
+
             domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
                              .ReturnsAsync((ConfigEnvironment env, string identifier, long version) =>
                              {
                                  env.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentCreated(env.Identifier),
-                                     UtcTime = DateTime.UtcNow,
+                                     UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
                                      Version = 1
                                  });
+
                                  env.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentKeysImported(env.Identifier, new[]
-                                     {
-                                         ConfigKeyAction.Set("Foo", "FooValue"),
-                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue"),
-                                     }),
+                                     DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 2
                                  });
@@ -545,6 +623,94 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
+        public async Task GetStale()
+        {
+            var (logger, domainObjectStore, compiler, parser, translator, eventStore, validators) = CreateMocks();
+
+            domainObjectStore.Setup(s => s.ReplayObject<PreparedConfigurationList>())
+                             .ReturnsAsync(() =>
+                             {
+                                 var list = new PreparedConfigurationList();
+
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar")),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 1
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Foo")),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 2
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier("Foo"), new[]
+                                     {
+                                         ConfigKeyAction.Set("Foo", "FooValue"),
+                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue")
+                                     }),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 3
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new StructureCreated(new StructureIdentifier("Foo", 42), new Dictionary<string, string>
+                                     {
+                                         {"Foo", "Bar"}
+                                     }, new Dictionary<string, string>()),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 5
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new ConfigurationBuilt(CreateConfigurationIdentifier(), null, null),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 6
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"), new[]
+                                     {
+                                         ConfigKeyAction.Set("Foo", "FooValueNew"),
+                                         ConfigKeyAction.Set("Foo/Bar", "BarValueNew"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValueNew")
+                                     }),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 7
+                                 });
+
+                                 return Result.Success(list);
+                             })
+                             .Verifiable("config-list not retrieved");
+
+            var store = new ConfigurationProjectionStore(logger,
+                                                         domainObjectStore.Object,
+                                                         compiler.Object,
+                                                         parser.Object,
+                                                         translator.Object,
+                                                         eventStore.Object,
+                                                         validators);
+
+            var result = await store.GetStale(QueryRange.All);
+
+            VerifySetups(domainObjectStore, compiler, parser, translator, eventStore);
+
+            Assert.Empty(result.Message);
+            Assert.False(result.IsError, "result.IsError");
+            Assert.Single(result.Data);
+        }
+
+        [Fact]
         public async Task GetUsedKeys()
         {
             var (logger, domainObjectStore, compiler, parser, translator, eventStore, validators) = CreateMocks();
@@ -563,23 +729,44 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable("new PreparedConfiguration not replayed");
 
+            domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<EnvironmentLayer>(), It.IsAny<string>(), It.IsAny<long>()))
+                             .ReturnsAsync((EnvironmentLayer layer, string identifier, long version) =>
+                             {
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerCreated(layer.Identifier),
+                                     UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                                     Version = 1
+                                 });
+
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysImported(layer.Identifier, new[]
+                                     {
+                                         ConfigKeyAction.Set("Foo", "FooValue"),
+                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue")
+                                     }),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 2
+                                 });
+
+                                 return Result.Success(layer);
+                             }).Verifiable("Layers not retrieved");
+
             domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
                              .ReturnsAsync((ConfigEnvironment env, string identifier, long version) =>
                              {
                                  env.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentCreated(env.Identifier),
-                                     UtcTime = DateTime.UtcNow,
+                                     UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
                                      Version = 1
                                  });
+
                                  env.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentKeysImported(env.Identifier, new[]
-                                     {
-                                         ConfigKeyAction.Set("Foo", "FooValue"),
-                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue"),
-                                     }),
+                                     DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 2
                                  });
@@ -605,7 +792,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable("ConfigStructure not retrieved");
 
-            translator.Setup(t=>t.ToJson(It.IsAny<IDictionary<string,string>>()))
+            translator.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string>>()))
                       .Returns(() => JsonDocument.Parse("{}").RootElement)
                       .Verifiable("keys not translated to json");
 
@@ -624,7 +811,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                      {
                                          Key = "Foo",
                                          OriginalValue = "FooValue",
-                                         Children = new TraceResult[] {new KeyTraceResult {Key = "Foo/Bar", OriginalValue = "BarValue", Children = new TraceResult[0]}}
+                                         Children = new TraceResult[]
+                                             {new KeyTraceResult {Key = "Foo/Bar", OriginalValue = "BarValue", Children = new TraceResult[0]}}
                                      }
                                  }))
                     .Verifiable("configuration has not been compiled");
@@ -647,7 +835,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         [Fact]
-        public async Task GetStale()
+        public async Task IsNotStale()
         {
             var (logger, domainObjectStore, compiler, parser, translator, eventStore, validators) = CreateMocks();
 
@@ -664,14 +852,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[]
+                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Foo")),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 2
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier("Foo"), new[]
                                      {
                                          ConfigKeyAction.Set("Foo", "FooValue"),
                                          ConfigKeyAction.Set("Foo/Bar", "BarValue"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue")
                                      }),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 2
+                                     Version = 3
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
@@ -680,24 +881,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                          {"Foo", "Bar"}
                                      }, new Dictionary<string, string>()),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 3
+                                     Version = 5
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new ConfigurationBuilt(CreateConfigurationIdentifier(), null, null),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 4
-                                 });
-                                 list.ApplyEvent(new ReplayedEvent
-                                 {
-                                     DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[]
-                                     {
-                                         ConfigKeyAction.Set("Foo", "FooValueNew"),
-                                         ConfigKeyAction.Set("Foo/Bar", "BarValueNew"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValueNew"),
-                                     }),
-                                     UtcTime = DateTime.UtcNow,
-                                     Version = 5
+                                     Version = 6
                                  });
 
                                  return Result.Success(list);
@@ -712,13 +902,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                                          eventStore.Object,
                                                          validators);
 
-            var result = await store.GetStale(QueryRange.All);
+            var result = await store.IsStale(CreateConfigurationIdentifier());
 
             VerifySetups(domainObjectStore, compiler, parser, translator, eventStore);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data);
+            Assert.False(result.Data, "result.Data");
         }
 
         [Fact]
@@ -739,14 +929,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[]
+                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Foo")),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 2
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier("Foo"), new[]
                                      {
                                          ConfigKeyAction.Set("Foo", "FooValue"),
                                          ConfigKeyAction.Set("Foo/Bar", "BarValue"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue")
                                      }),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 2
+                                     Version = 3
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
@@ -755,24 +958,24 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                          {"Foo", "Bar"}
                                      }, new Dictionary<string, string>()),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 3
+                                     Version = 5
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new ConfigurationBuilt(CreateConfigurationIdentifier(), null, null),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 4
+                                     Version = 6
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[]
+                                     DomainEvent = new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"), new[]
                                      {
                                          ConfigKeyAction.Set("Foo", "FooValueNew"),
                                          ConfigKeyAction.Set("Foo/Bar", "BarValueNew"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValueNew"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValueNew")
                                      }),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 5
+                                     Version = 7
                                  });
 
                                  return Result.Success(list);
@@ -814,14 +1017,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[]
+                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Foo")),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 2
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier("Foo"), new[]
                                      {
                                          ConfigKeyAction.Set("Foo", "FooValue"),
                                          ConfigKeyAction.Set("Foo/Bar", "BarValue"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue"),
+                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue")
                                      }),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 2
+                                     Version = 3
+                                 });
+                                 list.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
@@ -830,7 +1046,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                          {"Foo", "Bar"}
                                      }, new Dictionary<string, string>()),
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 3
+                                     Version = 5
                                  });
 
                                  return Result.Success(list);
@@ -852,106 +1068,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
             Assert.True(result.Data, "result.Data");
-        }
-
-        [Fact]
-        public async Task IsNotStale()
-        {
-            var (logger, domainObjectStore, compiler, parser, translator, eventStore, validators) = CreateMocks();
-
-            domainObjectStore.Setup(s => s.ReplayObject<PreparedConfigurationList>())
-                             .ReturnsAsync(() =>
-                             {
-                                 var list = new PreparedConfigurationList();
-
-                                 list.ApplyEvent(new ReplayedEvent
-                                 {
-                                     DomainEvent = new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar")),
-                                     UtcTime = DateTime.UtcNow,
-                                     Version = 1
-                                 });
-                                 list.ApplyEvent(new ReplayedEvent
-                                 {
-                                     DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[]
-                                     {
-                                         ConfigKeyAction.Set("Foo", "FooValue"),
-                                         ConfigKeyAction.Set("Foo/Bar", "BarValue"),
-                                         ConfigKeyAction.Set("Foo/Bar/Baz", "BazValue"),
-                                     }),
-                                     UtcTime = DateTime.UtcNow,
-                                     Version = 2
-                                 });
-                                 list.ApplyEvent(new ReplayedEvent
-                                 {
-                                     DomainEvent = new StructureCreated(new StructureIdentifier("Foo", 42), new Dictionary<string, string>
-                                     {
-                                         {"Foo", "Bar"}
-                                     }, new Dictionary<string, string>()),
-                                     UtcTime = DateTime.UtcNow,
-                                     Version = 3
-                                 });
-                                 list.ApplyEvent(new ReplayedEvent
-                                 {
-                                     DomainEvent = new ConfigurationBuilt(CreateConfigurationIdentifier(), null, null),
-                                     UtcTime = DateTime.UtcNow,
-                                     Version = 4
-                                 });
-
-                                 return Result.Success(list);
-                             })
-                             .Verifiable("config-list not retrieved");
-
-            var store = new ConfigurationProjectionStore(logger,
-                                                         domainObjectStore.Object,
-                                                         compiler.Object,
-                                                         parser.Object,
-                                                         translator.Object,
-                                                         eventStore.Object,
-                                                         validators);
-
-            var result = await store.IsStale(CreateConfigurationIdentifier());
-
-            VerifySetups(domainObjectStore, compiler, parser, translator, eventStore);
-
-            Assert.Empty(result.Message);
-            Assert.False(result.IsError, "result.IsError");
-            Assert.False(result.Data, "result.Data");
-        }
-
-        [Fact]
-        public async Task GetConfigVersion()
-        {
-            var (logger, domainObjectStore, compiler, parser, translator, eventStore, validators) = CreateMocks();
-
-            domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<PreparedConfiguration>(), It.IsAny<string>()))
-                             .ReturnsAsync((PreparedConfiguration config, string identifier) =>
-                             {
-                                 config.ApplyEvent(new ReplayedEvent
-                                 {
-                                     DomainEvent = new ConfigurationBuilt(config.Identifier, config.ValidFrom, config.ValidTo),
-                                     UtcTime = DateTime.UtcNow,
-                                     Version = 0
-                                 });
-
-                                 return Result.Success(config);
-                             })
-                             .Verifiable("new PreparedConfiguration not replayed");
-
-            var store = new ConfigurationProjectionStore(logger,
-                                                         domainObjectStore.Object,
-                                                         compiler.Object,
-                                                         parser.Object,
-                                                         translator.Object,
-                                                         eventStore.Object,
-                                                         validators);
-
-            var result = await store.GetVersion(CreateConfigurationIdentifier(), DateTime.Now);
-
-            VerifySetups(domainObjectStore, compiler, parser, translator, eventStore);
-
-            Assert.Empty(result.Message);
-            Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
         }
     }
 }

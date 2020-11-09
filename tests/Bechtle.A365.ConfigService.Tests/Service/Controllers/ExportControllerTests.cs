@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Controllers.V1;
 using Bechtle.A365.ConfigService.Interfaces;
@@ -44,7 +45,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                {
                                                    Category = d.Category,
                                                    Name = d.Name,
-                                                   Keys = new[] {new EnvironmentKeyExport {Key = "Foo", Value = "Bar"}}
+                                                   Layers = new[] {new LayerIdentifier("Foo")}
                                                })
                                                .ToArray()
                          }))
@@ -52,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             var result = await TestAction<FileStreamResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new[] {new EnvironmentExportDefinition("Foo", "Bar")}
+                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")}
             }));
 
             Assert.IsType<FileStreamResult>(result);
@@ -63,7 +64,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             var result = await TestAction<BadRequestObjectResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new EnvironmentExportDefinition[0]
+                Environments = new EnvironmentIdentifier[0]
             }));
 
             Assert.NotNull(result.Value);
@@ -86,7 +87,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             var result = await TestAction<ObjectResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new[] {new EnvironmentExportDefinition("Foo", "Bar")}
+                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")}
             }));
 
             Assert.NotNull(result.Value);
@@ -102,7 +103,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             var result = await TestAction<ObjectResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new[] {new EnvironmentExportDefinition("Foo", "Bar")}
+                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")}
             }));
 
             Assert.NotNull(result.Value);

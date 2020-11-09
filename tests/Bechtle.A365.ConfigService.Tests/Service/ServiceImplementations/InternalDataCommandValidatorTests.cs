@@ -66,20 +66,30 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             new object[] {new DefaultEnvironmentCreated(new EnvironmentIdentifier(null, "Bar"))},
             new object[] {new DefaultEnvironmentCreated(new EnvironmentIdentifier(string.Empty, string.Empty))},
             new object[] {new DefaultEnvironmentCreated(new EnvironmentIdentifier(null, null))},
-            new object[] {new EnvironmentKeysImported(new EnvironmentIdentifier(), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", string.Empty), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysImported(new EnvironmentIdentifier(string.Empty, "Bar"), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", null), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysImported(new EnvironmentIdentifier(null, "Bar"), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysImported(new EnvironmentIdentifier(string.Empty, string.Empty), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysImported(new EnvironmentIdentifier(null, null), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysModified(new EnvironmentIdentifier(), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", string.Empty), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysModified(new EnvironmentIdentifier(string.Empty, "Bar"), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", null), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysModified(new EnvironmentIdentifier(null, "Bar"), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysModified(new EnvironmentIdentifier(string.Empty, string.Empty), new ConfigKeyAction[0])},
-            new object[] {new EnvironmentKeysModified(new EnvironmentIdentifier(null, null), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayersModified(null, new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayersModified(new EnvironmentIdentifier(), new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", string.Empty), new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayersModified(new EnvironmentIdentifier(string.Empty, "Bar"), new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", null), new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayersModified(new EnvironmentIdentifier(null, "Bar"), new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayersModified(new EnvironmentIdentifier(string.Empty, string.Empty), new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayersModified(new EnvironmentIdentifier(null, null), new List<LayerIdentifier>())},
+            new object[] {new EnvironmentLayerKeysImported(new LayerIdentifier(), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerKeysImported(new LayerIdentifier(string.Empty), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerKeysImported(new LayerIdentifier("Bar"), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerKeysImported(new LayerIdentifier(null), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerKeysModified(new LayerIdentifier(), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerKeysModified(new LayerIdentifier(string.Empty), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerKeysModified(new LayerIdentifier("Bar"), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerKeysModified(new LayerIdentifier(null), new ConfigKeyAction[0])},
+            new object[] {new EnvironmentLayerCreated(new LayerIdentifier())},
+            new object[] {new EnvironmentLayerCreated(new LayerIdentifier(string.Empty))},
+            new object[] {new EnvironmentLayerCreated(new LayerIdentifier("Bar"))},
+            new object[] {new EnvironmentLayerCreated(new LayerIdentifier(null))},
+            new object[] {new EnvironmentLayerDeleted(new LayerIdentifier())},
+            new object[] {new EnvironmentLayerDeleted(new LayerIdentifier(string.Empty))},
+            new object[] {new EnvironmentLayerDeleted(new LayerIdentifier("Bar"))},
+            new object[] {new EnvironmentLayerDeleted(new LayerIdentifier(null))},
             new object[] {new StructureCreated(null, new Dictionary<string, string>(), new Dictionary<string, string>())},
             new object[] {new StructureCreated(new StructureIdentifier(), new Dictionary<string, string>(), new Dictionary<string, string>())},
             new object[] {new StructureCreated(new StructureIdentifier("Foo", 0), new Dictionary<string, string>(), new Dictionary<string, string>())},
@@ -141,7 +151,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             var validator = CreateValidator();
 
-            var result = validator.ValidateDomainEvent(new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", "Bar"), new[] {action}));
+            var result = validator.ValidateDomainEvent(new EnvironmentLayerKeysModified(new LayerIdentifier("Foo"), new[] {action}));
 
             Assert.True(result.IsError);
         }

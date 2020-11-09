@@ -101,14 +101,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
                  {
                      env.ApplyEvent(new ReplayedEvent
                      {
-                         UtcTime = DateTime.UtcNow,
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
                          Version = 1,
-                         DomainEvent = new EnvironmentKeysImported(env.Identifier, new[]
-                         {
-                             ConfigKeyAction.Set("Foo", "Bar", "", ""),
-                             ConfigKeyAction.Set("Jar", "Jar", "", "")
-                         })
+                         DomainEvent = new EnvironmentCreated(env.Identifier)
                      });
+
+                     env.ApplyEvent(new ReplayedEvent
+                     {
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                         Version = 1,
+                         DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")})
+                     });
+
                      return Result.Success(env);
                  })
                  .Verifiable("Environment not retrieved");
@@ -162,6 +166,26 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             var store = new Mock<IDomainObjectStore>(MockBehavior.Strict);
 
+            store.Setup(s => s.ReplayObject(It.IsAny<EnvironmentLayer>(),
+                                            It.IsAny<string>(),
+                                            It.IsAny<long>()))
+                 .ReturnsAsync((EnvironmentLayer layer, string id, long version) =>
+                 {
+                     layer.ApplyEvent(new ReplayedEvent
+                     {
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                         Version = 1,
+                         DomainEvent = new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"), new[]
+                         {
+                             ConfigKeyAction.Set("Foo", "Bar", "", ""),
+                             ConfigKeyAction.Set("Jar", "Jar", "", ""),
+                         })
+                     });
+
+                     return Result.Success(layer);
+                 })
+                 .Verifiable("Layer not retrieved");
+
             store.Setup(s => s.ReplayObject(It.IsAny<ConfigEnvironment>(),
                                             It.IsAny<string>(),
                                             It.IsAny<long>()))
@@ -169,14 +193,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
                  {
                      env.ApplyEvent(new ReplayedEvent
                      {
-                         UtcTime = DateTime.UtcNow,
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
                          Version = 1,
-                         DomainEvent = new EnvironmentKeysImported(env.Identifier, new[]
-                         {
-                             ConfigKeyAction.Set("Foo", "Bar", "", ""),
-                             ConfigKeyAction.Set("Jar", "Jar", "", "")
-                         })
+                         DomainEvent = new EnvironmentCreated(env.Identifier)
                      });
+
+                     env.ApplyEvent(new ReplayedEvent
+                     {
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                         Version = 1,
+                         DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")})
+                     });
+
                      return Result.Success(env);
                  })
                  .Verifiable("Environment not retrieved");
@@ -257,6 +285,26 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
                     4711));
 
             var store = new Mock<IDomainObjectStore>(MockBehavior.Strict);
+            store.Setup(s => s.ReplayObject(It.IsAny<EnvironmentLayer>(),
+                                            It.IsAny<string>(),
+                                            It.IsAny<long>()))
+                 .ReturnsAsync((EnvironmentLayer layer, string id, long version) =>
+                 {
+                     layer.ApplyEvent(new ReplayedEvent
+                     {
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                         Version = 1,
+                         DomainEvent = new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"), new[]
+                         {
+                             ConfigKeyAction.Set("Foo", "Bar", "", ""),
+                             ConfigKeyAction.Set("Jar", "Jar", "", ""),
+                         })
+                     });
+
+                     return Result.Success(layer);
+                 })
+                 .Verifiable("Layer not retrieved");
+
             store.Setup(s => s.ReplayObject(It.IsAny<ConfigEnvironment>(),
                                             It.IsAny<string>(),
                                             It.IsAny<long>()))
@@ -264,14 +312,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
                  {
                      env.ApplyEvent(new ReplayedEvent
                      {
-                         UtcTime = DateTime.UtcNow,
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
                          Version = 1,
-                         DomainEvent = new EnvironmentKeysImported(env.Identifier, new[]
-                         {
-                             ConfigKeyAction.Set("Foo", "Bar", "", ""),
-                             ConfigKeyAction.Set("Jar", "Jar", "", "")
-                         })
+                         DomainEvent = new EnvironmentCreated(env.Identifier)
                      });
+
+                     env.ApplyEvent(new ReplayedEvent
+                     {
+                         UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
+                         Version = 1,
+                         DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")})
+                     });
+
                      return Result.Success(env);
                  })
                  .Verifiable("Environment not retrieved");
