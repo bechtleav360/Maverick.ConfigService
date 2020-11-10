@@ -70,46 +70,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             Assert.NotNull(result.Value);
         }
 
-        [Theory]
-        [InlineData("", "", new string[0])]
-        [InlineData(null, null, new string[0])]
-        [InlineData("Foo", null, new string[0])]
-        [InlineData(null, "Bar", new string[0])]
-        [InlineData("Foo", "Bar", new string[0])]
-        public async Task DeleteKeysWithoutParameters(string category, string name, string[] keys)
-        {
-            var result = await TestAction<BadRequestObjectResult>(c => c.DeleteKeys(category, name, keys));
-
-            Assert.NotNull(result.Value);
-        }
-
-        public static IEnumerable<object[]> InvalidKeyUpdateParameters => new[]
-        {
-            new object[] {null, null, new DtoConfigKey[0]},
-            new object[] {"", "", new DtoConfigKey[0]},
-            new object[] {"Foo", "", new DtoConfigKey[0]},
-            new object[] {"", "Bar", new DtoConfigKey[0]},
-            new object[] {"Foo", "Bar", new DtoConfigKey[0]},
-            new object[] {"Foo", "Bar", null},
-            new object[]
-            {
-                "Foo", "Bar", new[]
-                {
-                    new DtoConfigKey {Key = "Foo", Value = "Bar"},
-                    new DtoConfigKey {Key = "Foo", Value = "Bar"}
-                }
-            }
-        };
-
-        [Theory]
-        [MemberData(nameof(InvalidKeyUpdateParameters))]
-        public async Task UpdateKeysInvalidParameters(string category, string name, DtoConfigKey[] keys)
-        {
-            var result = await TestAction<BadRequestObjectResult>(c => c.UpdateKeys(category, name, keys));
-
-            Assert.NotNull(result.Value);
-        }
-
         [Fact]
         public async Task AddEnvironment()
         {
@@ -189,47 +149,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         }
 
         [Fact]
-        public async Task DeleteKeys()
-        {
-            _projectionStoreMock.Setup(s => s.Environments.DeleteKeys(It.IsAny<EnvironmentIdentifier>(), It.IsAny<ICollection<string>>()))
-                                .ReturnsAsync(Result.Success)
-                                .Verifiable("deletion of keys not triggered");
-
-            var result = await TestAction<AcceptedAtActionResult>(c => c.DeleteKeys("Foo", "Bar", new[] {"Foo", "Bar"}));
-
-            Assert.Equal(RouteUtilities.ControllerName<EnvironmentController>(), result.ControllerName);
-            Assert.Equal(nameof(EnvironmentController.GetKeys), result.ActionName);
-            Assert.Contains("version", result.RouteValues.Keys);
-            _projectionStoreMock.Verify();
-        }
-
-        [Fact]
-        public async Task DeleteKeysProviderError()
-        {
-            _projectionStoreMock.Setup(s => s.Environments.DeleteKeys(It.IsAny<EnvironmentIdentifier>(), It.IsAny<ICollection<string>>()))
-                                .ReturnsAsync(() => Result.Error("something went wrong", ErrorCode.DbUpdateError))
-                                .Verifiable("deletion of keys not triggered");
-
-            var result = await TestAction<ObjectResult>(c => c.DeleteKeys("Foo", "Bar", new[] {"Foo", "Bar"}));
-
-            Assert.NotNull(result.Value);
-            _projectionStoreMock.Verify();
-        }
-
-        [Fact]
-        public async Task DeleteKeysStoreThrows()
-        {
-            _projectionStoreMock.Setup(s => s.Environments.DeleteKeys(It.IsAny<EnvironmentIdentifier>(), It.IsAny<ICollection<string>>()))
-                                .Throws<Exception>()
-                                .Verifiable("deletion of keys not triggered");
-
-            var result = await TestAction<ObjectResult>(c => c.DeleteKeys("Foo", "Bar", new[] {"Foo", "Bar"}));
-
-            Assert.NotNull(result.Value);
-            _projectionStoreMock.Verify();
-        }
-
-        [Fact]
         public async Task GetEnvironments()
         {
             _projectionStoreMock.Setup(s => s.Environments.GetAvailable(It.IsAny<QueryRange>(), It.IsAny<long>()))
@@ -293,7 +212,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeys()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                                 {
                                     {"Foo", "Bar"}
@@ -311,7 +230,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsJson()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                                 {
                                     {"Foo", "Bar"}
@@ -332,9 +251,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsJsonParametersForwarded()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
                                 {
-                                    Environment = new EnvironmentIdentifier("Foo", "Bar"),
+                                    Identifier = new EnvironmentIdentifier("Foo", "Bar"),
                                     Filter = "filter",
                                     PreferExactMatch = "preferExactMatch",
                                     Range = QueryRange.All,
@@ -357,7 +276,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsJsonProviderError()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("keys not queried");
 
@@ -371,7 +290,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsJsonStoreThrows()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .Throws<Exception>()
                                 .Verifiable("keys not queried");
 
@@ -385,7 +304,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsJsonTranslationThrows()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                                 {
                                     {"Foo", "Bar"}
@@ -407,7 +326,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsObjects()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(() => Result.Success<IEnumerable<DtoConfigKey>>(new[]
                                 {
                                     new DtoConfigKey {Key = "Foo", Value = "Bar"}
@@ -425,9 +344,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsObjectsParametersForwarded()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(new EnvironmentKeyQueryParameters
+            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(new KeyQueryParameters<EnvironmentIdentifier>
                                 {
-                                    Environment = new EnvironmentIdentifier("Foo", "Bar"),
+                                    Identifier = new EnvironmentIdentifier("Foo", "Bar"),
                                     Filter = "filter",
                                     PreferExactMatch = "preferExactMatch",
                                     Range = QueryRange.Make(1, 2),
@@ -445,7 +364,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsObjectsProviderError()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(() => Result.Error<IEnumerable<DtoConfigKey>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("keys not queried");
 
@@ -459,7 +378,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysAsObjectsStoreThrows()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeyObjects(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .Throws<Exception>()
                                 .Verifiable("keys not queried");
 
@@ -473,9 +392,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysParametersForwarded()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(new EnvironmentKeyQueryParameters
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
                                 {
-                                    Environment = new EnvironmentIdentifier("Foo", "Bar"),
+                                    Identifier = new EnvironmentIdentifier("Foo", "Bar"),
                                     Filter = "filter",
                                     PreferExactMatch = "preferExactMatch",
                                     Range = QueryRange.Make(1, 2),
@@ -493,7 +412,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysProviderError()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("keys not queried");
 
@@ -507,7 +426,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetKeysStoreThrows()
         {
-            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .Throws<Exception>()
                                 .Verifiable("keys not queried");
 
@@ -516,45 +435,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             Assert.NotNull(result.Value);
 
             _projectionStoreMock.Verify();
-        }
-
-        [Fact]
-        public async Task UpdateKeys()
-        {
-            _projectionStoreMock.Setup(s => s.Environments.UpdateKeys(It.IsAny<EnvironmentIdentifier>(), It.IsAny<ICollection<DtoConfigKey>>()))
-                                .ReturnsAsync(Result.Success)
-                                .Verifiable("keys not updated");
-
-            var result = await TestAction<AcceptedAtActionResult>(c => c.UpdateKeys("Foo", "Bar", new[] {new DtoConfigKey {Key = "Foo", Value = "Bar"}}));
-
-            Assert.Equal(nameof(EnvironmentController.GetKeys), result.ActionName);
-            Assert.Equal(RouteUtilities.ControllerName<EnvironmentController>(), result.ControllerName);
-            Assert.Contains("version", result.RouteValues.Keys);
-            _projectionStoreMock.Verify();
-        }
-
-        [Fact]
-        public async Task UpdateKeysProviderError()
-        {
-            _projectionStoreMock.Setup(s => s.Environments.UpdateKeys(It.IsAny<EnvironmentIdentifier>(), It.IsAny<ICollection<DtoConfigKey>>()))
-                                .ReturnsAsync(() => Result.Error("something went wrong", ErrorCode.DbUpdateError))
-                                .Verifiable("keys not updated");
-
-            var result = await TestAction<ObjectResult>(c => c.UpdateKeys("Boo", "Bar", new[] {new DtoConfigKey {Key = "Foo", Value = "Bar"}}));
-
-            Assert.NotNull(result.Value);
-        }
-
-        [Fact]
-        public async Task UpdateKeysStoreThrows()
-        {
-            _projectionStoreMock.Setup(s => s.Environments.UpdateKeys(It.IsAny<EnvironmentIdentifier>(), It.IsAny<ICollection<DtoConfigKey>>()))
-                                .Throws<Exception>()
-                                .Verifiable("keys not updated");
-
-            var result = await TestAction<ObjectResult>(c => c.UpdateKeys("Boo", "Bar", new[] {new DtoConfigKey {Key = "Foo", Value = "Bar"}}));
-
-            Assert.NotNull(result.Value);
         }
     }
 }

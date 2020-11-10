@@ -201,8 +201,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             var validator = CreateValidator();
 
             var result = validator.ValidateDomainEvent(
-                new EnvironmentKeysModified(
-                    new EnvironmentIdentifier("Foo", "Bar"),
+                new EnvironmentLayerKeysModified(
+                    new LayerIdentifier("Foo"),
                     new ConfigKeyAction[0]));
 
             Assert.True(result.IsError);
@@ -233,7 +233,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             var validator = CreateValidator();
 
-            var result = validator.ValidateDomainEvent(new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[]
+            var result = validator.ValidateDomainEvent(new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"), new[]
             {
                 ConfigKeyAction.Set("Foo", "Bar", "description", "type")
             }));
@@ -246,7 +246,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             var validator = CreateValidator();
 
-            var result = validator.ValidateDomainEvent(new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", "Bar"), new[]
+            var result = validator.ValidateDomainEvent(new EnvironmentLayerKeysModified(new LayerIdentifier("Foo"), new[]
             {
                 ConfigKeyAction.Set("Foo", "Bar", "description", "type"),
                 ConfigKeyAction.Delete("Baz")

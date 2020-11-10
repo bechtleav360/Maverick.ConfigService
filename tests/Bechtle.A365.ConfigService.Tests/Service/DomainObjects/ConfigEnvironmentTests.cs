@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Moq;
 using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
@@ -41,8 +44,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.True(item.Created);
             Assert.False(item.Deleted);
             Assert.False(item.IsDefault);
-            Assert.Empty(item.Keys);
-            Assert.Empty(item.KeyPaths);
+            Assert.Empty(item.Layers);
         }
 
         [Fact]
@@ -53,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             item.Create();
 
             Assert.True(item.Created);
-            Assert.Empty(item.Keys);
+            Assert.Empty(item.Layers);
         }
 
         [Fact]
@@ -66,8 +68,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.True(item.Created);
             Assert.False(item.Deleted);
             Assert.True(item.IsDefault);
-            Assert.Empty(item.Keys);
-            Assert.Empty(item.KeyPaths);
+            Assert.Empty(item.Layers);
         }
 
         [Fact]
@@ -108,8 +109,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             item.ApplyEvent(new ReplayedEvent
             {
-                DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"),
-                                                          new[] {ConfigKeyAction.Set("Jar", "Jar", "Jar", "Jar")}),
+                DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
+                                                            new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                 UtcTime = DateTime.UtcNow,
                 Version = 1
             });
@@ -118,177 +119,56 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             Assert.True(item.Deleted, "item.Deleted");
             Assert.False(item.Created, "item.Created");
-            Assert.Empty(item.Keys);
-            Assert.Empty(item.KeyPaths);
+            Assert.Empty(item.Layers);
         }
 
         [Fact]
-        public void DeleteKeysChangesValues()
+        public async Task GetKeysAsDictionaryForwardsToLayers()
         {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
+            var domainObjectStore = new Mock<IDomainObjectStore>(MockBehavior.Strict);
+            domainObjectStore.Setup(s => s.ReplayObject<EnvironmentLayer>(It.IsAny<EnvironmentLayer>(), It.IsAny<string>(), It.IsAny<long>()))
+                             .ReturnsAsync((EnvironmentLayer layer, string id, long version) =>
+                             {
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4710,
+                                     DomainEvent = new EnvironmentLayerCreated(layer.Identifier)
+                                 });
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4710,
+                                     DomainEvent = new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"),
+                                                                                    new[] {ConfigKeyAction.Set("Jar", "Jar", "Jar", "Jar")})
+                                 });
 
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
+                                 return Result.Success(layer);
+                             })
+                             .Verifiable("Layer not retrieved");
 
-            Assert.NotEmpty(item.Keys);
-
-            item.DeleteKeys(new List<string> {"Foo"});
-
-            Assert.Empty(item.Keys);
-        }
-
-        [Fact]
-        public void DeletingEmptyListFails()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            var result = item.DeleteKeys(new List<string>());
-
-            Assert.True(result.IsError, "result.IsError");
-        }
-
-        [Fact]
-        public void DeletingInvalidKeysFails()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
-
-            Assert.NotEmpty(item.Keys);
-
-            var result = item.DeleteKeys(new List<string> {"Baz"});
-
-            Assert.True(result.IsError, "result.IsError");
-        }
-
-        [Fact]
-        public void DeletingNullListFails()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            var result = item.DeleteKeys(null);
-
-            Assert.True(result.IsError, "result.IsError");
-        }
-
-        [Fact]
-        public void GenerateCorrectKeyPathsNestedObject()
-        {
-            static T AssertAndGet<T>(ICollection<T> enumerable, Func<T, bool> predicate)
-            {
-                Assert.Contains(enumerable, i => predicate(i));
-                return enumerable.First(predicate);
-            }
-
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.ImportKeys(new[]
-            {
-                new ConfigEnvironmentKey("A/B/C", "1", "", "", 1),
-                new ConfigEnvironmentKey("A/B/D/E", "2", "", "", 1),
-                new ConfigEnvironmentKey("A/B/D/F", "3", "", "", 1)
-            });
-
-            var a = AssertAndGet(item.KeyPaths, p => p.Path == "A");
-
-            var b = AssertAndGet(a?.Children, p => p.FullPath == "A/B/" && p.Path == "B");
-            AssertAndGet(b?.Children, p => p.FullPath == "A/B/C" && p.Path == "C");
-
-            var d = AssertAndGet(b?.Children, p => p.FullPath == "A/B/D/" && p.Path == "D");
-            AssertAndGet(d?.Children, p => p.FullPath == "A/B/D/E" && p.Path == "E");
-            AssertAndGet(d?.Children, p => p.FullPath == "A/B/D/F" && p.Path == "F");
-        }
-
-        [Fact]
-        public void GenerateCorrectKeyPathsSimple()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.ImportKeys(new[]
-            {
-                new ConfigEnvironmentKey("Foo", "Bar", "", "", 1),
-                new ConfigEnvironmentKey("Jar/Jar", "Binks", "", "", 1),
-                new ConfigEnvironmentKey("Guy/0001", "1", "", "", 1),
-                new ConfigEnvironmentKey("Guy/0002", "2", "", "", 1),
-                new ConfigEnvironmentKey("Guy/0003", "3", "", "", 1)
-            });
-
-            var paths = item.KeyPaths;
-
-            Assert.Contains(paths, p => p.FullPath == "Foo");
-            Assert.Contains(paths, p => p.FullPath == "Jar/");
-            Assert.Contains(paths, p => p.FullPath == "Guy/");
-
-            var jar = paths.First(p => p.FullPath == "Jar/");
-            var guy = paths.First(p => p.FullPath == "Guy/");
-
-            Assert.Contains(jar.Children, p => p.FullPath == "Jar/Jar");
-
-            Assert.Contains(guy.Children, p => p.FullPath == "Guy/0001");
-            Assert.Contains(guy.Children, p => p.FullPath == "Guy/0002");
-            Assert.Contains(guy.Children, p => p.FullPath == "Guy/0003");
-        }
-
-        [Fact]
-        public void GetKeysAsDictionary()
-        {
             var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
 
             item.ApplyEvent(new ReplayedEvent
             {
-                DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"),
-                                                          new[] {ConfigKeyAction.Set("Jar", "Jar", "Jar", "Jar")}),
+                DomainEvent = new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar")),
                 UtcTime = DateTime.UtcNow,
                 Version = 1
             });
-
-            var dict = item.GetKeysAsDictionary();
-
-            Assert.Single(dict);
-            Assert.Equal("Jar", dict["Jar"]);
-        }
-
-        [Fact]
-        public void ImportKeys()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.Create();
-
-            item.ImportKeys(new[]
+            item.ApplyEvent(new ReplayedEvent
             {
-                new ConfigEnvironmentKey("Foo", "Bar", "Baz", "Que", 1),
-                new ConfigEnvironmentKey("Jar", "Jar", "Jar", "Jar", 2)
+                DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"), new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
+                UtcTime = DateTime.UtcNow,
+                Version = 2
             });
 
-            Assert.True(item.Keys.Count == 2, "item.Keys.Count == 2");
+            var result = await item.GetKeysAsDictionary(domainObjectStore.Object);
 
-            Assert.Equal("Bar", item.Keys["Foo"].Value);
-            Assert.Equal("Baz", item.Keys["Foo"].Type);
-            Assert.Equal("Que", item.Keys["Foo"].Description);
-
-            Assert.Equal("Jar", item.Keys["Jar"].Value);
-            Assert.Equal("Jar", item.Keys["Jar"].Type);
-            Assert.Equal("Jar", item.Keys["Jar"].Description);
-        }
-
-        [Fact]
-        public void ImportOverwritesExisting()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.Create();
-
-            item.UpdateKeys(new[] {new ConfigEnvironmentKey("Old", "Value", "Foo", "Bar", 42)});
-
-            item.ImportKeys(new[]
-            {
-                new ConfigEnvironmentKey("Foo", "Bar", "Baz", "Que", 1),
-                new ConfigEnvironmentKey("Jar", "Jar", "Jar", "Jar", 2)
-            });
-
-            Assert.True(item.Keys.Count == 2, "item.Keys.Count == 2");
-
-            Assert.DoesNotContain("Old", item.Keys.Keys);
+            domainObjectStore.Verify();
+            Assert.NotNull(result);
+            Assert.False(result.IsError, "result.IsError");
+            Assert.Single(result.Data);
+            Assert.Equal("Jar", result.Data["Jar"]);
         }
 
         [Fact]
@@ -298,11 +178,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             var item = new ConfigEnvironment(identifier);
 
-            Assert.NotNull(item.Keys);
-            Assert.Empty(item.Keys);
-
-            Assert.NotNull(item.KeyPaths);
-            Assert.Empty(item.KeyPaths);
+            Assert.NotNull(item.Layers);
+            Assert.Empty(item.Layers);
 
             Assert.False(item.Created);
             Assert.False(item.Deleted);
@@ -310,49 +187,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             // use this comparison because we don't care about reference-equality, only value-equality
             Assert.True(identifier.Equals(item.Identifier), "identifier.Equals(item.Identifier)");
-        }
-
-        [Fact]
-        public void ModifyingEmptyListFails()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            var result = item.UpdateKeys(new List<ConfigEnvironmentKey>());
-
-            Assert.True(result.IsError, "result.IsError");
-        }
-
-        [Fact]
-        public void ModifyingNullListFails()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            var result = item.UpdateKeys(null);
-
-            Assert.True(result.IsError, "result.IsError");
-        }
-
-        [Fact]
-        public void ModifyVariablesChangesValues()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            Assert.Empty(item.Keys);
-
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
-
-            Assert.NotEmpty(item.Keys);
-        }
-
-        [Fact]
-        public void OverwriteExistingVariables()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Baz", "", "", 0)});
-
-            Assert.Equal("Baz", item.Keys["Foo"].Value);
         }
 
         [Fact]
@@ -371,8 +205,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.True(item.Created, "item.Created");
             Assert.False(item.Deleted, "item.Deleted");
             Assert.False(item.IsDefault, "item.IsDefault");
-            Assert.Empty(item.Keys);
-            Assert.Empty(item.KeyPaths);
+            Assert.Empty(item.Layers);
         }
 
         [Fact]
@@ -391,8 +224,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.True(item.Created, "item.Created");
             Assert.False(item.Deleted, "item.Deleted");
             Assert.True(item.IsDefault, "item.IsDefault");
-            Assert.Empty(item.Keys);
-            Assert.Empty(item.KeyPaths);
+            Assert.Empty(item.Layers);
         }
 
         [Fact]
@@ -413,63 +245,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.False(item.Created, "item.Created");
             Assert.False(item.IsDefault, "item.IsDefault");
             Assert.True(item.Deleted, "item.Deleted");
-            Assert.Empty(item.Keys);
-            Assert.Empty(item.KeyPaths);
-        }
-
-        [Fact]
-        public void ReplayHandlesDeletedVariables()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.Create();
-
-            item.ApplyEvent(new ReplayedEvent
-            {
-                Version = 1,
-                DomainEvent = new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", "Bar"), new[] {ConfigKeyAction.Delete("Foo")}),
-                UtcTime = DateTime.UtcNow
-            });
-
-            Assert.Equal(1, item.CurrentVersion);
-            Assert.DoesNotContain("Foo", item.Keys.Keys);
-        }
-
-        [Fact]
-        public void ReplayHandlesImportedKeys()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.Create();
-
-            item.ApplyEvent(new ReplayedEvent
-            {
-                Version = 1,
-                DomainEvent = new EnvironmentKeysImported(new EnvironmentIdentifier("Foo", "Bar"), new[] {ConfigKeyAction.Set("Foo", "BarBarBar")}),
-                UtcTime = DateTime.UtcNow
-            });
-
-            Assert.Equal(1, item.CurrentVersion);
-            Assert.Single(item.Keys);
-            Assert.Equal("BarBarBar", item.Keys["Foo"].Value);
-        }
-
-        [Fact]
-        public void ReplayHandlesModifiedVariables()
-        {
-            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
-
-            item.Create();
-
-            item.ApplyEvent(new ReplayedEvent
-            {
-                Version = 1,
-                DomainEvent = new EnvironmentKeysModified(new EnvironmentIdentifier("Foo", "Bar"), new[] {ConfigKeyAction.Set("Foo", "BarBarBar")}),
-                UtcTime = DateTime.UtcNow
-            });
-
-            Assert.Equal(1, item.CurrentVersion);
-            Assert.Equal("BarBarBar", item.Keys["Foo"].Value);
+            Assert.Empty(item.Layers);
         }
 
         [Fact]
@@ -477,14 +253,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         {
             var snapshotSource = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
             snapshotSource.Create();
-            snapshotSource.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
+            snapshotSource.AssignLayers(new[] {new LayerIdentifier("Foo")});
             var snapshot = snapshotSource.CreateSnapshot();
 
             var target = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
             target.ApplySnapshot(snapshot);
 
-            Assert.Equal(snapshotSource.Keys, target.Keys);
-            Assert.Equal(snapshotSource.KeyPaths, target.KeyPaths);
+            Assert.Equal(snapshotSource.Layers, target.Layers);
             Assert.Equal(snapshotSource.Identifier, target.Identifier);
             Assert.Equal(snapshotSource.Created, target.Created);
             Assert.Equal(snapshotSource.Deleted, target.Deleted);

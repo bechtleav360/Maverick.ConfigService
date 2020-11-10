@@ -64,7 +64,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             }))
                             .Verifiable("structure variables not retrieved");
 
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -119,7 +119,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             }))
                             .Verifiable("structure variables not retrieved");
 
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -163,7 +163,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             }))
                             .Verifiable("structure variables not retrieved");
 
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
@@ -247,7 +247,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             }))
                             .Verifiable("structure variables not retrieved");
 
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -288,7 +288,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task PreviewConfigurationUsingExistingData()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}

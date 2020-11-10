@@ -53,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [InlineData(2)]
         public async Task InspectStructureStructProviderError(int version)
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -95,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetUsedKeysPerStructureAll()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -128,7 +128,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetUsedKeysPerStructureAllConfigProviderError()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -150,7 +150,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetUsedKeysPerStructureAllEnvironmentProviderError()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
@@ -179,7 +179,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetUsedKeysPerStructureLatest()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -212,7 +212,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetUsedKeysPerStructureLatestConfigProviderError()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -234,7 +234,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task GetUsedKeysPerStructureLatestEnvironmentProviderError()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
@@ -263,7 +263,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task InspectStructure()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -315,7 +315,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task InspectStructureCompilerThrows()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -352,7 +352,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task InspectStructureEnvProviderFails()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
@@ -397,7 +397,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task InspectStructureStructProviderThrows()
         {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -424,7 +424,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                        })
                        .Verifiable("structure not translated");
 
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -475,7 +475,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                        })
                        .Verifiable("structure not translated");
 
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
                             {
                                 {"Foo", "Bar"}
@@ -525,7 +525,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                        })
                        .Verifiable("structure not translated");
 
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<EnvironmentKeyQueryParameters>()))
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
