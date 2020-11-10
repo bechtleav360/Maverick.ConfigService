@@ -223,7 +223,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -297,7 +297,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -371,7 +371,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -564,8 +564,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable();
 
-            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
-                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id) =>
                              {
                                  str.ApplyEvent(new ReplayedEvent
                                  {
@@ -576,7 +576,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -642,8 +642,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable();
 
-            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
-                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id) =>
                              {
                                  str.ApplyEvent(new ReplayedEvent
                                  {
@@ -654,7 +654,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -722,8 +722,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable();
 
-            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
-                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id) =>
                              {
                                  str.ApplyEvent(new ReplayedEvent
                                  {
@@ -734,7 +734,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -800,8 +800,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable();
 
-            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
-                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id) =>
                              {
                                  str.ApplyEvent(new ReplayedEvent
                                  {
@@ -812,7 +812,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -844,7 +844,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
             Assert.Single(result.Data);
-            Assert.Equal(new KeyValuePair<string, string>("Baz", "BazValue"), result.Data.First());
+            Assert.Equal(new KeyValuePair<string, string>("Foo/Bar", "BarValue"), result.Data.First());
 
             domainObjectStore.Verify();
             eventStore.Verify();
@@ -879,8 +879,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable();
 
-            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
-                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id) =>
                              {
                                  str.ApplyEvent(new ReplayedEvent
                                  {
@@ -891,7 +891,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -959,8 +959,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              })
                              .Verifiable();
 
-            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
-                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id) =>
                              {
                                  str.ApplyEvent(new ReplayedEvent
                                  {
@@ -971,7 +971,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -1035,12 +1035,23 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
+                                 layer.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier("Foo"), new[]
+                                     {
+                                         ConfigKeyAction.Set("foo", "fooValue"),
+                                         ConfigKeyAction.Set("foo/bar", "barValue"),
+                                         ConfigKeyAction.Set("foo/bar/baz", "bazValue")
+                                     }),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4712
+                                 });
                                  return Result.Success(layer);
                              })
                              .Verifiable();
 
-            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
-                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id) =>
                              {
                                  str.ApplyEvent(new ReplayedEvent
                                  {
@@ -1051,7 +1062,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  str.ApplyEvent(new ReplayedEvent
                                  {
                                      DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
-                                                                                 new List<LayerIdentifier> { new LayerIdentifier("Foo") }),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
@@ -1084,7 +1095,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             Assert.False(result.IsError, "result.IsError");
             Assert.NotEmpty(result.Data);
 
-            Assert.Single(result.Data.Keys);
+            Assert.Equal(3, result.Data.Count);
+            Assert.Equal("fooValue", result.Data["foo"]);
+            Assert.Equal("barValue", result.Data["foo/bar"]);
+            Assert.Equal("bazValue", result.Data["foo/bar/baz"]);
 
             domainObjectStore.Verify();
             eventStore.Verify();

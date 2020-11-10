@@ -198,6 +198,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Deleted = other.Deleted;
             Identifier = other.Identifier;
             IsDefault = other.IsDefault;
+            Layers = other.Layers;
         }
 
         /// <inheritdoc />

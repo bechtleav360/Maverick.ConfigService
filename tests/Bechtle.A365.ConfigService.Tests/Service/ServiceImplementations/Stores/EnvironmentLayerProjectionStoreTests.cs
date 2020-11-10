@@ -468,13 +468,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Foo")),
+                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Bar")),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4711
                                  });
                                  list.ApplyEvent(new ReplayedEvent
                                  {
-                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Foo")),
+                                     DomainEvent = new EnvironmentLayerCreated(new LayerIdentifier("Baz")),
                                      UtcTime = DateTime.UtcNow,
                                      Version = 4712
                                  });

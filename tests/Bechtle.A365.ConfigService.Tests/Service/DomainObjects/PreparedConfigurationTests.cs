@@ -201,7 +201,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
                      env.ApplyEvent(new ReplayedEvent
                      {
                          UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
-                         Version = 1,
+                         Version = 2,
                          DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")})
                      });
 
@@ -320,7 +320,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
                      env.ApplyEvent(new ReplayedEvent
                      {
                          UtcTime = DateTime.UtcNow - TimeSpan.FromSeconds(1),
-                         Version = 1,
+                         Version = 2,
                          DomainEvent = new EnvironmentLayersModified(env.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")})
                      });
 

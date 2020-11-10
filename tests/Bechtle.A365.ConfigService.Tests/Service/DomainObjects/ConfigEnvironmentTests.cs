@@ -138,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
                                  layer.ApplyEvent(new ReplayedEvent
                                  {
                                      UtcTime = DateTime.UtcNow,
-                                     Version = 4710,
+                                     Version = 4711,
                                      DomainEvent = new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"),
                                                                                     new[] {ConfigKeyAction.Set("Jar", "Jar", "Jar", "Jar")})
                                  });
@@ -151,13 +151,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             item.ApplyEvent(new ReplayedEvent
             {
-                DomainEvent = new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar")),
+                DomainEvent = new EnvironmentCreated(item.Identifier),
                 UtcTime = DateTime.UtcNow,
                 Version = 1
             });
             item.ApplyEvent(new ReplayedEvent
             {
-                DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"), new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
+                DomainEvent = new EnvironmentLayersModified(item.Identifier, new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
                 UtcTime = DateTime.UtcNow,
                 Version = 2
             });

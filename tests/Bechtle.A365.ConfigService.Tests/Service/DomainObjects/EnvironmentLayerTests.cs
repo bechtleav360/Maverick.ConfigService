@@ -13,7 +13,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        [InlineData("Foo")]
         public void ThrowsForInvalidIdentifier(string name) => Assert.Throws<ArgumentNullException>(
             () => new EnvironmentLayer(new LayerIdentifier(name)));
 
