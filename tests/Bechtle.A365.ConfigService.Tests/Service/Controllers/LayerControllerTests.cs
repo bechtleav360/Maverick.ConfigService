@@ -34,7 +34,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             new object[] {""},
             new object[] {null},
-            new object[] {"Foo"},
         };
 
         private readonly Mock<IProjectionStore> _projectionStoreMock;
@@ -82,15 +81,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
         public static IEnumerable<object[]> InvalidKeyUpdateParameters => new[]
         {
-            new object[] {null, null, new DtoConfigKey[0]},
-            new object[] {"", "", new DtoConfigKey[0]},
-            new object[] {"Foo", "", new DtoConfigKey[0]},
-            new object[] {"", "Bar", new DtoConfigKey[0]},
-            new object[] {"Foo", "Bar", new DtoConfigKey[0]},
-            new object[] {"Foo", "Bar", null},
+            new object[] {null, new DtoConfigKey[0]},
+            new object[] {"", new DtoConfigKey[0]},
+            new object[] {"Foo", null},
             new object[]
             {
-                "Foo", "Bar", new[]
+                "Foo", new[]
                 {
                     new DtoConfigKey {Key = "Foo", Value = "Bar"},
                     new DtoConfigKey {Key = "Foo", Value = "Bar"}
