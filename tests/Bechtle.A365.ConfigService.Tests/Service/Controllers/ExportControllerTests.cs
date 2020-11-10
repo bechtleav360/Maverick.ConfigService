@@ -53,7 +53,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             var result = await TestAction<FileStreamResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")}
+                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")},
+                Layers = new LayerIdentifier[0]
             }));
 
             Assert.IsType<FileStreamResult>(result);
@@ -64,7 +65,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             var result = await TestAction<BadRequestObjectResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new EnvironmentIdentifier[0]
+                Environments = new EnvironmentIdentifier[0],
+                Layers = new LayerIdentifier[0]
             }));
 
             Assert.NotNull(result.Value);
@@ -87,7 +89,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             var result = await TestAction<ObjectResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")}
+                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")},
+                Layers = new LayerIdentifier[0]
             }));
 
             Assert.NotNull(result.Value);
@@ -103,7 +106,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             var result = await TestAction<ObjectResult>(c => c.Export(new ExportDefinition
             {
-                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")}
+                Environments = new[] {new EnvironmentIdentifier("Foo", "Bar")},
+                Layers = new LayerIdentifier[0]
             }));
 
             Assert.NotNull(result.Value);

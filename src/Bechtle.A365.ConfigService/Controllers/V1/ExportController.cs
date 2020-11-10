@@ -41,8 +41,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (definition is null)
                 return BadRequest("no definition received");
 
-            if (!definition.Environments.Any())
-                return BadRequest("no Environments listed in export-definition");
+            if (definition.Environments is null || definition.Layers is null)
+                return BadRequest("neither Environments nor Layers may be null");
+
+            if (!definition.Environments.Any() && !definition.Layers.Any())
+                return BadRequest("no Environments or Layers given to export");
 
             try
             {
