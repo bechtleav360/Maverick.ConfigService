@@ -229,6 +229,23 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         }
 
         [Fact]
+        public void ImportCreatesLayers()
+        {
+            var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                DomainEvent = new EnvironmentLayerKeysImported(new LayerIdentifier("Foo"),
+                                                               new[] {ConfigKeyAction.Set("Jar", "Jar", "Jar", "Jar")}),
+                UtcTime = DateTime.UtcNow,
+                Version = 1
+            });
+
+            Assert.True(item.Created);
+            Assert.False(item.Deleted);
+        }
+
+        [Fact]
         public void ImportKeys()
         {
             var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
@@ -322,6 +339,47 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
 
             Assert.NotEmpty(item.Keys);
+        }
+
+        [Fact]
+        public void OverwriteDifferentlyCasedKeys()
+        {
+            var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 1,
+                DomainEvent = new EnvironmentLayerCreated(item.Identifier)
+            });
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 2,
+                DomainEvent = new EnvironmentLayerKeysModified(item.Identifier, new[]
+                {
+                    ConfigKeyAction.Set("Foo", "Bar", "some-description", "some-value")
+                })
+            });
+
+            Assert.Single(item.Keys);
+            Assert.Equal("Bar", item.Keys["Foo"].Value);
+            Assert.Equal("Bar", item.Keys["foo"].Value);
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 3,
+                DomainEvent = new EnvironmentLayerKeysModified(item.Identifier, new[]
+                {
+                    ConfigKeyAction.Set("foo", "Bar", "some-description", "some-value")
+                })
+            });
+
+            Assert.Single(item.Keys);
+            Assert.Equal("Bar", item.Keys["Foo"].Value);
+            Assert.Equal("Bar", item.Keys["foo"].Value);
         }
 
         [Fact]

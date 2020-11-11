@@ -123,6 +123,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public async Task<IResult<IList<ConfigEnvironmentKey>>> GetKeys(IDomainObjectStore objectStore)
         {
+            if(objectStore is null)
+                throw new ArgumentNullException(nameof(objectStore));
+
             var layerDataResult = await GetLayers(objectStore);
 
             if (layerDataResult.IsError)
@@ -146,6 +149,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public async Task<IResult<IDictionary<string, string>>> GetKeysAsDictionary(IDomainObjectStore objectStore)
         {
+            if (objectStore is null)
+                throw new ArgumentNullException(nameof(objectStore));
+
             var layerDataResult = await GetLayers(objectStore);
 
             if (layerDataResult.IsError)
@@ -168,6 +174,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <returns></returns>
         public async Task<IResult<List<EnvironmentLayer>>> GetLayers(IDomainObjectStore objectStore)
         {
+            if (objectStore is null)
+                throw new ArgumentNullException(nameof(objectStore));
+
             if (!Created)
                 return Result.Error<List<EnvironmentLayer>>("environment does not exist", ErrorCode.NotFound);
 
