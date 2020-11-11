@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -22,6 +21,23 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [InlineData("Foo", "")]
         public void ThrowsForInvalidIdentifier(string category, string name) => Assert.Throws<ArgumentNullException>(
             () => new ConfigEnvironment(new EnvironmentIdentifier(category, name)));
+
+        [Fact]
+        public void AssignLayers()
+        {
+            var item = new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar"));
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                DomainEvent = new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar")),
+                UtcTime = DateTime.UtcNow,
+                Version = 1
+            });
+
+            item.AssignLayers(new[] {new LayerIdentifier("Foo")});
+
+            Assert.Single(item.Layers);
+        }
 
         [Fact]
         public void CacheItemPriority() => new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar")).GetCacheItemPriority();
@@ -126,7 +142,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         public async Task GetKeysAsDictionaryForwardsToLayers()
         {
             var domainObjectStore = new Mock<IDomainObjectStore>(MockBehavior.Strict);
-            domainObjectStore.Setup(s => s.ReplayObject<EnvironmentLayer>(It.IsAny<EnvironmentLayer>(), It.IsAny<string>(), It.IsAny<long>()))
+            domainObjectStore.Setup(s => s.ReplayObject(It.IsAny<EnvironmentLayer>(), It.IsAny<string>(), It.IsAny<long>()))
                              .ReturnsAsync((EnvironmentLayer layer, string id, long version) =>
                              {
                                  layer.ApplyEvent(new ReplayedEvent

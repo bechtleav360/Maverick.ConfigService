@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Implementations.Stores;
@@ -103,6 +102,56 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
+
+            domainObjectStore.Verify();
+            eventStore.Verify();
+        }
+
+        [Fact]
+        public async Task GetAssignedLayers()
+        {
+            var domainObjectStore = new Mock<IDomainObjectStore>(MockBehavior.Strict);
+
+            domainObjectStore.Setup(dos => dos.ReplayObject(It.IsAny<ConfigEnvironment>(), It.IsAny<string>(), It.IsAny<long>()))
+                             .ReturnsAsync((ConfigEnvironment str, string id, long version) =>
+                             {
+                                 str.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentCreated(new EnvironmentIdentifier("Foo", "Bar")),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4710
+                                 });
+                                 str.ApplyEvent(new ReplayedEvent
+                                 {
+                                     DomainEvent = new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", "Bar"),
+                                                                                 new List<LayerIdentifier> {new LayerIdentifier("Foo")}),
+                                     UtcTime = DateTime.UtcNow,
+                                     Version = 4711
+                                 });
+                                 return Result.Success(str);
+                             })
+                             .Verifiable();
+
+            var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
+
+            eventStore.Setup(es => es.ReplayEventsAsStream(
+                                 It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
+                                 It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
+                                 It.IsAny<int>(),
+                                 It.IsAny<StreamDirection>(),
+                                 It.IsAny<long>()))
+                      .Returns(Task.CompletedTask);
+
+            var store = new EnvironmentProjectionStore(eventStore.Object,
+                                                       domainObjectStore.Object,
+                                                       _logger,
+                                                       new ICommandValidator[0]);
+
+            var result = await store.GetAssignedLayers(new EnvironmentIdentifier("Foo", "Bar"));
+
+            Assert.Empty(result.Message);
+            Assert.False(result.IsError, "result.IsError");
+            Assert.Single(result.Data);
 
             domainObjectStore.Verify();
             eventStore.Verify();
