@@ -106,7 +106,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     break;
 
                 case EnvironmentDeleted deleted:
-                    domainObjects.RemoveRange(domainObjects.Where(o => o is ConfigEnvironment e && e.Identifier == deleted.Identifier));
+                    domainObjects.RemoveRange(domainObjects.Where(o => o is ConfigEnvironment e && e.Identifier == deleted.Identifier).ToList());
                     break;
 
                 case StructureCreated created:
@@ -115,7 +115,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     break;
 
                 case StructureDeleted deleted:
-                    domainObjects.RemoveRange(domainObjects.Where(o => o is ConfigStructure e && e.Identifier == deleted.Identifier));
+                    domainObjects.RemoveRange(domainObjects.Where(o => o is ConfigStructure e && e.Identifier == deleted.Identifier).ToList());
                     break;
 
                 case EnvironmentLayerCreated created:
@@ -124,7 +124,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     break;
 
                 case EnvironmentLayerDeleted deleted:
-                    domainObjects.RemoveRange(domainObjects.Where(o => o is EnvironmentLayer e && e.Identifier == deleted.Identifier));
+                    domainObjects.RemoveRange(domainObjects.Where(o => o is EnvironmentLayer e && e.Identifier == deleted.Identifier).ToList());
                     break;
             }
 
