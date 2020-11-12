@@ -45,7 +45,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 new ConfigEnvironmentList(),
                 new ConfigStructureList(),
-                new PreparedConfigurationList()
+                new PreparedConfigurationList(),
+                new EnvironmentLayerList(),
             };
 
             await _eventStore.ReplayEventsAsStream(tuple => StreamProcessor(tuple, domainObjects));
@@ -115,6 +116,15 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                 case StructureDeleted deleted:
                     domainObjects.RemoveRange(domainObjects.Where(o => o is ConfigStructure e && e.Identifier == deleted.Identifier));
+                    break;
+
+                case EnvironmentLayerCreated created:
+                    if (domainObjects.OfType<EnvironmentLayer>().FirstOrDefault(o => o.Identifier == created.Identifier) is null)
+                        domainObjects.Add(new EnvironmentLayer(created.Identifier));
+                    break;
+
+                case EnvironmentLayerDeleted deleted:
+                    domainObjects.RemoveRange(domainObjects.Where(o => o is EnvironmentLayer e && e.Identifier == deleted.Identifier));
                     break;
             }
 
