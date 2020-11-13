@@ -379,6 +379,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     Keys.Remove(deletion.Key);
 
             foreach (var change in modified.ModifiedKeys.Where(action => action.Type == ConfigKeyActionType.Set))
+            {
+                if (Keys.ContainsKey(change.Key))
+                    Keys.Remove(change.Key);
+
                 Keys[change.Key] = new ConfigEnvironmentKey(change.Key,
                                                             change.Value,
                                                             change.ValueType,
@@ -386,6 +390,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                                                             (long) DateTime.UtcNow
                                                                            .Subtract(DateTime.UnixEpoch)
                                                                            .TotalSeconds);
+            }
 
             _keyPaths = null;
             return true;

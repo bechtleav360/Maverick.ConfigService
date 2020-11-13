@@ -310,6 +310,46 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         }
 
         [Fact]
+        public void KeepDictionaryKeyInSync()
+        {
+            var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 1,
+                DomainEvent = new EnvironmentLayerCreated(item.Identifier)
+            });
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 2,
+                DomainEvent = new EnvironmentLayerKeysModified(item.Identifier, new[]
+                {
+                    ConfigKeyAction.Set("Foo", "Bar", "some-description", "some-value")
+                })
+            });
+
+            Assert.Single(item.Keys);
+            Assert.Equal("Bar", item.Keys["Foo"].Value);
+            Assert.Equal("Bar", item.Keys["foo"].Value);
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 3,
+                DomainEvent = new EnvironmentLayerKeysModified(item.Identifier, new[]
+                {
+                    ConfigKeyAction.Set("foo", "Bar", "some-description", "some-value")
+                })
+            });
+
+            Assert.Single(item.Keys);
+            Assert.Equal("foo", item.Keys.First().Key);
+        }
+
+        [Fact]
         public void ModifyingEmptyListFails()
         {
             var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
@@ -339,6 +379,47 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
 
             Assert.NotEmpty(item.Keys);
+        }
+
+        [Fact]
+        public void OverwriteDifferentKeys()
+        {
+            var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 1,
+                DomainEvent = new EnvironmentLayerCreated(item.Identifier)
+            });
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 2,
+                DomainEvent = new EnvironmentLayerKeysModified(item.Identifier, new[]
+                {
+                    ConfigKeyAction.Set("Foo", "BarOne", "some-description", "some-value")
+                })
+            });
+
+            Assert.Single(item.Keys);
+            Assert.Equal("BarOne", item.Keys["Foo"].Value);
+            Assert.Equal("BarOne", item.Keys["foo"].Value);
+
+            item.ApplyEvent(new ReplayedEvent
+            {
+                UtcTime = DateTime.UtcNow,
+                Version = 3,
+                DomainEvent = new EnvironmentLayerKeysModified(item.Identifier, new[]
+                {
+                    ConfigKeyAction.Set("foo", "bartwo", "some-description", "some-value")
+                })
+            });
+
+            Assert.Single(item.Keys);
+            Assert.Equal("bartwo", item.Keys["Foo"].Value);
+            Assert.Equal("bartwo", item.Keys["foo"].Value);
         }
 
         [Fact]
