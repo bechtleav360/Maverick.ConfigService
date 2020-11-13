@@ -3,12 +3,12 @@
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
     /// <summary>
-    ///     All Metadata used to represent a single Key inside a <see cref="ConfigEnvironment" />
+    ///     All Metadata used to represent a single Key inside a <see cref="EnvironmentLayer" />
     /// </summary>
-    public class ConfigEnvironmentKey : IEquatable<ConfigEnvironmentKey>
+    public class EnvironmentLayerKey : IEquatable<EnvironmentLayerKey>
     {
-        /// <inheritdoc cref="ConfigEnvironmentKey" />
-        public ConfigEnvironmentKey(string key, string value, string type, string description, long version)
+        /// <inheritdoc cref="EnvironmentLayerKey" />
+        public EnvironmentLayerKey(string key, string value, string type, string description, long version)
         {
             Key = key;
             Value = value;
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public long Version { get; }
 
         /// <inheritdoc />
-        public virtual bool Equals(ConfigEnvironmentKey other)
+        public virtual bool Equals(EnvironmentLayerKey other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((ConfigEnvironmentKey) obj);
+            return Equals((EnvironmentLayerKey) obj);
         }
 
         /// <inheritdoc />
@@ -71,13 +71,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <param name="left"></param>
         /// <param name="right"></param>
         /// <returns></returns>
-        public static bool operator ==(ConfigEnvironmentKey left, ConfigEnvironmentKey right) => Equals(left, right);
+        public static bool operator ==(EnvironmentLayerKey left, EnvironmentLayerKey right) => Equals(left, right);
 
         /// <summary>
         /// </summary>
         /// <param name="left"></param>
         /// <param name="right"></param>
         /// <returns></returns>
-        public static bool operator !=(ConfigEnvironmentKey left, ConfigEnvironmentKey right) => !Equals(left, right);
+        public static bool operator !=(EnvironmentLayerKey left, EnvironmentLayerKey right) => !Equals(left, right);
     }
 }

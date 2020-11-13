@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class EnvironmentLayer : DomainObject
     {
-        private List<ConfigEnvironmentKeyPath> _keyPaths;
+        private List<EnvironmentLayerKeyPath> _keyPaths;
 
         /// <inheritdoc />
         public EnvironmentLayer(LayerIdentifier identifier)
@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Created = false;
             Deleted = false;
             Identifier = identifier;
-            Keys = new Dictionary<string, ConfigEnvironmentKey>(StringComparer.OrdinalIgnoreCase);
+            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -45,12 +45,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Trees of Paths that represent all Keys in this Layer
         /// </summary>
-        public List<ConfigEnvironmentKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
+        public List<EnvironmentLayerKeyPath> KeyPaths => _keyPaths ??= GenerateKeyPaths();
 
         /// <summary>
         ///     Actual Data of this Environment
         /// </summary>
-        public Dictionary<string, ConfigEnvironmentKey> Keys { get; protected set; }
+        public Dictionary<string, EnvironmentLayerKey> Keys { get; protected set; }
 
         /// <inheritdoc />
         public override long CalculateCacheSize()
@@ -109,7 +109,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (keysToRemove.Any(k => !Keys.ContainsKey(k)))
                 return Result.Error("not all keys could be found in target environment", ErrorCode.NotFound);
 
-            var removedKeys = new Dictionary<string, ConfigEnvironmentKey>(keysToRemove.Count);
+            var removedKeys = new Dictionary<string, EnvironmentLayerKey>(keysToRemove.Count);
             try
             {
                 foreach (var deletedKey in keysToRemove)
@@ -150,7 +150,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <param name="keysToImport"></param>
         /// <returns></returns>
-        public IResult ImportKeys(ICollection<ConfigEnvironmentKey> keysToImport)
+        public IResult ImportKeys(ICollection<EnvironmentLayerKey> keysToImport)
         {
             // copy dict as backup
             var oldKeys = Keys.ToDictionary(_ => _.Key, _ => _.Value);
@@ -187,13 +187,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <param name="keysToAdd"></param>
         /// <returns></returns>
-        public IResult UpdateKeys(ICollection<ConfigEnvironmentKey> keysToAdd)
+        public IResult UpdateKeys(ICollection<EnvironmentLayerKey> keysToAdd)
         {
             if (keysToAdd is null || !keysToAdd.Any())
                 return Result.Error("null or empty list given", ErrorCode.InvalidData);
 
-            var addedKeys = new List<ConfigEnvironmentKey>();
-            var updatedKeys = new Dictionary<string, ConfigEnvironmentKey>();
+            var addedKeys = new List<EnvironmentLayerKey>();
+            var updatedKeys = new Dictionary<string, EnvironmentLayerKey>();
 
             try
             {
@@ -276,8 +276,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             var computedCost = 0;
             var stack = _keyPaths is null
-                            ? new Stack<ConfigEnvironmentKeyPath>()
-                            : new Stack<ConfigEnvironmentKeyPath>(_keyPaths);
+                            ? new Stack<EnvironmentLayerKeyPath>()
+                            : new Stack<EnvironmentLayerKeyPath>(_keyPaths);
 
             while (stack.TryPop(out var item))
             {
@@ -291,9 +291,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             return computedCost;
         }
 
-        private List<ConfigEnvironmentKeyPath> GenerateKeyPaths()
+        private List<EnvironmentLayerKeyPath> GenerateKeyPaths()
         {
-            var roots = new List<ConfigEnvironmentKeyPath>();
+            var roots = new List<EnvironmentLayerKeyPath>();
 
             foreach (var (key, _) in Keys.OrderBy(k => k.Key))
             {
@@ -304,7 +304,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                 if (root is null)
                 {
-                    root = new ConfigEnvironmentKeyPath(rootPart);
+                    root = new EnvironmentLayerKeyPath(rootPart);
                     roots.Add(root);
                 }
 
@@ -316,7 +316,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
                     if (next is null)
                     {
-                        next = new ConfigEnvironmentKeyPath(part, current);
+                        next = new EnvironmentLayerKeyPath(part, current);
                         current.Children.Add(next);
                     }
 
@@ -357,13 +357,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                            .Where(action => action.Type == ConfigKeyActionType.Set)
                            .ToDictionary(
                                action => action.Key,
-                               action => new ConfigEnvironmentKey(action.Key,
-                                                                  action.Value,
-                                                                  action.ValueType,
-                                                                  action.Description,
-                                                                  (long) DateTime.UtcNow
-                                                                                 .Subtract(DateTime.UnixEpoch)
-                                                                                 .TotalSeconds));
+                               action => new EnvironmentLayerKey(action.Key,
+                                                                 action.Value,
+                                                                 action.ValueType,
+                                                                 action.Description,
+                                                                 (long) DateTime.UtcNow
+                                                                                .Subtract(DateTime.UnixEpoch)
+                                                                                .TotalSeconds));
 
             _keyPaths = null;
             return true;
@@ -383,13 +383,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 if (Keys.ContainsKey(change.Key))
                     Keys.Remove(change.Key);
 
-                Keys[change.Key] = new ConfigEnvironmentKey(change.Key,
-                                                            change.Value,
-                                                            change.ValueType,
-                                                            change.Description,
-                                                            (long) DateTime.UtcNow
-                                                                           .Subtract(DateTime.UnixEpoch)
-                                                                           .TotalSeconds);
+                Keys[change.Key] = new EnvironmentLayerKey(change.Key,
+                                                           change.Value,
+                                                           change.ValueType,
+                                                           change.Description,
+                                                           (long) DateTime.UtcNow
+                                                                          .Subtract(DateTime.UnixEpoch)
+                                                                          .TotalSeconds);
             }
 
             _keyPaths = null;

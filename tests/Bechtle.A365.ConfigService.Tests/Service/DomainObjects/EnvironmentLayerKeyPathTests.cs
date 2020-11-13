@@ -3,12 +3,12 @@ using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 {
-    public class ConfigEnvironmentKeyPathTests
+    public class EnvironmentLayerKeyPathTests
     {
         [Fact]
         public void CreateNew()
         {
-            var path = new ConfigEnvironmentKeyPath("");
+            var path = new EnvironmentLayerKeyPath("");
 
             Assert.Empty(path.Children);
             Assert.Equal("", path.FullPath);
@@ -19,8 +19,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void ExceptionOnNullChildren()
         {
-            var root = new ConfigEnvironmentKeyPath("Foo");
-            var child = new ConfigEnvironmentKeyPath("Bar", root);
+            var root = new EnvironmentLayerKeyPath("Foo");
+            var child = new EnvironmentLayerKeyPath("Bar", root);
 
             Assert.NotNull(child.FullPath);
         }
@@ -28,7 +28,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void ExceptionOnNullParent()
         {
-            var child = new ConfigEnvironmentKeyPath("Foo");
+            var child = new EnvironmentLayerKeyPath("Foo");
 
             Assert.NotNull(child.FullPath);
         }
@@ -37,10 +37,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         public void FullPathResolution()
         {
             // setup hierarchy
-            var root = new ConfigEnvironmentKeyPath("Foo");
-            var bar = new ConfigEnvironmentKeyPath("Bar", root);
-            var baz = new ConfigEnvironmentKeyPath("Baz", bar);
-            var jar = new ConfigEnvironmentKeyPath("Jar", root);
+            var root = new EnvironmentLayerKeyPath("Foo");
+            var bar = new EnvironmentLayerKeyPath("Bar", root);
+            var baz = new EnvironmentLayerKeyPath("Baz", bar);
+            var jar = new EnvironmentLayerKeyPath("Jar", root);
 
             root.Children.AddRange(new[] {bar, jar});
             bar.Children.Add(baz);

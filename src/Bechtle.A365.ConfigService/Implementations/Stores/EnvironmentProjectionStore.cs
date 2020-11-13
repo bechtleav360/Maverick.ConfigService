@@ -253,7 +253,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Error<IList<DtoConfigKeyCompletion>>(layerResult.Message, layerResult.Code);
                 var layers = layerResult.Data;
 
-                var paths = new List<ConfigEnvironmentKeyPath>();
+                var paths = new List<EnvironmentLayerKeyPath>();
 
                 foreach (var entry in layers.SelectMany(layer => layer.KeyPaths))
                     MergePaths(paths, entry);
@@ -291,7 +291,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                     // if there is only one possible root, and that one matches what were searching for
                     // we're returning all paths directly below that one
-                    List<ConfigEnvironmentKeyPath> selectedRoots;
+                    List<EnvironmentLayerKeyPath> selectedRoots;
                     if (possibleRoots.Count == 1
                         && possibleRoots.First()
                                         .Path
@@ -420,14 +420,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="parts"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(ConfigEnvironmentKeyPath root,
+        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(EnvironmentLayerKeyPath root,
                                                                                   ICollection<string> parts,
                                                                                   QueryRange range)
         {
             _logger.LogDebug($"walking path from '{root.FullPath}' using ({string.Join(",", parts)}), range={range}");
 
             var current = root;
-            var result = new List<ConfigEnvironmentKeyPath>();
+            var result = new List<EnvironmentLayerKeyPath>();
             var queue = new Queue<string>(parts);
 
             // try walking the given path to the deepest part, and return all options the user can take from here
@@ -511,7 +511,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="transform">final transformation applied to the result-set</param>
         /// <returns></returns>
         private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(KeyQueryParameters<EnvironmentIdentifier> parameters,
-                                                                             Expression<Func<ConfigEnvironmentKey, TItem>> selector,
+                                                                             Expression<Func<EnvironmentLayerKey, TItem>> selector,
                                                                              Func<TItem, string> keySelector,
                                                                              Func<IEnumerable<TItem>, TResult> transform)
             where TItem : class
@@ -578,7 +578,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
         }
 
-        private void MergePaths(IList<ConfigEnvironmentKeyPath> paths, ConfigEnvironmentKeyPath entry)
+        private void MergePaths(IList<EnvironmentLayerKeyPath> paths, EnvironmentLayerKeyPath entry)
         {
             var existingEntry = paths.FirstOrDefault(e => e.Path == entry.Path);
             if (existingEntry is null)

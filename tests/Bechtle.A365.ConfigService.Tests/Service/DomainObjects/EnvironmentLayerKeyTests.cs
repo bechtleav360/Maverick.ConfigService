@@ -3,10 +3,10 @@ using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 {
-    public class ConfigEnvironmentKeyTests
+    public class EnvironmentLayerKeyTests
     {
         [Fact]
-        public void CreateNew() => Assert.NotNull(new ConfigEnvironmentKey("", "", "", "", 0));
+        public void CreateNew() => Assert.NotNull(new EnvironmentLayerKey("", "", "", "", 0));
 
         [Theory]
         [InlineData("", "", "", "", long.MinValue)]
@@ -23,7 +23,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [InlineData("desc", "foo", "bar", "baz", long.MinValue)]
         public void AssignValues(string description, string key, string type, string value, long version)
         {
-            var item = new ConfigEnvironmentKey(key, value, type, description, version);
+            var item = new EnvironmentLayerKey(key, value, type, description, version);
 
             Assert.Equal(description, item.Description);
             Assert.Equal(key, item.Key);

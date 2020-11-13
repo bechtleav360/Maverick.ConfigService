@@ -7,20 +7,20 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Node inside a Tree of Paths to represent Environment-Data
     /// </summary>
-    public class ConfigEnvironmentKeyPath : IEquatable<ConfigEnvironmentKeyPath>
+    public class EnvironmentLayerKeyPath : IEquatable<EnvironmentLayerKeyPath>
     {
-        /// <inheritdoc cref="ConfigEnvironmentKeyPath" />
-        public ConfigEnvironmentKeyPath(string path, ConfigEnvironmentKeyPath parent = null, IEnumerable<ConfigEnvironmentKeyPath> children = null)
+        /// <inheritdoc cref="EnvironmentLayerKeyPath" />
+        public EnvironmentLayerKeyPath(string path, EnvironmentLayerKeyPath parent = null, IEnumerable<EnvironmentLayerKeyPath> children = null)
         {
             Path = path;
             Parent = parent;
-            Children = new List<ConfigEnvironmentKeyPath>(children ?? new ConfigEnvironmentKeyPath[0]);
+            Children = new List<EnvironmentLayerKeyPath>(children ?? new EnvironmentLayerKeyPath[0]);
         }
 
         /// <summary>
         ///     List of Children that may come after this
         /// </summary>
-        public List<ConfigEnvironmentKeyPath> Children { get; }
+        public List<EnvironmentLayerKeyPath> Children { get; }
 
         /// <summary>
         ///     Full Path including Parents
@@ -30,7 +30,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Reference to Parent-Node
         /// </summary>
-        public ConfigEnvironmentKeyPath Parent { get; }
+        public EnvironmentLayerKeyPath Parent { get; }
 
         /// <summary>
         ///     last Path-Component of this Node
@@ -42,14 +42,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <param name="left"></param>
         /// <param name="right"></param>
         /// <returns></returns>
-        public static bool operator ==(ConfigEnvironmentKeyPath left, ConfigEnvironmentKeyPath right) => Equals(left, right);
+        public static bool operator ==(EnvironmentLayerKeyPath left, EnvironmentLayerKeyPath right) => Equals(left, right);
 
         /// <summary>
         /// </summary>
         /// <param name="left"></param>
         /// <param name="right"></param>
         /// <returns></returns>
-        public static bool operator !=(ConfigEnvironmentKeyPath left, ConfigEnvironmentKeyPath right) => !Equals(left, right);
+        public static bool operator !=(EnvironmentLayerKeyPath left, EnvironmentLayerKeyPath right) => !Equals(left, right);
 
         /// <inheritdoc />
         public override bool Equals(object obj)
@@ -57,11 +57,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((ConfigEnvironmentKeyPath) obj);
+            return Equals((EnvironmentLayerKeyPath) obj);
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(ConfigEnvironmentKeyPath other)
+        public virtual bool Equals(EnvironmentLayerKeyPath other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;

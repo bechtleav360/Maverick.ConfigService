@@ -108,7 +108,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         {
             var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
 
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
+            item.UpdateKeys(new List<EnvironmentLayerKey> {new EnvironmentLayerKey("Foo", "Bar", "", "", 0)});
 
             Assert.NotEmpty(item.Keys);
 
@@ -132,7 +132,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         {
             var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
 
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
+            item.UpdateKeys(new List<EnvironmentLayerKey> {new EnvironmentLayerKey("Foo", "Bar", "", "", 0)});
 
             Assert.NotEmpty(item.Keys);
 
@@ -164,9 +164,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             item.ImportKeys(new[]
             {
-                new ConfigEnvironmentKey("A/B/C", "1", "", "", 1),
-                new ConfigEnvironmentKey("A/B/D/E", "2", "", "", 1),
-                new ConfigEnvironmentKey("A/B/D/F", "3", "", "", 1)
+                new EnvironmentLayerKey("A/B/C", "1", "", "", 1),
+                new EnvironmentLayerKey("A/B/D/E", "2", "", "", 1),
+                new EnvironmentLayerKey("A/B/D/F", "3", "", "", 1)
             });
 
             var a = AssertAndGet(item.KeyPaths, p => p.Path == "A");
@@ -186,11 +186,11 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             item.ImportKeys(new[]
             {
-                new ConfigEnvironmentKey("Foo", "Bar", "", "", 1),
-                new ConfigEnvironmentKey("Jar/Jar", "Binks", "", "", 1),
-                new ConfigEnvironmentKey("Guy/0001", "1", "", "", 1),
-                new ConfigEnvironmentKey("Guy/0002", "2", "", "", 1),
-                new ConfigEnvironmentKey("Guy/0003", "3", "", "", 1)
+                new EnvironmentLayerKey("Foo", "Bar", "", "", 1),
+                new EnvironmentLayerKey("Jar/Jar", "Binks", "", "", 1),
+                new EnvironmentLayerKey("Guy/0001", "1", "", "", 1),
+                new EnvironmentLayerKey("Guy/0002", "2", "", "", 1),
+                new EnvironmentLayerKey("Guy/0003", "3", "", "", 1)
             });
 
             var paths = item.KeyPaths;
@@ -254,8 +254,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             item.ImportKeys(new[]
             {
-                new ConfigEnvironmentKey("Foo", "Bar", "Baz", "Que", 1),
-                new ConfigEnvironmentKey("Jar", "Jar", "Jar", "Jar", 2)
+                new EnvironmentLayerKey("Foo", "Bar", "Baz", "Que", 1),
+                new EnvironmentLayerKey("Jar", "Jar", "Jar", "Jar", 2)
             });
 
             Assert.True(item.Keys.Count == 2, "item.Keys.Count == 2");
@@ -276,12 +276,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             item.Create();
 
-            item.UpdateKeys(new[] {new ConfigEnvironmentKey("Old", "Value", "Foo", "Bar", 42)});
+            item.UpdateKeys(new[] {new EnvironmentLayerKey("Old", "Value", "Foo", "Bar", 42)});
 
             item.ImportKeys(new[]
             {
-                new ConfigEnvironmentKey("Foo", "Bar", "Baz", "Que", 1),
-                new ConfigEnvironmentKey("Jar", "Jar", "Jar", "Jar", 2)
+                new EnvironmentLayerKey("Foo", "Bar", "Baz", "Que", 1),
+                new EnvironmentLayerKey("Jar", "Jar", "Jar", "Jar", 2)
             });
 
             Assert.True(item.Keys.Count == 2, "item.Keys.Count == 2");
@@ -354,7 +354,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         {
             var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
 
-            var result = item.UpdateKeys(new List<ConfigEnvironmentKey>());
+            var result = item.UpdateKeys(new List<EnvironmentLayerKey>());
 
             Assert.True(result.IsError, "result.IsError");
         }
@@ -376,7 +376,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             Assert.Empty(item.Keys);
 
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
+            item.UpdateKeys(new List<EnvironmentLayerKey> {new EnvironmentLayerKey("Foo", "Bar", "", "", 0)});
 
             Assert.NotEmpty(item.Keys);
         }
@@ -468,8 +468,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         {
             var item = new EnvironmentLayer(new LayerIdentifier("Foo"));
 
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
-            item.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Baz", "", "", 0)});
+            item.UpdateKeys(new List<EnvironmentLayerKey> {new EnvironmentLayerKey("Foo", "Bar", "", "", 0)});
+            item.UpdateKeys(new List<EnvironmentLayerKey> {new EnvironmentLayerKey("Foo", "Baz", "", "", 0)});
 
             Assert.Equal("Baz", item.Keys["Foo"].Value);
         }
@@ -574,7 +574,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         {
             var snapshotSource = new EnvironmentLayer(new LayerIdentifier("Foo"));
             snapshotSource.Create();
-            snapshotSource.UpdateKeys(new List<ConfigEnvironmentKey> {new ConfigEnvironmentKey("Foo", "Bar", "", "", 0)});
+            snapshotSource.UpdateKeys(new List<EnvironmentLayerKey> {new EnvironmentLayerKey("Foo", "Bar", "", "", 0)});
             var snapshot = snapshotSource.CreateSnapshot();
 
             var target = new EnvironmentLayer(new LayerIdentifier("Foo"));

@@ -121,24 +121,24 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         /// <param name="objectStore"></param>
         /// <returns></returns>
-        public async Task<IResult<IList<ConfigEnvironmentKey>>> GetKeys(IDomainObjectStore objectStore)
+        public async Task<IResult<IList<EnvironmentLayerKey>>> GetKeys(IDomainObjectStore objectStore)
         {
-            if(objectStore is null)
+            if (objectStore is null)
                 throw new ArgumentNullException(nameof(objectStore));
 
             var layerDataResult = await GetLayers(objectStore);
 
             if (layerDataResult.IsError)
-                return Result.Error<IList<ConfigEnvironmentKey>>(layerDataResult.Message, layerDataResult.Code);
+                return Result.Error<IList<EnvironmentLayerKey>>(layerDataResult.Message, layerDataResult.Code);
 
             var layerData = layerDataResult.Data;
-            var result = new Dictionary<string, ConfigEnvironmentKey>(StringComparer.OrdinalIgnoreCase);
+            var result = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var layer in Layers)
             foreach (var entry in layerData.First(l => l.Identifier == layer).Keys)
                 result[entry.Key] = entry.Value;
 
-            return Result.Success(result.Values.ToList() as IList<ConfigEnvironmentKey>);
+            return Result.Success(result.Values.ToList() as IList<EnvironmentLayerKey>);
         }
 
         /// <summary>

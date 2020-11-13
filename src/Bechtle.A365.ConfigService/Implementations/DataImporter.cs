@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     layer.Create();
 
                 layer.ImportKeys(layerExport.Keys
-                                            .Select(k => new ConfigEnvironmentKey(k.Key, k.Value, k.Type, k.Description, 0))
+                                            .Select(k => new EnvironmentLayerKey(k.Key, k.Value, k.Type, k.Description, 0))
                                             .ToList());
 
                 var errors = layer.Validate(_validators);
