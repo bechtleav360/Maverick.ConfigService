@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
@@ -7,6 +8,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.AspNetCore.Mvc;
@@ -38,9 +40,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     create a new Environment with the given Category + Name
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <returns></returns>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <returns>redirects to 'GetKeys'-operation</returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
         [HttpPost("{category}/{name}", Name = "AddEnvironment")]
         public async Task<IActionResult> AddEnvironment(string category, string name)
         {
@@ -71,9 +74,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     delete an existing Environment with the given Category + Name
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
         /// <returns></returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
         [HttpDelete("{category}/{name}", Name = "DeleteEnvironment")]
         public async Task<IActionResult> DeleteEnvironment(string category, string name)
         {
@@ -102,10 +106,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get a list of available environments
         /// </summary>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>list of Environment-Ids</returns>
+        [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int) HttpStatusCode.OK)]
         [HttpGet(Name = "GetEnvironments")]
         [HttpGet("available", Name = "GetAvailableEnvironments")]
         public async Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
@@ -134,15 +139,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get the keys contained in an environment
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="root"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key-Value map</returns>
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int) HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeys")]
         public async Task<IActionResult> GetKeys([FromRoute] string category,
                                                  [FromRoute] string name,
@@ -191,13 +197,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get the keys contained in an environment, converted to JSON
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="root"></param>
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>environment-keys formatted as JSON</returns>
+        [ProducesResponseType(typeof(object), (int) HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
                                                        [FromRoute] string name,
@@ -244,15 +251,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get the keys contained in an environment including all their metadata
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="root"></param>
-        /// <param name="offset" />
-        /// <param name="length" />
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key/Value-Objects</returns>
+        [ProducesResponseType(typeof(EnvironmentLayerKey), (int) HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
                                                              [FromRoute] string name,
@@ -311,10 +319,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     assign the given layers in their given order as the content of this Environment
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
         /// <param name="layers">ordered list of Layers to be assigned</param>
         /// <returns></returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
         [HttpPut("{category}/{name}/layers", Name = "AssignLayers")]
         public async Task<IActionResult> AssignLayers([FromRoute] string category,
                                                       [FromRoute] string name,
@@ -322,10 +331,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         {
             try
             {
-                return Result(
-                    await _store.Environments.AssignLayers(
-                        new EnvironmentIdentifier(category, name),
-                        layers));
+                var result = await _store.Environments.AssignLayers(
+                                 new EnvironmentIdentifier(category, name),
+                                 layers);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                return Accepted();
             }
             catch (Exception e)
             {
@@ -338,9 +351,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get the assigned layers and their order for this Environment
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <returns></returns>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <returns>ordered list of assigned layer-ids</returns>
+        [ProducesResponseType(typeof(LayerIdentifier[]), (int) HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/layers", Name = "GetAssignedLayers")]
         public async Task<IActionResult> GetAssignedLayers([FromRoute] string category,
                                                            [FromRoute] string name)

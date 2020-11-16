@@ -7,10 +7,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public sealed class ProjectionStore : IProjectionStore
     {
         /// <inheritdoc cref="ProjectionStore" />
-        /// <param name="layerStore"></param>
-        /// <param name="structureStore"></param>
-        /// <param name="environmentStore"></param>
-        /// <param name="configurationStore"></param>
         public ProjectionStore(ILayerProjectionStore layerStore,
                                IStructureProjectionStore structureStore,
                                IEnvironmentProjectionStore environmentStore,

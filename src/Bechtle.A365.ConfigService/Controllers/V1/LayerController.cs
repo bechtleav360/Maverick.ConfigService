@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
@@ -7,6 +8,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
+using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.AspNetCore.Mvc;
@@ -38,8 +40,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     create a new Layer with the given Name
         /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
+        /// <param name="name">Name of the given Layer</param>
+        /// <returns>redirects to 'GetKeys'-operation</returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
         [HttpPost("{name}", Name = "AddLayer")]
         public async Task<IActionResult> AddLayer(string name)
         {
@@ -67,8 +70,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     delete an existing Layer with the given Name
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="name">Name of the given Layer</param>
         /// <returns></returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
         [HttpDelete("{name}", Name = "DeleteLayer")]
         public async Task<IActionResult> DeleteLayer(string name)
         {
@@ -94,10 +98,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get a list of available layers
         /// </summary>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>list of Layer-Ids</returns>
+        [ProducesResponseType(typeof(LayerIdentifier[]), (int) HttpStatusCode.OK)]
         [HttpGet(Name = "GetLayers")]
         public async Task<IActionResult> GetAvailableLayers([FromQuery] int offset = -1,
                                                             [FromQuery] int length = -1,
@@ -125,15 +130,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get the keys contained in an environment
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="root"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key-Value map</returns>
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int) HttpStatusCode.OK)]
         [HttpGet("{name}/keys", Name = "GetLayerAsKeys")]
         public async Task<IActionResult> GetKeys([FromRoute] string name,
                                                  [FromQuery] string filter,
@@ -180,13 +185,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get the keys contained in an environment, converted to JSON
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="root"></param>
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>environment-keys formatted as JSON</returns>
+        [ProducesResponseType(typeof(object), (int) HttpStatusCode.OK)]
         [HttpGet("{name}/json", Name = "GetLayerAsJson")]
         public async Task<IActionResult> GetKeysAsJson([FromRoute] string name,
                                                        [FromQuery] string filter,
@@ -231,15 +236,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     get the keys contained in an environment including all their metadata
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="filter"></param>
-        /// <param name="preferExactMatch"></param>
-        /// <param name="root"></param>
-        /// <param name="offset" />
-        /// <param name="length" />
-        /// <param name="targetVersion"></param>
-        /// <returns></returns>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key/Value-Objects</returns>
+        [ProducesResponseType(typeof(EnvironmentLayerKey), (int) HttpStatusCode.OK)]
         [HttpGet("{name}/objects", Name = "GetLayerAsObjects")]
         public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string name,
                                                              [FromQuery] string filter,
@@ -296,10 +301,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     delete keys from the environment
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="keys"></param>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="keys">list of keys to remove from the Layer</param>
         /// <returns></returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
         [HttpDelete("{name}/keys", Name = "DeleteFromLayer")]
         public async Task<IActionResult> DeleteKeys([FromRoute] string name,
                                                     [FromBody] string[] keys)
@@ -331,10 +336,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     add or update keys in the environment
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="keys">Keys to Set / Update</param>
+        /// <returns>redirects to 'GetKeys' action</returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
         [HttpPut("{name}/keys", Name = "UpdateLayer")]
         public async Task<IActionResult> UpdateKeys([FromRoute] string name,
                                                     [FromBody] DtoConfigKey[] keys)

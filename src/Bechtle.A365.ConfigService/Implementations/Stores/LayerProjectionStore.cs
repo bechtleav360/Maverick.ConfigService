@@ -387,9 +387,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     walk the path given in <paramref name="parts" />, from <paramref name="root" /> and return the next possible values
         /// </summary>
-        /// <param name="root"></param>
-        /// <param name="parts"></param>
-        /// <param name="range"></param>
+        /// <param name="root">node to start off of</param>
+        /// <param name="parts">array of path-segments to the current position</param>
+        /// <param name="range">pagination-information for the return-values</param>
         /// <returns></returns>
         private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(EnvironmentLayerKeyPath root,
                                                                                   ICollection<string> parts,
@@ -476,7 +476,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
         /// </summary>
-        /// <param name="parameters">see <see cref="LayerKeyQueryParameters" /> for more information on each parameter</param>
+        /// <param name="parameters">see <see cref="KeyQueryParameters{LayerIdentifier}" /> for more information on each parameter</param>
         /// <param name="selector">internal selector transforming the filtered items to an intermediate representation</param>
         /// <param name="keySelector">selector pointing to the 'Key' property of the intermediate representation</param>
         /// <param name="transform">final transformation applied to the result-set</param>
@@ -549,8 +549,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     remove the 'root' portion of each given key
         /// </summary>
-        /// <param name="keys"></param>
-        /// <param name="root"></param>
+        /// <param name="keys">map of keys to remove the given root-part off of</param>
+        /// <param name="root">root to remove off of each key</param>
         /// <returns></returns>
         private IResult<IDictionary<string, string>> RemoveRoot(IDictionary<string, string> keys, string root)
         {
@@ -588,8 +588,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     remove the 'root' portion of each given key
         /// </summary>
-        /// <param name="keys"></param>
-        /// <param name="root"></param>
+        /// <param name="keys">list of keys to remove the given root-part off of</param>
+        /// <param name="root">root to remove off of each key</param>
         /// <returns></returns>
         private IResult<IEnumerable<DtoConfigKey>> RemoveRoot(IEnumerable<DtoConfigKey> keys, string root)
         {

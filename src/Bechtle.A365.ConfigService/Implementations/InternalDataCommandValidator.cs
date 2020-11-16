@@ -12,7 +12,6 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <summary>
         ///     validate a single <see cref="ConfigKeyAction" />
         /// </summary>
-        /// <param name="action"></param>
         /// <returns></returns>
         private static IResult ValidateConfigKeyAction(ConfigKeyAction action)
         {
@@ -38,7 +37,6 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <summary>
         ///     validate multiple <see cref="ConfigKeyAction" /> and aggregate their errors
         /// </summary>
-        /// <param name="actions"></param>
         /// <returns></returns>
         private static IResult ValidateConfigKeyActions(ConfigKeyAction[] actions)
         {
@@ -60,7 +58,6 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <summary>
         ///     validate a dictionary of Key=>Value pairs and aggregate their errors
         /// </summary>
-        /// <param name="dict"></param>
         /// <returns></returns>
         private static IResult ValidateDictionary(IDictionary<string, string> dict)
         {
@@ -185,11 +182,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        /// <summary>
-        ///     checks the given <see cref="ConfigurationIdentifier" /> for validity
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
         private static IResult ValidateIdentifier(ConfigurationIdentifier identifier)
         {
             if (identifier is null)
@@ -206,11 +198,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        /// <summary>
-        ///     validate a single <see cref="EnvironmentIdentifier" />
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
         private static IResult ValidateIdentifier(EnvironmentIdentifier identifier)
         {
             if (identifier is null)
@@ -225,11 +212,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        /// <summary>
-        ///     validate a single <see cref="StructureIdentifier" />
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
         private static IResult ValidateIdentifier(StructureIdentifier identifier)
         {
             if (identifier is null)

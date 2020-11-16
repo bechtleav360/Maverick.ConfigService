@@ -99,7 +99,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     remove some of the held keys, and create the appropriate events for that
         /// </summary>
-        /// <param name="keysToRemove"></param>
+        /// <param name="keysToRemove">names of the Keys that should be removed from this Layer</param>
         /// <returns></returns>
         public IResult DeleteKeys(ICollection<string> keysToRemove)
         {
@@ -148,7 +148,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     overwrite all existing keys with the ones in <paramref name="keysToImport" />
         /// </summary>
-        /// <param name="keysToImport"></param>
+        /// <param name="keysToImport">list of keys to set as this Layers' current Keys, overwriting all others</param>
         /// <returns></returns>
         public IResult ImportKeys(ICollection<EnvironmentLayerKey> keysToImport)
         {
@@ -185,7 +185,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     add new, or change some of the held keys, and create the appropriate events for that
         /// </summary>
-        /// <param name="keysToAdd"></param>
+        /// <param name="keysToAdd">keys to add or update in this layer</param>
         /// <returns></returns>
         public IResult UpdateKeys(ICollection<EnvironmentLayerKey> keysToAdd)
         {

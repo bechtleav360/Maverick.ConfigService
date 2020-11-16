@@ -591,8 +591,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     remove the 'root' portion of each given key
         /// </summary>
-        /// <param name="keys"></param>
-        /// <param name="root"></param>
         /// <returns></returns>
         private IResult<IDictionary<string, string>> RemoveRoot(IDictionary<string, string> keys, string root)
         {
@@ -630,8 +628,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     remove the 'root' portion of each given key
         /// </summary>
-        /// <param name="keys"></param>
-        /// <param name="root"></param>
         /// <returns></returns>
         private IResult<IEnumerable<DtoConfigKey>> RemoveRoot(IEnumerable<DtoConfigKey> keys, string root)
         {

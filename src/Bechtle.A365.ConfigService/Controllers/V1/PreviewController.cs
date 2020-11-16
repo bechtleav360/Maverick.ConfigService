@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -46,11 +47,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     preview the Result of building an existing Environment and a Structure
         /// </summary>
-        /// <param name="environmentCategory"></param>
-        /// <param name="environmentName"></param>
-        /// <param name="structureName"></param>
-        /// <param name="structureVersion"></param>
-        /// <returns></returns>
+        /// <param name="environmentCategory">Environment-Category to use for this Preview</param>
+        /// <param name="environmentName">Environment-Name to use for this Preview</param>
+        /// <param name="structureName">Structure-Name to use for this Preview</param>
+        /// <param name="structureVersion">Structure-Version to use for this Preview</param>
+        /// <returns>built configuration rendered as JSON</returns>
+        [ProducesResponseType(typeof(object), (int) HttpStatusCode.OK)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "PreviewConfigurationWithStoredValues")]
         public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
                                                               [FromRoute] string environmentName,
@@ -118,8 +120,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <summary>
         ///     preview the Result of building the given Environment and Structure
         /// </summary>
-        /// <param name="previewOptions"></param>
-        /// <returns></returns>
+        /// <param name="previewOptions">set of options telling the service which existing Env/Structure to use, or to use inline-data for preview</param>
+        /// <returns>Result of the Compilation with associated Metadata and both Key/Value & JSON representation of the Config</returns>
+        [ProducesResponseType(typeof(PreviewResult), (int) HttpStatusCode.OK)]
         [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
         public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {

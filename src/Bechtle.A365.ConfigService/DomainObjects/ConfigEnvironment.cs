@@ -59,7 +59,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     assign the given Layers in the given order to this Environment
         /// </summary>
-        /// <param name="layers"></param>
+        /// <param name="layers">List of Layers to assign to this Environment, in their iterated order</param>
         /// <returns></returns>
         public IResult AssignLayers(IEnumerable<LayerIdentifier> layers)
         {
@@ -79,6 +79,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     flag this environment as existing, and create the appropriate events for that
         /// </summary>
+        /// <param name="isDefault">optional parameter indicating if this Environment should be created as the Default for this Category</param>
         /// <returns></returns>
         public IResult Create(bool isDefault = false)
         {
@@ -119,7 +120,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     get all key-objects in this environment, in their end-result form (override-rules applied)
         /// </summary>
-        /// <param name="objectStore"></param>
+        /// <param name="objectStore">IDomainObjectStore-instance to retrieve keys from associated Layers</param>
         /// <returns></returns>
         public async Task<IResult<IList<EnvironmentLayerKey>>> GetKeys(IDomainObjectStore objectStore)
         {
@@ -145,7 +146,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     get the values of <see cref="GetKeys" /> as a flat map.
         ///     layers are collapsed (add or update) in the order indicated by <see cref="Layers" /> (index-0 = base, ascending)
         /// </summary>
-        /// <param name="objectStore"></param>
+        /// <param name="objectStore">IDomainObjectStore-instance to retrieve keys from associated Layers</param>
         /// <returns></returns>
         public async Task<IResult<IDictionary<string, string>>> GetKeysAsDictionary(IDomainObjectStore objectStore)
         {
@@ -170,7 +171,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     resolve all layers and collect their Keys/Values
         /// </summary>
-        /// <param name="objectStore"></param>
+        /// <param name="objectStore">IDomainObjectStore-instance to retrieve keys from associated Layers</param>
         /// <returns></returns>
         public async Task<IResult<List<EnvironmentLayer>>> GetLayers(IDomainObjectStore objectStore)
         {
