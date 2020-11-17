@@ -12,6 +12,7 @@ namespace Bechtle.A365.ConfigService.Cli
         typeof(CompareCommand),
         typeof(ExportCommand),
         typeof(ImportCommand),
+        typeof(MigrateCommand),
         typeof(TestCommand))]
     public class Program
     {
