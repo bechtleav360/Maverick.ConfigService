@@ -202,36 +202,65 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             var backupFileLocation = "./migrated-state.json";
 
-            try
+            var eventStore = EventStoreConnection.Create(
+                $"ConnectTo={EventStoreConnectionString}",
+                ConnectionSettings.Create()
+                                  .PerformOnMasterOnly()
+                                  .KeepReconnecting()
+                                  .LimitRetriesForOperationTo(10)
+                                  .LimitConcurrentOperationsTo(1)
+                                  .SetOperationTimeoutTo(TimeSpan.FromSeconds(30))
+                                  .SetReconnectionDelayTo(TimeSpan.FromSeconds(1))
+                                  .SetHeartbeatTimeout(TimeSpan.FromSeconds(30))
+                                  .SetHeartbeatInterval(TimeSpan.FromSeconds(60)),
+                $"StreamMigration-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}");
+
+            await eventStore.ConnectAsync();
+
+            Output.WriteVerboseLine("getting last event# for later");
+
+            var lastEventNumber = (await eventStore.ReadStreamEventsBackwardAsync(EventStoreStream, StreamPosition.End, 1, true))?.LastEventNumber ?? -1;
+            if (lastEventNumber == -1)
             {
-                var currentState = await RecordInitialState();
+                Output.WriteError($"could not determine last event in the stream '{EventStoreStream}', won't be able to delete stream later on");
+                return 1;
+            }
 
-                if (currentState is null)
-                    return 1;
+            Output.WriteVerboseLine($"last event#={lastEventNumber}");
 
-                var json = JsonConvert.SerializeObject(currentState, new JsonSerializerSettings
+            if (!UseLocalData)
+            {
+                try
                 {
-                    Formatting = Formatting.Indented
-                });
+                    var currentState = await RecordInitialState(eventStore);
 
-                if (File.Exists(backupFileLocation))
+                    if (currentState is null)
+                        return 1;
+
+                    var json = JsonConvert.SerializeObject(currentState, new JsonSerializerSettings
+                    {
+                        Formatting = Formatting.Indented
+                    });
+
+                    if (File.Exists(backupFileLocation))
+                    {
+                        Output.WriteError($"could not save backup-file to '{backupFileLocation}' - overwriting this file is not intended. \r\n" +
+                                          "if you want to use a previously-generated backup use the (-l|--local) flag to skip generating a new backup");
+                        return 1;
+                    }
+
+                    await File.WriteAllTextAsync(backupFileLocation, json, Encoding.UTF8);
+                }
+                catch (JsonException e)
                 {
-                    Output.WriteError($"could not save backup-file to '{backupFileLocation}' - overwriting this file is not intended. \r\n" +
-                                      "if you want to use a previously-generated backup use the (-l|--local) flag to skip generating a new backup");
+                    Output.WriteError($"could not generate backup json-file before beginning the actual migration: {e}");
                     return 1;
                 }
-
-                await File.WriteAllTextAsync(backupFileLocation, json, Encoding.UTF8);
-            }
-            catch (JsonException e)
-            {
-                Output.WriteError($"could not generate backup json-file before beginning the actual migration: {e}");
-                return 1;
-            }
-            catch (IOException e)
-            {
-                Output.WriteError($"could not save migrated state to local disk before beginning actual migration: {e}");
-                return 1;
+                catch (IOException e)
+                {
+                    Output.WriteError($"could not save migrated state to local disk before beginning actual migration: {e}");
+                    return 1;
+                }
             }
 
             LossyInitialRecordedRepository state;
@@ -259,27 +288,46 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             var events = state.GenerateDomainEvents();
 
-            return 0;
+            if (events.Count == 0)
+            {
+                Output.WriteError("no events could be generated from current state. \r\n" +
+                                  "no data would be migrated during this operation. \r\n" +
+                                  "delete stream manually (Soft-Delete / TruncateBefore - NO HARD DELETE / TombStone), it will be automagically recreated by ConfigService on the first write.");
+                return 1;
+            }
+
+            Output.WriteVerboseLine($"deleting stream '{EventStoreStream}', expected to be at position '{lastEventNumber}'");
+            await eventStore.DeleteStreamAsync(EventStoreStream, lastEventNumber);
+
+            Output.WriteVerboseLine($"stream deleted, recreating it with '{events.Count}' new events");
+            using var transaction = await eventStore.StartTransactionAsync(EventStoreStream, ExpectedVersion.NoStream);
+
+            try
+            {
+                foreach (var @event in events)
+                {
+                    Output.WriteVerboseLine($"writing event '{@event.EventType}'");
+                    var data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event));
+                    var metadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event.GetMetadata()));
+
+                    await transaction.WriteAsync(new EventData(Guid.NewGuid(), @event.EventType, true, data, metadata));
+                }
+
+                Output.WriteVerboseLine("all events have been written, committing transaction");
+                await transaction.CommitAsync();
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Output.WriteError($"error while writing events to stream '{EventStoreStream}', aborting transaction: {e}");
+                transaction.Rollback();
+                return 1;
+            }
         }
 
-        private async Task<LossyInitialRecordedRepository> RecordInitialState()
+        private async Task<LossyInitialRecordedRepository> RecordInitialState(IEventStoreConnection eventStore)
         {
             var currentState = new LossyInitialRecordedRepository();
-
-            var eventStore = EventStoreConnection.Create(
-                $"ConnectTo={EventStoreConnectionString}",
-                ConnectionSettings.Create()
-                                  .PerformOnMasterOnly()
-                                  .KeepReconnecting()
-                                  .LimitRetriesForOperationTo(10)
-                                  .LimitConcurrentOperationsTo(1)
-                                  .SetOperationTimeoutTo(TimeSpan.FromSeconds(30))
-                                  .SetReconnectionDelayTo(TimeSpan.FromSeconds(1))
-                                  .SetHeartbeatTimeout(TimeSpan.FromSeconds(30))
-                                  .SetHeartbeatInterval(TimeSpan.FromSeconds(60)),
-                $"StreamMigration-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}");
-
-            await eventStore.ConnectAsync();
 
             long currentPosition = StreamPosition.Start;
             bool continueReading;
