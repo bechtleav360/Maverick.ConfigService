@@ -371,20 +371,25 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             public List<DomainEvent> GenerateDomainEvents()
                 => Environments.SelectMany(e => new List<DomainEvent>
                                {
-                                   (e.IsDefault
-                                        ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
-                                        : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent),
+                                   e.IsDefault
+                                       ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
+                                       : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
                                    new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
                                    new EnvironmentLayersModified(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
                                                                  new List<LayerIdentifier>
                                                                  {
                                                                      new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
                                                                  }),
-                                   new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
-                                                                    e.Keys
-                                                                     .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
-                                                                     .ToArray())
+                                   // don't generate Keys-Imported event when there are no keys to import
+                                   // will be filtered out in the next step
+                                   e.Keys.Any()
+                                       ? new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
+                                                                          e.Keys
+                                                                           .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                                                           .ToArray())
+                                       : null
                                })
+                               .Where(e => e != null)
                                .ToList();
 
             public void ApplyEvent(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
