@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -591,10 +592,16 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     Exception indicating that some invalid operation occurred in the EventStream, which may alter the result of the Migration.
         /// </summary>
+        [Serializable]
         public class MigrationReplayException : Exception
         {
             /// <inheritdoc />
             public MigrationReplayException(string message) : base(message)
+            {
+            }
+
+            /// <inheritdoc />
+            protected MigrationReplayException(SerializationInfo info, StreamingContext context) : base(info, context)
             {
             }
         }
