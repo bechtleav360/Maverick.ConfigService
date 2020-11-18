@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             }))
                             .Verifiable("autocomplete-data not searched");
 
-            await TestAction<OkObjectResult>(c => c.GetKeyAutocompleteList(category, name, query, offset, length, targetVersion));
+            await TestAction<OkObjectResult>(c => c.GetEnvironmentKeyAutocompleteList(category, name, query, offset, length, targetVersion));
 
             _projectionStore.Verify();
         }
@@ -97,7 +97,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             }))
                             .Verifiable("autocomplete-data not searched");
 
-            var result = await TestAction<OkObjectResult>(c => c.GetKeyAutocompleteList("Foo", "Bar", "Foo/Bar"));
+            var result = await TestAction<OkObjectResult>(c => c.GetEnvironmentKeyAutocompleteList("Foo", "Bar", "Foo/Bar"));
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<List<DtoConfigKeyCompletion>>(result.Value);
@@ -116,7 +116,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .ReturnsAsync(() => Result.Error<IList<DtoConfigKeyCompletion>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("autocomplete-data not searched");
 
-            var result = await TestAction<ObjectResult>(c => c.GetKeyAutocompleteList("Foo", "Bar", "Foo/Bar"));
+            var result = await TestAction<ObjectResult>(c => c.GetEnvironmentKeyAutocompleteList("Foo", "Bar", "Foo/Bar"));
 
             Assert.NotNull(result.Value);
 
@@ -133,7 +133,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .Throws<Exception>()
                             .Verifiable("autocomplete-data not searched");
 
-            var result = await TestAction<ObjectResult>(c => c.GetKeyAutocompleteList("Foo", "Bar", "Foo/Bar"));
+            var result = await TestAction<ObjectResult>(c => c.GetEnvironmentKeyAutocompleteList("Foo", "Bar", "Foo/Bar"));
 
             Assert.NotNull(result.Value);
 
