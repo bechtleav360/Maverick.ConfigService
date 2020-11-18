@@ -16,22 +16,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
     [Command("stream", Description = "migrate the EventStore-Stream from one to another version")]
     public class MigrateStreamCommand : SubCommand<MigrateCommand>
     {
-        /// <summary>
-        ///     type of action to apply to a key
-        /// </summary>
-        public enum InitialKeyActionTypeRepr
-        {
-            /// <summary>
-            ///     add / update the value of the key
-            /// </summary>
-            Set,
-
-            /// <summary>
-            ///     remove the key
-            /// </summary>
-            Delete
-        }
-
         public enum MigrationAccuracy
         {
             /// <summary>
@@ -199,10 +183,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return await base.OnExecute(app);
         }
 
-        private async Task<int> LossyMigrationInitialToLayeredEnvironments()
+        private async Task<IEventStoreConnection> ConnectToEventStore()
         {
-            var backupFileLocation = "./migrated-state.json";
-
             var eventStore = EventStoreConnection.Create(
                 $"ConnectTo={EventStoreConnectionString}",
                 ConnectionSettings.Create()
@@ -218,6 +200,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             await eventStore.ConnectAsync();
 
+            return eventStore;
+        }
+
+        private async Task<int> LossyMigrationInitialToLayeredEnvironments()
+        {
+            var backupFileLocation = "./migrated-state.json";
+
+            var eventStore = await ConnectToEventStore();
+
             Output.WriteVerboseLine("getting last event# for later");
 
             var lastEventNumber = (await eventStore.ReadStreamEventsBackwardAsync(EventStoreStream, StreamPosition.End, 1, true))?.LastEventNumber ?? -1;
@@ -231,6 +222,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             if (!UseLocalData)
             {
+                Output.WriteVerboseLine("reading relevant current state from EventStore");
+
                 try
                 {
                     var currentState = await RecordInitialState(eventStore);
@@ -362,36 +355,28 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         }
 
         /// <summary>
+        ///     type of action to apply to a key
+        /// </summary>
+        private enum InitialKeyActionTypeRepr
+        {
+            /// <summary>
+            ///     add / update the value of the key
+            /// </summary>
+            Set,
+
+            /// <summary>
+            ///     remove the key
+            /// </summary>
+            Delete
+        }
+
+        /// <summary>
         ///     Records and represents the total state of a ConfigService-EventStream.
         ///     Uses this information to generate the equivalent state in the migrated form.
         /// </summary>
         private class LossyInitialRecordedRepository
         {
-            public List<InitialEnvRepr> Environments = new List<InitialEnvRepr>();
-
-            public List<DomainEvent> GenerateDomainEvents()
-                => Environments.SelectMany(e => new List<DomainEvent>
-                               {
-                                   e.IsDefault
-                                       ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
-                                       : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
-                                   new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
-                                   new EnvironmentLayersModified(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
-                                                                 new List<LayerIdentifier>
-                                                                 {
-                                                                     new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
-                                                                 }),
-                                   // don't generate Keys-Imported event when there are no keys to import
-                                   // will be filtered out in the next step
-                                   e.Keys.Any()
-                                       ? new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
-                                                                          e.Keys
-                                                                           .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
-                                                                           .ToArray())
-                                       : null
-                               })
-                               .Where(e => e != null)
-                               .ToList();
+            public readonly List<InitialEnvRepr> Environments = new List<InitialEnvRepr>();
 
             public void ApplyEvent(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
             {
@@ -418,6 +403,30 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                         break;
                 }
             }
+
+            public List<DomainEvent> GenerateDomainEvents()
+                => Environments.SelectMany(e => new List<DomainEvent>
+                               {
+                                   e.IsDefault
+                                       ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
+                                       : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
+                                   new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
+                                   new EnvironmentLayersModified(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
+                                                                 new List<LayerIdentifier>
+                                                                 {
+                                                                     new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
+                                                                 }),
+                                   // don't generate Keys-Imported event when there are no keys to import
+                                   // will be filtered out in the next step
+                                   e.Keys.Any()
+                                       ? new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
+                                                                          e.Keys
+                                                                           .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                                                           .ToArray())
+                                       : null
+                               })
+                               .Where(e => e != null)
+                               .ToList();
 
             private void ApplyDefaultEnvironmentCreated(ResolvedEvent resolvedEvent)
             {
@@ -593,7 +602,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         ///     Exception indicating that some invalid operation occurred in the EventStream, which may alter the result of the Migration.
         /// </summary>
         [Serializable]
-        public class MigrationReplayException : Exception
+        private class MigrationReplayException : Exception
         {
             /// <inheritdoc />
             public MigrationReplayException(string message) : base(message)
