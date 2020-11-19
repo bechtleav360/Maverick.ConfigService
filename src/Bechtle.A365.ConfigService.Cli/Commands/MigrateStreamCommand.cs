@@ -204,91 +204,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         }
 
         /// <summary>
-        ///     read the configured Stream (<see cref="EventStoreStream"/>), create a local backup,
-        ///     delete and then re-create the stream with the equivalent events.
-        ///     this migration is lossy, and does not preserve events for (Structures, Environment-Modifications, Configurations).
-        ///     this migration only preserves the last state of all existing Environments.
+        ///     delete stream (<see cref="EventStoreStream" />) and recreate it with the given list of events
         /// </summary>
-        /// <returns>exit-code, 0=success | 1=failure</returns>
-        private async Task<int> LossyMigrationInitialToLayeredEnvironments()
+        /// <param name="lastEventNumber">expected event-version, deletion will fail if this doesn't match actual last-version</param>
+        /// <param name="events">list of Domain-Events written to EventStore</param>
+        /// <param name="eventStore">opened connection to EventStore</param>
+        /// <returns>exit-code 0=Success | 1=Failure</returns>
+        private async Task<int> DeleteAndRecreateStream(long lastEventNumber, List<DomainEvent> events, IEventStoreConnection eventStore)
         {
-            var backupFileLocation = "./migrated-state.json";
-
-            var eventStore = await ConnectToEventStore();
-
-            Output.WriteVerboseLine("getting last event# for later");
-
-            var lastEventNumber = (await eventStore.ReadStreamEventsBackwardAsync(EventStoreStream, StreamPosition.End, 1, true))?.LastEventNumber ?? -1;
-            if (lastEventNumber == -1)
-            {
-                Output.WriteError($"could not determine last event in the stream '{EventStoreStream}', won't be able to delete stream later on");
-                return 1;
-            }
-
-            Output.WriteVerboseLine($"last event#={lastEventNumber}");
-
-            if (!UseLocalData)
-            {
-                Output.WriteVerboseLine("reading relevant current state from EventStore");
-
-                try
-                {
-                    var currentState = await RecordInitialState(eventStore);
-
-                    if (currentState is null)
-                        return 1;
-
-                    var json = JsonConvert.SerializeObject(currentState, new JsonSerializerSettings
-                    {
-                        Formatting = Formatting.Indented
-                    });
-
-                    if (File.Exists(backupFileLocation))
-                    {
-                        Output.WriteError($"could not save backup-file to '{backupFileLocation}' - overwriting this file is not intended. \r\n" +
-                                          "if you want to use a previously-generated backup use the (-l|--local) flag to skip generating a new backup");
-                        return 1;
-                    }
-
-                    await File.WriteAllTextAsync(backupFileLocation, json, Encoding.UTF8);
-                }
-                catch (JsonException e)
-                {
-                    Output.WriteError($"could not generate backup json-file before beginning the actual migration: {e}");
-                    return 1;
-                }
-                catch (IOException e)
-                {
-                    Output.WriteError($"could not save migrated state to local disk before beginning actual migration: {e}");
-                    return 1;
-                }
-            }
-
-            LossyInitialRecordedRepository state;
-
-            if (File.Exists(backupFileLocation))
-            {
-                Output.WriteVerboseLine("reading state from generated backup-file");
-                var json = await File.ReadAllTextAsync(backupFileLocation, Encoding.UTF8);
-
-                try
-                {
-                    state = JsonConvert.DeserializeObject<LossyInitialRecordedRepository>(json);
-                }
-                catch (JsonException e)
-                {
-                    Output.WriteError($"could not read state from generated backup: {e}");
-                    return 1;
-                }
-            }
-            else
-            {
-                Output.WriteError("could not read state from generated backup: file not found");
-                return 1;
-            }
-
-            var events = state.GenerateDomainEvents();
-
             if (events.Count == 0)
             {
                 Output.WriteError("no events could be generated from current state. \r\n" +
@@ -327,7 +250,111 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         }
 
         /// <summary>
-        ///     read through all events in the stream (<see cref="EventStoreStream"/>) and take all relevant data.
+        ///     record initial state and write it to the given file
+        /// </summary>
+        /// <param name="eventStore">opened connection to EventStore</param>
+        /// <param name="backupFileLocation">path to file in which state is backed-up into</param>
+        /// <returns>exit-code, 0=success | 1=failure</returns>
+        private async Task<int> GenerateLossyInitialState(IEventStoreConnection eventStore, string backupFileLocation)
+        {
+            Output.WriteVerboseLine("reading relevant current state from EventStore");
+
+            try
+            {
+                var currentState = await RecordInitialState(eventStore);
+
+                if (currentState is null)
+                    return 1;
+
+                var json = JsonConvert.SerializeObject(currentState, new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented
+                });
+
+                if (File.Exists(backupFileLocation))
+                {
+                    Output.WriteError($"could not save backup-file to '{backupFileLocation}' - overwriting this file is not intended. \r\n" +
+                                      "if you want to use a previously-generated backup use the (-l|--local) flag to skip generating a new backup");
+                    return 1;
+                }
+
+                await File.WriteAllTextAsync(backupFileLocation, json, Encoding.UTF8);
+
+                return 0;
+            }
+            catch (JsonException e)
+            {
+                Output.WriteError($"could not generate backup json-file before beginning the actual migration: {e}");
+                return 1;
+            }
+            catch (IOException e)
+            {
+                Output.WriteError($"could not save migrated state to local disk before beginning actual migration: {e}");
+                return 1;
+            }
+        }
+
+        /// <summary>
+        ///     read the configured Stream (<see cref="EventStoreStream" />), create a local backup,
+        ///     delete and then re-create the stream with the equivalent events.
+        ///     this migration is lossy, and does not preserve events for (Structures, Environment-Modifications, Configurations).
+        ///     this migration only preserves the last state of all existing Environments.
+        /// </summary>
+        /// <returns>exit-code, 0=success | 1=failure</returns>
+        private async Task<int> LossyMigrationInitialToLayeredEnvironments()
+        {
+            var backupFileLocation = "./migrated-state.json";
+
+            var eventStore = await ConnectToEventStore();
+
+            Output.WriteVerboseLine("getting last event# for later");
+
+            var lastEventNumber = (await eventStore.ReadStreamEventsBackwardAsync(EventStoreStream, StreamPosition.End, 1, true))?.LastEventNumber ?? -1;
+            if (lastEventNumber == -1)
+            {
+                Output.WriteError($"could not determine last event in the stream '{EventStoreStream}', won't be able to delete stream later on");
+                return 1;
+            }
+
+            Output.WriteVerboseLine($"last event#={lastEventNumber}");
+
+            if (!UseLocalData)
+            {
+                var result = await GenerateLossyInitialState(eventStore, backupFileLocation);
+                if (result != 0)
+                    return result;
+            }
+
+            LossyInitialRecordedRepository state;
+
+            if (File.Exists(backupFileLocation))
+            {
+                Output.WriteVerboseLine("reading state from generated backup-file");
+                var json = await File.ReadAllTextAsync(backupFileLocation, Encoding.UTF8);
+
+                try
+                {
+                    state = JsonConvert.DeserializeObject<LossyInitialRecordedRepository>(json);
+                }
+                catch (JsonException e)
+                {
+                    Output.WriteError($"could not read state from generated backup: {e}");
+                    return 1;
+                }
+            }
+            else
+            {
+                Output.WriteError("could not read state from generated backup: file not found");
+                return 1;
+            }
+
+            var events = state.GenerateDomainEvents();
+
+            return await DeleteAndRecreateStream(lastEventNumber, events, eventStore);
+        }
+
+        /// <summary>
+        ///     read through all events in the stream (<see cref="EventStoreStream" />) and take all relevant data.
         /// </summary>
         /// <param name="eventStore">opened EventStore-Connection</param>
         /// <returns>object containing all relevant state for the Initial-Version of this Stream</returns>
