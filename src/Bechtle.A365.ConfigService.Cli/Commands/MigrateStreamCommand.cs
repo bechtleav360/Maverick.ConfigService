@@ -203,6 +203,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return eventStore;
         }
 
+        /// <summary>
+        ///     read the configured Stream (<see cref="EventStoreStream"/>), create a local backup,
+        ///     delete and then re-create the stream with the equivalent events.
+        ///     this migration is lossy, and does not preserve events for (Structures, Environment-Modifications, Configurations).
+        ///     this migration only preserves the last state of all existing Environments.
+        /// </summary>
+        /// <returns>exit-code, 0=success | 1=failure</returns>
         private async Task<int> LossyMigrationInitialToLayeredEnvironments()
         {
             var backupFileLocation = "./migrated-state.json";
@@ -319,6 +326,11 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             }
         }
 
+        /// <summary>
+        ///     read through all events in the stream (<see cref="EventStoreStream"/>) and take all relevant data.
+        /// </summary>
+        /// <param name="eventStore">opened EventStore-Connection</param>
+        /// <returns>object containing all relevant state for the Initial-Version of this Stream</returns>
         private async Task<LossyInitialRecordedRepository> RecordInitialState(IEventStoreConnection eventStore)
         {
             var currentState = new LossyInitialRecordedRepository();
@@ -376,8 +388,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         private class LossyInitialRecordedRepository
         {
-            public readonly List<InitialEnvRepr> Environments = new List<InitialEnvRepr>();
+            private readonly List<InitialEnvRepr> _environments = new List<InitialEnvRepr>();
 
+            /// <summary>
+            ///     take the Domain-Event and apply its changes.
+            /// </summary>
+            /// <param name="recordedEvent">some recorded event from the EventStore</param>
+            /// <param name="ignoreReplayErrors">flag indicating if replay-errors should be ignored or throw an <see cref="MigrationReplayException" /></param>
             public void ApplyEvent(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
             {
                 switch (recordedEvent.Event.EventType)
@@ -404,39 +421,43 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 }
             }
 
+            /// <summary>
+            ///     take the accumulated state (<see cref="ApplyEvent" />) and generate events that translate this state into the equivalent state for <see cref="StreamVersion.LayeredEnvironments" />
+            /// </summary>
+            /// <returns>unordered list of domain-events</returns>
             public List<DomainEvent> GenerateDomainEvents()
-                => Environments.SelectMany(e => new List<DomainEvent>
-                               {
-                                   e.IsDefault
-                                       ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
-                                       : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
-                                   new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
-                                   new EnvironmentLayersModified(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
-                                                                 new List<LayerIdentifier>
-                                                                 {
-                                                                     new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
-                                                                 }),
-                                   // don't generate Keys-Imported event when there are no keys to import
-                                   // will be filtered out in the next step
-                                   e.Keys.Any()
-                                       ? new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
-                                                                          e.Keys
-                                                                           .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
-                                                                           .ToArray())
-                                       : null
-                               })
-                               .Where(e => e != null)
-                               .ToList();
+                => _environments.SelectMany(e => new List<DomainEvent>
+                                {
+                                    e.IsDefault
+                                        ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
+                                        : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
+                                    new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
+                                    new EnvironmentLayersModified(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
+                                                                  new List<LayerIdentifier>
+                                                                  {
+                                                                      new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
+                                                                  }),
+                                    // don't generate Keys-Imported event when there are no keys to import
+                                    // will be filtered out in the next step
+                                    e.Keys.Any()
+                                        ? new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
+                                                                           e.Keys
+                                                                            .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                                                            .ToArray())
+                                        : null
+                                })
+                                .Where(e => e != null)
+                                .ToList();
 
             private void ApplyDefaultEnvironmentCreated(ResolvedEvent resolvedEvent)
             {
                 var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
-                if (!Environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                              && repr.Identifier.Name == domainEvent.Identifier.Name
-                                              && repr.IsDefault))
-                    Environments.Add(new InitialEnvRepr
+                if (!_environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
+                                               && repr.Identifier.Name == domainEvent.Identifier.Name
+                                               && repr.IsDefault))
+                    _environments.Add(new InitialEnvRepr
                     {
                         Identifier = domainEvent.Identifier,
                         IsDefault = true,
@@ -449,10 +470,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
-                if (!Environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                              && repr.Identifier.Name == domainEvent.Identifier.Name
-                                              && !repr.IsDefault))
-                    Environments.Add(new InitialEnvRepr
+                if (!_environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
+                                               && repr.Identifier.Name == domainEvent.Identifier.Name
+                                               && !repr.IsDefault))
+                    _environments.Add(new InitialEnvRepr
                     {
                         Identifier = domainEvent.Identifier,
                         IsDefault = false,
@@ -465,12 +486,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
-                var existingIndex = Environments.FindIndex(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                                                   && repr.Identifier.Name == domainEvent.Identifier.Name
-                                                                   && !repr.IsDefault);
+                var existingIndex = _environments.FindIndex(repr => repr.Identifier.Category == domainEvent.Identifier.Category
+                                                                    && repr.Identifier.Name == domainEvent.Identifier.Name
+                                                                    && !repr.IsDefault);
 
                 if (existingIndex >= 0)
-                    Environments.RemoveAt(existingIndex);
+                    _environments.RemoveAt(existingIndex);
             }
 
             /// <summary>
@@ -488,15 +509,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                                                            ModifiedKeys = new List<InitialKeyActionRepr>()
                                                                        });
 
-                var existing = Environments.FirstOrDefault(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                                                   && repr.Identifier.Name == domainEvent.Identifier.Name);
+                var existing = _environments.FirstOrDefault(repr => repr.Identifier.Category == domainEvent.Identifier.Category
+                                                                    && repr.Identifier.Name == domainEvent.Identifier.Name);
 
                 if (existing is null)
                 {
                     if (importEnvironment)
                     {
                         existing = new InitialEnvRepr {Identifier = domainEvent.Identifier, Keys = new List<InitialKeyRepr>()};
-                        Environments.Add(existing);
+                        _environments.Add(existing);
                     }
                     else
                     {
