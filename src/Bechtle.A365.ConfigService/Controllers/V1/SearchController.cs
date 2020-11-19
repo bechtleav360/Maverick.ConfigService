@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to export retrieve autocomplete-data (" +
+                Logger.LogError(e, "failed to retrieve autocomplete-data (" +
                                    $"{nameof(category)}: {category}; " +
                                    $"{nameof(name)}: {name}; " +
                                    $"{nameof(query)}: {query}; " +
@@ -101,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to export retrieve autocomplete-data (" +
+                Logger.LogError(e, "failed to retrieve autocomplete-data (" +
                                    $"{nameof(name)}: {name}; " +
                                    $"{nameof(query)}: {query}; " +
                                    $"{nameof(offset)}: {offset}; " +
