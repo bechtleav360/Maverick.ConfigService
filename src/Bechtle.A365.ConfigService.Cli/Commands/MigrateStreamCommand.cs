@@ -445,6 +445,17 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                     case "EnvironmentKeysImported":
                         ApplyKeysImported(recordedEvent, ignoreReplayErrors);
                         break;
+
+                    // we don't care about all other events in this Lossy format
+                    // we only care about the current Environments and their Data
+                    case "ConfigurationBuilt":
+                    case "StructureCreated":
+                    case "StructureDeleted":
+                    case "StructureVariablesModified":
+                        break;
+
+                    default:
+                        throw new MigrationReplayException($"could not handle event of type '{recordedEvent.Event.EventType}'");;
                 }
             }
 
