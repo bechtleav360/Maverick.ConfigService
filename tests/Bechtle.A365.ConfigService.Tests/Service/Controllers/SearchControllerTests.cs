@@ -40,12 +40,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [InlineData("Foo", "Bar", "Foo/Bar", -1, -1, -1)]
         [InlineData("Foo", "Bar", "Foo/Bar", 1, 1, -1)]
         [InlineData("Foo", "Bar", "Foo/Bar", 1, 1, 4711)]
-        public async Task GetAutocompleteParametersForwarded(string category,
-                                                             string name,
-                                                             string query,
-                                                             int offset,
-                                                             int length,
-                                                             long targetVersion)
+        public async Task GetEnvAutocompleteParametersForwarded(string category,
+                                                                string name,
+                                                                string query,
+                                                                int offset,
+                                                                int length,
+                                                                long targetVersion)
         {
             _projectionStore.Setup(s => s.Environments.GetKeyAutoComplete(new EnvironmentIdentifier(category, name),
                                                                           query,
@@ -73,8 +73,45 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Verify();
         }
 
+        [Theory]
+        [InlineData("Foo", null, -1, -1, -1)]
+        [InlineData("Foo", "Foo/Bar", -1, -1, -1)]
+        [InlineData("Foo", "Foo/Bar", 1, 1, -1)]
+        [InlineData("Foo", "Foo/Bar", 1, 1, 4711)]
+        public async Task GetLayerAutocompleteParametersForwarded(string name,
+                                                                  string query,
+                                                                  int offset,
+                                                                  int length,
+                                                                  long targetVersion)
+        {
+            _projectionStore.Setup(s => s.Layers.GetKeyAutoComplete(new LayerIdentifier(name),
+                                                                    query,
+                                                                    QueryRange.Make(offset, length),
+                                                                    targetVersion))
+                            .ReturnsAsync(() => Result.Success<IList<DtoConfigKeyCompletion>>(new List<DtoConfigKeyCompletion>
+                            {
+                                new DtoConfigKeyCompletion
+                                {
+                                    FullPath = "Foo/Bar",
+                                    Completion = "Baz",
+                                    HasChildren = false
+                                },
+                                new DtoConfigKeyCompletion
+                                {
+                                    FullPath = "Foo/Bar",
+                                    Completion = "Que",
+                                    HasChildren = true
+                                }
+                            }))
+                            .Verifiable("autocomplete-data not searched");
+
+            await TestAction<OkObjectResult>(c => c.GetLayerKeyAutocompleteList(name, query, offset, length, targetVersion));
+
+            _projectionStore.Verify();
+        }
+
         [Fact]
-        public async Task GetAutocomplete()
+        public async Task GetEnvAutocomplete()
         {
             _projectionStore.Setup(s => s.Environments.GetKeyAutoComplete(It.IsAny<EnvironmentIdentifier>(),
                                                                           It.IsAny<string>(),
@@ -107,7 +144,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         }
 
         [Fact]
-        public async Task GetAutocompleteProviderError()
+        public async Task GetEnvAutocompleteProviderError()
         {
             _projectionStore.Setup(s => s.Environments.GetKeyAutoComplete(It.IsAny<EnvironmentIdentifier>(),
                                                                           It.IsAny<string>(),
@@ -124,7 +161,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         }
 
         [Fact]
-        public async Task GetAutocompleteStoreThrows()
+        public async Task GetEnvAutocompleteStoreThrows()
         {
             _projectionStore.Setup(s => s.Environments.GetKeyAutoComplete(It.IsAny<EnvironmentIdentifier>(),
                                                                           It.IsAny<string>(),
@@ -134,6 +171,73 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .Verifiable("autocomplete-data not searched");
 
             var result = await TestAction<ObjectResult>(c => c.GetEnvironmentKeyAutocompleteList("Foo", "Bar", "Foo/Bar"));
+
+            Assert.NotNull(result.Value);
+
+            _projectionStore.Verify();
+        }
+
+        [Fact]
+        public async Task GetLayerAutocomplete()
+        {
+            _projectionStore.Setup(s => s.Layers.GetKeyAutoComplete(It.IsAny<LayerIdentifier>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<QueryRange>(),
+                                                                    It.IsAny<long>()))
+                            .ReturnsAsync(() => Result.Success<IList<DtoConfigKeyCompletion>>(new List<DtoConfigKeyCompletion>
+                            {
+                                new DtoConfigKeyCompletion
+                                {
+                                    FullPath = "Foo/Bar",
+                                    Completion = "Baz",
+                                    HasChildren = false
+                                },
+                                new DtoConfigKeyCompletion
+                                {
+                                    FullPath = "Foo/Bar",
+                                    Completion = "Que",
+                                    HasChildren = true
+                                }
+                            }))
+                            .Verifiable("autocomplete-data not searched");
+
+            var result = await TestAction<OkObjectResult>(c => c.GetLayerKeyAutocompleteList("Foo", "Foo/Bar"));
+
+            Assert.NotNull(result.Value);
+            Assert.IsAssignableFrom<List<DtoConfigKeyCompletion>>(result.Value);
+            Assert.NotEmpty((List<DtoConfigKeyCompletion>) result.Value);
+
+            _projectionStore.Verify();
+        }
+
+        [Fact]
+        public async Task GetLayerAutocompleteProviderError()
+        {
+            _projectionStore.Setup(s => s.Layers.GetKeyAutoComplete(It.IsAny<LayerIdentifier>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<QueryRange>(),
+                                                                    It.IsAny<long>()))
+                            .ReturnsAsync(() => Result.Error<IList<DtoConfigKeyCompletion>>("something went wrong", ErrorCode.DbQueryError))
+                            .Verifiable("autocomplete-data not searched");
+
+            var result = await TestAction<ObjectResult>(c => c.GetLayerKeyAutocompleteList("Foo", "Foo/Bar"));
+
+            Assert.NotNull(result.Value);
+
+            _projectionStore.Verify();
+        }
+
+        [Fact]
+        public async Task GetLayerAutocompleteStoreThrows()
+        {
+            _projectionStore.Setup(s => s.Layers.GetKeyAutoComplete(It.IsAny<LayerIdentifier>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<QueryRange>(),
+                                                                    It.IsAny<long>()))
+                            .Throws<Exception>()
+                            .Verifiable("autocomplete-data not searched");
+
+            var result = await TestAction<ObjectResult>(c => c.GetLayerKeyAutocompleteList("Foo", "Foo/Bar"));
 
             Assert.NotNull(result.Value);
 
