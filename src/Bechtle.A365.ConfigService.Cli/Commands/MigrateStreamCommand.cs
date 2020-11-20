@@ -427,15 +427,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 switch (recordedEvent.Event.EventType)
                 {
                     case "DefaultEnvironmentCreated":
-                        ApplyDefaultEnvironmentCreated(recordedEvent);
+                        ApplyDefaultEnvironmentCreated(recordedEvent, ignoreReplayErrors);
                         break;
 
                     case "EnvironmentCreated":
-                        ApplyEnvironmentCreated(recordedEvent);
+                        ApplyEnvironmentCreated(recordedEvent, ignoreReplayErrors);
                         break;
 
                     case "EnvironmentDeleted":
-                        ApplyEnvironmentDeleted(recordedEvent);
+                        ApplyEnvironmentDeleted(recordedEvent, ignoreReplayErrors);
                         break;
 
                     case "EnvironmentKeysModified":
@@ -455,7 +455,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                         break;
 
                     default:
-                        throw new MigrationReplayException($"could not handle event of type '{recordedEvent.Event.EventType}'");;
+                        throw new MigrationReplayException($"could not handle event of type '{recordedEvent.Event.EventType}'");
                 }
             }
 
@@ -487,39 +487,45 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                 .Where(e => e != null)
                                 .ToList();
 
-            private void ApplyDefaultEnvironmentCreated(ResolvedEvent resolvedEvent)
+            private void ApplyDefaultEnvironmentCreated(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
             {
                 var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
-                if (!_environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                               && repr.Identifier.Name == domainEvent.Identifier.Name
-                                               && repr.IsDefault))
-                    _environments.Add(new InitialEnvRepr
-                    {
-                        Identifier = domainEvent.Identifier,
-                        IsDefault = true,
-                        Keys = new List<InitialKeyRepr>()
-                    });
+                if (_environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
+                                              && repr.Identifier.Name == domainEvent.Identifier.Name
+                                              && repr.IsDefault)
+                    && !ignoreReplayErrors)
+                    throw new MigrationReplayException($"environment '{domainEvent.Identifier}' already created or not deleted previously");
+
+                _environments.Add(new InitialEnvRepr
+                {
+                    Identifier = domainEvent.Identifier,
+                    IsDefault = true,
+                    Keys = new List<InitialKeyRepr>()
+                });
             }
 
-            private void ApplyEnvironmentCreated(ResolvedEvent resolvedEvent)
+            private void ApplyEnvironmentCreated(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
             {
                 var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
-                if (!_environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                               && repr.Identifier.Name == domainEvent.Identifier.Name
-                                               && !repr.IsDefault))
-                    _environments.Add(new InitialEnvRepr
-                    {
-                        Identifier = domainEvent.Identifier,
-                        IsDefault = false,
-                        Keys = new List<InitialKeyRepr>()
-                    });
+                if (_environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
+                                              && repr.Identifier.Name == domainEvent.Identifier.Name
+                                              && !repr.IsDefault)
+                    && !ignoreReplayErrors)
+                    throw new MigrationReplayException($"environment '{domainEvent.Identifier}' already created or not deleted previously");
+
+                _environments.Add(new InitialEnvRepr
+                {
+                    Identifier = domainEvent.Identifier,
+                    IsDefault = false,
+                    Keys = new List<InitialKeyRepr>()
+                });
             }
 
-            private void ApplyEnvironmentDeleted(ResolvedEvent resolvedEvent)
+            private void ApplyEnvironmentDeleted(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
             {
                 var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
                                                                        new {Identifier = new InitialEnvIdRepr()});
@@ -527,6 +533,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 var existingIndex = _environments.FindIndex(repr => repr.Identifier.Category == domainEvent.Identifier.Category
                                                                     && repr.Identifier.Name == domainEvent.Identifier.Name
                                                                     && !repr.IsDefault);
+
+                if (existingIndex == -1 && !ignoreReplayErrors)
+                    throw new MigrationReplayException($"can't find environment '{domainEvent.Identifier}' to delete, not created or already deleted");
 
                 if (existingIndex >= 0)
                     _environments.RemoveAt(existingIndex);
