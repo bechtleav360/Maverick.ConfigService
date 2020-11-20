@@ -10,6 +10,9 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class PreparedConfigurationList : DomainObject
     {
+        /// <summary>
+        ///     Map of Environments and their assigned Layers (Ordered)
+        /// </summary>
         public Dictionary<EnvironmentIdentifier, List<LayerIdentifier>> EnvironmentLayers { get; set; }
             = new Dictionary<EnvironmentIdentifier, List<LayerIdentifier>>();
 

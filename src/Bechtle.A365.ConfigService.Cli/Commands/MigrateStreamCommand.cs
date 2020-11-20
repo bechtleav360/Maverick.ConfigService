@@ -594,6 +594,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 ApplyKeyModifications(resolvedEvent, ignoreReplayErrors, false);
         }
 
+// all structs / fields are being used and assigned, but only while deserializing from JSON
+#pragma warning disable S3459 // Unassigned members should be removed
+#pragma warning disable 649
         /// <summary>
         ///     internal representation of an Environment-Id in its 'Initial' version
         /// </summary>
@@ -662,5 +665,8 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             {
             }
         }
+#pragma warning restore 649
+#pragma warning restore S3459 // Unassigned members should be removed
+// all structs / fields are being used and assigned, but only while deserializing from JSON
     }
 }

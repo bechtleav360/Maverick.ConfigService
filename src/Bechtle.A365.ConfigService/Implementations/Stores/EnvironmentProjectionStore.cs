@@ -505,7 +505,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
         /// </summary>
-        /// <param name="parameters">see <see cref="EnvironmentKeyQueryParameters" /> for more information on each parameter</param>
+        /// <param name="parameters">see <see cref="KeyQueryParameters{EnvironmentIdentifier}" /> for more information on each parameter</param>
         /// <param name="selector">internal selector transforming the filtered items to an intermediate representation</param>
         /// <param name="keySelector">selector pointing to the 'Key' property of the intermediate representation</param>
         /// <param name="transform">final transformation applied to the result-set</param>

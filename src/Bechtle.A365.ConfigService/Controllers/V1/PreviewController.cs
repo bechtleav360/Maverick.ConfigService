@@ -121,7 +121,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         ///     preview the Result of building the given Environment and Structure
         /// </summary>
         /// <param name="previewOptions">set of options telling the service which existing Env/Structure to use, or to use inline-data for preview</param>
-        /// <returns>Result of the Compilation with associated Metadata and both Key/Value & JSON representation of the Config</returns>
+        /// <returns>Result of the Compilation with associated Metadata and both Key/Value and JSON representation of the Config</returns>
         [ProducesResponseType(typeof(PreviewResult), (int) HttpStatusCode.OK)]
         [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
         public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
