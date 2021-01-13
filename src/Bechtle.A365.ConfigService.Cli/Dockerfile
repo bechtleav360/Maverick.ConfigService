@@ -2,7 +2,7 @@
 ARG buildConfiguration=RELEASE
 ARG nugetfeed=https://pkgs.dev.azure.com/av360/_packaging/A365/nuget/v3/index.json
 
-FROM mcr.microsoft.com/dotnet:3.1 AS base
+FROM mcr.microsoft.com/dotnet/sdk:3.1 AS base
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
