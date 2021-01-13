@@ -116,7 +116,7 @@ stages:
             projectLocation: '$(Build.SourcesDirectory)/$(projectLocation)'
             projectFile: $(projectFile)
             containerName: '$(containerRepo)/$(containerName)'
-            nugetPassword: '$(nuget_password)'
+            pat: '$(System.AccessToken)'
             publicRegistry: $(publicRegistry)
             privateRegistry: $(privateRegistry)
 
@@ -127,7 +127,7 @@ stages:
             projectLocation: '$(Build.SourcesDirectory)/$(projectLocationCli)'
             projectFile: $(projectFileCli)
             containerName: '$(containerRepo)/$(containerNameCli)'
-            nugetPassword: '$(nuget_password)'
+            pat: '$(System.AccessToken)'
             publicRegistry: $(publicRegistry)
             privateRegistry: $(privateRegistry)
 

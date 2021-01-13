@@ -1,21 +1,35 @@
 ﻿ARG SERVICENAME=Bechtle.A365.ConfigService
-FROM maverick.azurecr.io/dotnet/core/sdk:3.1 AS base
+ARG buildConfiguration=RELEASE
+ARG nugetfeed=https://pkgs.dev.azure.com/av360/_packaging/A365/nuget/v3/index.json
+
+FROM mcr.microsoft.com/dotnet/aspnet:3.1 AS base
 WORKDIR /app
 
-FROM maverick.azurecr.io/dotnet/core/sdk:3.1 AS build
+FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
 ARG SERVICENAME
+ARG pat
+ARG nugetfeed
+ARG buildConfiguration
+
+# prepare to pull from private Nuget Feed
+ENV NUGET_CREDENTIALPROVIDER_SESSIONTOKENCACHE_ENABLED true
+ENV VSS_NUGET_EXTERNAL_FEED_ENDPOINTS "{\"endpointCredentials\": [{\"endpoint\":\"${nugetfeed}\", \"username\":\"build\", \"password\":\"${pat}\"}]}"
+RUN wget -O - https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.sh  | bash
+
 WORKDIR /src
 COPY . .
-RUN dotnet restore "src/$SERVICENAME/$SERVICENAME.csproj"
+# feed have to be explicitly specified
+RUN dotnet restore "src/$SERVICENAME/$SERVICENAME.csproj" -s "${nugetfeed}" -s "https://api.nuget.org/v3/index.json"
 WORKDIR /src/src/$SERVICENAME
-RUN dotnet build "$SERVICENAME.csproj" -c Release -o /app
+RUN dotnet build "$SERVICENAME.csproj" -c ${buildConfiguration} -o /app
 
 FROM build AS publish
 ARG SERVICENAME
-RUN dotnet publish "$SERVICENAME.csproj" -c Release -o /app
+ARG buildConfiguration
+RUN dotnet publish "$SERVICENAME.csproj" -c ${buildConfiguration} -o /app
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
 
-ENTRYPOINT dotnet Bechtle.A365.ConfigService.dll
+ENTRYPOINT dotnet $SERVICENAME.dll
