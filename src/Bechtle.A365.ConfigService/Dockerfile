@@ -1,4 +1,4 @@
-﻿ARG SERVICENAME=Bechtle.A365.UserProfileService.Sync
+﻿ARG SERVICENAME=Bechtle.A365.ConfigService
 ARG buildConfiguration=RELEASE
 ARG nugetfeed=https://pkgs.dev.azure.com/av360/_packaging/A365/nuget/v3/index.json
 
