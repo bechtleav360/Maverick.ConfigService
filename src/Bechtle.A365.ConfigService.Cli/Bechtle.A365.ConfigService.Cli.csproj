@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Version>2.3.1</Version>
     <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
+    <RuntimeIdentifiers>win10-x64; linux-x64</RuntimeIdentifiers>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
