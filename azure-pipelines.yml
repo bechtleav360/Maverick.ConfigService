@@ -6,7 +6,6 @@
 name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)_$(Rev:rrrr)
 
 variables:
-  - group: Docker Nuget
   - group: Docker Maverick
   - name: buildConfiguration
     value: 'Release'
