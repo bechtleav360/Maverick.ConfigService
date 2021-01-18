@@ -21,12 +21,12 @@ COPY . .
 # feed have to be explicitly specified
 RUN dotnet restore "src/$SERVICENAME/$SERVICENAME.csproj" -s "${nugetfeed}" -s "https://api.nuget.org/v3/index.json"
 WORKDIR /src/src/$SERVICENAME
-RUN dotnet build "$SERVICENAME.csproj" -c ${buildConfiguration} --no-restore -f netcoreapp3.1
+RUN dotnet build "$SERVICENAME.csproj" -c ${buildConfiguration} --no-restore
 
 FROM build AS publish
 ARG SERVICENAME
 ARG buildConfiguration
-RUN dotnet publish "$SERVICENAME.csproj" -c ${buildConfiguration} --no-build -o /app -f netcoreapp3.1
+RUN dotnet publish "$SERVICENAME.csproj" -c ${buildConfiguration} --no-build -o /app
 
 FROM base AS final
 ARG SERVICENAME
