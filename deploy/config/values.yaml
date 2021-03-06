@@ -1,188 +1,523 @@
-# Default values for Config.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+##
+# global:
+#   imageRegistry: myRegistryName
+#   imagePullSecrets:
+#     - myRegistryKeySecretName
+#   storageClass: myStorageClass
 
-replicaCount: 1
-
-image:
-  repository: maverick.azurecr.io/configservice
+configImage:
+  registry: maverick.azurecr.io
+  repository: maverick/configservice
+  ## If tag is not specified, .Chart.AppVersion will be used
+  # tag:
+  ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
   pullPolicy: IfNotPresent
-  configservicecli:
-    repository: maverick.azurecr.io/configservice-cli
-  curl:
-    repository: curlimages/curl 
-    tag: 7.66.0
-  postgres:
-    repository: postgres
-    tag: latest
+  ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
 
+  ## Set to true if you would like to see extra information on logs
+  ## 
+  debug: false #NOT IMPLEMENTED YET
 
-#Settings fo configure sub charts
-#**************************************************
-websocket:
-  enabled: true
+cliImage:
+  registry: maverick.azurecr.io
+  repository: maverick/configservice-cli
+  ## If tag is not specified, .Chart.AppVersion will be used
+  # tag:
+  ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
 
-redis:
-  enabled: true
-  usePassword: true
-  password: changeit!
-  cluster:
-    enabled: false
-    slaveCount: 0
-  master:
-    persistence:
-      enabled: false
+  ## Set to true if you would like to see extra information on logs
+  ## 
+  debug: false #NOT IMPLEMENTED YET
 
-postgres:
-  enabled: true
+curlImage:
+  registry: docker.io
+  repository: curlimages/curl
+  tag: 7.66.0
+  ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
 
-rabbitmq:
-  enabled: true
-  rabbitmq:
-    username: 
-    password: 
-    erlangcookie:
-
-eventstore:
-  enabled: true
-  admin:
-    password: changeit!
-#**************************************************
-
-
+postgreImage:
+  registry: docker.io
+  repository: postgres
+  tag: latest
+  ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
+  
 #Settings to overwrite configuration
 #**************************************************
-environment:
-  cloud: local
-  domain: k8.maverick.local
-
-configuration:
-  configservice: "http://config"
-  category: "k8"
-  name: "default"
-
-sql:
-  server:
-  username:
-  password:
-  databases:
-    chat:
-      main: Chat
-      slots: ChatSlots
-    file: File
-    identity: Identity
-    mail: Mail
-    task: Task
-    bonnea: bonneabmz23
-    core:
-      command: Command
-      dms: Command
-      events: Events
-      query: Query
-      references: References
-      shortener: Shortener
-      temp: Temp
-
-arango:
-  server:
-  port:
-  username:
-  password:
-  upsdatabase:
-  samueldatabase:
-  samueltrackerdatabase:
-
-minio: 
-  server:
-  port: 
-  https: 
-  user:
-  password:
-  databases:
-    chatgroup: chatgroups
-    chatprivate: chatprivate
-    template: templates
-    corecommand: corecommand
-    coretemporary: coretemporary
-
-identity:
-  issueruri:
-  publicorigin:
-  handleforwardedheaders: true
-  openid:
-    authenticationmethod:
-    authority:
-    callbackpath:
-    clientid:
-    clientsecret:
-    remotesignoutpath: 
-
-elasticsearch:
-  enabled: true
-  server:
-  port:
+configOverwrites:
+  environment:
+    cloud: local
+    domain: k8.maverick.local
+  configuration:
+    configservice: "http://config"
+    category: "k8"
+    name: "default"
+  sql:
+    server:
+    username:
+    password:
+    databases:
+      chat:
+        main: Chat
+        slots: ChatSlots
+      file: File
+      identity: Identity
+      mail: Mail
+      task: Task
+      bonnea: bonneabmz23
+      core:
+        command: Command
+        dms: Command
+        events: Events
+        query: Query
+        references: References
+        shortener: Shortener
+        temp: Temp
+  arango:
+    server:
+    port:
+    username:
+    password:
+    databases:
+      ups:
+      # samuel:
+      # samueltracker:
+  rabbitmq: 
+    server:
+    port: 
+    username:
+    password:
+  minio: 
+    server: 
+    port: 
+    https: 
+    username: 
+    password: 
+    databases:
+      chatgroup: chatgroups
+      chatprivate: chatprivate
+      template: templates
+      corecommand: corecommand
+      coretemporary: coretemporary
+  identity:
+    issueruri:
+    publicorigin:
+    handleforwardedheaders: true
+    openid:
+      authenticationmethod:
+      authority:
+      callbackpath:
+      clientid:
+      clientsecret:
+      remotesignoutpath: 
+  elasticsearch:
+    server:
+    port:
 #**************************************************
-
-
 
 #Settings to configure configuration service
 #**************************************************
 config:
   snapshotstore:
     type: memory
-    server: postgres
-    port: 5432
-    user: sa
-    password: changeit!
+    ## set if externel snapshotstore is used
+    # server:
+    # port:
+    # user:
+    # password:
   eventstore:
-    server: #configured automatically if sub chart is enabled
-    user: admin
+    server: eventstore
+    username: user
+    password: password
   eventbus:
-    server: #configured automatically if sub chart is enabled
-  rabbitmq:
-    server:  #configured automatically if sub chart is enabled
+    server:
   redis:
-    server: #configured automatically if sub chart is enabled
+    server:
+    password:
+
+  ## Labels to add to the StatefulSet. Evaluated as template
+  ##
+  labels: {}
+
+  ## Labels to add to the StatefulSet pods. Evaluated as template
+  ##
+  podLabels: {}
+
+  ## Number of replicas to deploy
+  ##
+  replicaCount: 1
+
+  ## Update strategy for PostgreSQL statefulset
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  ##
+  updateStrategyType: RollingUpdate
+  
+  ## Deployment pod host aliases
+  ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+
+  ## Additional pod annotations
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  podAnnotations: {}
+
+  ## Pod priority class
+  ## Ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+  ##
+  priorityClassName: ""
+
+  ## config pod affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ## Allowed values: soft, hard
+  ##
+  podAffinityPreset: ""
+
+  ## config pod anti-affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ## Allowed values: soft, hard
+  ##
+  podAntiAffinityPreset: soft
+  
+  ## config node affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ## Allowed values: soft, hard
+  ##
+  nodeAffinityPreset:
+    ## Node affinity type
+    ## Allowed values: soft, hard
+    ##
+    type: ""
+    ## Node label key to match
+    ## E.g.
+    ## key: "kubernetes.io/e2e-az-name"
+    ##
+    key: ""
+    ## Node label values to match
+    ## E.g.
+    ## values:
+    ##   - e2e-az1
+    ##   - e2e-az2
+    ##
+    values: []  
+  
+  ## Affinity for config pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ## Note: postgresql.podAffinityPreset, postgresql.podAntiAffinityPreset, and postgresql.nodeAffinityPreset will be ignored when it's set
+  ##
+  affinity: {}
+
+  ## Node labels for config pods assignment
+  ## ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+
+  ## Tolerations for config pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+
+  ## K8s Security Context
+  ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ##
+  securityContext:
+    enabled: true
+    fsGroup: 1001
+  
+  ## Container Security Context
+  ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ##
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+
+  ## Custom Liveness probe
+  ##
+  customLivenessProbe: {}
+
+  ## Custom Readiness probe
+  ##
+  customReadinessProbe: {}
+
+  ## Container command (using container default if not set)
+  ##
+  command:
+
+  ## Container args (using container default if not set)
+  ##
+  args:
+
+  ## lifecycleHooks for the container to automate configuration before or after startup.
+  ##
+  lifecycleHooks:
+
+  ## An array to add extra env vars
+  ## For example:
+  ##
+  extraEnvVars: []
+  #  - name: BEARER_AUTH
+  #    value: true
+
+  ## ConfigMap with extra environment variables
+  ##
+  extraEnvVarsCM:
+
+  ## Secret with extra environment variables
+  ##
+  extraEnvVarsSecret:
+
+  ## Extra volumes to add to the deployment
+  ##
+  extraVolumes: []
+
+  ## Extra volume mounts to add to the container
+  ##
+  extraVolumeMounts: []
+
+  ## Extra init containers
+  ## Example
+  ##
+  ## extraInitContainers:
+  ##   - name: do-something
+  ##     image: busybox
+  ##     command: ['do', 'something']
+  ##
+  extraInitContainers: []
+
+  ## Extra sidecar containers to add to the deployment
+  ##
+  sidecars: []
+
+  ## config containers' resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits: {}
+    #   cpu: 250m
+    #   memory: 256Mi
+    requests: {}
+    #   cpu: 250m
+    #   memory: 256Mi
+
+  ## config container's liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 6
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 6
+
+  ## Pod disruption budget configuration
+  ##
+  pdb:
+    ## Specifies whether a Pod disruption budget should be created
+    ##
+    create: false
+    minAvailable: 1
+    # maxUnavailable: 1
+
 #**************************************************
 
+## String to partially override config.fullname template (will maintain the release name)
+##
+# nameOverride:
 
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+## String to fully override config.fullname template
+##
+# fullnameOverride:
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: true
+  enabled: false
   # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name:
+  # If not set and enabled is true, a name is generated using the fullname template
+  # name:
 
-podSecurityContext: {}
-  # fsGroup: 2000
+## Common annotations to add to all resources (sub-charts are not considered). Evaluated as a template
+##
+commonAnnotations: {}
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+## Common labels to add to all resources (sub-charts are not considered). Evaluated as a template
+##
+commonLabels: {}
+
+
 
 service:
+  ## Service type
+  ##
   type: ClusterIP
-  externalTrafficPolicy: 
+  ## Service Port
+  ##
   port: 80
+  ## Specify the nodePort value for the LoadBalancer and NodePort service types.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+  ##
+  # nodePort:
+  ## Set the LoadBalancer service type to internal only.
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
+  ##
+  # loadBalancerIP:
+  ## Load Balancer sources
+  ## https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+  ##
+  # loadBalancerSourceRanges:
+  # - 10.10.10.0/24
+  ## Set the Cluster IP to use
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#choosing-your-own-ip-address
+  ##
+  # clusterIP: None
+  ## Provide any additional annotations which may be required
+  ##
   annotations: {}
-  # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  ## Labels to add to the service. Evaluated as template
+  ##
+  serviceLabels: {}
+  ## denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
+  ## https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+  ##
+  # externalTrafficPolicy: 
 
-resources:
-  limits:
-    memory: 500Mi
-  requests:
-    memory: 250Mi
+## NetworkPolicy parameters
+##
+networkPolicy:
+  enabled: false
 
-nodeSelector: {}
+  ## The Policy model to apply. When set to false, only pods with the correct
+  ## client labels will have network access to the port PostgreSQL is listening
+  ## on. When true, PostgreSQL will accept connections from any source
+  ## (with the correct destination port).
+  ##
+  allowExternal: true
+  
+################# NOT IMPLEMENTET YET ##################
+## Config Prometheus exporter parameters 
+##
+metrics:
+  enabled: false
+  ## K8s Security Context
+  ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ##
+  securityContext:
+    enabled: true
+    runAsUser: 1001
 
-tolerations: []
+  ## Prometheus exporter containers' resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits: {}
+    #   cpu: 250m
+    #   memory: 256Mi
+    requests: {}
+    #   cpu: 250m
+    #   memory: 256Mi
 
-affinity: {}
+  ## Prometheus exporter container's liveness and readiness probes
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 6
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 6
+
+  ## Annotations for Prometheus exporter
+  ##
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9187"
+
+  ## Enable this if you're using Prometheus Operator
+  ##
+  serviceMonitor:
+    enabled: false
+
+    ## Specify a namespace if needed
+    # namespace: monitoring
+    # fallback to the prometheus default unless specified
+    # interval: 10s
+    # scrapeTimeout: 10s
+
+    ## Defaults to what's used if you follow CoreOS [Prometheus Install Instructions](https://github.com/bitnami/charts/tree/master/bitnami/prometheus-operator#tldr)
+    ## [Prometheus Selector Label](https://github.com/bitnami/charts/tree/master/bitnami/prometheus-operator#prometheus-operator-1)
+    ## [Kube Prometheus Selector Label](https://github.com/bitnami/charts/tree/master/bitnami/prometheus-operator#exporters)
+    ##
+    selector:
+      prometheus: kube-prometheus
+
+    ## RelabelConfigs to apply to samples before scraping
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ##
+    relabelings: []
+
+    ## MetricRelabelConfigs to apply to samples before ingestion
+    ## ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+    ## Value is evalued as a template
+    ##
+    metricRelabelings: []
+####################################
+
+## Array with extra yaml to deploy with the chart. Evaluated as a template
+##
+extraDeploy: []

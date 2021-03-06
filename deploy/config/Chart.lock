@@ -1,0 +1,6 @@
+dependencies:
+- name: common
+  repository: https://registry.harbor.av360.org/chartrepo/library
+  version: 1.4.1
+digest: sha256:c5cdb2cdcbe9dd80c5b43e7df6b0151ed2dd26e713fcc852a47c47b243d6e32d
+generated: "2021-03-04T18:47:58.697541+01:00"

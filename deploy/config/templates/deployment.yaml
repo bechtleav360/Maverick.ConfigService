@@ -1,97 +1,183 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "Config.fullname" . }}
-  labels: {{ include "Config.labels" . | nindent 4 }}
+  name: {{ include "config.fullname" . }}
+  labels: {{- include "config.labels.standard" . | nindent 4 }}
+    {{- if .Values.config.labels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.config.labels "context" $) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.config.replicaCount }}
   selector:
-    matchLabels: {{ include "Config.selectorLabelsService" . | nindent 6 }}
+    matchLabels: {{- include "config.labels.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      labels: {{ include "Config.selectorLabelsService" . | nindent 8 }}
+      labels: {{- include "config.labels.standard" . | nindent 8 }}
+        {{- if .Values.config.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.config.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+      {{- if or .Values.config.podAnnotations (and .Values.metrics.enabled .Values.metrics.annotations) }}
+      annotations:
+      {{- if .Values.config.podAnnotations }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.config.podAnnotations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.metrics.enabled .Values.metrics.annotations }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.metrics.annotations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- end }}
     spec:
-    {{- with .Values.imagePullSecrets }}
-      imagePullSecrets: {{ toYaml . | nindent 8 }}
-    {{- end }}
-      serviceAccountName: {{ include "Config.serviceAccountName" . }}
-      securityContext: {{ toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "config.imagePullSecrets" . | nindent 6 -}}
+      {{- if .Values.config.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.config.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.config.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.config.podAffinityPreset "component" "config" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.config.podAntiAffinityPreset "component" "config" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.config.nodeAffinityPreset.type "key" .Values.config.nodeAffinityPreset.key "values" .Values.config.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.config.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.config.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.config.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.priorityClassName }}
+      priorityClassName: {{ .Values.config.priorityClassName }}
+      {{- end }}
+      {{- if .Values.config.securityContext.enabled }}
+      securityContext: {{- omit .Values.config.securityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}      
+      {{- if .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ default (include "common.names.fullname" . ) .Values.serviceAccount.name}}
+      {{- end }}
       initContainers:
-      - name: init-eventstore
-        image: {{.Values.image.curl.repository}}: {{- .Values.image.curl.tag}}
-        command: ['sh', '-c', 'until curl http://{{ include "Config.eventstoreserver" . }}:2113 -u "{{- .Values.config.eventstore.user -}}:{{- .Values.config.eventstore.password -}}"; do echo waiting for eventstore; sleep 2; done;']
-      {{ if eq .Values.config.snapshotstore.type "postgres" }}
-      - name: init-postgres
-        image: {{.Values.image.postgres.repository}}: {{- .Values.image.postgres.tag}}
-        command: ['sh', '-c', 'until pg_isready -h {{- .Values.config.snapshotstore.server -}} -p {{- .Values.config.snapshotstore.port -}}; do echo waiting for postgres; sleep 2; done;']
-      {{ end }}
+        - name: init-eventstore
+          image: {{ include "curl.image" . }}
+          imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
+          command: ['sh', '-c', 'until curl http://{{- .Values.config.eventstore.server -}}:2113 -u "{{- .Values.config.eventstore.user -}}:{{- .Values.config.eventstore.password -}}"; do echo waiting for eventstore; sleep 2; done;']
+      {{- if eq .Values.config.snapshotstore.type "postgres" -}}
+        - name: init-postgres
+          image: {{ include "postgre.image" . }}
+          imagePullPolicy: {{ .Values.postgreImage.pullPolicy | quote }}
+          command: ['sh', '-c', 'until pg_isready -h {{- .Values.config.snapshotstore.server -}} -p {{- .Values.config.snapshotstore.port -}}; do echo waiting for postgres; sleep 2; done;']
+      {{- end -}}      
+      {{- if or .Values.config.extraInitContainers -}}
+      {{- include "common.tplvalues.render" ( dict "value" (coalesce .Values.config.extraInitContainers ) "context" $ ) | nindent 8 -}}
+      {{- end }}
       containers:
-      - env:
-        - name: ASPNETCORE_URLS
-          value: http://*:80
-        - name: EventstoreConnection__Uri
-          value: tcp://{{.Values.config.eventstore.user}}:{{.Values.eventstore.admin.password}}@{{ include "Config.eventstoreserver" . }}:1113
-        - name: MemoryCache__Redis__Connectionstring
-          value: {{ include "Config.redisserver" . }}:6379,password={{.Values.redis.password}}
-        - name: EventBusConnection__Server
-          value: http://{{include "Config.websocketserver" . }}
-        - name: MemoryCache__Local__SizeLimitInMb
-          value: "64"
-        - name: MemoryCache__Local__Duration
-          value: "00:05:00"
-        {{ if eq .Values.config.snapshotstore.type "postgres" }}
-        - name: SnapshotConfiguration__Stores__Postgres__Enabled
-          value: "true"
-        - name: SnapshotConfiguration__Stores__Postgres__ConnectionString
-          value: Host={{.Values.config.snapshotstore.server}};Database=ConfigProjection;Port={{.Values.config.snapshotstore.port}};Id={{.Values.config.snapshotstore.user}};Password={{.Values.config.snapshotstore.password}};
-        {{ else if eq .Values.config.snapshotstore.type "local" }}  
-        - name: SnapshotConfiguration__Stores__Local__Enabled
-          value: "true"          
-        {{ else if eq .Values.config.snapshotstore.type "memory" }}  
-        - name: SnapshotConfiguration__Stores__Memory__Enabled
-          value: "true"          
-        {{ else }}    
-        - name: SnapshotConfiguration__Stores__Void__Enabled
-          value: "true"          
-        {{ end }}
-        - name: SnapshotConfiguration__Snapshots__Complete__0
-          value: ""
-        - name: SnapshotConfiguration__Snapshots__Complete__1
-          value: ""
-        - name: LoggingConfiguration__NLog__variables__RabbitMqHost
-          value: {{include "Config.rabbitmqserver" . | quote}}
-        - name: LoggingConfiguration__NLog__variables__RabbitMqUser
-          value: {{.Values.rabbitmq.user | quote }}
-        - name: LoggingConfiguration__NLog__variables__RabbitMqPassword
-          value: {{.Values.rabbitmq.password | quote }}
-        - name: LoggingConfiguration__NLog__variables__RabbitMqPort
-          value: '5672'
-        - name: LoggingConfiguration__NLog__internalLogLevel
-          value: Trace
-        - name: LoggingConfiguration__NLog__throwConfigExceptions
-          value: 'True'      
-        - name: LoggingConfiguration__NLog__Rules__2__writeTo    
-          value: "" 
-        - name: LoggingConfiguration__NLog__Rules__4__minLevel
-          value: Trace
-        - name: EnableLegacyRedirect
-          value: "false"
-        name: {{ .Chart.Name }}
-        securityContext: {{ toYaml .Values.securityContext | nindent 12 }}
-        image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        ports:
-        - name: http
-          containerPort: 80
-          protocol: TCP
-        resources: {{ toYaml .Values.resources | nindent 12 }}
+        - name: {{ .Chart.Name }}
+          {{- if .Values.config.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.config.lifecycleHooks "context" $) | nindent 12 }}
+          {{- else }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /pre-stop.sh
+          {{- end }}
+          {{- if .Values.config.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.config.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.config.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.config.args "context" $) | nindent 12 }}
+          {{- end }}
+          image: {{ include "config.image" . }}
+          imagePullPolicy: {{ .Values.configImage.pullPolicy | quote }}
+          {{- if .Values.config.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.config.containerSecurityContext "enabled" | toYaml | nindent 10 }}
+          {{- end }}
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://*:80
+            - name: EventstoreConnection__Uri
+              value: {{ printf "tcp://%s:%s@%s:1113" .Values.config.eventstore.username .Values.config.eventstore.password .Values.config.eventstore.server }}
+            {{- if .Values.config.redis.server }}
+            - name: MemoryCache__Redis__Connectionstring
+              value: {{ printf "%s:6379,password=%s" .Values.config.redis.server .Values.config.redis.password }}
+            {{- end }}
+            - name: EventBusConnection__Server
+              value: {{ printf "http://%s" .Values.config.eventbus.server }}
+            - name: MemoryCache__Local__SizeLimitInMb
+              value: "64"
+            - name: MemoryCache__Local__Duration
+              value: "00:05:00"
+            {{- if eq .Values.config.snapshotstore.type "postgres" }}
+            - name: SnapshotConfiguration__Stores__Postgres__Enabled
+              value: "true"
+            - name: SnapshotConfiguration__Stores__Postgres__ConnectionString
+              value: {{ printf "Host=%s;Database=ConfigProjection;Port=%s;Id=%s;Password=%s;" .Values.config.snapshotstore.server .Values.config.snapshotstore.port .Values.config.snapshotstore.user .Values.config.snapshotstore.password }}
+            {{- else if eq .Values.config.snapshotstore.type "local" }}  
+            - name: SnapshotConfiguration__Stores__Local__Enabled
+              value: "true"          
+            {{- else if eq .Values.config.snapshotstore.type "memory" }}  
+            - name: SnapshotConfiguration__Stores__Memory__Enabled
+              value: "true"          
+            {{- else }}    
+            - name: SnapshotConfiguration__Stores__Void__Enabled
+              value: "true"          
+            {{- end }}
+            - name: SnapshotConfiguration__Snapshots__Complete__0
+              value: ""
+            - name: SnapshotConfiguration__Snapshots__Complete__1
+              value: ""
+            - name: LoggingConfiguration__NLog__Rules__0__writeTo    
+              value: "blackhole"
+            {{- if .Values.config.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.config.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          envFrom:
+            {{- if .Values.config.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ .Values.config.extraEnvVarsCM }}
+            {{- end }}
+            {{- if .Values.config.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ .Values.config.extraEnvVarsSecret }}
+            {{- end }}
+          ports:
+          - name: http
+            containerPort: 80
+            protocol: TCP
+          {{- if .Values.config.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - -ec
+                - 'curl http://localhost'
+            initialDelaySeconds: {{ .Values.config.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.config.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.config.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.config.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.config.livenessProbe.failureThreshold }}
+          {{- else if .Values.config.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.config.customLivenessProbe "context" $) | nindent 10 }}
+          {{- end }}
+          {{- if .Values.config.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -ec
+                - 'curl http://localhost'
+            initialDelaySeconds: {{ .Values.config.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.config.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.config.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.config.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.config.readinessProbe.failureThreshold }}
+          {{- else if .Values.config.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.config.customReadinessProbe "context" $) | nindent 10 }}
+          {{- end }}
+          {{- if .Values.config.resources }}
+          resources: {{- toYaml .Values.config.resources | nindent 10 }}
+          {{- end }}
       restartPolicy: Always
-    {{- with .Values.nodeSelector }}
-      nodeSelector: {{ toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.affinity }}
-      affinity: {{ toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
-      tolerations: {{ toYaml . | nindent 8 }}
-    {{- end }}

@@ -4,9 +4,15 @@ metadata:
   {{- with .Values.service.annotations }}
   annotations: {{ toYaml . | nindent 4 }}
   {{- end }}
-  labels:
-    {{ include "Config.labels" . | nindent 4 }}
-  name: {{ include "Config.fullname" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.service.serviceLabels }}
+    {{ toYaml .Values.postgresql.serviceLabels | indent 4 }}
+    {{- end }}
+  name: {{ include "config.fullname" . }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -17,4 +23,4 @@ spec:
   {{- with .Values.service.externalTrafficPolicy }}
   externalTrafficPolicy: {{ . }}
   {{ end }}
-  selector: {{ include "Config.selectorLabelsService" . | nindent 4 }}
+  selector: {{- include "common.labels.matchLabels" . | nindent 4 }}

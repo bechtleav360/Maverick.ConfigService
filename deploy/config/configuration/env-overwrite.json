@@ -1,8 +1,8 @@
 {
     "Environments": [
         {
-            "Category": "{{ .Values.configuration.category }}",
-            "Name": "{{ .Values.configuration.name }}",
+            "Category": "{{ .Values.configOverwrites.configuration.category }}",
+            "Name": "{{ .Values.configOverwrites.configuration.name }}",
             "Keys": [
                 {
                     "Key": "NamedEndpoints/IdentityService/Address",
@@ -10,7 +10,7 @@
                 },
                 {
                     "Key": "ApplicationEndpoints/Minio/Secret",
-                    "Value": "{{.Values.minio.password}}"
+                    "Value": "{{.Values.configOverwrites.minio.password}}"
                 },
                 {
                     "Key": "NamedEndpoints/IdentityService/Protocol",
@@ -18,7 +18,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/AdminService-External/Address",
-                    "Value": "admin. {{- .Values.environment.domain }}"
+                    "Value": "admin. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/AdminService-External/Port",
@@ -30,7 +30,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/ChatService-External/Address",
-                    "Value": "chat. {{- .Values.environment.domain }}"
+                    "Value": "chat. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/ChatService-External/Port",
@@ -42,7 +42,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/WebDav-External/Address",
-                    "Value": "file. {{- .Values.environment.domain }}"
+                    "Value": "file. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/WebDav-External/Port",
@@ -54,7 +54,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/IdentityService-External/Address",
-                    "Value": "identity. {{- .Values.environment.domain }}"
+                    "Value": "identity. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/IdentityService-External/Port",
@@ -68,7 +68,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/EntityBits-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.environment.domain }}"
+                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/EntityBits-External/Port",
@@ -82,7 +82,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/EntitySources-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.environment.domain }}"
+                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/EntitySources-External/Port",
@@ -96,7 +96,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/FeedbackMail-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.environment.domain }}"
+                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/FeedbackMail-External/Port",
@@ -110,7 +110,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/Help-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.environment.domain }}"
+                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/Help-External/Port",
@@ -124,7 +124,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/Maverick-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.environment.domain }}"
+                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/Maverick-External/Port",
@@ -138,7 +138,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/TaskService-External/Address",
                   "Type": "",
-                  "Value": "task. {{- .Values.environment.domain }}"
+                  "Value": "task. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/TaskService-External/Port",
@@ -152,7 +152,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/WopiService-External/Address",
                   "Type": "",
-                  "Value": "wopi. {{- .Values.environment.domain }}"
+                  "Value": "wopi. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/WopiService-External/Port",
@@ -166,7 +166,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/Xmpp-External/Address",
                   "Type": "",
-                  "Value": "chat. {{- .Values.environment.domain }}"
+                  "Value": "chat. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                   "Description": "",
@@ -182,7 +182,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/PreviewService-External/Address",
-                    "Value": "preview. {{- .Values.environment.domain }}"
+                    "Value": "preview. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/PreviewService-External/Port",
@@ -194,11 +194,11 @@
                 },
                 {
                     "Key": "NamedEndpoints/SignalR/Address",
-                    "Value": "{{- include "Config.websocketserver" . -}}"
+                    "Value": "{{- .Values.config.eventbus.server -}}"
                 },
                 {
                     "Key": "NamedEndpoints/SignalR-External/Address",
-                    "Value": "websocket. {{- .Values.environment.domain }}"
+                    "Value": "websocket. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/SignalR-External/Port",
@@ -210,11 +210,11 @@
                 },
                 {
                     "Key": "NamedEndpoints/EventStoreService/Address",
-                    "Value": "admin:{{.Values.eventstore.admin.password}}@{{- include "Config.eventstoreserver" . -}}"
+                    "Value": "admin:{{.Values.config.eventstore.password}}@{{- .Values.config.eventstore.server -}}"
                 },
                 {
                     "Key": "NamedEndpoints/UserProfileService-External/Address",
-                    "Value": "userprofileservice. {{- .Values.environment.domain }}"
+                    "Value": "userprofileservice. {{- .Values.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/UserProfileService-External/Port",
@@ -234,203 +234,203 @@
                 },
                 {
                     "Key": "Connections/Minio/Properties/Secret",
-                    "Value": "{{ required "A valid minio secret is required." .Values.minio.password -}}"
+                    "Value": "{{ required "A valid minio secret is required." .Values.configOverwrites.minio.password -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/User",
-                    "Value": "{{ required "A valid minio username is required." .Values.minio.user -}}"
+                    "Value": "{{ required "A valid minio username is required." .Values.configOverwrites.minio.username -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/Hostname",
-                    "Value": "{{ required "A valid minio server is required." .Values.minio.server -}}"
+                    "Value": "{{ required "A valid minio server is required." .Values.configOverwrites.minio.server -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/Https",
-                    "Value": "{{ required "A valid minio protocol setting is required." .Values.minio.https -}}"
+                    "Value": "{{ required "A valid minio protocol setting is required." .Values.configOverwrites.minio.https -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/Port",
-                    "Value": "{{ required "A valid minio port is required." .Values.minio.port -}}"
+                    "Value": "{{ required "A valid minio port is required." .Values.configOverwrites.minio.port -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/RabbitMQ/HostName",
-                    "Value": "{{- include "Config.rabbitmqserver" . -}}"
+                    "Value": "{{- .Values.configOverwrites.rabbitmq.server -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/RabbitMQ/User",
-                    "Value": "{{- .Values.rabbitmq.rabbitmq.username -}}"
+                    "Value": "{{- .Values.configOverwrites.rabbitmq.username -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/RabbitMQ/Password",
-                    "Value": "{{- .Values.rabbitmq.rabbitmq.password -}}"
+                    "Value": "{{- .Values.configOverwrites.rabbitmq.password -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/Redis/Address",
-                    "Value": "{{- include "Config.redisserver" . -}}"
+                    "Value": "{{- .Values.config.redis.server -}}"
                 },
                 {
                     "Description": "string",
                     "Key": "Connections/Sql/Properties/ConnectionString",
                     "Type": "string",
-                    "Value": "Data Source={{- .Values.sql.server -}}; Integrated Security=False; User Id={{ required "A valid sql username is required." .Values.sql.username -}}; Password={{ required "A valid sql password is required." .Values.sql.password -}};"
+                    "Value": "Data Source={{- .Values.configOverwrites.sql.server -}}; Integrated Security=False; User Id={{ required "A valid sql username is required." .Values.configOverwrites.sql.username -}}; Password={{ required "A valid sql password is required." .Values.configOverwrites.sql.password -}};"
                 },
                 {
                     "Key": "ApplicationEndpoints/SQLServer/PartialConnectionString",
-                    "Value": "Data Source={{ required "A valid sql server is required." .Values.sql.server -}};Integrated Security=False;User Id={{ required "A valid sql username is required." .Values.sql.username -}};Password={{ required "A valid sql password is required." .Values.sql.password -}};"
+                    "Value": "Data Source={{ required "A valid sql server is required." .Values.configOverwrites.sql.server -}};Integrated Security=False;User Id={{ required "A valid sql username is required." .Values.configOverwrites.sql.username -}};Password={{ required "A valid sql password is required." .Values.configOverwrites.sql.password -}};"
                 },
                 {
                     "Description": "string",
                     "Key": "ApplicationEndpoints/Redis/ConnectionString",
                     "Type": "string",
-                    "Value": "{{"{{"}}$this/Address}}:{{"{{"}}$this/Port}},Password={{ required "A valid redis password is required." .Values.redis.password -}},ConnectTimeout=10000,ConnectRetry=4"
+                    "Value": "{{"{{"}}$this/Address}}:{{"{{"}}$this/Port}},Password={{ required "A valid redis password is required." .Values.configOverwrites.redis.password -}},ConnectTimeout=10000,ConnectRetry=4"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Server",
-                    "Value": "{{ required "A valid arango db server name is required." .Values.arango.server }}"
+                    "Value": "{{ required "A valid arango db server name is required." .Values.configOverwrites.arango.server }}"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Username",
-                    "Value": "{{ required "A valid arango db user is required." .Values.arango.username }}"
+                    "Value": "{{ required "A valid arango db user is required." .Values.configOverwrites.arango.username }}"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Password",
-                    "Value": "{{ required "A valid arango db password is required." .Values.arango.password }}"
+                    "Value": "{{ required "A valid arango db password is required." .Values.configOverwrites.arango.password }}"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Port",
-                    "Value": "{{ required "A valid arango db port is required." .Values.arango.port }}"
+                    "Value": "{{ required "A valid arango db port is required." .Values.configOverwrites.arango.port }}"
                 },
                 {
                     "Key": "Connections/Arango/UserProfileServiceDatabaseName",
-                    "Value": "{{ required "A valid arango db database name is required." .Values.arango.upsdatabase }}"
+                    "Value": "{{ required "A valid arango db database name is required." .Values.configOverwrites.arango.databases.ups }}"
                 },
                 {
                     "Key": "Connections/Sql/ChatService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.chat.main}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.chat.main}}"
                 },
                 {
                     "Key": "Connections/Sql/ChatServiceSlots",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.chat.slots}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.chat.slots}}"
                 },
                 {
                     "Key": "Connections/Sql/FileService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.file}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.file}}"
                 },
                 {
                     "Key": "Connections/Sql/IdentityService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.identity}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.identity}}"
                 },
                 {
                     "Key": "Connections/Sql/MailService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.mail}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.mail}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickCommand",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.command}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.command}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickDms",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.dms}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.dms}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickEvents",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.events}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.events}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickQuery",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.query}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.query}};"
                 },
                 {
                     "Key": "Connections/Sql/MaverickReferences",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.references}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.references}};"
                 },
                 {
                     "Key": "Connections/Sql/MaverickShortener",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.shortener}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.shortener}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickTemp",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.core.temp}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.temp}};"
                 },
                 {
                     "Key": "Connections/Sql/TaskService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.sql.databases.task}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.task}};"
                 },
                 {
                     "Key": "Connections/Minio/ChatServiceGroupFiles",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.chatgroup}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.chatgroup}}"
                 },
                 {
                     "Key": "Connections/Minio/ChatServicePrivateFiles",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.chatprivate}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.chatprivate}}"
                 },
                 {
                     "Key": "Connections/Minio/MaverickCommand",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.corecommand}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.corecommand}}"
                 },
                 {
                     "Key": "Connections/Minio/MaverickTemporary",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.coretemporary}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.coretemporary}}"
                 },
                 {
                     "Key": "Connections/Minio/TemplateService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.minio.databases.template}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.template}}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/AuthenticationMethod",
-                    "Value": "{{ required "A valid identity authentication method is required." .Values.identity.openid.authenticationmethod }}"
+                    "Value": "{{ required "A valid identity authentication method is required." .Values.configOverwrites.identity.openid.authenticationmethod }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/Authority",
-                    "Value": "{{ required "A valid identity authority is required." .Values.identity.openid.authority }}"
+                    "Value": "{{ required "A valid identity authority is required." .Values.configOverwrites.identity.openid.authority }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/CallbackPath",
-                    "Value": "{{ required "A valid identity callback path is required." .Values.identity.openid.callbackpath }}"
+                    "Value": "{{ required "A valid identity callback path is required." .Values.configOverwrites.identity.openid.callbackpath }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/ClientId",
-                    "Value": "{{ required "A valid identity clientid is required." .Values.identity.openid.clientid }}"
+                    "Value": "{{ required "A valid identity clientid is required." .Values.configOverwrites.identity.openid.clientid }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/ClientSecret",
-                    "Value": "{{ required "A valid identity client secret is required." .Values.identity.openid.clientsecret }}"
+                    "Value": "{{ required "A valid identity client secret is required." .Values.configOverwrites.identity.openid.clientsecret }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/RemoteSignOutPath",
-                    "Value": "{{ required "A valid identity remote signout path is required." .Values.identity.openid.remotesignoutpath }}"
+                    "Value": "{{ required "A valid identity remote signout path is required." .Values.configOverwrites.identity.openid.remotesignoutpath }}"
                 },
                 {
                     "Key": "ServiceSettings/IdentityService/IssuerUri",
-                    "Value": "{{.Values.identity.issueruri}}"
+                    "Value": "{{.Values.configOverwrites.identity.issueruri}}"
                 },
                 {
                     "Key": "ServiceSettings/IdentityService/PublicOrigin",
-                    "Value": "{{.Values.identity.publicorigin}}"
+                    "Value": "{{.Values.configOverwrites.identity.publicorigin}}"
                 },
                 {
                     "Key": "ServiceSettings/IdentityService/HandleForwaredHeaders",
-                    "Value": "{{.Values.identity.handleforwardedheaders}}"
+                    "Value": "{{.Values.configOverwrites.identity.handleforwardedheaders}}"
                 },
                 {
                     "Key": "NamedEndpoints/Elasticsearch/Address",
-                    "Value": "{{ required "A valid elasticsearch server is required." .Values.elasticsearch.server }}"
+                    "Value": "{{ required "A valid elasticsearch server is required." .Values.configOverwrites.elasticsearch.server }}"
                 },
                 {
                     "Key": "NamedEndpoints/Elasticsearch/Port",
-                    "Value": "{{ required "A valid elasticsearch port is required." .Values.elasticsearch.port }}"
+                    "Value": "{{ required "A valid elasticsearch port is required." .Values.configOverwrites.elasticsearch.port }}"
                 },
                 {
                     "key": "ServiceSettings/IdentityService/clients/0004/AllowedCorsOrigins/0002",
-                    "value": "https://admin.{{- .Values.environment.domain -}}"
+                    "value": "https://admin.{{- .Values.configOverwrites.environment.domain -}}"
                 },
                 {
                     "key": "ServiceSettings/IdentityService/clients/0000/AllowedCorsOrigins/0001", 
-                    "value": "https://chatservice.{{- .Values.environment.domain -}}"
+                    "value": "https://chatservice.{{- .Values.configOverwrites.environment.domain -}}"
                 },
                 {
                     "key": "ServiceSettings/IdentityService/clients/0000/RedirectUris/0001",
-                    "value": "https://identity.{{- .Values.environment.domain -}}/signin-oidc"
+                    "value": "https://identity.{{- .Values.configOverwrites.environment.domain -}}/signin-oidc"
                 }    
             ]
         }

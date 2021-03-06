@@ -1,22 +1,30 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "Config.fullname" . }}-configservice-init
-  labels: {{ include "Config.labels" . | nindent 4 }}
+  name: {{ include "config.fullname" . }}-init
+  labels: {{ include "config.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade 
     "helm.sh/hook-weight": "6"
     "helm.sh/hook-delete-policy": hook-succeeded
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
 spec:
   template:
     metadata:
-      labels: {{ include "Config.selectorLabelsWorker" . | nindent 8 }}
+      labels: {{ include "config.labels.standard" . | nindent 8 }}
+        {{- if .Values.commonLabels }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+        {{- end }}
     spec:
-    {{- with .Values.imagePullSecrets }}
-      imagePullSecrets: {{ toYaml . | nindent 8 }}
-    {{- end }}
+      {{- include "config.imagePullSecrets" . | nindent 6 }}
       containers:
-      - image: {{ .Values.image.configservicecli.repository }}: {{- .Chart.AppVersion }}
+      - image: {{ include "cli.image" . }}
+        imagePullPolicy: {{ .Values.cliImage.pullPolicy | quote }}
         name: {{ .Chart.Name }}-configservice-init
         command: ["/bin/bash", "-c"]
         args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ .Chart.Name }} -f export_presales.json -f config/config-overwrite.json"]
@@ -25,7 +33,8 @@ spec:
           mountPath: /app/config
       initContainers:
       - name: {{ .Chart.Name }}-init-configservice
-        image: {{.Values.image.curl.repository}}: {{- .Values.image.curl.tag}}
+        image: {{ include "curl.image" . }}
+        imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
         command: ['sh', '-c', 'until curl http://{{ .Chart.Name }}; do echo waiting for configservice; sleep 5; done;']
       volumes:
         - name: config-env
