@@ -12,7 +12,7 @@ variables:
   - name: buildRuntime
     value: 'win10-x64'
   - name: netcoreSdkVersion
-    value: '3.1.100'
+    value: '3.1.x'
   - name: buildRevision
     value: $[counter(format('{0}-{1}', variables['Build.Repository.Name'], variables['Build.SourceBranchName']), 1)]
   # Helm
@@ -68,6 +68,7 @@ stages:
           parameters:
             projectLocation: $(projectLocation)
             projectFile: $(projectFile)
+            executeTests: false
 
         # build CLI
         - template: build-project.yaml@templates
@@ -76,26 +77,10 @@ stages:
             projectFile: $(projectFileCli)
             projectName: 'Cli'
             buildArguments: '-r $(buildRuntime)'
+            executeTests: false
 
-        # build test-project
-        - task: DotNetCoreCLI@2
-          displayName: 'build test-project'
-          inputs:
-            command: 'build'
-            projects: '*[Tt]est?(s)/**/*.[Tt]est?(s).csproj'
-            arguments: '-c $(buildConfiguration)'
-
-        # execute unit tests
-        - task: VSTest@2
-          displayName: 'execute unit tests via VSTest'
-          inputs:
-            testSelector: 'testAssemblies'
-            testAssemblyVer2: '[Tt]est?(s)/**/bin/**/*.[Tt]est?(s).dll'
-            searchFolder: '$(System.DefaultWorkingDirectory)'
-            rerunFailedTests: true
-            rerunType: basedOnTestFailurePercentage
-            rerunFailedThreshold: '33'
-            rerunMaxAttempts: '3'
+        # build and execute test-project
+        - template: build-and-exec-unit-tests.yaml@templates
 
         # publish the release-binaries back to AzureDevOps
         - task: PublishBuildArtifacts@1
