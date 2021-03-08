@@ -63,13 +63,6 @@ stages:
             packageType: 'sdk'
             version: '$(netcoreSdkVersion)'
 
-        # build Service
-        - template: build-project.yaml@templates
-          parameters:
-            projectLocation: $(projectLocation)
-            projectFile: $(projectFile)
-            executeTests: false
-
         # build CLI
         - template: build-project.yaml@templates
           parameters:
@@ -79,8 +72,12 @@ stages:
             buildArguments: '-r $(buildRuntime)'
             executeTests: false
 
-        # build and execute test-project
-        - template: build-and-exec-unit-tests.yaml@templates
+        # build Service
+        - template: build-project.yaml@templates
+          parameters:
+            projectLocation: $(projectLocation)
+            projectFile: $(projectFile)
+            executeTests: true
 
         # publish the release-binaries back to AzureDevOps
         - task: PublishBuildArtifacts@1

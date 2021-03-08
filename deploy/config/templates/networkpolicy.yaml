@@ -1,4 +1,3 @@
-  
 {{- if .Values.networkPolicy.enabled }}
 kind: NetworkPolicy
 apiVersion: {{ template "config.networkPolicy.apiVersion" . }}

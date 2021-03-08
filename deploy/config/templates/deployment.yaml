@@ -58,7 +58,7 @@ spec:
       {{- end }}
       {{- if .Values.app.securityContext.enabled }}
       securityContext: {{- omit .Values.app.securityContext "enabled" | toYaml | nindent 8 }}
-      {{- end }}      
+      {{- end }}
       {{- if .Values.serviceAccount.enabled }}
       serviceAccountName: {{ default (include "common.names.fullname" . ) .Values.serviceAccount.name}}
       {{- end }}
@@ -72,7 +72,7 @@ spec:
           image: {{ include "postgre.image" . }}
           imagePullPolicy: {{ .Values.postgreImage.pullPolicy | quote }}
           command: ['sh', '-c', 'until pg_isready -h {{- .Values.app.snapshotstore.server -}} -p {{- .Values.app.snapshotstore.port -}}; do echo waiting for postgres; sleep 2; done;']
-      {{- end -}}      
+      {{- end -}}
       {{- if or .Values.app.extraInitContainers -}}
       {{- include "common.tplvalues.render" ( dict "value" (coalesce .Values.app.extraInitContainers ) "context" $ ) | nindent 8 -}}
       {{- end }}
@@ -118,21 +118,21 @@ spec:
               value: "true"
             - name: SnapshotConfiguration__Stores__Postgres__ConnectionString
               value: {{ printf "Host=%s;Database=ConfigProjection;Port=%s;Id=%s;Password=%s;" .Values.app.snapshotstore.server .Values.app.snapshotstore.port .Values.app.snapshotstore.user .Values.app.snapshotstore.password }}
-            {{- else if eq .Values.app.snapshotstore.type "local" }}  
+            {{- else if eq .Values.app.snapshotstore.type "local" }}
             - name: SnapshotConfiguration__Stores__Local__Enabled
-              value: "true"          
-            {{- else if eq .Values.app.snapshotstore.type "memory" }}  
+              value: "true"
+            {{- else if eq .Values.app.snapshotstore.type "memory" }}
             - name: SnapshotConfiguration__Stores__Memory__Enabled
-              value: "true"          
-            {{- else }}    
+              value: "true"
+            {{- else }}
             - name: SnapshotConfiguration__Stores__Void__Enabled
-              value: "true"          
+              value: "true"
             {{- end }}
             - name: SnapshotConfiguration__Snapshots__Complete__0
               value: ""
             - name: SnapshotConfiguration__Snapshots__Complete__1
               value: ""
-            - name: LoggingConfiguration__NLog__Rules__0__writeTo    
+            - name: LoggingConfiguration__NLog__Rules__0__writeTo
               value: "blackhole"
             {{- if .Values.app.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.app.extraEnvVars "context" $) | nindent 12 }}

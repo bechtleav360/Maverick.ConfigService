@@ -24,7 +24,7 @@ appImage:
   #   - myRegistryKeySecretName
 
   ## Set to true if you would like to see extra information on logs
-  ## 
+  ##
   debug: false #NOT IMPLEMENTED YET
 
 cliImage:
@@ -43,7 +43,7 @@ cliImage:
   #   - myRegistryKeySecretName
 
   ## Set to true if you would like to see extra information on logs
-  ## 
+  ##
   debug: false #NOT IMPLEMENTED YET
 
 curlImage:
@@ -73,7 +73,7 @@ postgreImage:
   ##
   # pullSecrets:
   #   - myRegistryKeySecretName
-  
+
 #Settings to overwrite configuration
 #**************************************************
 configOverwrites:
@@ -114,17 +114,17 @@ configOverwrites:
       ups:
       # samuel:
       # samueltracker:
-  rabbitmq: 
+  rabbitmq:
     server:
-    port: 
+    port:
     username:
     password:
-  minio: 
-    server: 
-    port: 
-    https: 
-    username: 
-    password: 
+  minio:
+    server:
+    port:
+    https:
+    username:
+    password:
     databases:
       chatgroup: chatgroups
       chatprivate: chatprivate
@@ -141,7 +141,7 @@ configOverwrites:
       callbackpath:
       clientid:
       clientsecret:
-      remotesignoutpath: 
+      remotesignoutpath:
   elasticsearch:
     server:
     port:
@@ -186,7 +186,7 @@ app:
   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
   ##
   updateStrategyType: RollingUpdate
-  
+
   ## Deployment pod host aliases
   ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
   ##
@@ -213,7 +213,7 @@ app:
   ## Allowed values: soft, hard
   ##
   podAntiAffinityPreset: soft
-  
+
   ## config node affinity preset
   ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
   ## Allowed values: soft, hard
@@ -234,8 +234,8 @@ app:
     ##   - e2e-az1
     ##   - e2e-az2
     ##
-    values: []  
-  
+    values: []
+
   ## Affinity for config pods assignment
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   ## Note: postgresql.podAffinityPreset, postgresql.podAntiAffinityPreset, and postgresql.nodeAffinityPreset will be ignored when it's set
@@ -258,7 +258,7 @@ app:
   securityContext:
     enabled: true
     fsGroup: 1001
-  
+
   ## Container Security Context
   ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   ##
@@ -425,7 +425,7 @@ service:
   ## denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
   ## https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
   ##
-  # externalTrafficPolicy: 
+  # externalTrafficPolicy:
 
 ## NetworkPolicy parameters
 ##
@@ -440,11 +440,11 @@ networkPolicy:
   allowExternal: true
 
 ################# NOT TESTED YET ##################
-## Config Prometheus exporter parameters 
+## Config Prometheus exporter parameters
 ##
 metrics:
   enabled: false
-  
+
   ## Annotations for Prometheus exporter
   ##
   annotations:
