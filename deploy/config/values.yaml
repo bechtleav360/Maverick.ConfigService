@@ -485,7 +485,7 @@ metrics:
   ##
   annotations:
     prometheus.io/scrape: "true"
-    prometheus.io/port: "9187"
+    prometheus.io/port: "8080"
 
   ## Enable this if you're using Prometheus Operator
   ##

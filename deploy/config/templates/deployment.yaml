@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
   name: {{ include "app.fullname" . }}
@@ -96,11 +96,11 @@ spec:
           image: {{ include "app.image" . }}
           imagePullPolicy: {{ .Values.configImage.pullPolicy | quote }}
           {{- if .Values.config.containerSecurityContext.enabled }}
-          securityContext: {{- omit .Values.config.containerSecurityContext "enabled" | toYaml | nindent 10 }}
+          securityContext: {{- omit .Values.config.containerSecurityContext "enabled" | toYaml | nindent 12 }}
           {{- end }}
           env:
             - name: ASPNETCORE_URLS
-              value: http://*:80
+              value: http://*:8080
             - name: EventstoreConnection__Uri
               value: {{ printf "tcp://%s:%s@%s:1113" .Values.config.eventstore.username .Values.config.eventstore.password .Values.config.eventstore.server }}
             {{- if .Values.config.redis.server }}
@@ -148,7 +148,7 @@ spec:
             {{- end }}
           ports:
           - name: http
-            containerPort: 80
+            containerPort: 8080
             protocol: TCP
           {{- if .Values.config.livenessProbe.enabled }}
           livenessProbe:
@@ -156,7 +156,7 @@ spec:
               command:
                 - bash
                 - -ec
-                - 'curl http://localhost'
+                - 'curl http://localhost:8080/swagger/index.html'
             initialDelaySeconds: {{ .Values.config.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.config.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.config.livenessProbe.timeoutSeconds }}
@@ -171,7 +171,7 @@ spec:
               command:
                 - bash
                 - -ec
-                - 'curl http://localhost'
+                - 'curl http://localhost:8080/swagger/index.html'
             initialDelaySeconds: {{ .Values.config.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.config.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.config.readinessProbe.timeoutSeconds }}
@@ -181,6 +181,6 @@ spec:
           readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.config.customReadinessProbe "context" $) | nindent 10 }}
           {{- end }}
           {{- if .Values.config.resources }}
-          resources: {{- toYaml .Values.config.resources | nindent 10 }}
+          resources: {{- toYaml .Values.config.resources | nindent 12 }}
           {{- end }}
       restartPolicy: Always
