@@ -8,7 +8,7 @@
 #     - myRegistryKeySecretName
 #   storageClass: myStorageClass
 
-configImage:
+appImage:
   registry: maverick.azurecr.io
   repository: maverick/configservice
   ## If tag is not specified, .Chart.AppVersion will be used
@@ -149,7 +149,7 @@ configOverwrites:
 
 #Settings to configure configuration service
 #**************************************************
-config:
+app:
   snapshotstore:
     type: memory
     ## set if externel snapshotstore is used

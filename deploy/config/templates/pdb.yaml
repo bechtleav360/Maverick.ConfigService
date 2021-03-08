@@ -1,4 +1,4 @@
-{{- if .Values.config.pdb.create }}
+{{- if .Values.app.pdb.create }}
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
@@ -12,11 +12,11 @@ metadata:
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 spec:
-  {{- if .Values.config.pdb.minAvailable }}
-  minAvailable: {{ .Values.config.pdb.minAvailable }}
+  {{- if .Values.app.pdb.minAvailable }}
+  minAvailable: {{ .Values.app.pdb.minAvailable }}
   {{- end }}
-  {{- if .Values.config.pdb.maxUnavailable }}
-  maxUnavailable: {{ .Values.config.pdb.maxUnavailable }}
+  {{- if .Values.app.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.app.pdb.maxUnavailable }}
   {{- end }}
   selector:
     matchLabels: {{- include "app.labels.matchLabels" . | nindent 6 }}

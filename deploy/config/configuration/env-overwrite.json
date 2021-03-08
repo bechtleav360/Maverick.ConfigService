@@ -194,7 +194,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/SignalR/Address",
-                    "Value": "{{- .Values.config.eventbus.server -}}"
+                    "Value": "{{- .Values.configOverwrites.eventbus.server -}}"
                 },
                 {
                     "Key": "NamedEndpoints/SignalR-External/Address",
@@ -210,7 +210,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/EventStoreService/Address",
-                    "Value": "admin:{{.Values.config.eventstore.password}}@{{- .Values.config.eventstore.server -}}"
+                    "Value": "admin:{{.Values.configOverwrites.eventstore.password}}@{{- .Values.app.eventstore.server -}}"
                 },
                 {
                     "Key": "NamedEndpoints/UserProfileService-External/Address",
@@ -266,7 +266,7 @@
                 },
                 {
                     "Key": "ApplicationEndpoints/Redis/Address",
-                    "Value": "{{- .Values.config.redis.server -}}"
+                    "Value": "{{- .Values.configOverwrites.redis.server -}}"
                 },
                 {
                     "Description": "string",

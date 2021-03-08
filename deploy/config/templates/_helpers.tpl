@@ -40,7 +40,7 @@ Return the proper image name
 Return the proper Service image name
 */}}
 {{- define "app.image" -}}
-{{ include "app.images.image" (dict "imageRoot" .Values.configImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
+{{ include "app.images.image" (dict "imageRoot" .Values.appImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
 {{- end -}}
 
 {{/*
@@ -68,7 +68,7 @@ Return the proper postgre image name
 Return the proper Docker Image Registry Secret Names
 */}}
 {{- define "config.imagePullSecrets" -}}
-{{- include "common.images.pullSecrets" (dict "images" (list .Values.configImage .Values.cliImage .Values.curlImage .Values.postgreImage) "global" .Values.global) -}}
+{{- include "common.images.pullSecrets" (dict "images" (list .Values.appImage .Values.cliImage .Values.curlImage .Values.postgreImage) "global" .Values.global) -}}
 {{- end -}}
 
 {{/*
