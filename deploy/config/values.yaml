@@ -364,11 +364,11 @@ config:
 
 #**************************************************
 
-## String to partially override config.fullname template (will maintain the release name)
+## String to partially override app.fullname template (will maintain the release name)
 ##
 # nameOverride:
 
-## String to fully override config.fullname template
+## String to fully override app.fullname template
 ##
 # fullnameOverride:
 

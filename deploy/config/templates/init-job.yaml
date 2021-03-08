@@ -1,8 +1,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "config.fullname" . }}-init
-  labels: {{ include "config.labels.standard" . | nindent 4 }}
+  name: {{ include "app.fullname" . }}-init
+  labels: {{ include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: init
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
@@ -16,7 +17,8 @@ metadata:
 spec:
   template:
     metadata:
-      labels: {{ include "config.labels.standard" . | nindent 8 }}
+      labels: {{ include "app.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: init
         {{- if .Values.commonLabels }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
         {{- end }}
@@ -25,14 +27,14 @@ spec:
       containers:
       - image: {{ include "cli.image" . }}
         imagePullPolicy: {{ .Values.cliImage.pullPolicy | quote }}
-        name: {{ .Chart.Name }}-configservice-init
+        name: {{ include "app.fullname" . }}-init
         command: ["/bin/bash", "-c"]
         args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ .Chart.Name }} -f export_presales.json -f config/config-overwrite.json"]
         volumeMounts:
         - name: config-env
           mountPath: /app/config
       initContainers:
-      - name: {{ .Chart.Name }}-init-configservice
+      - name: {{ include "app.fullname" . }}-init-init
         image: {{ include "curl.image" . }}
         imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
         command: ['sh', '-c', 'until curl http://{{ .Chart.Name }}; do echo waiting for configservice; sleep 5; done;']

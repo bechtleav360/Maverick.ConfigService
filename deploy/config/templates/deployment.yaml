@@ -1,10 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "config.fullname" . }}
-  labels: {{- include "config.labels.standard" . | nindent 4 }}
-    {{- if .Values.config.labels }}
-    {{- include "common.tplvalues.render" (dict "value" .Values.config.labels "context" $) | nindent 4 }}
+  name: {{ include "app.fullname" . }}
+  labels: {{- include "app.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: service
+    {{- if .Values.app.labels.}}
+    {{- include "common.tplvalues.render" (dict "value" .Values.app.labels."context" $) | nindent 4 }}
     {{- end }}
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
@@ -15,10 +16,12 @@ metadata:
 spec:
   replicas: {{ .Values.config.replicaCount }}
   selector:
-    matchLabels: {{- include "config.labels.matchLabels" . | nindent 6 }}
+    matchLabels: {{- include "app.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: service
   template:
     metadata:
-      labels: {{- include "config.labels.standard" . | nindent 8 }}
+      labels: {{- include "app.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: service
         {{- if .Values.config.podLabels }}
         {{- include "common.tplvalues.render" (dict "value" .Values.config.podLabels "context" $) | nindent 8 }}
         {{- end }}
@@ -90,7 +93,7 @@ spec:
           {{- if .Values.config.args }}
           args: {{- include "common.tplvalues.render" (dict "value" .Values.config.args "context" $) | nindent 12 }}
           {{- end }}
-          image: {{ include "config.image" . }}
+          image: {{ include "app.image" . }}
           imagePullPolicy: {{ .Values.configImage.pullPolicy | quote }}
           {{- if .Values.config.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.config.containerSecurityContext "enabled" | toYaml | nindent 10 }}

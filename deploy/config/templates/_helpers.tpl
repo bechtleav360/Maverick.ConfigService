@@ -3,7 +3,7 @@
 {{/*
 Fully qualified app name for PostgreSQL
 */}}
-{{- define "config.fullname" -}}
+{{- define "app.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- printf "%s" .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -20,7 +20,7 @@ Fully qualified app name for PostgreSQL
 Return the proper image name
 {{ include "common.images.image" ( dict "imageRoot" .Values.path.to.the.image "global" $) }}
 */}}
-{{- define "config.images.image" -}}
+{{- define "app.images.image" -}}
 {{- $registryName := .imageRoot.registry -}}
 {{- $repositoryName := .imageRoot.repository -}}
 {{- $tag := default .defaultTag .imageRoot.tag | toString -}}
@@ -39,29 +39,29 @@ Return the proper image name
 {{/*
 Return the proper Service image name
 */}}
-{{- define "config.image" -}}
-{{ include "config.images.image" (dict "imageRoot" .Values.configImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
+{{- define "app.image" -}}
+{{ include "app.images.image" (dict "imageRoot" .Values.configImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
 {{- end -}}
 
 {{/*
 Return the proper CLI image name
 */}}
 {{- define "cli.image" -}}
-{{ include "config.images.image" (dict "imageRoot" .Values.cliImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
+{{ include "app.images.image" (dict "imageRoot" .Values.cliImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
 {{- end -}}
 
 {{/*
 Return the proper curl image name
 */}}
 {{- define "curl.image" -}}
-{{ include "config.images.image" (dict "imageRoot" .Values.curlImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
+{{ include "app.images.image" (dict "imageRoot" .Values.curlImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
 {{- end -}}
 
 {{/*
 Return the proper postgre image name
 */}}
 {{- define "postgre.image" -}}
-{{ include "config.images.image" (dict "imageRoot" .Values.postgreImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
+{{ include "app.images.image" (dict "imageRoot" .Values.postgreImage "global" .Values.global "defaultTag" .Chart.AppVersion) }}
 {{- end -}}
 
 {{/*
@@ -72,24 +72,15 @@ Return the proper Docker Image Registry Secret Names
 {{- end -}}
 
 {{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "Config.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-
-{{/*
 Common labels
 */}}
-{{- define "config.labels.standard" -}}
+{{- define "app.labels.standard" -}}
 {{ include "common.labels.standard" . }}
-app.kubernetes.io/component: config
 {{- end -}}
 
 {{/*
 match labels
 */}}
-{{- define "config.labels.matchLabels" -}}
+{{- define "app.labels.matchLabels" -}}
 {{ include "common.labels.matchLabels" . }}
-app.kubernetes.io/component: config
 {{- end -}}
