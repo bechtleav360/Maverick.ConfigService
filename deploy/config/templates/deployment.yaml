@@ -183,7 +183,12 @@ spec:
           {{- if .Values.app.resources }}
           resources: {{- toYaml .Values.app.resources | nindent 12 }}
           {{- end }}
-          {{- if .Values.config.resources }}
-          resources: {{- toYaml .Values.config.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.app.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.app.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.app.extraVolumes }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.app.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
       restartPolicy: Always
