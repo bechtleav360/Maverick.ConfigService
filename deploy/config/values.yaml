@@ -167,6 +167,9 @@ config:
     server:
     password:
 
+  ## Job to import default configuration
+  initJob:
+    enabled: false
   ## Labels to add to the StatefulSet. Evaluated as template
   ##
   labels: {}
@@ -435,52 +438,13 @@ networkPolicy:
   ## (with the correct destination port).
   ##
   allowExternal: true
-  
-################# NOT IMPLEMENTET YET ##################
+
+################# NOT TESTED YET ##################
 ## Config Prometheus exporter parameters 
 ##
 metrics:
   enabled: false
-  ## K8s Security Context
-  ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-  ##
-  securityContext:
-    enabled: true
-    runAsUser: 1001
-
-  ## Prometheus exporter containers' resource requests and limits
-  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  ##
-  resources:
-    # We usually recommend not to specify default resources and to leave this as a conscious
-    # choice for the user. This also increases chances charts run on environments with little
-    # resources, such as Minikube. If you do want to specify resources, uncomment the following
-    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-    limits: {}
-    #   cpu: 250m
-    #   memory: 256Mi
-    requests: {}
-    #   cpu: 250m
-    #   memory: 256Mi
-
-  ## Prometheus exporter container's liveness and readiness probes
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  livenessProbe:
-    enabled: true
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 5
-    successThreshold: 1
-    failureThreshold: 6
-  readinessProbe:
-    enabled: true
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    timeoutSeconds: 5
-    successThreshold: 1
-    failureThreshold: 6
-
+  
   ## Annotations for Prometheus exporter
   ##
   annotations:

@@ -1,3 +1,4 @@
+{{- if .Values.config.initJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -23,21 +24,47 @@ spec:
         {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
         {{- end }}
     spec:
-      {{- include "config.imagePullSecrets" . | nindent 6 }}
+      {{- include "config.imagePullSecrets" . | nindent 6 -}}
+      {{- if .Values.config.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.config.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.config.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.config.podAffinityPreset "component" "config" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.config.podAntiAffinityPreset "component" "config" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.config.nodeAffinityPreset.type "key" .Values.config.nodeAffinityPreset.key "values" .Values.config.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.config.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.config.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.config.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.priorityClassName }}
+      priorityClassName: {{ .Values.config.priorityClassName }}
+      {{- end }}
+      {{- if .Values.config.securityContext.enabled }}
+      securityContext: {{- omit .Values.config.securityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}      
+      {{- if .Values.serviceAccount.enabled }}
+      serviceAccountName: {{ default (include "common.names.fullname" . ) .Values.serviceAccount.name}}
+      {{- end }}
+      initContainers:
+      - name: {{ include "app.fullname" . }}-init-init
+        image: {{ include "curl.image" . }}
+        imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
+        command: ['sh', '-c', 'until curl http://{{ include "app.fullname" . }}; do echo waiting for configservice; sleep 5; done;']
       containers:
       - image: {{ include "cli.image" . }}
         imagePullPolicy: {{ .Values.cliImage.pullPolicy | quote }}
         name: {{ include "app.fullname" . }}-init
         command: ["/bin/bash", "-c"]
-        args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ .Chart.Name }} -f export_presales.json -f config/config-overwrite.json"]
+        args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ include "app.fullname" . }} -f export_presales.json -f config/config-overwrite.json"]
         volumeMounts:
         - name: config-env
           mountPath: /app/config
-      initContainers:
-      - name: {{ include "app.fullname" . }}-init-init
-        image: {{ include "curl.image" . }}
-        imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
-        command: ['sh', '-c', 'until curl http://{{ .Chart.Name }}; do echo waiting for configservice; sleep 5; done;']
       volumes:
         - name: config-env
           configMap:
@@ -49,3 +76,4 @@ spec:
               path: config-overwrite.json
       restartPolicy: OnFailure
 status: {}
+{{- end -}}
