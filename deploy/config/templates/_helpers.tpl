@@ -70,17 +70,3 @@ Return the proper Docker Image Registry Secret Names
 {{- define "config.imagePullSecrets" -}}
 {{- include "common.images.pullSecrets" (dict "images" (list .Values.appImage .Values.cliImage .Values.curlImage .Values.postgreImage) "global" .Values.global) -}}
 {{- end -}}
-
-{{/*
-Common labels
-*/}}
-{{- define "app.labels.standard" -}}
-{{ include "common.labels.standard" . }}
-{{- end -}}
-
-{{/*
-match labels
-*/}}
-{{- define "app.labels.matchLabels" -}}
-{{ include "common.labels.matchLabels" . }}
-{{- end -}}

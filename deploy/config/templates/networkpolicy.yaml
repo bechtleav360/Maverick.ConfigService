@@ -3,7 +3,7 @@ kind: NetworkPolicy
 apiVersion: {{ template "config.networkPolicy.apiVersion" . }}
 metadata:
   name: {{ include "common.names.fullname" . }}
-  labels: {{- include "app.labels.standard" . | nindent 4 }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: service
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
@@ -13,7 +13,7 @@ metadata:
   {{- end }}
 spec:
   podSelector:
-    matchLabels: {{ include "app.labels.matchLabels" . | nindent 6 }}
+    matchLabels: {{ include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: service
   ingress:
     # Allow inbound connections
@@ -25,7 +25,7 @@ spec:
             matchLabels:
               {{ template "common.names.fullname" . }}-client: "true"
         - podSelector:
-            matchLabels: {{- include "app.labels.matchLabels" . | nindent 14 }}
+            matchLabels: {{- include "common.labels.matchLabels" . | nindent 14 }}
               app.kubernetes.io/component: service
       {{- end }}
     # Allow prometheus scrapes

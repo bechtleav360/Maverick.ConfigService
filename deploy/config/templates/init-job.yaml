@@ -3,7 +3,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "app.fullname" . }}-init
-  labels: {{ include "app.labels.standard" . | nindent 4 }}
+  labels: {{ include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: init
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
@@ -18,7 +18,7 @@ metadata:
 spec:
   template:
     metadata:
-      labels: {{ include "app.labels.standard" . | nindent 8 }}
+      labels: {{ include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: init
         {{- if .Values.commonLabels }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
