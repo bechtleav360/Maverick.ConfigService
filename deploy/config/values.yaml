@@ -257,14 +257,14 @@ app:
   ##
   securityContext:
     enabled: true
-    fsGroup: 1001
+    fsGroup: 1000648080
 
   ## Container Security Context
   ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   ##
   containerSecurityContext:
     enabled: true
-    runAsUser: 1001
+    runAsUser: 1000648080
 
   ## Custom Liveness probe
   ##
