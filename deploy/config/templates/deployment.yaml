@@ -80,12 +80,6 @@ spec:
         - name: {{ .Chart.Name }}
           {{- if .Values.app.lifecycleHooks }}
           lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.app.lifecycleHooks "context" $) | nindent 12 }}
-          {{- else }}
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                  - /pre-stop.sh
           {{- end }}
           {{- if .Values.app.command }}
           command: {{- include "common.tplvalues.render" (dict "value" .Values.app.command "context" $) | nindent 12 }}
