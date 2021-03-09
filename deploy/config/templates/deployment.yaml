@@ -18,6 +18,9 @@ spec:
   selector:
     matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: service
+  {{- if .Values.operator.updateStrategy }}
+  strategy: {{ toYaml .Values.operator.updateStrategy | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}

@@ -13,10 +13,12 @@ appImage:
   repository: maverick/configservice
   ## If tag is not specified, .Chart.AppVersion will be used
   # tag:
+
   ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   ##
   pullPolicy: IfNotPresent
+  
   ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
@@ -30,12 +32,15 @@ appImage:
 cliImage:
   registry: maverick.azurecr.io
   repository: maverick/configservice-cli
+
   ## If tag is not specified, .Chart.AppVersion will be used
   # tag:
+
   ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   ##
   pullPolicy: IfNotPresent
+
   ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
@@ -50,10 +55,12 @@ curlImage:
   registry: docker.io
   repository: curlimages/curl
   tag: 7.66.0
+
   ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   ##
   pullPolicy: IfNotPresent
+
   ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
@@ -64,10 +71,12 @@ postgreImage:
   registry: docker.io
   repository: postgres
   tag: latest
+
   ## Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   ##
   pullPolicy: IfNotPresent
+
   ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
@@ -170,11 +179,12 @@ app:
   ## Job to import default configuration
   initJob:
     enabled: false
-  ## Labels to add to the StatefulSet. Evaluated as template
+
+  ## Labels to add to the Deployment. Evaluated as template
   ##
   labels: {}
 
-  ## Labels to add to the StatefulSet pods. Evaluated as template
+  ## Labels to add to the Deployment pods. Evaluated as template
   ##
   podLabels: {}
 
@@ -182,10 +192,17 @@ app:
   ##
   replicaCount: 1
 
-  ## Update strategy for PostgreSQL statefulset
-  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  ## Set up update strategy for installation. Set to Recreate if you use persistent volume that cannot be mounted by more than one pods to makesure the pods is destroyed first.
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  ## Example:
+  ## updateStrategy:
+  ##  type: RollingUpdate
+  ##  rollingUpdate:
+  ##    maxSurge: 25%
+  ##    maxUnavailable: 25%
   ##
-  updateStrategyType: RollingUpdate
+  updateStrategy:
+    type: RollingUpdate
 
   ## Deployment pod host aliases
   ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
