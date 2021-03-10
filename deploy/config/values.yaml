@@ -18,7 +18,7 @@ appImage:
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   ##
   pullPolicy: IfNotPresent
-  
+
   ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   ##
@@ -123,10 +123,19 @@ configOverwrites:
       ups:
       # samuel:
       # samueltracker:
+  eventstore:
+    server:
+    username:
+    password:
+  eventbus:
+    server:
   rabbitmq:
     server:
     port:
     username:
+    password:
+  redis:
+    server:
     password:
   minio:
     server:
@@ -156,7 +165,7 @@ configOverwrites:
     port:
 #**************************************************
 
-#Settings to configure configuration service
+#Settings to configure service
 #**************************************************
 app:
   snapshotstore:

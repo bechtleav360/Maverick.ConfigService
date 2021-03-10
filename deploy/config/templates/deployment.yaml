@@ -18,8 +18,8 @@ spec:
   selector:
     matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: service
-  {{- if .Values.operator.updateStrategy }}
-  strategy: {{ toYaml .Values.operator.updateStrategy | nindent 4 }}
+  {{- if .Values.app.updateStrategy }}
+  strategy: {{ toYaml .Values.app.updateStrategy | nindent 4 }}
   {{- end }}
   template:
     metadata:
@@ -38,7 +38,7 @@ spec:
       {{- end }}
       {{- end }}
     spec:
-      {{- include "config.imagePullSecrets" . | nindent 6 -}}
+      {{- include "app.images.pullSecrets" . | nindent 6 -}}
       {{- if .Values.app.hostAliases }}
       hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.app.hostAliases "context" $) | nindent 8 }}
       {{- end }}
@@ -125,10 +125,6 @@ spec:
             - name: SnapshotConfiguration__Stores__Void__Enabled
               value: "true"
             {{- end }}
-            - name: SnapshotConfiguration__Snapshots__Complete__0
-              value: ""
-            - name: SnapshotConfiguration__Snapshots__Complete__1
-              value: ""
             - name: LoggingConfiguration__NLog__Rules__0__writeTo
               value: "blackhole"
             {{- if .Values.app.extraEnvVars }}

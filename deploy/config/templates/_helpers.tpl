@@ -67,6 +67,6 @@ Return the proper postgre image name
 {{/*
 Return the proper Docker Image Registry Secret Names
 */}}
-{{- define "config.imagePullSecrets" -}}
+{{- define "app.images.pullSecrets" -}}
 {{- include "common.images.pullSecrets" (dict "images" (list .Values.appImage .Values.cliImage .Values.curlImage .Values.postgreImage) "global" .Values.global) -}}
 {{- end -}}
