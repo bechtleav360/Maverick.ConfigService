@@ -70,3 +70,14 @@ Return the proper Docker Image Registry Secret Names
 {{- define "app.images.pullSecrets" -}}
 {{- include "common.images.pullSecrets" (dict "images" (list .Values.appImage .Values.cliImage .Values.curlImage .Values.postgreImage) "global" .Values.global) -}}
 {{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "app.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+    {{ default (include "common.names.fullname" .) .Values.serviceAccount.name }}
+{{- else -}}
+    {{ default "" .Values.serviceAccount.name }}
+{{- end -}}
+{{- end -}}

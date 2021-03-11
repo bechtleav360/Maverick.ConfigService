@@ -48,9 +48,7 @@ spec:
       {{- if .Values.app.securityContext.enabled }}
       securityContext: {{- omit .Values.app.securityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
-      {{- if .Values.serviceAccount.enabled }}
-      serviceAccountName: {{ default (include "common.names.fullname" . ) .Values.serviceAccount.name}}
-      {{- end }}
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
       initContainers:
       - name: {{ include "app.fullname" . }}-init-init
         image: {{ include "curl.image" . }}

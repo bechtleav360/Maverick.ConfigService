@@ -403,9 +403,9 @@ app:
 
 serviceAccount:
   # Specifies whether a service account should be created
-  enabled: false
+  create: false
   # The name of the service account to use.
-  # If not set and enabled is true, a name is generated using the fullname template
+  # If not set and create is true, a name is generated using the fullname template
   # name:
 
 ## Common annotations to add to all resources (sub-charts are not considered). Evaluated as a template
