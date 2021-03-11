@@ -46,8 +46,8 @@ spec:
       affinity: {{- include "common.tplvalues.render" (dict "value" .Values.app.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
-        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.app.podAffinityPreset "component" "config" "context" $) | nindent 10 }}
-        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.app.podAntiAffinityPreset "component" "config" "context" $) | nindent 10 }}
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.app.podAffinityPreset "component" "service" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.app.podAntiAffinityPreset "component" "service" "context" $) | nindent 10 }}
         nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.app.nodeAffinityPreset.type "key" .Values.app.nodeAffinityPreset.key "values" .Values.app.nodeAffinityPreset.values) | nindent 10 }}
       {{- end }}
       {{- if .Values.app.nodeSelector }}

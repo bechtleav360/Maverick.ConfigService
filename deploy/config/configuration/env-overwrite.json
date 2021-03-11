@@ -1,8 +1,8 @@
 {
     "Environments": [
         {
-            "Category": "{{ .Values.configOverwrites.configuration.category }}",
-            "Name": "{{ .Values.configOverwrites.configuration.name }}",
+            "Category": "{{ .Values.initJob.configOverwrites.environment.category }}",
+            "Name": "{{ .Values.initJob.configOverwrites.environment.name }}",
             "Keys": [
                 {
                     "Key": "NamedEndpoints/IdentityService/Address",
@@ -10,7 +10,7 @@
                 },
                 {
                     "Key": "ApplicationEndpoints/Minio/Secret",
-                    "Value": "{{.Values.configOverwrites.minio.password}}"
+                    "Value": "{{.Values.initJob.configOverwrites.minio.password}}"
                 },
                 {
                     "Key": "NamedEndpoints/IdentityService/Protocol",
@@ -18,7 +18,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/AdminService-External/Address",
-                    "Value": "admin. {{- .Values.configOverwrites.environment.domain }}"
+                    "Value": "admin. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/AdminService-External/Port",
@@ -30,7 +30,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/ChatService-External/Address",
-                    "Value": "chat. {{- .Values.configOverwrites.environment.domain }}"
+                    "Value": "chat. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/ChatService-External/Port",
@@ -42,7 +42,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/WebDav-External/Address",
-                    "Value": "file. {{- .Values.configOverwrites.environment.domain }}"
+                    "Value": "file. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/WebDav-External/Port",
@@ -54,7 +54,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/IdentityService-External/Address",
-                    "Value": "identity. {{- .Values.configOverwrites.environment.domain }}"
+                    "Value": "identity. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/IdentityService-External/Port",
@@ -68,7 +68,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/EntityBits-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "core. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/EntityBits-External/Port",
@@ -82,7 +82,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/EntitySources-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "core. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/EntitySources-External/Port",
@@ -96,7 +96,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/FeedbackMail-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "core. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/FeedbackMail-External/Port",
@@ -110,7 +110,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/Help-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "core. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/Help-External/Port",
@@ -124,7 +124,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/Maverick-External/Address",
                   "Type": "",
-                  "Value": "core. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "core. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/Maverick-External/Port",
@@ -138,7 +138,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/TaskService-External/Address",
                   "Type": "",
-                  "Value": "task. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "task. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/TaskService-External/Port",
@@ -152,7 +152,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/WopiService-External/Address",
                   "Type": "",
-                  "Value": "wopi. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "wopi. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/WopiService-External/Port",
@@ -166,7 +166,7 @@
                   "Description": "",
                   "Key": "NamedEndpoints/Xmpp-External/Address",
                   "Type": "",
-                  "Value": "chat. {{- .Values.configOverwrites.environment.domain }}"
+                  "Value": "chat. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                   "Description": "",
@@ -182,7 +182,7 @@
                 },
                 {
                     "Key": "NamedEndpoints/PreviewService-External/Address",
-                    "Value": "preview. {{- .Values.configOverwrites.environment.domain }}"
+                    "Value": "preview. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/PreviewService-External/Port",
@@ -194,11 +194,11 @@
                 },
                 {
                     "Key": "NamedEndpoints/SignalR/Address",
-                    "Value": "{{- .Values.configOverwrites.eventbus.server -}}"
+                    "Value": "{{- .Values.initJob.configOverwrites.eventbus.server -}}"
                 },
                 {
                     "Key": "NamedEndpoints/SignalR-External/Address",
-                    "Value": "websocket. {{- .Values.configOverwrites.environment.domain }}"
+                    "Value": "websocket. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/SignalR-External/Port",
@@ -210,11 +210,11 @@
                 },
                 {
                     "Key": "NamedEndpoints/EventStoreService/Address",
-                    "Value": "admin:{{.Values.configOverwrites.eventstore.password}}@{{- .Values.app.eventstore.server -}}"
+                    "Value": "admin:{{.Values.initJob.configOverwrites.eventstore.password}}@{{- .Values.app.eventstore.server -}}"
                 },
                 {
                     "Key": "NamedEndpoints/UserProfileService-External/Address",
-                    "Value": "userprofileservice. {{- .Values.configOverwrites.environment.domain }}"
+                    "Value": "userprofileservice. {{- .Values.initJob.configOverwrites.environment.domain }}"
                 },
                 {
                     "Key": "NamedEndpoints/UserProfileService-External/Port",
@@ -234,203 +234,203 @@
                 },
                 {
                     "Key": "Connections/Minio/Properties/Secret",
-                    "Value": "{{ required "A valid minio secret is required." .Values.configOverwrites.minio.password -}}"
+                    "Value": "{{ required "A valid minio secret is required." .Values.initJob.configOverwrites.minio.password -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/User",
-                    "Value": "{{ required "A valid minio username is required." .Values.configOverwrites.minio.username -}}"
+                    "Value": "{{ required "A valid minio username is required." .Values.initJob.configOverwrites.minio.username -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/Hostname",
-                    "Value": "{{ required "A valid minio server is required." .Values.configOverwrites.minio.server -}}"
+                    "Value": "{{ required "A valid minio server is required." .Values.initJob.configOverwrites.minio.server -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/Https",
-                    "Value": "{{ required "A valid minio protocol setting is required." .Values.configOverwrites.minio.https -}}"
+                    "Value": "{{ required "A valid minio protocol setting is required." .Values.initJob.configOverwrites.minio.https -}}"
                 },
                 {
                     "Key": "Connections/Minio/Properties/Port",
-                    "Value": "{{ required "A valid minio port is required." .Values.configOverwrites.minio.port -}}"
+                    "Value": "{{ required "A valid minio port is required." .Values.initJob.configOverwrites.minio.port -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/RabbitMQ/HostName",
-                    "Value": "{{- .Values.configOverwrites.rabbitmq.server -}}"
+                    "Value": "{{- .Values.initJob.configOverwrites.rabbitmq.server -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/RabbitMQ/User",
-                    "Value": "{{- .Values.configOverwrites.rabbitmq.username -}}"
+                    "Value": "{{- .Values.initJob.configOverwrites.rabbitmq.username -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/RabbitMQ/Password",
-                    "Value": "{{- .Values.configOverwrites.rabbitmq.password -}}"
+                    "Value": "{{- .Values.initJob.configOverwrites.rabbitmq.password -}}"
                 },
                 {
                     "Key": "ApplicationEndpoints/Redis/Address",
-                    "Value": "{{- .Values.configOverwrites.redis.server -}}"
+                    "Value": "{{- .Values.initJob.configOverwrites.redis.server -}}"
                 },
                 {
                     "Description": "string",
                     "Key": "Connections/Sql/Properties/ConnectionString",
                     "Type": "string",
-                    "Value": "Data Source={{- .Values.configOverwrites.sql.server -}}; Integrated Security=False; User Id={{ required "A valid sql username is required." .Values.configOverwrites.sql.username -}}; Password={{ required "A valid sql password is required." .Values.configOverwrites.sql.password -}};"
+                    "Value": "Data Source={{- .Values.initJob.configOverwrites.sql.server -}}; Integrated Security=False; User Id={{ required "A valid sql username is required." .Values.initJob.configOverwrites.sql.username -}}; Password={{ required "A valid sql password is required." .Values.initJob.configOverwrites.sql.password -}};"
                 },
                 {
                     "Key": "ApplicationEndpoints/SQLServer/PartialConnectionString",
-                    "Value": "Data Source={{ required "A valid sql server is required." .Values.configOverwrites.sql.server -}};Integrated Security=False;User Id={{ required "A valid sql username is required." .Values.configOverwrites.sql.username -}};Password={{ required "A valid sql password is required." .Values.configOverwrites.sql.password -}};"
+                    "Value": "Data Source={{ required "A valid sql server is required." .Values.initJob.configOverwrites.sql.server -}};Integrated Security=False;User Id={{ required "A valid sql username is required." .Values.initJob.configOverwrites.sql.username -}};Password={{ required "A valid sql password is required." .Values.initJob.configOverwrites.sql.password -}};"
                 },
                 {
                     "Description": "string",
                     "Key": "ApplicationEndpoints/Redis/ConnectionString",
                     "Type": "string",
-                    "Value": "{{"{{"}}$this/Address}}:{{"{{"}}$this/Port}},Password={{ required "A valid redis password is required." .Values.configOverwrites.redis.password -}},ConnectTimeout=10000,ConnectRetry=4"
+                    "Value": "{{"{{"}}$this/Address}}:{{"{{"}}$this/Port}},Password={{ required "A valid redis password is required." .Values.initJob.configOverwrites.redis.password -}},ConnectTimeout=10000,ConnectRetry=4"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Server",
-                    "Value": "{{ required "A valid arango db server name is required." .Values.configOverwrites.arango.server }}"
+                    "Value": "{{ required "A valid arango db server name is required." .Values.initJob.configOverwrites.arango.server }}"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Username",
-                    "Value": "{{ required "A valid arango db user is required." .Values.configOverwrites.arango.username }}"
+                    "Value": "{{ required "A valid arango db user is required." .Values.initJob.configOverwrites.arango.username }}"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Password",
-                    "Value": "{{ required "A valid arango db password is required." .Values.configOverwrites.arango.password }}"
+                    "Value": "{{ required "A valid arango db password is required." .Values.initJob.configOverwrites.arango.password }}"
                 },
                 {
                     "Key": "Connections/Arango/Properties/Port",
-                    "Value": "{{ required "A valid arango db port is required." .Values.configOverwrites.arango.port }}"
+                    "Value": "{{ required "A valid arango db port is required." .Values.initJob.configOverwrites.arango.port }}"
                 },
                 {
                     "Key": "Connections/Arango/UserProfileServiceDatabaseName",
-                    "Value": "{{ required "A valid arango db database name is required." .Values.configOverwrites.arango.databases.ups }}"
+                    "Value": "{{ required "A valid arango db database name is required." .Values.initJob.configOverwrites.arango.databases.ups }}"
                 },
                 {
                     "Key": "Connections/Sql/ChatService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.chat.main}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.chat.main}}"
                 },
                 {
                     "Key": "Connections/Sql/ChatServiceSlots",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.chat.slots}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.chat.slots}}"
                 },
                 {
                     "Key": "Connections/Sql/FileService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.file}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.file}}"
                 },
                 {
                     "Key": "Connections/Sql/IdentityService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.identity}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.identity}}"
                 },
                 {
                     "Key": "Connections/Sql/MailService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.mail}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.mail}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickCommand",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.command}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.core.command}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickDms",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.dms}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.core.dms}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickEvents",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.events}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.core.events}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickQuery",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.query}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.core.query}};"
                 },
                 {
                     "Key": "Connections/Sql/MaverickReferences",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.references}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.core.references}};"
                 },
                 {
                     "Key": "Connections/Sql/MaverickShortener",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.shortener}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.core.shortener}}"
                 },
                 {
                     "Key": "Connections/Sql/MaverickTemp",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.core.temp}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.core.temp}};"
                 },
                 {
                     "Key": "Connections/Sql/TaskService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.configOverwrites.sql.databases.task}};"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}} Initial Catalog={{"{{"}}$this/Properties/Prefix}}{{.Values.initJob.configOverwrites.sql.databases.task}};"
                 },
                 {
                     "Key": "Connections/Minio/ChatServiceGroupFiles",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.chatgroup}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.initJob.configOverwrites.minio.databases.chatgroup}}"
                 },
                 {
                     "Key": "Connections/Minio/ChatServicePrivateFiles",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.chatprivate}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.initJob.configOverwrites.minio.databases.chatprivate}}"
                 },
                 {
                     "Key": "Connections/Minio/MaverickCommand",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.corecommand}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.initJob.configOverwrites.minio.databases.corecommand}}"
                 },
                 {
                     "Key": "Connections/Minio/MaverickTemporary",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.coretemporary}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.initJob.configOverwrites.minio.databases.coretemporary}}"
                 },
                 {
                     "Key": "Connections/Minio/TemplateService",
-                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.configOverwrites.minio.databases.template}}"
+                    "Value": "{{"{{"}}$this/Properties/ConnectionString}};region={{.Values.initJob.configOverwrites.minio.databases.template}}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/AuthenticationMethod",
-                    "Value": "{{ required "A valid identity authentication method is required." .Values.configOverwrites.identity.openid.authenticationmethod }}"
+                    "Value": "{{ required "A valid identity authentication method is required." .Values.initJob.configOverwrites.identity.openid.authenticationmethod }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/Authority",
-                    "Value": "{{ required "A valid identity authority is required." .Values.configOverwrites.identity.openid.authority }}"
+                    "Value": "{{ required "A valid identity authority is required." .Values.initJob.configOverwrites.identity.openid.authority }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/CallbackPath",
-                    "Value": "{{ required "A valid identity callback path is required." .Values.configOverwrites.identity.openid.callbackpath }}"
+                    "Value": "{{ required "A valid identity callback path is required." .Values.initJob.configOverwrites.identity.openid.callbackpath }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/ClientId",
-                    "Value": "{{ required "A valid identity clientid is required." .Values.configOverwrites.identity.openid.clientid }}"
+                    "Value": "{{ required "A valid identity clientid is required." .Values.initJob.configOverwrites.identity.openid.clientid }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/ClientSecret",
-                    "Value": "{{ required "A valid identity client secret is required." .Values.configOverwrites.identity.openid.clientsecret }}"
+                    "Value": "{{ required "A valid identity client secret is required." .Values.initJob.configOverwrites.identity.openid.clientsecret }}"
                 },
                 {
                     "Key": "Connections/OpenId/IdentityService/Authorities/0000/Options/RemoteSignOutPath",
-                    "Value": "{{ required "A valid identity remote signout path is required." .Values.configOverwrites.identity.openid.remotesignoutpath }}"
+                    "Value": "{{ required "A valid identity remote signout path is required." .Values.initJob.configOverwrites.identity.openid.remotesignoutpath }}"
                 },
                 {
                     "Key": "ServiceSettings/IdentityService/IssuerUri",
-                    "Value": "{{.Values.configOverwrites.identity.issueruri}}"
+                    "Value": "{{.Values.initJob.configOverwrites.identity.issueruri}}"
                 },
                 {
                     "Key": "ServiceSettings/IdentityService/PublicOrigin",
-                    "Value": "{{.Values.configOverwrites.identity.publicorigin}}"
+                    "Value": "{{.Values.initJob.configOverwrites.identity.publicorigin}}"
                 },
                 {
                     "Key": "ServiceSettings/IdentityService/HandleForwaredHeaders",
-                    "Value": "{{.Values.configOverwrites.identity.handleforwardedheaders}}"
+                    "Value": "{{.Values.initJob.configOverwrites.identity.handleforwardedheaders}}"
                 },
                 {
                     "Key": "NamedEndpoints/Elasticsearch/Address",
-                    "Value": "{{ required "A valid elasticsearch server is required." .Values.configOverwrites.elasticsearch.server }}"
+                    "Value": "{{ required "A valid elasticsearch server is required." .Values.initJob.configOverwrites.elasticsearch.server }}"
                 },
                 {
                     "Key": "NamedEndpoints/Elasticsearch/Port",
-                    "Value": "{{ required "A valid elasticsearch port is required." .Values.configOverwrites.elasticsearch.port }}"
+                    "Value": "{{ required "A valid elasticsearch port is required." .Values.initJob.configOverwrites.elasticsearch.port }}"
                 },
                 {
                     "key": "ServiceSettings/IdentityService/clients/0004/AllowedCorsOrigins/0002",
-                    "value": "https://admin.{{- .Values.configOverwrites.environment.domain -}}"
+                    "value": "https://admin.{{- .Values.initJob.configOverwrites.environment.domain -}}"
                 },
                 {
                     "key": "ServiceSettings/IdentityService/clients/0000/AllowedCorsOrigins/0001", 
-                    "value": "https://chatservice.{{- .Values.configOverwrites.environment.domain -}}"
+                    "value": "https://chatservice.{{- .Values.initJob.configOverwrites.environment.domain -}}"
                 },
                 {
                     "key": "ServiceSettings/IdentityService/clients/0000/RedirectUris/0001",
-                    "value": "https://identity.{{- .Values.configOverwrites.environment.domain -}}/signin-oidc"
+                    "value": "https://identity.{{- .Values.initJob.configOverwrites.environment.domain -}}/signin-oidc"
                 }    
             ]
         }

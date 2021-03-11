@@ -1,4 +1,4 @@
-{{- if .Values.app.initJob.enabled }}
+{{- if .Values.initJob.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -12,38 +12,45 @@ metadata:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "6"
     "helm.sh/hook-delete-policy": hook-succeeded
+    {{- if .Values.initJob.annotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.initJob.annotations "context" $ ) | nindent 4 }}
+    {{- end }}
     {{- if .Values.commonAnnotations }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
     {{- end }}
 spec:
+  activeDeadlineSeconds: {{ .Values.initJob.activeDeadlineSeconds }}
   template:
     metadata:
       labels: {{ include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: init
+        {{- if .Values.initJob.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.initJob.podLabels "context" $) | nindent 8 }}
+        {{- end }}
         {{- if .Values.commonLabels }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
         {{- end }}
     spec:
       {{- include "app.images.pullSecrets" . | nindent 6 -}}
-      {{- if .Values.app.hostAliases }}
-      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.app.hostAliases "context" $) | nindent 8 }}
+      {{- if .Values.initJob.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.hostAliases "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.app.affinity }}
-      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.app.affinity "context" $) | nindent 8 }}
+      {{- if .Values.initJob.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
-        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.app.podAffinityPreset "component" "config" "context" $) | nindent 10 }}
-        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.app.podAntiAffinityPreset "component" "config" "context" $) | nindent 10 }}
-        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.app.nodeAffinityPreset.type "key" .Values.app.nodeAffinityPreset.key "values" .Values.app.nodeAffinityPreset.values) | nindent 10 }}
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.initJob.podAffinityPreset "component" "init" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.initJob.podAntiAffinityPreset "component" "init" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.initJob.nodeAffinityPreset.type "key" .Values.initJob.nodeAffinityPreset.key "values" .Values.initJob.nodeAffinityPreset.values) | nindent 10 }}
       {{- end }}
-      {{- if .Values.app.nodeSelector }}
-      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.app.nodeSelector "context" $) | nindent 8 }}
+      {{- if .Values.initJob.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.nodeSelector "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.app.tolerations }}
-      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.app.tolerations "context" $) | nindent 8 }}
+      {{- if .Values.initJob.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.tolerations "context" $) | nindent 8 }}
       {{- end }}
-      {{- if .Values.app.priorityClassName }}
-      priorityClassName: {{ .Values.app.priorityClassName }}
+      {{- if .Values.initJob.priorityClassName }}
+      priorityClassName: {{ .Values.initJob.priorityClassName }}
       {{- end }}
       {{- if .Values.app.securityContext.enabled }}
       securityContext: {{- omit .Values.app.securityContext "enabled" | toYaml | nindent 8 }}
@@ -54,15 +61,47 @@ spec:
         image: {{ include "curl.image" . }}
         imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
         command: ['sh', '-c', 'until curl http://{{ include "app.fullname" . }}; do echo waiting for configservice; sleep 5; done;']
+      {{- if or .Values.initJob.extraInitContainers -}}
+      {{- include "common.tplvalues.render" ( dict "value" (coalesce .Values.initJob.extraInitContainers ) "context" $ ) | nindent 8 -}}
+      {{- end }}
       containers:
-      - image: {{ include "cli.image" . }}
-        imagePullPolicy: {{ .Values.cliImage.pullPolicy | quote }}
-        name: {{ include "app.fullname" . }}-init
-        command: ["/bin/bash", "-c"]
-        args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ include "app.fullname" . }} -f export_presales.json -f config/config-overwrite.json"]
-        volumeMounts:
-        - name: config-env
-          mountPath: /app/config
+        - image: {{ include "cli.image" . }}
+          imagePullPolicy: {{ .Values.cliImage.pullPolicy | quote }}
+          name: {{ include "app.fullname" . }}-init
+          {{- if .Values.initJob.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.command "context" $) | nindent 12 }}
+          {{- else }}
+          command: ["/bin/bash", "-c"]
+          {{- end }}
+          {{- if .Values.initJob.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.args "context" $) | nindent 12 }}
+          {{- else }}
+          args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ include "app.fullname" . }} -f export_presales.json -f config/config-overwrite.json"]
+          {{- end }}
+          env:
+            {{- if .Values.initJob.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.initJob.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.initJob.extraEnvVarsCM .Values.initJob.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.initJob.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.initJob.extraEnvVarsCM "context" $) }}
+            {{- end }}
+            {{- if .Values.initJob.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.initJob.extraEnvVarsSecret "context" $) }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.initJob.resources }}
+          resources: {{- toYaml .Values.initJob.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+          - name: config-env
+            mountPath: /app/config
+            {{- if .Values.initJob.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.initJob.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
       volumes:
         - name: config-env
           configMap:
@@ -72,6 +111,9 @@ spec:
               path: config.tar.gz
             - key: config-overwrite
               path: config-overwrite.json
+      {{- if .Values.initJob.extraVolumes }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.initJob.extraVolumes "context" $) | nindent 6 }}
+      {{- end }}
       restartPolicy: OnFailure
 status: {}
 {{- end -}}

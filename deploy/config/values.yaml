@@ -8,6 +8,14 @@
 #     - myRegistryKeySecretName
 #   storageClass: myStorageClass
 
+## String to partially override app.fullname template (will maintain the release name)
+##
+# nameOverride:
+
+## String to fully override app.fullname template
+##
+# fullnameOverride:
+
 appImage:
   registry: maverick.azurecr.io
   repository: maverick/configservice
@@ -83,90 +91,7 @@ postgreImage:
   # pullSecrets:
   #   - myRegistryKeySecretName
 
-#Settings to overwrite configuration
-#**************************************************
-configOverwrites:
-  environment:
-    cloud: local
-    domain: k8.maverick.local
-  configuration:
-    configservice: "http://config"
-    category: "k8"
-    name: "default"
-  sql:
-    server:
-    username:
-    password:
-    databases:
-      chat:
-        main: Chat
-        slots: ChatSlots
-      file: File
-      identity: Identity
-      mail: Mail
-      task: Task
-      bonnea: bonneabmz23
-      core:
-        command: Command
-        dms: Command
-        events: Events
-        query: Query
-        references: References
-        shortener: Shortener
-        temp: Temp
-  arango:
-    server:
-    port:
-    username:
-    password:
-    databases:
-      ups:
-      # samuel:
-      # samueltracker:
-  eventstore:
-    server:
-    username:
-    password:
-  eventbus:
-    server:
-  rabbitmq:
-    server:
-    port:
-    username:
-    password:
-  redis:
-    server:
-    password:
-  minio:
-    server:
-    port:
-    https:
-    username:
-    password:
-    databases:
-      chatgroup: chatgroups
-      chatprivate: chatprivate
-      template: templates
-      corecommand: corecommand
-      coretemporary: coretemporary
-  identity:
-    issueruri:
-    publicorigin:
-    handleforwardedheaders: true
-    openid:
-      authenticationmethod:
-      authority:
-      callbackpath:
-      clientid:
-      clientsecret:
-      remotesignoutpath:
-  elasticsearch:
-    server:
-    port:
-#**************************************************
-
-#Settings to configure service
-#**************************************************
+## Settings to configure service
 app:
   snapshotstore:
     type: memory
@@ -184,10 +109,6 @@ app:
   redis:
     server:
     password:
-
-  ## Job to import default configuration
-  initJob:
-    enabled: false
 
   ## Labels to add to the Deployment. Evaluated as template
   ##
@@ -391,15 +312,218 @@ app:
     minAvailable: 1
     # maxUnavailable: 1
 
-#**************************************************
+## Job to import a default configuration
+initJob:
+  enabled: false
 
-## String to partially override app.fullname template (will maintain the release name)
-##
-# nameOverride:
+  ## Number of seconds the Job to import the default Configuration will be waiting for the Nodes to be ready.
+  ##
+  activeDeadlineSeconds: 600
+  
+  ## Settings to overwrite values of the default configurations 
+  # configOverwrites:
+  #   environment:
+  #     domain: k8.maverick.local
+  #     category: "k8"
+  #     name: "default"
+  #   sql:
+  #     server:
+  #     username:
+  #     password:
+  #     databases:
+  #       chat:
+  #         main: Chat
+  #         slots: ChatSlots
+  #       file: File
+  #       identity: Identity
+  #       mail: Mail
+  #       task: Task
+  #       bonnea: bonneabmz23
+  #       core:
+  #         command: Command
+  #         dms: Command
+  #         events: Events
+  #         query: Query
+  #         references: References
+  #         shortener: Shortener
+  #         temp: Temp
+  #   arango:
+  #     server:
+  #     port:
+  #     username:
+  #     password:
+  #     databases:
+  #       ups:
+  #       samuel:
+  #       samueltracker:
+  #   eventstore:
+  #     server:
+  #     username:
+  #     password:
+  #   eventbus:
+  #     server:
+  #   rabbitmq:
+  #     server:
+  #     port:
+  #     username:
+  #     password:
+  #   redis:
+  #     server:
+  #     password:
+  #   minio:
+  #     server:
+  #     port:
+  #     https:
+  #     username:
+  #     password:
+  #     databases:
+  #       chatgroup: chatgroups
+  #       chatprivate: chatprivate
+  #       template: templates
+  #       corecommand: corecommand
+  #       coretemporary: coretemporary
+  #   identity:
+  #     issueruri:
+  #     publicorigin:
+  #     handleforwardedheaders: true
+  #     openid:
+  #       authenticationmethod:
+  #       authority:
+  #       callbackpath:
+  #       clientid:
+  #       clientsecret:
+  #       remotesignoutpath:
+  #   elasticsearch:
+  #     server:
+  #     port:
+  
+  ## Container command (using container default if not set)
+  ##
+  command:
 
-## String to fully override app.fullname template
-##
-# fullnameOverride:
+  ## Container args (using container default if not set)
+  ##
+  args:
+
+  ## Deployment pod host aliases
+  ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+
+  ## Job annotations
+  ## IMPORTANT: When using Istio set as the following (https://github.com/istio/istio/issues/11045):
+  ## annotations:
+  ##   sidecar.istio.io/inject: "false"
+  ##
+  annotations: {}
+
+  ## Pod annotations
+  ##
+  podAnnotations: {}
+
+  ## An array to add extra env vars
+  ## For example:
+  ##
+  extraEnvVars: []
+  #  - name: BEARER_AUTH
+  #    value: true
+
+  ## ConfigMap with extra environment variables
+  ##
+  extraEnvVarsCM:
+
+  ## Secret with extra environment variables
+  ##
+  extraEnvVarsSecret:
+
+  ## Extra volumes to add to the pod
+  ##
+  extraVolumes: []
+
+  ## Extra volume mounts to add to the containers
+  ##
+  extraVolumeMounts: []
+
+  ## Extra init containers to add to the pod
+  ##
+  initContainers: []
+
+  ## Init job pod affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ## Allowed values: soft, hard
+  ##
+  podAffinityPreset: ""
+
+  ## Init job pod anti-affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ## Allowed values: soft, hard
+  ##
+  podAntiAffinityPreset: soft
+
+  ## Init job node affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ## Allowed values: soft, hard
+  ##
+  nodeAffinityPreset:
+    ## Node affinity type
+    ## Allowed values: soft, hard
+    ##
+    type: ""
+    ## Node label key to match
+    ## E.g.
+    ## key: "kubernetes.io/e2e-az-name"
+    ##
+    key: ""
+    ## Node label values to match
+    ## E.g.
+    ## values:
+    ##   - e2e-az1
+    ##   - e2e-az2
+    ##
+    values: []
+
+  ## Affinity for init job pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ## Note: initJob.podAffinityPreset, initJob.podAntiAffinityPreset, and initJob.nodeAffinityPreset will be ignored when it's set
+  ##
+  affinity: {}
+
+  ## Node labels for init job pods assignment
+  ## ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+
+  ## Tolerations for init job pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+
+  ## Pod extra labels
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+  ##
+  podLabels: {}
+
+  ## Priority class name
+  ##
+  priorityClassName:
+
+  ## Container resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    ## We usually recommend not to specify default resources and to leave this as a conscious
+    ## choice for the user. This also increases chances charts run on environments with little
+    ## resources, such as Minikube. If you do want to specify resources, uncomment the following
+    ## lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    ##
+    limits: {}
+    ##   cpu: 500m
+    ##   memory: 1Gi
+    ##
+    requests: {}
+    ##   cpu: 250m
+    ##   memory: 256Mi
+    ##
 
 serviceAccount:
   # Specifies whether a service account should be created
