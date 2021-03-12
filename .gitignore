@@ -263,7 +263,10 @@ paket-files/
 __pycache__/
 *.pyc
 
-
+#HELM
+[Cc]hart.lock
+requirements.lock
+# Chart dependencies
 deploy/**/charts/*
 deploy/*.tgz
 **/*.development.yaml
