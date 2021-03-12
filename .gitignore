@@ -264,8 +264,7 @@ __pycache__/
 *.pyc
 
 #HELM
-[Cc]hart.lock
-requirements.lock
+**/[Cc]hart.lock
 # Chart dependencies
 deploy/**/charts/*
 deploy/*.tgz
