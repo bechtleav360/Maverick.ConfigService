@@ -179,7 +179,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             lock (_connectionLock)
             {
                 // only continue if either reconnect or _eventStore is null
-                if (!reconnect && !(_eventStore is null))
+                if (!reconnect
+                    && !(_eventStore is null)
+                    && !(_eventSubscription is null)
+                    && ConnectionState == ConnectionState.Connected)
                     return;
 
                 try
@@ -278,6 +281,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             KnownMetrics.EventStoreDisconnected.Inc();
             ConnectionState = ConnectionState.Disconnected;
+            Connect();
         }
 
         private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args)
