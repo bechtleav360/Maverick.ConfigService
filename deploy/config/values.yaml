@@ -16,6 +16,12 @@
 ##
 # fullnameOverride:
 
+## ConfigMap with extra root CA Certificate
+##
+ca:
+  configMapName:
+  configMapKeyName:
+
 appImage:
   registry: maverick.azurecr.io
   repository: maverick/configservice
@@ -205,14 +211,14 @@ app:
   ##
   securityContext:
     enabled: true
-    fsGroup: 1000648080
+    fsGroup: 1000640000
 
   ## Container Security Context
   ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   ##
   containerSecurityContext:
     enabled: true
-    runAsUser: 1000648080
+    runAsUser: 1000640000
 
   ## Custom Liveness probe
   ##

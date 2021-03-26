@@ -125,6 +125,10 @@ spec:
             {{- end }}
             - name: LoggingConfiguration__NLog__Rules__0__writeTo
               value: "blackhole"
+            {{- if .Values.ca.configMapName }}
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/trusted-custom-ca.pem
+            {{- end }}
             {{- if .Values.app.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.app.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}
@@ -175,10 +179,24 @@ spec:
           resources: {{- toYaml .Values.app.resources | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if and .Values.ca.configMapName }}
+            - name: trusted-ca
+              mountPath: /etc/ssl/certs/trusted-custom-ca.pem
+              subPath: trusted-custom-ca.pem
+              readOnly: true
+            {{- end }}
             {{- if .Values.app.extraVolumeMounts }}
             {{- include "common.tplvalues.render" (dict "value" .Values.app.extraVolumeMounts "context" $) | nindent 12 }}
             {{- end }}
       volumes:
+        {{- if .Values.ca.configMapName }}
+        - name: trusted-ca
+          configMap:
+            name: {{ .Values.ca.configMapName }}
+            items:
+              - key: {{ default "ca-bundle.crt" .Values.ca.configMapKeyName }}
+                path: trusted-custom-ca.pem
+        {{- end }}
         {{- if .Values.app.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.app.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
