@@ -6,14 +6,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
-using Bechtle.A365.Core.EventBus.Abstraction;
-using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Controllers.V1
 {
@@ -25,20 +21,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     public class ConfigurationController : ControllerBase
     {
         private readonly IProjectionStore _store;
-        private readonly IEventBus _eventBus;
 
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
-                                       IProjectionStore store,
-                                       IEventBus eventBus)
+                                       IProjectionStore store)
             : base(provider, logger)
         {
             _store = store;
-            _eventBus = eventBus;
         }
-
-        private bool is_subscribed = false;
 
         /// <summary>
         ///     create a new configuration built from a given Environment and Structure
@@ -56,9 +47,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                                             [FromRoute] int structureVersion,
                                                             [FromBody] ConfigurationBuildOptions buildOptions)
         {
-            if (!is_subscribed)
-                await _eventBus.Subscribe<OnConfigurationPublished>((s, message) => { Logger.LogCritical($"{s}::{JsonConvert.SerializeObject(message)}"); });
-
             var buildError = ValidateBuildOptions(buildOptions);
             if (!(buildError is null))
                 return buildError;
@@ -114,24 +102,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             // add a header indicating if a new Configuration was actually built or not
             HttpContext.Response.OnStarting(state => Task.FromResult(HttpContext.Response.Headers.TryAdd("x-built", ((bool) state).ToString())),
                                             requestApproved);
-
-            try
-            {
-                await _eventBus.Publish(new EventMessage
-                {
-                    Event = new OnConfigurationPublished
-                    {
-                        EnvironmentCategory = environment.Category,
-                        EnvironmentName = environment.Name,
-                        StructureName = structure.Name,
-                        StructureVersion = structure.Version
-                    }
-                });
-            }
-            catch (Exception e)
-            {
-                Logger.LogWarning(e, "unable to publish OnConfigurationPublished event");
-            }
 
             return AcceptedAtAction(
                 nameof(GetConfiguration),
