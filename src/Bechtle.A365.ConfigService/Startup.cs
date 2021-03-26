@@ -321,7 +321,7 @@ namespace Bechtle.A365.ConfigService
                         new[] {Liveness},
                         TimeSpan.FromSeconds(2))
                     .AddCheck<HttpPipelineReadinessCheck>(
-                        "EventStore-ConnectionType",
+                        "Http-Pipeline",
                         HealthStatus.Unhealthy,
                         new[] {Readiness},
                         TimeSpan.FromSeconds(1));
