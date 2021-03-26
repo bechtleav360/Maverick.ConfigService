@@ -141,13 +141,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.ConnectionChecks
         /// </summary>
         /// <param name="configuration"></param>
         /// <returns></returns>
-        private EventStoreClient ConnectToEventStore(EventStoreConnectionConfiguration configuration) => new EventStoreClient(new EventStoreClientSettings
+        private EventStoreClient ConnectToEventStore(EventStoreConnectionConfiguration configuration)
         {
-            ConnectionName = configuration.ConnectionName,
-            ConnectivitySettings = new EventStoreClientConnectivitySettings
-            {
-                Address = new Uri(configuration.Uri)
-            }
-        });
+            var settings = EventStoreClientSettings.Create(configuration.Uri);
+            settings.ConnectionName = configuration.ConnectionName;
+            settings.ConnectivitySettings.NodePreference = NodePreference.Random;
+            settings.OperationOptions.TimeoutAfter = TimeSpan.FromMinutes(1);
+            return new EventStoreClient(settings);
+        }
     }
 }

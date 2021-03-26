@@ -205,16 +205,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 try
                 {
-                    _eventStore = new EventStoreClient(new EventStoreClientSettings
-                    {
-                        ConnectionName = MakeConnectionName(),
-                        LoggerFactory = _eventStoreLogger,
-                        ConnectivitySettings = new EventStoreClientConnectivitySettings
-                        {
-                            Address = new Uri(_eventStoreConfiguration.CurrentValue.Uri),
-                            NodePreference = NodePreference.Random
-                        }
-                    });
+                    var settings = EventStoreClientSettings.Create(_eventStoreConfiguration.CurrentValue.Uri);
+                    settings.LoggerFactory = _eventStoreLogger;
+                    settings.ConnectionName = MakeConnectionName();
+                    settings.ConnectivitySettings.NodePreference = NodePreference.Random;
+                    settings.OperationOptions.TimeoutAfter = TimeSpan.FromMinutes(1);
+                    _eventStore = new EventStoreClient(settings);
                 }
                 catch (Exception e)
                 {
@@ -238,24 +234,39 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         private Task OnEventAppeared(StreamSubscription subscription, ResolvedEvent resolvedEvent, CancellationToken cancellationToken)
         {
-            var storeSubscription = new StoreSubscription
+            try
             {
-                LastEventNumber = resolvedEvent.Event.EventNumber.ToInt64(),
-                StreamId = resolvedEvent.Event.EventStreamId
-            };
+                // ReSharper disable once ConstantNullCoalescingCondition
+                // yes, the documentation says EventRecord.Event is guaranteed to not be null and either point to the linked or original event
+                // no, that guarantee does not hold up and we do get null-references on this guaranteed-to-not-be-null property
+                // yes, this is bullshit
+                // yes, this was expected from EventStore
+                var actualEvent = resolvedEvent.Event ?? resolvedEvent.Link;
 
-            var storedEvent = new StoredEvent
+                var storeSubscription = new StoreSubscription
+                {
+                    LastEventNumber = actualEvent.EventNumber.ToInt64(),
+                    StreamId = actualEvent.EventStreamId
+                };
+
+                var storedEvent = new StoredEvent
+                {
+                    EventId = actualEvent.EventId,
+                    Data = actualEvent.Data,
+                    Metadata = actualEvent.Metadata,
+                    EventType = actualEvent.EventType,
+                    EventNumber = actualEvent.EventNumber.ToInt64(),
+                    UtcTime = actualEvent.Created.ToUniversalTime()
+                };
+
+                EventAppeared?.Invoke(this, (Subscription: storeSubscription, StoredEvent: storedEvent));
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
             {
-                EventId = resolvedEvent.Event.EventId,
-                Data = resolvedEvent.Event.Data,
-                Metadata = resolvedEvent.Event.Metadata,
-                EventType = resolvedEvent.Event.EventType,
-                EventNumber = resolvedEvent.Event.EventNumber.ToInt64(),
-                UtcTime = resolvedEvent.Event.Created.ToUniversalTime()
-            };
-
-            EventAppeared?.Invoke(this, (Subscription: storeSubscription, StoredEvent: storedEvent));
-            return Task.CompletedTask;
+                _logger.LogWarning(e, "internal error while reading event");
+                throw;
+            }
         }
 
         private (ReadOnlyMemory<byte> Data, ReadOnlyMemory<byte> Metadata) SerializeDomainEvent(DomainEvent domainEvent)

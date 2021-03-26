@@ -183,15 +183,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return await base.OnExecute(app);
         }
 
-        private EventStoreClient ConnectToEventStore() => new EventStoreClient(new EventStoreClientSettings
+        private EventStoreClient ConnectToEventStore()
         {
-            ConnectionName = $"StreamMigration-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}",
-            ConnectivitySettings = new EventStoreClientConnectivitySettings
-            {
-                Address = new Uri(EventStoreConnectionString),
-                NodePreference = NodePreference.Leader
-            }
-        });
+            var settings = EventStoreClientSettings.Create(EventStoreConnectionString);
+            settings.ConnectionName = $"StreamMigration-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}";
+            settings.ConnectivitySettings.NodePreference = NodePreference.Random;
+            settings.OperationOptions.TimeoutAfter = TimeSpan.FromMinutes(1);
+            return new EventStoreClient(settings);
+        }
 
         /// <summary>
         ///     delete stream (<see cref="EventStoreStream" />) and recreate it with the given list of events
