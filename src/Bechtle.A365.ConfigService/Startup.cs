@@ -141,7 +141,8 @@ namespace Bechtle.A365.ConfigService
                                                _logger.LogInformation(DebugUtilities.FormatConfiguration(conf));
                                            },
                                            Configuration);
-                  }, "registering config-reload hook");
+                  }, "registering config-reload hook")
+                  .Tweak(a => a.ApplicationServices.GetRequiredService<HttpPipelineReadinessCheck>().SetReady(), "settings http-pipeline to ready");
 
         /// <summary>
         ///     Configure DI-Services
@@ -311,13 +312,19 @@ namespace Bechtle.A365.ConfigService
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");
 
+            services.AddSingleton<HttpPipelineReadinessCheck>();
             services.AddSingleton<EventStoreClusterCheck>();
             services.AddHealthChecks()
                     .AddCheck<EventStoreClusterCheck>(
                         "EventStore-ConnectionType",
                         HealthStatus.Unhealthy,
                         new[] {Liveness},
-                        TimeSpan.FromSeconds(2));
+                        TimeSpan.FromSeconds(2))
+                    .AddCheck<HttpPipelineReadinessCheck>(
+                        "EventStore-ConnectionType",
+                        HealthStatus.Unhealthy,
+                        new[] {Readiness},
+                        TimeSpan.FromSeconds(1));
 
             services.AddHealth(builder =>
             {
