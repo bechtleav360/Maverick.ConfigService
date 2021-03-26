@@ -67,7 +67,7 @@ spec:
         - name: init-eventstore
           image: {{ include "curl.image" . }}
           imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
-          command: ['sh', '-c', 'until curl http://{{- .Values.app.eventstore.server -}}:2113 -u "{{- .Values.app.eventstore.user -}}:{{- .Values.app.eventstore.password -}}"; do echo waiting for eventstore; sleep 2; done;']
+          command: ['sh', '-c', 'until curl "{{ include "app.eventstoreInitUrl" .Values.app.eventstore }}" -u "{{- .Values.app.eventstore.user -}}:{{- .Values.app.eventstore.password -}}"; do echo waiting for eventstore; sleep 2; done;']
       {{- if eq .Values.app.snapshotstore.type "postgres" -}}
         - name: init-postgres
           image: {{ include "postgre.image" . }}
@@ -95,9 +95,9 @@ spec:
           {{- end }}
           env:
             - name: ASPNETCORE_URLS
-              value: http://*:8080
+              value: http://localhost:5000;http://*:8080
             - name: EventstoreConnection__Uri
-              value: {{ printf "tcp://%s:%s@%s:1113" .Values.app.eventstore.username .Values.app.eventstore.password .Values.app.eventstore.server }}
+              value: {{ .Values.app.eventstore.connectionString }}
             {{- if .Values.app.redis.server }}
             - name: MemoryCache__Redis__Connectionstring
               value: {{ printf "%s:6379,password=%s" .Values.app.redis.server .Values.app.redis.password }}

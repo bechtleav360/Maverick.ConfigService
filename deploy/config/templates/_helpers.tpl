@@ -81,3 +81,20 @@ Create the name of the service account to use
     {{ default "" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Create a url from es connectionString to use in curl initContainer
+*/}}
+{{- define "app.eventstoreInitUrl" -}}
+{{- $proto := "http://" -}}
+{{- if (regexMatch "tls=true|usesslconnection=true" (.connectionString | lower)) -}}
+{{- $proto = "https://" -}}
+{{- end -}}
+{{/* # set right protokoll */}}
+{{- $uri := mustRegexReplaceAll "^([\\w\\+\\= ]+):\\/\\/" .connectionString $proto -}}
+{{/* replace tcp port with http */}}
+{{- $uri = mustRegexReplaceAll ":\\d+" $uri (default "2113" .httpPort | printf ":%s") -}}
+{{/* remove trailing options */}}
+{{- $uri = mustRegexReplaceAll ";.+" $uri "" -}}
+{{- $uri -}}
+{{- end -}}

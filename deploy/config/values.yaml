@@ -100,10 +100,11 @@ app:
     # port:
     # user:
     # password:
+  ## eventStore Connection String as Specified here: https://developers.eventstore.com/clients/grpc/getting-started/#connection-details
   eventstore:
-    server: eventstore
-    username: user
-    password: password
+    server: esdb+discover://eventstore:2113?tls=false
+    # username: 
+    # password: 
   eventbus:
     server:
   redis:
