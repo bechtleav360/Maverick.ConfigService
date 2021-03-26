@@ -357,7 +357,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns((Func<(StoredEvent, DomainEvent), bool> stream,
-                                int batch,
                                 StreamDirection direction,
                                 long maxVersion) =>
                       {
@@ -442,7 +441,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns((Func<(StoredEvent, DomainEvent), bool> stream,
-                                int batch,
                                 StreamDirection direction,
                                 long maxVersion) =>
                       {
