@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Interfaces;
@@ -64,7 +63,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public bool ToMetadata(StoredEvent storedEvent, out DomainEventMetadata metadata)
         {
-            if (storedEvent.Metadata?.Any() != true)
+            if (storedEvent.Metadata.IsEmpty)
             {
                 Logger.LogTrace($"no metadata saved in event '{storedEvent.EventId}' " +
                                 $"of type '{storedEvent.EventType}'");

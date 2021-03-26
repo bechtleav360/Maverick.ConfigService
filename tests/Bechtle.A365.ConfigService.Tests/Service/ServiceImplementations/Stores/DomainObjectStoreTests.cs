@@ -6,6 +6,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using EventStore.Client;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +36,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask)
@@ -89,7 +89,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask)
@@ -136,7 +135,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask)
@@ -187,7 +185,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Throws<Exception>()
@@ -263,7 +260,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask)
@@ -315,7 +311,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask)
@@ -359,7 +354,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns((Func<(StoredEvent, DomainEvent), bool> stream,
@@ -372,7 +366,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                               (new StoredEvent
                                   {
                                       Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
+                                      EventId = Uuid.NewUuid(),
                                       EventNumber = 1,
                                       EventType = nameof(EnvironmentCreated),
                                       Metadata = new byte[0],
@@ -382,7 +376,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                               (new StoredEvent
                                   {
                                       Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
+                                      EventId = Uuid.NewUuid(),
                                       EventNumber = 2,
                                       EventType = nameof(EnvironmentCreated),
                                       Metadata = new byte[0],
@@ -392,7 +386,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                               (new StoredEvent
                                   {
                                       Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
+                                      EventId = Uuid.NewUuid(),
                                       EventNumber = 3,
                                       EventType = nameof(EnvironmentCreated),
                                       Metadata = new byte[0],
@@ -445,7 +439,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             var eventStore = new Mock<IEventStore>(MockBehavior.Strict);
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent, DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns((Func<(StoredEvent, DomainEvent), bool> stream,
@@ -458,7 +451,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                               (new StoredEvent
                                   {
                                       Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
+                                      EventId = Uuid.NewUuid(),
                                       EventNumber = 1,
                                       EventType = nameof(EnvironmentCreated),
                                       Metadata = new byte[0],
@@ -468,7 +461,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                               (new StoredEvent
                                   {
                                       Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
+                                      EventId = Uuid.NewUuid(),
                                       EventNumber = 2,
                                       EventType = nameof(EnvironmentCreated),
                                       Metadata = new byte[0],
@@ -478,7 +471,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                               (new StoredEvent
                                   {
                                       Data = new byte[0],
-                                      EventId = Guid.NewGuid(),
+                                      EventId = Uuid.NewUuid(),
                                       EventNumber = 3,
                                       EventType = nameof(EnvironmentCreated),
                                       Metadata = new byte[0],

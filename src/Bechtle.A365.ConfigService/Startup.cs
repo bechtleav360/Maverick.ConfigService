@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text;
 using Bechtle.A365.ConfigService.Authentication.Certificates;
 using Bechtle.A365.ConfigService.Authentication.Certificates.Events;
-using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DbContexts;
@@ -22,7 +21,6 @@ using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Maverick.Core.Health.Extensions;
-using Bechtle.A365.Maverick.Core.Health.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +38,6 @@ using Prometheus;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using CertificateValidator = Bechtle.A365.ConfigService.Implementations.CertificateValidator;
-using ESLogger = EventStore.ClientAPI.ILogger;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -283,7 +280,6 @@ namespace Bechtle.A365.ConfigService
                     .AddTransient<ISnapshotCreator, RoundtripSnapshotCreator>(_logger)
                     .AddSingleton<ICertificateValidator, CertificateValidator>(_logger)
                     .AddSingleton<IEventStore, Implementations.Stores.EventStore>(_logger)
-                    .AddSingleton<ESLogger, EventStoreLogger>(_logger)
                     .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
                     .AddSingleton<IEventDeserializer, EventDeserializer>(_logger)
                     .AddSingleton(_logger, typeof(IDomainEventConverter<>), typeof(DomainEventConverter<>))
@@ -302,35 +298,6 @@ namespace Bechtle.A365.ConfigService
             {
                 builder.ServiceName = "ConfigService";
                 builder.AnalyseInternalServices = true;
-                builder.YellowStatuswWhenCheck("EventStore", () =>
-                {
-                    try
-                    {
-                        return Implementations.Stores.EventStore.ConnectionState switch
-                        {
-                            ConnectionState.Connected => new ServiceStatus("EventStore.Connection", ServiceState.Green),
-                            ConnectionState.Reconnecting => new ServiceStatus("EventStore.Connection", ServiceState.Yellow)
-                            {
-                                ErrorMessage = "connection to EventStore is unavailable, but it is being re-established"
-                            },
-                            ConnectionState.Disconnected => new ServiceStatus("EventStore.Connection", ServiceState.Red)
-                            {
-                                ErrorMessage = "connection to EventStore is unavailable and NOT being re-established"
-                            },
-                            _ => new ServiceStatus("EventStore.Connection", ServiceState.Red)
-                            {
-                                ErrorMessage = "connection to EventStore is unavailable and NOT being re-established"
-                            }
-                        };
-                    }
-                    catch (Exception e)
-                    {
-                        return new ServiceStatus("EventStore.Connection", ServiceState.Red)
-                        {
-                            ErrorMessage = $"couldn't retrieve instance of {nameof(IEventStore)}; {e}"
-                        };
-                    }
-                });
             });
         }
 

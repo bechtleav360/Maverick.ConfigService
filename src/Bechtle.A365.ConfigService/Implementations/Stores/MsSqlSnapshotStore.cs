@@ -55,10 +55,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 // if no entries exist, we might as well be at Event#0
-                if (!await _context.Snapshots.AnyAsync())
+                if (!await _context.Snapshots.AsQueryable().AnyAsync())
                     return Result.Success(0L);
 
                 return Result.Success(await _context.Snapshots
+                                                    .AsQueryable()
                                                     .Select(s => s.MetaVersion)
                                                     .MinAsync());
             }
@@ -91,7 +92,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var oldSnapshots = (await _context.Snapshots.ToListAsync())
+                var oldSnapshots = (await _context.Snapshots.AsQueryable().ToListAsync())
                                    .Where(dbSnapshot => snapshots.Any(
                                               newSnapshot => dbSnapshot.DataType == newSnapshot.DataType
                                                              && dbSnapshot.Identifier == newSnapshot.Identifier))
@@ -99,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 _context.Snapshots.RemoveRange(oldSnapshots);
 
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
 
                 _context.Snapshots.AddRange(snapshots.Select(s => new SqlSnapshot
                 {
@@ -110,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     MetaVersion = s.MetaVersion
                 }));
 
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 

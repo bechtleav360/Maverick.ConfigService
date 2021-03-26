@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using EventStore.ClientAPI;
+using EventStore.Client;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
 
@@ -183,34 +183,24 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return await base.OnExecute(app);
         }
 
-        private async Task<IEventStoreConnection> ConnectToEventStore()
+        private EventStoreClient ConnectToEventStore() => new EventStoreClient(new EventStoreClientSettings
         {
-            var eventStore = EventStoreConnection.Create(
-                $"ConnectTo={EventStoreConnectionString}",
-                ConnectionSettings.Create()
-                                  .PerformOnMasterOnly()
-                                  .KeepReconnecting()
-                                  .LimitRetriesForOperationTo(10)
-                                  .LimitConcurrentOperationsTo(1)
-                                  .SetOperationTimeoutTo(TimeSpan.FromSeconds(30))
-                                  .SetReconnectionDelayTo(TimeSpan.FromSeconds(1))
-                                  .SetHeartbeatTimeout(TimeSpan.FromSeconds(30))
-                                  .SetHeartbeatInterval(TimeSpan.FromSeconds(60)),
-                $"StreamMigration-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}");
-
-            await eventStore.ConnectAsync();
-
-            return eventStore;
-        }
+            ConnectionName = $"StreamMigration-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}",
+            ConnectivitySettings = new EventStoreClientConnectivitySettings
+            {
+                Address = new Uri(EventStoreConnectionString),
+                NodePreference = NodePreference.Leader
+            }
+        });
 
         /// <summary>
         ///     delete stream (<see cref="EventStoreStream" />) and recreate it with the given list of events
         /// </summary>
-        /// <param name="lastEventNumber">expected event-version, deletion will fail if this doesn't match actual last-version</param>
+        /// <param name="streamPosition">expected event-version, deletion will fail if this doesn't match actual last-version</param>
         /// <param name="events">list of Domain-Events written to EventStore</param>
         /// <param name="eventStore">opened connection to EventStore</param>
         /// <returns>exit-code 0=Success | 1=Failure</returns>
-        private async Task<int> DeleteAndRecreateStream(long lastEventNumber, List<DomainEvent> events, IEventStoreConnection eventStore)
+        private async Task<int> DeleteAndRecreateStream(StreamPosition streamPosition, List<DomainEvent> events, EventStoreClient eventStore)
         {
             if (events.Count == 0)
             {
@@ -220,31 +210,30 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 return 1;
             }
 
-            Output.WriteVerboseLine($"deleting stream '{EventStoreStream}', expected to be at position '{lastEventNumber}'");
-            await eventStore.DeleteStreamAsync(EventStoreStream, lastEventNumber);
+            Output.WriteVerboseLine($"deleting stream '{EventStoreStream}', expected to be at position '{streamPosition}'");
+            await eventStore.SoftDeleteAsync(EventStoreStream, StreamRevision.FromStreamPosition(streamPosition));
 
             Output.WriteVerboseLine($"stream deleted, recreating it with '{events.Count}' new events");
-            using var transaction = await eventStore.StartTransactionAsync(EventStoreStream, ExpectedVersion.NoStream);
 
             try
             {
+                var newEvents = new List<EventData>();
                 foreach (var @event in events)
                 {
-                    Output.WriteVerboseLine($"writing event '{@event.EventType}'");
+                    Output.WriteVerboseLine($"adding event '{@event.EventType}'");
                     var data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event));
                     var metadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event.GetMetadata()));
 
-                    await transaction.WriteAsync(new EventData(Guid.NewGuid(), @event.EventType, true, data, metadata));
+                    newEvents.Add(new EventData(Uuid.NewUuid(), @event.EventType, data, metadata));
                 }
 
-                Output.WriteVerboseLine("all events have been written, committing transaction");
-                await transaction.CommitAsync();
+                Output.WriteVerboseLine("all events have been collected, sending to EventStore");
+                await eventStore.AppendToStreamAsync(EventStoreStream, StreamState.NoStream, newEvents);
                 return 0;
             }
             catch (Exception e)
             {
                 Output.WriteError($"error while writing events to stream '{EventStoreStream}', aborting transaction: {e}");
-                transaction.Rollback();
                 return 1;
             }
         }
@@ -255,7 +244,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <param name="eventStore">opened connection to EventStore</param>
         /// <param name="backupFileLocation">path to file in which state is backed-up into</param>
         /// <returns>exit-code, 0=success | 1=failure</returns>
-        private async Task<int> GenerateLossyInitialState(IEventStoreConnection eventStore, string backupFileLocation)
+        private async Task<int> GenerateLossyInitialState(EventStoreClient eventStore, string backupFileLocation)
         {
             Output.WriteVerboseLine("reading relevant current state from EventStore");
 
@@ -305,18 +294,19 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
             var backupFileLocation = "./migrated-state.json";
 
-            var eventStore = await ConnectToEventStore();
+            var eventStore = ConnectToEventStore();
 
             Output.WriteVerboseLine("getting last event# for later");
 
-            var lastEventNumber = (await eventStore.ReadStreamEventsBackwardAsync(EventStoreStream, StreamPosition.End, 1, true))?.LastEventNumber ?? -1;
-            if (lastEventNumber == -1)
+            var stream = eventStore.ReadStreamAsync(Direction.Backwards, EventStoreStream, StreamPosition.End, 1, resolveLinkTos: true);
+            var position = (await stream.FirstOrDefaultAsync()).Event.EventNumber;
+            if (position == default)
             {
                 Output.WriteError($"could not determine last event in the stream '{EventStoreStream}', won't be able to delete stream later on");
                 return 1;
             }
 
-            Output.WriteVerboseLine($"last event#={lastEventNumber}");
+            Output.WriteVerboseLine($"last event#={position}");
 
             if (!UseLocalData)
             {
@@ -350,7 +340,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             var events = state.GenerateDomainEvents();
 
-            return await DeleteAndRecreateStream(lastEventNumber, events, eventStore);
+            return await DeleteAndRecreateStream(position, events, eventStore);
         }
 
         /// <summary>
@@ -358,37 +348,24 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="eventStore">opened EventStore-Connection</param>
         /// <returns>object containing all relevant state for the Initial-Version of this Stream</returns>
-        private async Task<LossyInitialRecordedRepository> RecordInitialState(IEventStoreConnection eventStore)
+        private async Task<LossyInitialRecordedRepository> RecordInitialState(EventStoreClient eventStore)
         {
             var currentState = new LossyInitialRecordedRepository();
 
-            long currentPosition = StreamPosition.Start;
-            bool continueReading;
-
-            do
+            await foreach (var resolvedEvent in eventStore.ReadStreamAsync(Direction.Forwards, EventStoreStream, StreamPosition.Start, resolveLinkTos: true))
             {
-                var slice = await eventStore.ReadStreamEventsForwardAsync(EventStoreStream, currentPosition, EventStoreBatchSize, true);
+                Output.WriteVerboseLine($"applying event '{resolvedEvent.Event.EventStreamId}#{resolvedEvent.Event.EventNumber}'");
 
-                Output.WriteVerboseLine($"read '{slice.Events.Length}' events {slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber}");
-
-                foreach (var recordedEvent in slice.Events)
+                try
                 {
-                    Output.WriteVerboseLine($"applying event '{recordedEvent.Event.EventStreamId}#{recordedEvent.Event.EventNumber}'");
-
-                    try
-                    {
-                        currentState.ApplyEvent(recordedEvent, IgnoreReplayErrors);
-                    }
-                    catch (MigrationReplayException e)
-                    {
-                        Output.WriteErrorLine($"can't apply event '{recordedEvent.Event.EventStreamId}#{recordedEvent.Event.EventNumber}': {e}");
-                        return null;
-                    }
+                    currentState.ApplyEvent(resolvedEvent, IgnoreReplayErrors);
                 }
-
-                currentPosition = slice.NextEventNumber;
-                continueReading = !slice.IsEndOfStream;
-            } while (continueReading);
+                catch (MigrationReplayException e)
+                {
+                    Output.WriteErrorLine($"can't apply event '{resolvedEvent.Event.EventStreamId}#{resolvedEvent.Event.EventNumber}': {e}");
+                    return null;
+                }
+            }
 
             return currentState;
         }
@@ -465,36 +442,36 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             /// <returns>unordered list of domain-events</returns>
             public List<DomainEvent> GenerateDomainEvents()
                 => Environments.SelectMany(e => new List<DomainEvent>
-                                {
-                                    e.IsDefault
-                                        ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
-                                        : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
-                                    new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
-                                    new EnvironmentLayersModified(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
-                                                                  new List<LayerIdentifier>
-                                                                  {
-                                                                      new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
-                                                                  }),
-                                    // don't generate Keys-Imported event when there are no keys to import
-                                    // will be filtered out in the next step
-                                    e.Keys.Any()
-                                        ? new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
-                                                                           e.Keys
-                                                                            .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
-                                                                            .ToArray())
-                                        : null
-                                })
-                                .Where(e => e != null)
-                                .ToList();
+                               {
+                                   e.IsDefault
+                                       ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
+                                       : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
+                                   new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
+                                   new EnvironmentLayersModified(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
+                                                                 new List<LayerIdentifier>
+                                                                 {
+                                                                     new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
+                                                                 }),
+                                   // don't generate Keys-Imported event when there are no keys to import
+                                   // will be filtered out in the next step
+                                   e.Keys.Any()
+                                       ? new EnvironmentLayerKeysImported(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
+                                                                          e.Keys
+                                                                           .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                                                           .ToArray())
+                                       : null
+                               })
+                               .Where(e => e != null)
+                               .ToList();
 
             private void ApplyDefaultEnvironmentCreated(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
             {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
+                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
                 if (Environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                              && repr.Identifier.Name == domainEvent.Identifier.Name
-                                              && repr.IsDefault)
+                                             && repr.Identifier.Name == domainEvent.Identifier.Name
+                                             && repr.IsDefault)
                     && !ignoreReplayErrors)
                     throw new MigrationReplayException($"environment '{domainEvent.Identifier}' already created or not deleted previously");
 
@@ -508,12 +485,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             private void ApplyEnvironmentCreated(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
             {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
+                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
                 if (Environments.Any(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                              && repr.Identifier.Name == domainEvent.Identifier.Name
-                                              && !repr.IsDefault)
+                                             && repr.Identifier.Name == domainEvent.Identifier.Name
+                                             && !repr.IsDefault)
                     && !ignoreReplayErrors)
                     throw new MigrationReplayException($"environment '{domainEvent.Identifier}' already created or not deleted previously");
 
@@ -527,12 +504,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             private void ApplyEnvironmentDeleted(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
             {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
+                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
                                                                        new {Identifier = new InitialEnvIdRepr()});
 
                 var existingIndex = Environments.FindIndex(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                                                    && repr.Identifier.Name == domainEvent.Identifier.Name
-                                                                    && !repr.IsDefault);
+                                                                   && repr.Identifier.Name == domainEvent.Identifier.Name
+                                                                   && !repr.IsDefault);
 
                 if (existingIndex == -1 && !ignoreReplayErrors)
                     throw new MigrationReplayException($"can't find environment '{domainEvent.Identifier}' to delete, not created or already deleted");
@@ -549,7 +526,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             /// <param name="importEnvironment">create non-existent environments if necessary (Import-Behaviour)</param>
             private void ApplyKeyModifications(ResolvedEvent resolvedEvent, bool ignoreReplayErrors, bool importEnvironment)
             {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data),
+                var domainEvent = JsonConvert.DeserializeAnonymousType(Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
                                                                        new
                                                                        {
                                                                            Identifier = new InitialEnvIdRepr(),
@@ -557,7 +534,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                                                        });
 
                 var existing = Environments.FirstOrDefault(repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                                                    && repr.Identifier.Name == domainEvent.Identifier.Name);
+                                                                   && repr.Identifier.Name == domainEvent.Identifier.Name);
 
                 if (existing is null)
                 {

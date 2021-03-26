@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
@@ -8,12 +9,9 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
-using EventStore.ClientAPI;
+using EventStore.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-// god-damn-it fuck you 'EventStore' for creating 'ILogger' when that is essentially a core component of the eco-system
-using ESLogger = EventStore.ClientAPI.ILogger;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
@@ -23,12 +21,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly IOptionsMonitor<EventStoreConnectionConfiguration> _eventStoreConfiguration;
-        private readonly ESLogger _eventStoreLogger;
+        private readonly ILoggerFactory _eventStoreLogger;
         private readonly ILogger _logger;
         private readonly IServiceProvider _provider;
 
-        private IEventStoreConnection _eventStore;
-        private EventStoreSubscription _eventSubscription;
+        private EventStoreClient _eventStore;
+        private StreamSubscription _eventSubscription;
 
         /// <inheritdoc cref="EventStore" />
         /// <param name="logger"></param>
@@ -37,7 +35,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="eventDeserializer"></param>
         /// <param name="eventStoreConfiguration"></param>
         public EventStore(ILogger<EventStore> logger,
-                          ESLogger eventStoreLogger,
+                          ILoggerFactory eventStoreLogger,
                           IServiceProvider provider,
                           IEventDeserializer eventDeserializer,
                           IOptionsMonitor<EventStoreConnectionConfiguration> eventStoreConfiguration)
@@ -51,9 +49,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             _eventStoreConfiguration.OnChange(_ => Connect(true));
         }
-
-        /// <inheritdoc cref="Interfaces.ConnectionState" />
-        public static ConnectionState ConnectionState { get; private set; } = ConnectionState.Disconnected;
 
         /// <inheritdoc />
         public event EventHandler<(StoreSubscription Subscription, StoredEvent StoredEvent)> EventAppeared;
@@ -78,22 +73,27 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // connect if we're not already connected
             Connect();
 
-            var result = await _eventStore.ReadStreamEventsBackwardAsync(_eventStoreConfiguration.CurrentValue.Stream, StreamPosition.End, 1, true);
+            var result = (await _eventStore.ReadStreamAsync(Direction.Backwards,
+                                                            _eventStoreConfiguration.CurrentValue.Stream,
+                                                            StreamPosition.End,
+                                                            1,
+                                                            resolveLinkTos: true)
+                                           .FirstOrDefaultAsync())
+                         .Event
+                         .EventNumber;
 
-            return result.LastEventNumber;
+            return result.ToInt64();
         }
 
         /// <inheritdoc />
         public Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
-                                         int readSize = 128,
                                          StreamDirection direction = StreamDirection.Forwards,
                                          long startIndex = -1)
-            => ReplayEventsAsStream(null, streamProcessor, readSize, direction, startIndex);
+            => ReplayEventsAsStream(null, streamProcessor, direction, startIndex);
 
         /// <inheritdoc />
         public async Task ReplayEventsAsStream(Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool> streamFilter,
                                                Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool> streamProcessor,
-                                               int readSize = 128,
                                                StreamDirection direction = StreamDirection.Forwards,
                                                long startIndex = -1)
         {
@@ -126,7 +126,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 // stop streaming events once streamProcessor returns false
                 return streamProcessor.Invoke((storedEvent, domainEvent));
-            }, readSize, direction, startIndex);
+            }, direction, startIndex);
         }
 
         /// <inheritdoc />
@@ -143,9 +143,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 var (data, metadata) = SerializeDomainEvent(e);
 
-                return new EventData(Guid.NewGuid(),
+                return new EventData(Uuid.NewUuid(),
                                      e.EventType,
-                                     true,
                                      data,
                                      metadata);
             }).ToList();
@@ -154,23 +153,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogInformation("sending " +
                                        $"EventId: '{item.EventId}'; " +
                                        $"Type: '{item.Type}'; " +
-                                       $"IsJson: '{item.IsJson}'; " +
+                                       $"ContentType: '{item.ContentType}'; " +
                                        $"Data: {item.Data.Length} bytes; " +
                                        $"Metadata: {item.Metadata.Length} bytes;");
 
             var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.CurrentValue.Stream,
-                                                               ExpectedVersion.Any,
+                                                               StreamState.Any,
                                                                eventData);
 
             foreach (var item in domainEvents)
                 KnownMetrics.EventsWritten.WithLabels(item.EventType).Inc();
 
             _logger.LogDebug($"sent {domainEvents.Count} events '{eventList}': " +
-                             $"NextExpectedVersion: {result.NextExpectedVersion}; " +
+                             $"NextExpectedStreamRevision: {result.NextExpectedStreamRevision}; " +
                              $"CommitPosition: {result.LogPosition.CommitPosition}; " +
                              $"PreparePosition: {result.LogPosition.PreparePosition};");
 
-            return result.NextExpectedVersion;
+            return result.NextExpectedStreamRevision.ToInt64();
         }
 
         private void Connect(bool reconnect = false)
@@ -181,8 +180,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 // only continue if either reconnect or _eventStore is null
                 if (!reconnect
                     && !(_eventStore is null)
-                    && !(_eventSubscription is null)
-                    && ConnectionState == ConnectionState.Connected)
+                    && !(_eventSubscription is null))
                     return;
 
                 try
@@ -191,9 +189,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                     if (!(_eventStore is null))
                     {
-                        _eventStore.Connected -= OnEventStoreConnected;
-                        _eventStore.Disconnected -= OnEventStoreDisconnected;
-                        _eventStore.Reconnecting -= OnEventStoreReconnecting;
                         _eventSubscription?.Dispose();
                     }
 
@@ -210,19 +205,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 try
                 {
-                    _eventStore = EventStoreConnection.Create($"ConnectTo={_eventStoreConfiguration.CurrentValue.Uri}",
-                                                              ConnectionSettings.Create()
-                                                                                .PerformOnAnyNode()
-                                                                                .PreferRandomNode()
-                                                                                .KeepReconnecting()
-                                                                                .LimitRetriesForOperationTo(10)
-                                                                                .LimitConcurrentOperationsTo(1)
-                                                                                .SetOperationTimeoutTo(TimeSpan.FromSeconds(30))
-                                                                                .SetReconnectionDelayTo(TimeSpan.FromSeconds(1))
-                                                                                .SetHeartbeatTimeout(TimeSpan.FromSeconds(30))
-                                                                                .SetHeartbeatInterval(TimeSpan.FromSeconds(60))
-                                                                                .UseCustomLogger(_eventStoreLogger),
-                                                              MakeConnectionName());
+                    _eventStore = new EventStoreClient(new EventStoreClientSettings
+                    {
+                        ConnectionName = MakeConnectionName(),
+                        LoggerFactory = _eventStoreLogger,
+                        ConnectivitySettings = new EventStoreClientConnectivitySettings
+                        {
+                            Address = new Uri(_eventStoreConfiguration.CurrentValue.Uri),
+                            NodePreference = NodePreference.Random
+                        }
+                    });
                 }
                 catch (Exception e)
                 {
@@ -230,14 +222,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     throw;
                 }
 
-                _eventStore.Connected += OnEventStoreConnected;
-                _eventStore.Disconnected += OnEventStoreDisconnected;
-                _eventStore.Reconnecting += OnEventStoreReconnecting;
-
                 try
                 {
-                    _eventStore.ConnectAsync().RunSync();
-                    _eventSubscription = _eventStore.SubscribeToAllAsync(true, OnEventAppeared).RunSync();
+                    _eventSubscription = _eventStore.SubscribeToAllAsync(OnEventAppeared, true).RunSync();
                 }
                 catch (Exception e)
                 {
@@ -249,12 +236,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private string MakeConnectionName()
             => $"{_eventStoreConfiguration.CurrentValue.ConnectionName}-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}";
 
-        private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
+        private Task OnEventAppeared(StreamSubscription subscription, ResolvedEvent resolvedEvent, CancellationToken cancellationToken)
         {
             var storeSubscription = new StoreSubscription
             {
-                LastEventNumber = subscription.LastEventNumber,
-                StreamId = subscription.StreamId
+                LastEventNumber = resolvedEvent.Event.EventNumber.ToInt64(),
+                StreamId = resolvedEvent.Event.EventStreamId
             };
 
             var storedEvent = new StoredEvent
@@ -263,7 +250,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 Data = resolvedEvent.Event.Data,
                 Metadata = resolvedEvent.Event.Metadata,
                 EventType = resolvedEvent.Event.EventType,
-                EventNumber = resolvedEvent.Event.EventNumber,
+                EventNumber = resolvedEvent.Event.EventNumber.ToInt64(),
                 UtcTime = resolvedEvent.Event.Created.ToUniversalTime()
             };
 
@@ -271,26 +258,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Task.CompletedTask;
         }
 
-        private void OnEventStoreConnected(object sender, ClientConnectionEventArgs args)
-        {
-            KnownMetrics.EventStoreConnected.Inc();
-            ConnectionState = ConnectionState.Connected;
-        }
-
-        private void OnEventStoreDisconnected(object sender, ClientConnectionEventArgs args)
-        {
-            KnownMetrics.EventStoreDisconnected.Inc();
-            ConnectionState = ConnectionState.Disconnected;
-            Connect();
-        }
-
-        private void OnEventStoreReconnecting(object sender, ClientReconnectingEventArgs args)
-        {
-            KnownMetrics.EventStoreReconnected.Inc();
-            ConnectionState = ConnectionState.Reconnecting;
-        }
-
-        private (byte[] Data, byte[] Metadata) SerializeDomainEvent(DomainEvent domainEvent)
+        private (ReadOnlyMemory<byte> Data, ReadOnlyMemory<byte> Metadata) SerializeDomainEvent(DomainEvent domainEvent)
             => ((IDomainEventConverter) _provider.GetService(typeof(IDomainEventConverter<>).MakeGenericType(domainEvent.GetType())))
                 .Serialize(domainEvent);
 
@@ -299,63 +267,47 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         ///     for each item, execute <paramref name="streamProcessor" />, until no more items are available or <paramref name="streamProcessor" /> returns false
         /// </summary>
         /// <param name="streamProcessor"></param>
-        /// <param name="readSize"></param>
         /// <param name="direction"></param>
         /// <param name="startIndex"></param>
         /// <returns></returns>
         private async Task StreamEvents(Func<StoredEvent, bool> streamProcessor,
-                                        int readSize = 64,
                                         StreamDirection direction = StreamDirection.Forwards,
                                         long startIndex = -1)
         {
-            // readSize must be below 4096
-            // seems to cause problems with increasing number of items
-            // will be limited to 128 for now
-            readSize = Math.Min(readSize, 256);
-
             var streamOrigin = direction == StreamDirection.Forwards
                                    ? StreamPosition.Start
                                    : StreamPosition.End;
 
             // use either the given start-position (if startIndex positive or 0), or the Beginning (depending on Direction)
             var currentPosition = startIndex >= 0
-                                      ? startIndex
+                                      ? StreamPosition.FromInt64(startIndex)
                                       : streamOrigin;
 
-            var stream = _eventStoreConfiguration.CurrentValue.Stream;
-            bool continueReading;
+            var streamName = _eventStoreConfiguration.CurrentValue.Stream;
 
-            _logger.LogDebug($"replaying all events from stream '{stream}' using chunks of '{readSize}' per read, " +
+            _logger.LogDebug($"replaying all events from stream '{streamName}' " +
                              (direction == StreamDirection.Forwards ? "forwards from the start" : "backwards from the end"));
 
-            do
+            var stream = _eventStore.ReadStreamAsync(direction == StreamDirection.Forwards ? Direction.Forwards : Direction.Backwards,
+                                                     _eventStoreConfiguration.CurrentValue.Stream,
+                                                     currentPosition,
+                                                     resolveLinkTos: true);
+
+            await foreach (var resolvedEvent in stream)
             {
-                var slice = await (direction == StreamDirection.Forwards
-                                       ? _eventStore.ReadStreamEventsForwardAsync(stream, currentPosition, readSize, true)
-                                       : _eventStore.ReadStreamEventsBackwardAsync(stream, currentPosition, readSize, true));
-
-                _logger.LogDebug($"read '{slice.Events.Length}' events " +
-                                 $"{slice.FromEventNumber}-{slice.NextEventNumber - 1}/{slice.LastEventNumber} {direction}");
-
-                KnownMetrics.EventsRead.Inc(slice.Events.Length);
-
-                if (slice.Events
-                         .Select(e => new StoredEvent
-                         {
-                             EventId = e.Event.EventId,
-                             Data = e.Event.Data,
-                             Metadata = e.Event.Metadata,
-                             EventType = e.Event.EventType,
-                             EventNumber = e.Event.EventNumber,
-                             UtcTime = e.Event.Created.ToUniversalTime()
-                         })
-                         // if any streamProcessor returns false, stop streaming
-                         .Any(storedEvent => !streamProcessor(storedEvent)))
-                    return;
-
-                currentPosition = slice.NextEventNumber;
-                continueReading = !slice.IsEndOfStream;
-            } while (continueReading);
+                KnownMetrics.EventsRead.Inc();
+                var payload = new StoredEvent
+                {
+                    EventId = resolvedEvent.Event.EventId,
+                    Data = resolvedEvent.Event.Data,
+                    Metadata = resolvedEvent.Event.Metadata,
+                    EventType = resolvedEvent.Event.EventType,
+                    EventNumber = resolvedEvent.Event.EventNumber.ToInt64(),
+                    UtcTime = resolvedEvent.Event.Created.ToUniversalTime()
+                };
+                if (!streamProcessor.Invoke(payload))
+                    break;
+            }
         }
     }
 }

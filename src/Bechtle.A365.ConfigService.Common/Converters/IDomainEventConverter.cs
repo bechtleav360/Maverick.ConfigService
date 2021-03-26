@@ -1,20 +1,21 @@
-﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
+﻿using System;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
     public interface IDomainEventConverter
     {
-        DomainEvent DeserializeInstance(byte[] data);
+        DomainEvent DeserializeInstance(ReadOnlyMemory<byte> data);
 
-        (byte[] Data, byte[] Metadata) Serialize(DomainEvent domainEvent);
+        (ReadOnlyMemory<byte> Data, ReadOnlyMemory<byte> Metadata) Serialize(DomainEvent domainEvent);
 
-        DomainEventMetadata DeserializeMetadata(byte[] metadata);
+        DomainEventMetadata DeserializeMetadata(ReadOnlyMemory<byte> metadata);
     }
 
     public interface IDomainEventConverter<T> : IDomainEventConverter where T : DomainEvent
     {
-        new T DeserializeInstance(byte[] data);
+        new T DeserializeInstance(ReadOnlyMemory<byte> data);
 
-        (byte[] Data, byte[] Metadata) Serialize(T domainEvent);
+        (ReadOnlyMemory<byte> Data, ReadOnlyMemory<byte> Metadata) Serialize(T domainEvent);
     }
 }

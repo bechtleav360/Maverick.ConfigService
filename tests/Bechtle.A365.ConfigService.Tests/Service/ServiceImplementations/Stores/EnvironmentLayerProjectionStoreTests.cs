@@ -45,7 +45,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -89,7 +88,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -141,7 +139,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -197,7 +194,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -250,7 +246,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -303,7 +298,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -356,7 +350,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -399,7 +392,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -432,7 +424,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -487,7 +478,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -540,7 +530,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -597,7 +586,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -656,7 +644,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -713,7 +700,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -771,7 +757,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -830,7 +815,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -889,7 +873,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
@@ -953,7 +936,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             eventStore.Setup(es => es.ReplayEventsAsStream(
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEventMetadata Metadata), bool>>(),
                                  It.IsAny<Func<(StoredEvent StoredEvent, DomainEvent DomainEvent), bool>>(),
-                                 It.IsAny<int>(),
                                  It.IsAny<StreamDirection>(),
                                  It.IsAny<long>()))
                       .Returns(Task.CompletedTask);
