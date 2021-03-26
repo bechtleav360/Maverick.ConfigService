@@ -12,6 +12,7 @@ using Bechtle.A365.ConfigService.Common.DbContexts;
 using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Implementations;
+using Bechtle.A365.ConfigService.Implementations.Health;
 using Bechtle.A365.ConfigService.Implementations.SnapshotTriggers;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
@@ -21,7 +22,9 @@ using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Maverick.Core.Health.Extensions;
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -29,6 +32,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -46,6 +50,8 @@ namespace Bechtle.A365.ConfigService
     /// </summary>
     public class Startup
     {
+        private const string Liveness = "Liveness";
+        private const string Readiness = "Readiness";
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<Startup> _logger;
 
@@ -115,6 +121,17 @@ namespace Bechtle.A365.ConfigService
                          "adding Health-Middleware")
                   .Tweak(a => a.UseEndpoints(builder => builder.MapControllers()), "adding controller-endpoints")
                   .Tweak(a => a.UseEndpoints(builder => builder.MapMetrics()), "adding metrics-endpoints")
+                  .Tweak(a => a.UseEndpoints(builder => builder.MapHealthChecks("/health/ready", new HealthCheckOptions
+                  {
+                      Predicate = check => check.Tags.Contains(Readiness),
+                      ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                  })), "adding /health/ready endpoint")
+                  .Tweak(a => a.UseEndpoints(builder => builder.MapHealthChecks("/health/live", new HealthCheckOptions
+                  {
+                      Predicate = check => check.Tags.Contains(Liveness),
+                      ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                  })), "adding /health/live endpoint")
+                  .Tweak(a => a.UseEndpoints(builder => builder.MapHealthChecksUI()), "adding /healthchecks-ui endpoint")
                   .Tweak(_ =>
                   {
                       ChangeToken.OnChange(Configuration.GetReloadToken,
@@ -294,11 +311,26 @@ namespace Bechtle.A365.ConfigService
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");
 
+            services.AddSingleton<EventStoreClusterCheck>();
+            services.AddHealthChecks()
+                    .AddCheck<EventStoreClusterCheck>(
+                        "EventStore-ConnectionType",
+                        HealthStatus.Unhealthy,
+                        new[] {Liveness},
+                        TimeSpan.FromSeconds(2));
+
             services.AddHealth(builder =>
             {
                 builder.ServiceName = "ConfigService";
                 builder.AnalyseInternalServices = true;
             });
+
+            services.AddHealthChecksUI(setup =>
+            {
+                setup.DisableDatabaseMigrations();
+                setup.AddHealthCheckEndpoint("Ready Checks", "/health/ready");
+                setup.AddHealthCheckEndpoint("Live Checks", "/health/live");
+            }).AddInMemoryStorage();
         }
 
         private void RegisterLocalSnapshotStore(IConfigurationSection section, IServiceCollection services)

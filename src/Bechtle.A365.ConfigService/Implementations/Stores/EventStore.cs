@@ -208,7 +208,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     var settings = EventStoreClientSettings.Create(_eventStoreConfiguration.CurrentValue.Uri);
                     settings.LoggerFactory = _eventStoreLogger;
                     settings.ConnectionName = MakeConnectionName();
-                    settings.ConnectivitySettings.NodePreference = NodePreference.Random;
+                    settings.ConnectivitySettings.NodePreference = NodePreference.Follower;
                     settings.OperationOptions.TimeoutAfter = TimeSpan.FromMinutes(1);
                     _eventStore = new EventStoreClient(settings);
                 }

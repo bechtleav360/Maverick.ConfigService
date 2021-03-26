@@ -26,13 +26,13 @@ namespace Bechtle.A365.ConfigService.Models.V1
         public CompilationStats Stats { get; set; } = new CompilationStats();
 
         /// <summary>
-        ///     Path => Warning dictionary
-        /// </summary>
-        public Dictionary<string, List<string>> Warnings { get; set; }
-
-        /// <summary>
         ///     List of Environment-Keys used to compile this Configuration
         /// </summary>
         public List<string> UsedKeys { get; set; }
+
+        /// <summary>
+        ///     Path => Warning dictionary
+        /// </summary>
+        public Dictionary<string, List<string>> Warnings { get; set; }
     }
 }

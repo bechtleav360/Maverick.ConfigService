@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 {
     [Command("test",
         Description = "Test connection *to* ConfigService and from ConfigService to Database",
-        ThrowOnUnexpectedArgument = false,
+        UnrecognizedArgumentHandling = UnrecognizedArgumentHandling.CollectAndContinue,
         AllowArgumentSeparator = true)]
     public class TestCommand : SubCommand<Program>
     {
