@@ -2,7 +2,7 @@
 
   <!-- Global Stuff -->
   <PropertyGroup>
-    <Version>2.3.1</Version>
+    <Version>2.4.0</Version>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
