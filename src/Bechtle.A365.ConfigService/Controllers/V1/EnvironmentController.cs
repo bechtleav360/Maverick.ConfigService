@@ -70,6 +70,38 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
+        ///     assign the given layers in their given order as the content of this Environment
+        /// </summary>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <param name="layers">ordered list of Layers to be assigned</param>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [HttpPut("{category}/{name}/layers", Name = "AssignLayers")]
+        public async Task<IActionResult> AssignLayers([FromRoute] string category,
+                                                      [FromRoute] string name,
+                                                      [FromBody] LayerIdentifier[] layers)
+        {
+            try
+            {
+                var result = await _store.Environments.AssignLayers(
+                                 new EnvironmentIdentifier(category, name),
+                                 layers);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                return Accepted();
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, $"failed to assign Layers to Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to assign layers to environment");
+            }
+        }
+
+        /// <summary>
         ///     delete an existing Environment with the given Category + Name
         /// </summary>
         /// <param name="category">Category of the requested Environment</param>
@@ -102,6 +134,46 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
+        ///     get the assigned layers and their order for this Environment
+        /// </summary>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <returns>ordered list of assigned layer-ids</returns>
+        [ProducesResponseType(typeof(LayerIdentifier[]), (int) HttpStatusCode.OK)]
+        [HttpGet("{category}/{name}/layers", Name = "GetAssignedLayers")]
+        public async Task<IActionResult> GetAssignedLayers([FromRoute] string category,
+                                                           [FromRoute] string name)
+        {
+            try
+            {
+                return Result(await _store.Environments.GetAssignedLayers(new EnvironmentIdentifier(category, name)));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, $"failed to retrieve assigned Layers for Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve assigned layers for environment");
+            }
+        }
+
+        /// <summary>
+        ///     get a list of available environments
+        /// </summary>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>list of Environment-Ids</returns>
+        [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int) HttpStatusCode.OK)]
+        [HttpGet("available", Name = "GetAvailableEnvironments")]
+        [Obsolete("use GetEnvironments (GET /) instead")]
+        public IActionResult GetAvailableEnvironments([FromQuery] int offset = -1,
+                                                      [FromQuery] int length = -1,
+                                                      [FromQuery] long targetVersion = -1)
+            => RedirectToActionPermanent(nameof(GetEnvironments),
+                                         RouteUtilities.ControllerName<EnvironmentController>(),
+                                         new {offset, length, targetVersion, version = ApiVersions.V1});
+
+        /// <summary>
         ///     get a list of available environments
         /// </summary>
         /// <param name="offset">offset from the beginning of the returned query-results</param>
@@ -110,10 +182,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>list of Environment-Ids</returns>
         [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int) HttpStatusCode.OK)]
         [HttpGet(Name = "GetEnvironments")]
-        [HttpGet("available", Name = "GetAvailableEnvironments")]
-        public async Task<IActionResult> GetAvailableEnvironments([FromQuery] int offset = -1,
-                                                                  [FromQuery] int length = -1,
-                                                                  [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetEnvironments([FromQuery] int offset = -1,
+                                                         [FromQuery] int length = -1,
+                                                         [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
@@ -311,61 +382,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                    $"{nameof(length)}: {length}; " +
                                    $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
-            }
-        }
-
-        /// <summary>
-        ///     assign the given layers in their given order as the content of this Environment
-        /// </summary>
-        /// <param name="category">Category of the requested Environment</param>
-        /// <param name="name">Name of the given Environment</param>
-        /// <param name="layers">ordered list of Layers to be assigned</param>
-        /// <returns></returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
-        [HttpPut("{category}/{name}/layers", Name = "AssignLayers")]
-        public async Task<IActionResult> AssignLayers([FromRoute] string category,
-                                                      [FromRoute] string name,
-                                                      [FromBody] LayerIdentifier[] layers)
-        {
-            try
-            {
-                var result = await _store.Environments.AssignLayers(
-                                 new EnvironmentIdentifier(category, name),
-                                 layers);
-
-                if (result.IsError)
-                    return ProviderError(result);
-
-                return Accepted();
-            }
-            catch (Exception e)
-            {
-                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to assign Layers to Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to assign layers to environment");
-            }
-        }
-
-        /// <summary>
-        ///     get the assigned layers and their order for this Environment
-        /// </summary>
-        /// <param name="category">Category of the requested Environment</param>
-        /// <param name="name">Name of the given Environment</param>
-        /// <returns>ordered list of assigned layer-ids</returns>
-        [ProducesResponseType(typeof(LayerIdentifier[]), (int) HttpStatusCode.OK)]
-        [HttpGet("{category}/{name}/layers", Name = "GetAssignedLayers")]
-        public async Task<IActionResult> GetAssignedLayers([FromRoute] string category,
-                                                           [FromRoute] string name)
-        {
-            try
-            {
-                return Result(await _store.Environments.GetAssignedLayers(new EnvironmentIdentifier(category, name)));
-            }
-            catch (Exception e)
-            {
-                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to retrieve assigned Layers for Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve assigned layers for environment");
             }
         }
     }

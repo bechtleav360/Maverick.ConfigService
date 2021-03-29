@@ -107,33 +107,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        [HttpGet(Name = "GetStructures")]
         [HttpGet("available", Name = "GetAvailableStructures")]
-        public async Task<IActionResult> GetAvailableStructures([FromQuery] int offset = -1,
-                                                                [FromQuery] int length = -1)
-        {
-            try
-            {
-                var range = QueryRange.Make(offset, length);
-
-                var result = await _store.Structures.GetAvailable(range);
-
-                if (result.IsError)
-                    return ProviderError(result);
-
-                var sortedData = result.Data
-                                       .GroupBy(s => s.Name)
-                                       .ToDictionary(g => g.Key, g => g.Select(s => s.Version)
-                                                                       .ToArray());
-
-                return Ok(sortedData);
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e, "failed to retrieve available structures");
-                return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve available structures");
-            }
-        }
+        [Obsolete("use GetStructures (GET /) instead")]
+        public IActionResult GetAvailableStructures([FromQuery] int offset = -1,
+                                                    [FromQuery] int length = -1)
+            => RedirectToActionPermanent(nameof(GetStructures),
+                                         RouteUtilities.ControllerName<StructureController>(),
+                                         new {offset, length, version = ApiVersions.V1});
 
         /// <summary>
         ///     get the specified config-structure as json
@@ -207,6 +187,39 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 Logger.LogError(e, $"failed to retrieve structure of ({nameof(name)}: {name}, {nameof(structureVersion)}: {structureVersion})");
                 return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve structure");
+            }
+        }
+
+        /// <summary>
+        ///     get available structures
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet(Name = "GetStructures")]
+        public async Task<IActionResult> GetStructures([FromQuery] int offset = -1,
+                                                       [FromQuery] int length = -1)
+        {
+            try
+            {
+                var range = QueryRange.Make(offset, length);
+
+                var result = await _store.Structures.GetAvailable(range);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                var sortedData = result.Data
+                                       .GroupBy(s => s.Name)
+                                       .ToDictionary(g => g.Key, g => g.Select(s => s.Version)
+                                                                       .ToArray());
+
+                return Ok(sortedData);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "failed to retrieve available structures");
+                return StatusCode((int) HttpStatusCode.InternalServerError, "failed to retrieve available structures");
             }
         }
 

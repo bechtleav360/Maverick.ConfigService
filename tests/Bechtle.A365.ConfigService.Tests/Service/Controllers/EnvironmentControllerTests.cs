@@ -158,7 +158,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                 }))
                                 .Verifiable("environments not queried");
 
-            var result = await TestAction<OkObjectResult>(c => c.GetAvailableEnvironments());
+            var result = await TestAction<OkObjectResult>(c => c.GetEnvironments());
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<IList<EnvironmentIdentifier>>(result.Value);
@@ -176,7 +176,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                 }))
                                 .Verifiable("environments not queried");
 
-            await TestAction<OkObjectResult>(c => c.GetAvailableEnvironments(1, 2, 4711));
+            await TestAction<OkObjectResult>(c => c.GetEnvironments(1, 2, 4711));
 
             _projectionStoreMock.Verify();
         }
@@ -188,7 +188,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                 .ReturnsAsync(() => Result.Error<IList<EnvironmentIdentifier>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("environments not queried");
 
-            var result = await TestAction<ObjectResult>(c => c.GetAvailableEnvironments());
+            var result = await TestAction<ObjectResult>(c => c.GetEnvironments());
 
             Assert.NotNull(result.Value);
 
@@ -202,7 +202,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                 .Throws<Exception>()
                                 .Verifiable("environments not queried");
 
-            var result = await TestAction<ObjectResult>(c => c.GetAvailableEnvironments());
+            var result = await TestAction<ObjectResult>(c => c.GetEnvironments());
 
             Assert.NotNull(result.Value);
 

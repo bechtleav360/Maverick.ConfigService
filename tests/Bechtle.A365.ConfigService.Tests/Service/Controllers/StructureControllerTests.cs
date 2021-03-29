@@ -214,7 +214,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             }))
                             .Verifiable("available structures not retrieved");
 
-            var result = await TestAction<OkObjectResult>(c => c.GetAvailableStructures());
+            var result = await TestAction<OkObjectResult>(c => c.GetStructures());
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<Dictionary<string, int[]>>(result.Value);
@@ -229,7 +229,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .ReturnsAsync(() => Result.Error<IList<StructureIdentifier>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("available structures not retrieved");
 
-            var result = await TestAction<ObjectResult>(c => c.GetAvailableStructures());
+            var result = await TestAction<ObjectResult>(c => c.GetStructures());
 
             Assert.NotNull(result.Value);
             _projectionStore.Verify();
@@ -242,7 +242,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .Throws<Exception>()
                             .Verifiable("available structures not retrieved");
 
-            var result = await TestAction<ObjectResult>(c => c.GetAvailableStructures());
+            var result = await TestAction<ObjectResult>(c => c.GetStructures());
 
             Assert.NotNull(result.Value);
             _projectionStore.Verify();

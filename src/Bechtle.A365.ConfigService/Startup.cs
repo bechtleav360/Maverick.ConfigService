@@ -501,7 +501,6 @@ namespace Bechtle.A365.ConfigService
                     .AddSwaggerGen(options =>
                     {
                         options.CustomSchemaIds(t => t.FullName);
-                        options.OperationFilter<SwaggerDefaultValues>();
 
                         var ass = Assembly.GetEntryAssembly();
                         if (!(ass is null))
