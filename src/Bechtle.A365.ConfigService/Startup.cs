@@ -312,8 +312,12 @@ namespace Bechtle.A365.ConfigService
             _logger.LogInformation("Registering Health Endpoint");
             _logger.LogDebug("building intermediate-service-provider");
 
+            var signalrServer = Configuration.GetSection("EventBusConnection:Server").Get<string>();
+            var signalrHub = Configuration.GetSection("EventBusConnection:Hub").Get<string>();
+
             services.AddSingleton<HttpPipelineCheck>();
             services.AddSingleton<EventStoreClusterCheck>();
+            services.AddSingleton<EventStoreConnectionCheck>();
             services.AddHealthChecks()
                     .AddCheck<EventStoreClusterCheck>(
                         "EventStore-ConnectionType",
@@ -324,7 +328,22 @@ namespace Bechtle.A365.ConfigService
                         "Http-Pipeline",
                         HealthStatus.Unhealthy,
                         new[] {Liveness},
-                        TimeSpan.FromSeconds(1));
+                        TimeSpan.FromSeconds(1))
+                    .AddCheck<EventStoreConnectionCheck>(
+                        "EventStore-Connection",
+                        HealthStatus.Unhealthy,
+                        new[] {Readiness},
+                        TimeSpan.FromSeconds(30))
+                    .AddRedis(Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>(),
+                              "Temporary-Keys (Redis)",
+                              HealthStatus.Unhealthy,
+                              new[] {Readiness})
+                    .AddSignalRHub(new Uri(new Uri(signalrServer, UriKind.Absolute),
+                                           new Uri(signalrHub, UriKind.Relative))
+                                       .ToString(),
+                                   "SignalR-Connection",
+                                   HealthStatus.Unhealthy,
+                                   new[] {Readiness});
 
             services.AddHealth(builder =>
             {
