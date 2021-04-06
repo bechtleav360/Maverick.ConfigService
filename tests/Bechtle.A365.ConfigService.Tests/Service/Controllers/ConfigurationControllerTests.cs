@@ -7,6 +7,8 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Controllers.V1;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.Core.EventBus.Abstraction;
+using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +23,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
     {
         private readonly Mock<IProjectionStore> _projectionStore = new Mock<IProjectionStore>(MockBehavior.Strict);
 
+        private readonly Mock<IEventBus> _eventBus = new Mock<IEventBus>(MockBehavior.Strict);
+
         /// <inheritdoc />
         protected override ConfigurationController CreateController()
         {
@@ -34,7 +38,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             return new ConfigurationController(
                 provider,
                 provider.GetService<ILogger<ConfigurationController>>(),
-                _projectionStore.Object);
+                _projectionStore.Object,
+                _eventBus.Object);
         }
 
         [Fact]
@@ -67,6 +72,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                                DateTime.MaxValue))
                             .ReturnsAsync(Result.Success)
                             .Verifiable("configuration not built");
+
+            _eventBus.Setup(e => e.Publish(It.IsAny<EventMessage>()))
+                     .Returns(Task.CompletedTask)
+                     .Verifiable("OnConfigurationPublished was not published");
 
             var result = await TestAction<AcceptedAtActionResult>(c => c.BuildConfiguration("Foo", "Bar", "Foo", 42, new ConfigurationBuildOptions
             {

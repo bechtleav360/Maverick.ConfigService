@@ -8,6 +8,9 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.Core.EventBus.Abstraction;
+using Bechtle.A365.Core.EventBus.Events.Events;
+using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -21,14 +24,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     public class ConfigurationController : ControllerBase
     {
         private readonly IProjectionStore _store;
+        private readonly IEventBus _eventBus;
 
         /// <inheritdoc />
         public ConfigurationController(IServiceProvider provider,
                                        ILogger<ConfigurationController> logger,
-                                       IProjectionStore store)
+                                       IProjectionStore store,
+                                       IEventBus eventBus)
             : base(provider, logger)
         {
             _store = store;
+            _eventBus = eventBus;
         }
 
         /// <summary>
@@ -97,6 +103,24 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 Logger.LogInformation($"request for new Configuration ({configId}) denied due to it not being stale");
                 requestApproved = false;
+            }
+
+            try
+            {
+                await _eventBus.Publish(new EventMessage
+                {
+                    Event = new OnConfigurationPublished
+                    {
+                        EnvironmentCategory = configId.Environment.Category,
+                        EnvironmentName = configId.Environment.Name,
+                        StructureName = configId.Structure.Name,
+                        StructureVersion = configId.Structure.Version
+                    }
+                });
+            }
+            catch (Exception e)
+            {
+                Logger.LogWarning(e, "error while publishing OnConfigurationPublished after building configuration");
             }
 
             // add a header indicating if a new Configuration was actually built or not

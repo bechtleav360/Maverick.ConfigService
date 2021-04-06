@@ -9,7 +9,7 @@
 
   <!-- Package Dependencies -->
   <ItemGroup>
-    <PackageReference Include="Bechtle.A365.Core.EventBus" Version="3.2.0.13" />
+    <PackageReference Include="Bechtle.A365.Core.EventBus" Version="3.3.0.1" />
     <PackageReference Include="EventStore.Client.Grpc.Streams" Version="20.10" />
     <PackageReference Include="Grpc.Net.Client" Version="2.36.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.13" />
