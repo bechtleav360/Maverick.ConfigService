@@ -57,7 +57,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         public void Dispose()
         {
             _eventSubscription?.Dispose();
+            _eventSubscription = null;
             _eventStore?.Dispose();
+            _eventStore = null;
         }
 
         /// <inheritdoc />
@@ -190,6 +192,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     if (!(_eventStore is null))
                     {
                         _eventSubscription?.Dispose();
+                        _eventSubscription = null;
                     }
 
                     _eventStore?.Dispose();
