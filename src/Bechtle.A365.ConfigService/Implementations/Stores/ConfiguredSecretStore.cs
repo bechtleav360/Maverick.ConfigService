@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public class ConfiguredSecretStore : DictionaryValueProvider, ISecretConfigValueProvider
     {
         /// <inheritdoc cref="ConfiguredSecretStore" />
-        public ConfiguredSecretStore(IOptions<ConfiguredSecretStoreConfiguration> configuration)
+        public ConfiguredSecretStore(IOptionsSnapshot<ConfiguredSecretStoreConfiguration> configuration)
             : base(configuration.Value
                                 .Secrets
                                 .ToDictionary(kvp => NormalizePath(kvp.Key),
