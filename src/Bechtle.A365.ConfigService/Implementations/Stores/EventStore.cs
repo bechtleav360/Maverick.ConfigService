@@ -307,20 +307,33 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                      currentPosition,
                                                      resolveLinkTos: true);
 
-            await foreach (var resolvedEvent in stream)
+            try
             {
-                KnownMetrics.EventsRead.Inc();
-                var payload = new StoredEvent
+                await foreach (var resolvedEvent in stream)
                 {
-                    EventId = resolvedEvent.Event.EventId,
-                    Data = resolvedEvent.Event.Data,
-                    Metadata = resolvedEvent.Event.Metadata,
-                    EventType = resolvedEvent.Event.EventType,
-                    EventNumber = resolvedEvent.Event.EventNumber.ToInt64(),
-                    UtcTime = resolvedEvent.Event.Created.ToUniversalTime()
-                };
-                if (!streamProcessor.Invoke(payload))
-                    break;
+                    KnownMetrics.EventsRead.Inc();
+                    var payload = new StoredEvent
+                    {
+                        EventId = resolvedEvent.Event.EventId,
+                        Data = resolvedEvent.Event.Data,
+                        Metadata = resolvedEvent.Event.Metadata,
+                        EventType = resolvedEvent.Event.EventType,
+                        EventNumber = resolvedEvent.Event.EventNumber.ToInt64(),
+                        UtcTime = resolvedEvent.Event.Created.ToUniversalTime()
+                    };
+                    if (!streamProcessor.Invoke(payload))
+                        break;
+                }
+            }
+            catch (StreamNotFoundException)
+            {
+                // stream doesn't exist yet
+                // we only catch this, because there is no "good" way to check for this before reading
+            }
+            catch (Exception e)
+            {
+                // unknown exception while reading
+                _logger.LogWarning(e, "unable to read events from EventStore");
             }
         }
     }
