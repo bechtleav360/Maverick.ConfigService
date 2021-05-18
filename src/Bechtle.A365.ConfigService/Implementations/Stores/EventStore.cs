@@ -1,23 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Exceptions;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using EventStore.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <inheritdoc cref="IEventStore" />
     public sealed class EventStore : IEventStore
     {
+        /// <summary>
+        ///     The current default 'Append-Size' / 'Message-Size' when writing new events to ES
+        /// </summary>
+        private const long DefaultMaxAppendSize = 1 * 1024 * 1024;
+
         private readonly object _connectionLock;
         private readonly IEventDeserializer _eventDeserializer;
         private readonly IOptionsMonitor<EventStoreConnectionConfiguration> _eventStoreConfiguration;
@@ -27,6 +35,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         private EventStoreClient _eventStore;
         private StreamSubscription _eventSubscription;
+        private List<EventStoreOption> _eventStoreOptions;
 
         /// <inheritdoc cref="EventStore" />
         /// <param name="logger"></param>
@@ -131,11 +140,31 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }, direction, startIndex);
         }
 
+        private long MaxAppendSize
+        {
+            get
+            {
+                string option = _eventStoreOptions?.FirstOrDefault(
+                                                      o => o.Name.Equals(
+                                                          "MaxAppendSize",
+                                                          StringComparison.OrdinalIgnoreCase))
+                                                  ?.Value;
+
+                return string.IsNullOrWhiteSpace(option)
+                       && long.TryParse(option, out long retVal)
+                           ? retVal
+                           : DefaultMaxAppendSize;
+            }
+        }
+
         /// <inheritdoc />
         public async Task<long> WriteEvents(IList<DomainEvent> domainEvents)
         {
             // connect if we're not already connected
             Connect();
+
+            if (_eventStoreOptions is null)
+                _eventStoreOptions = await GetEventStoreOptionsAsync();
 
             var eventList = string.Join(", ", domainEvents.Select(e => e.EventType));
 
@@ -151,6 +180,21 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                      metadata);
             }).ToList();
 
+            // sum size of all events to compute total message-size
+            var writeSize = eventData.Sum(
+                e => e.Data.Length
+                     + e.Metadata.Length
+                     + e.Type.Length
+                     + e.ContentType.Length
+                     // size of e.EventId / UUID
+                     + 128);
+
+            // calculate Property once
+            var maxAppendSize = MaxAppendSize;
+
+            if (writeSize >= maxAppendSize)
+                throw new InvalidMessageSizeException(writeSize, maxAppendSize);
+
             foreach (var item in eventData)
                 _logger.LogInformation("sending " +
                                        $"EventId: '{item.EventId}'; " +
@@ -159,19 +203,36 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                        $"Data: {item.Data.Length} bytes; " +
                                        $"Metadata: {item.Metadata.Length} bytes;");
 
-            var result = await _eventStore.AppendToStreamAsync(_eventStoreConfiguration.CurrentValue.Stream,
-                                                               StreamState.Any,
-                                                               eventData);
+            try
+            {
+                var result = await _eventStore.AppendToStreamAsync(
+                                 _eventStoreConfiguration.CurrentValue.Stream,
+                                 StreamState.Any,
+                                 eventData);
 
-            foreach (var item in domainEvents)
-                KnownMetrics.EventsWritten.WithLabels(item.EventType).Inc();
+                foreach (var item in domainEvents)
+                    KnownMetrics.EventsWritten.WithLabels(item.EventType).Inc();
 
-            _logger.LogDebug($"sent {domainEvents.Count} events '{eventList}': " +
-                             $"NextExpectedStreamRevision: {result.NextExpectedStreamRevision}; " +
-                             $"CommitPosition: {result.LogPosition.CommitPosition}; " +
-                             $"PreparePosition: {result.LogPosition.PreparePosition};");
+                _logger.LogDebug(
+                    $"sent {domainEvents.Count} events '{eventList}': "
+                    + $"NextExpectedStreamRevision: {result.NextExpectedStreamRevision}; "
+                    + $"CommitPosition: {result.LogPosition.CommitPosition}; "
+                    + $"PreparePosition: {result.LogPosition.PreparePosition};");
 
-            return result.NextExpectedStreamRevision.ToInt64();
+                return result.NextExpectedStreamRevision.ToInt64();
+            }
+            catch (MaximumAppendSizeExceededException e)
+            {
+                // this *should* not happen when we explicitly retrieve the MaxAppendSize-option
+                // but something might still go wrong (different configs, changed configs / new instances, ...)
+                _logger.LogWarning(e, "message was larger than ES allowed");
+                throw new InvalidMessageSizeException(writeSize, maxAppendSize, e);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "unable to write to EventStore");
+                throw;
+            }
         }
 
         private void Connect(bool reconnect = false)
@@ -184,6 +245,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     && !(_eventStore is null)
                     && !(_eventSubscription is null))
                     return;
+
+                // clear cached ES-Options, so we can pull them again on the next write
+                _eventStoreOptions = null;
 
                 try
                 {
@@ -335,6 +399,62 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 // unknown exception while reading
                 _logger.LogWarning(e, "unable to read events from EventStore");
             }
+        }
+
+        private async Task<List<EventStoreOption>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
+        {
+            var storeUri = new Uri(_eventStoreConfiguration.CurrentValue.Uri);
+
+            Uri optionsUri = storeUri.Query.Contains("tls=true", StringComparison.OrdinalIgnoreCase)
+                                 ? new Uri($"https://{storeUri.Authority}{storeUri.AbsolutePath}info/options")
+                                 : new Uri($"http://{storeUri.Authority}{storeUri.AbsolutePath}info/options");
+
+            // yes creating HttpClient is frowned upon, but we don't need it *that* often and can immediately release it
+            var httpClient = new HttpClient();
+            HttpResponseMessage response;
+
+            try
+            {
+                response =await httpClient.GetAsync(optionsUri, cancellationToken);
+
+                if (response is null)
+                {
+                    _logger.LogWarning("unable to retrieve [EventStore]/info/options");
+                    return null;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "unable to retrieve [EventStore]/info/options");
+                return null;
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            try
+            {
+                return JsonConvert.DeserializeObject<List<EventStoreOption>>(json);
+            }
+            catch (JsonException e)
+            {
+                _logger.LogWarning(e, "unable to deserialize '../info/options' response");
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///     a single entry returned from [EventStore]/options
+        /// </summary>
+        private class EventStoreOption
+        {
+            /// <summary>
+            ///     Name of the Option
+            /// </summary>
+            public string Name { get; set; }
+
+            /// <summary>
+            ///     Value of the Option
+            /// </summary>
+            public string Value { get; set; }
         }
     }
 }
