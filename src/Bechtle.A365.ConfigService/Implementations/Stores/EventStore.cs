@@ -59,6 +59,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             _eventStoreConfiguration.OnChange(_ => Connect(true));
         }
 
+        private long MaxAppendSize
+        {
+            get
+            {
+                string option = _eventStoreOptions?.FirstOrDefault(
+                                                      o => o.Name.Equals(
+                                                          "MaxAppendSize",
+                                                          StringComparison.OrdinalIgnoreCase))
+                                                  ?.Value;
+
+                return string.IsNullOrWhiteSpace(option)
+                       && long.TryParse(option, out long retVal)
+                           ? retVal
+                           : DefaultMaxAppendSize;
+            }
+        }
+
         /// <inheritdoc />
         public event EventHandler<(StoreSubscription Subscription, StoredEvent StoredEvent)> EventAppeared;
 
@@ -140,39 +157,24 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }, direction, startIndex);
         }
 
-        private long MaxAppendSize
-        {
-            get
-            {
-                string option = _eventStoreOptions?.FirstOrDefault(
-                                                      o => o.Name.Equals(
-                                                          "MaxAppendSize",
-                                                          StringComparison.OrdinalIgnoreCase))
-                                                  ?.Value;
-
-                return string.IsNullOrWhiteSpace(option)
-                       && long.TryParse(option, out long retVal)
-                           ? retVal
-                           : DefaultMaxAppendSize;
-            }
-        }
-
         /// <inheritdoc />
         public async Task<long> WriteEvents(IList<DomainEvent> domainEvents)
         {
+            if (domainEvents is null || !domainEvents.Any())
+                throw new ArgumentException("domainEvents must not be null or empty", nameof(domainEvents));
+
             // connect if we're not already connected
             Connect();
 
-            if (_eventStoreOptions is null)
-                _eventStoreOptions = await GetEventStoreOptionsAsync();
+            _eventStoreOptions ??= await GetEventStoreOptionsAsync();
 
-            var eventList = string.Join(", ", domainEvents.Select(e => e.EventType));
+            _logger.LogDebug(
+                "WriteEvents('{DomainEvents}')",
+                string.Join(", ", domainEvents.Select(e => e.EventType)));
 
-            _logger.LogDebug($"{nameof(WriteEvents)}('{eventList}')");
-
-            var eventData = domainEvents.Select(e =>
+            List<EventData> eventData = domainEvents.Select(e =>
             {
-                var (data, metadata) = SerializeDomainEvent(e);
+                (ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata) = SerializeDomainEvent(e);
 
                 return new EventData(Uuid.NewUuid(),
                                      e.EventType,
@@ -180,59 +182,125 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                      metadata);
             }).ToList();
 
-            // sum size of all events to compute total message-size
-            var writeSize = eventData.Sum(
-                e => e.Data.Length
-                     + e.Metadata.Length
-                     + e.Type.Length
-                     + e.ContentType.Length
-                     // size of e.EventId / UUID
-                     + 128);
-
-            // calculate Property once
-            var maxAppendSize = MaxAppendSize;
-
-            if (writeSize >= maxAppendSize)
-                throw new InvalidMessageSizeException(writeSize, maxAppendSize);
-
-            foreach (var item in eventData)
-                _logger.LogInformation("sending " +
-                                       $"EventId: '{item.EventId}'; " +
-                                       $"Type: '{item.Type}'; " +
-                                       $"ContentType: '{item.ContentType}'; " +
-                                       $"Data: {item.Data.Length} bytes; " +
-                                       $"Metadata: {item.Metadata.Length} bytes;");
-
             try
             {
-                var result = await _eventStore.AppendToStreamAsync(
-                                 _eventStoreConfiguration.CurrentValue.Stream,
-                                 StreamState.Any,
-                                 eventData);
+                // calculate this once and reuse
+                long maxAppendSize = MaxAppendSize;
+                Dictionary<EventData, long> eventSizes = eventData.ToDictionary(item => item, SizeOfEvent);
+                long totalSize = eventSizes.Sum(kvp => kvp.Value);
 
-                foreach (var item in domainEvents)
-                    KnownMetrics.EventsWritten.WithLabels(item.EventType).Inc();
+                // if we can write everything in one go, do it
+                if (totalSize < maxAppendSize)
+                    return await WriteEventsAsOne(eventData);
 
-                _logger.LogDebug(
-                    $"sent {domainEvents.Count} events '{eventList}': "
-                    + $"NextExpectedStreamRevision: {result.NextExpectedStreamRevision}; "
-                    + $"CommitPosition: {result.LogPosition.CommitPosition}; "
-                    + $"PreparePosition: {result.LogPosition.PreparePosition};");
+                // if we can't write everything at once, but can still write
+                // every event, then write it in chunks
+                if (eventSizes.All(kvp => kvp.Value < maxAppendSize))
+                    return await WriteEventsInChunks(eventData);
 
-                return result.NextExpectedStreamRevision.ToInt64();
+                // if we're here, then we can't write at all, because at least one event exceed the maximum write-size
+                throw new InvalidMessageSizeException(totalSize, MaxAppendSize);
             }
             catch (MaximumAppendSizeExceededException e)
             {
                 // this *should* not happen when we explicitly retrieve the MaxAppendSize-option
                 // but something might still go wrong (different configs, changed configs / new instances, ...)
                 _logger.LogWarning(e, "message was larger than ES allowed");
-                throw new InvalidMessageSizeException(writeSize, maxAppendSize, e);
+
+                int writeSize = eventData.Sum(
+                    item => item.Data.Length
+                         + item.Metadata.Length
+                         + item.Type.Length
+                         + item.ContentType.Length
+                         // size of e.EventId / UUID
+                         + 128);
+
+                throw new InvalidMessageSizeException(writeSize, MaxAppendSize, e);
             }
             catch (Exception e)
             {
                 _logger.LogWarning(e, "unable to write to EventStore");
                 throw;
             }
+        }
+
+        private long SizeOfEvent(EventData item) => item.Data.Length
+                                                    + item.Metadata.Length
+                                                    + item.Type.Length
+                                                    + item.ContentType.Length
+                                                    // size of e.EventId / UUID
+                                                    + 128;
+
+        /// <summary>
+        ///     Writes the given Events to the EventStore in chunks of at most <see cref="MaxAppendSize"/> in size.
+        ///     This expects the caller to check if the write will succeed by
+        ///     comparing the size of each event to the maximum allowed size of one write.
+        /// </summary>
+        /// <param name="eventData">list of prepared EventStore-Events</param>
+        /// <returns>expected id of the next event</returns>
+        private async Task<long> WriteEventsInChunks(IList<EventData> eventData)
+        {
+            long maxAppendSize = MaxAppendSize;
+
+            var eventChunks = new List<List<EventData>>();
+            var currentChunk = new List<EventData>();
+            long currentChunkSize = 0;
+
+            foreach (EventData item in eventData)
+            {
+                long eventSize = SizeOfEvent(item);
+                if (currentChunkSize + eventSize > maxAppendSize)
+                {
+                    eventChunks.Add(currentChunk);
+                    currentChunkSize = 0;
+                    currentChunk = new List<EventData>();
+                }
+
+                currentChunk.Add(item);
+                currentChunkSize += eventSize;
+            }
+
+            long nextRevision = -1;
+            foreach (List<EventData> chunk in eventChunks)
+            {
+                nextRevision = await WriteEventsAsOne(chunk);
+            }
+
+            return nextRevision;
+        }
+
+        /// <summary>
+        ///     Writes the given Events to the EventStore in one operation.
+        ///     This expects the caller to check if the write will succeed by
+        ///     comparing the total size of all events to the maximum allowed size of one write
+        /// </summary>
+        /// <param name="eventData">list of prepared EventStore-Events</param>
+        /// <returns>expected id of the next event</returns>
+        private async Task<long> WriteEventsAsOne(IList<EventData> eventData)
+        {
+            _logger.LogInformation("writing {NumberOfEvents} events in one call", eventData.Count);
+
+            IWriteResult result = await _eventStore.AppendToStreamAsync(
+                                      _eventStoreConfiguration.CurrentValue.Stream,
+                                      StreamState.Any,
+                                      eventData);
+
+            foreach (EventData item in eventData)
+                KnownMetrics.EventsWritten.WithLabels(item.Type).Inc();
+
+            _logger.LogDebug(
+                "sent {TotalEvents} events; "
+                + "Types: {EventTypes}': "
+                + "NextExpectedStreamRevision: {NextStreamRevision}; "
+                + "CommitPosition: {CommitPosition}; "
+                + "PreparePosition: {PreparePosition};",
+                eventData.Count,
+                string.Join(", ", eventData.Select(e => e.Type)),
+                result.NextExpectedStreamRevision,
+                result.LogPosition.CommitPosition,
+                result.LogPosition.PreparePosition);
+
+            return result.NextExpectedStreamRevision.ToInt64();
         }
 
         private void Connect(bool reconnect = false)

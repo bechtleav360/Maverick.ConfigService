@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -66,5 +68,40 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
             }
         };
+
+        /// <inheritdoc />
+        public override IList<DomainEvent> Split()
+        {
+            var list = new List<DomainEvent>();
+
+            // double to force floating-point division, so we can round up and not miss any keys during partitioning
+            double totalKeys = ModifiedKeys.Length;
+            int partitions = 2;
+            int keysPerPartition = (int) Math.Ceiling(totalKeys / partitions);
+
+            int counter = 0;
+            var nextImport = new List<ConfigKeyAction>();
+            foreach(ConfigKeyAction action in ModifiedKeys)
+            {
+                nextImport.Add(action);
+                ++counter;
+
+                if (counter > keysPerPartition)
+                {
+                    counter = 0;
+                    list.Add(new EnvironmentLayerKeysModified(Identifier, nextImport.ToArray()));
+                    nextImport = new List<ConfigKeyAction>();
+                }
+            }
+
+            // add the keys that might not have been added during the loop
+            if (nextImport.Any())
+            {
+                list.Add(new EnvironmentLayerKeysModified(Identifier, nextImport.ToArray()));
+                nextImport.Clear();
+            }
+
+            return list;
+        }
     }
 }

@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Exceptions;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using EventStore.Client;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -178,11 +181,30 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                     _eventsBeingDrained = true;
                 }
 
-                MetaVersion = CurrentVersion = await store.WriteEvents(CapturedDomainEvents);
-                CapturedDomainEvents.Clear();
-                IncrementalSnapshotService.QueueSnapshot(CreateSnapshot());
+                // try writing / splitting / checking until it works or is impossible to work
+                while (true)
+                {
+                    try
+                    {
+                        // writing - try to write the events
+                        MetaVersion = CurrentVersion = await store.WriteEvents(CapturedDomainEvents);
+                        CapturedDomainEvents.Clear();
+                        IncrementalSnapshotService.QueueSnapshot(CreateSnapshot());
 
-                return Result.Success();
+                        return Result.Success();
+                    }
+                    catch (InvalidMessageSizeException)
+                    {
+                        // splitting - split messages into smaller pieces if possible
+                        int previousNumberOfEvents = CapturedDomainEvents.Count;
+                        CapturedDomainEvents = CapturedDomainEvents.SelectMany(e => e.Split())
+                                                                   .ToList();
+
+                        // checking - if the split didn't work we can't really continue
+                        if (previousNumberOfEvents == CapturedDomainEvents.Count)
+                            throw;
+                    }
+                }
             }
             catch (Exception e)
             {
