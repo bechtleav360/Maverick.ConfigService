@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Bechtle.A365.ConfigService.Cli": {
-      "commandName": "Project",
-      "commandLineArgs": "browse configs -s \"https://localhost:5001\""
-    }
-  }
-}
