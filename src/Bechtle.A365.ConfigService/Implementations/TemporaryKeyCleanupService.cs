@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.Core.EventBus.Events.Messages;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations
@@ -15,11 +16,18 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// <summary>
     ///     service to clean-up keys left over in the Journal after they expire on their own
     /// </summary>
-    public class TemporaryKeyCleanupService : HostedServiceBase
+    public class TemporaryKeyCleanupService : BackgroundService
     {
+        private readonly IServiceProvider _provider;
+        private readonly ILogger<TemporaryKeyCleanupService> _logger;
+
         /// <inheritdoc />
-        public TemporaryKeyCleanupService(IServiceProvider provider) : base(provider)
+        public TemporaryKeyCleanupService(
+            IServiceProvider provider,
+            ILogger<TemporaryKeyCleanupService> logger)
         {
+            _provider = provider;
+            _logger = logger;
         }
 
         /// <inheritdoc />
@@ -37,25 +45,25 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                 try
                 {
-                    Logger.LogDebug("cleaning up empty keys from journal");
+                    _logger.LogDebug("cleaning up empty keys from journal");
                     await ExecuteCleanup(cancellationToken);
-                    Logger.LogDebug("cleanup finished");
+                    _logger.LogDebug("cleanup finished");
                 }
                 catch (Exception e)
                 {
-                    Logger.LogWarning(e, "could not do temporary-key-cleanup");
-                    Logger.LogInformation("cleanup failed, see previous errors");
+                    _logger.LogWarning(e, "could not do temporary-key-cleanup");
+                    _logger.LogInformation("cleanup failed, see previous errors");
                 }
             }
         }
 
         private async Task ExecuteCleanup(CancellationToken cancellationToken)
         {
-            Logger.LogDebug("creating DI-Scope for this run");
+            _logger.LogDebug("creating DI-Scope for this run");
 
-            using var scope = Provider.CreateScope();
+            using var scope = _provider.CreateScope();
 
-            Logger.LogDebug("requesting services");
+            _logger.LogDebug("requesting services");
 
             if (cancellationToken.IsCancellationRequested)
                 return;
@@ -70,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (result.IsError)
             {
-                Logger.LogWarning($"could not retrieve keys from '{nameof(ITemporaryKeyStore)}', will probably try again soon");
+                _logger.LogWarning($"could not retrieve keys from '{nameof(ITemporaryKeyStore)}', will probably try again soon");
                 return;
             }
 
@@ -79,42 +87,43 @@ namespace Bechtle.A365.ConfigService.Implementations
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                Logger.LogDebug($"searching through region '{region}' for keys to clean up");
+                _logger.LogDebug($"searching through region '{region}' for keys to clean up");
                 var keysToExpire = new List<string>();
 
                 var lastDotIndex = region.LastIndexOf('.');
                 var structure = region.Substring(0, lastDotIndex);
                 var version = int.Parse(region.Substring(lastDotIndex + 1));
 
-                Logger.LogDebug($"extracted Structure: '{structure}'; Version: '{version}' from region '{region}'");
+                _logger.LogDebug($"extracted Structure: '{structure}'; Version: '{version}' from region '{region}'");
 
-                Logger.LogTrace("searching for expired keys");
+                _logger.LogTrace("searching for expired keys");
                 foreach (var (key, value) in data)
                     if (string.IsNullOrWhiteSpace(value))
                         keysToExpire.Add(key);
 
-                Logger.LogDebug($"found '{keysToExpire.Count}' keys in '{region}' that will be removed");
+                _logger.LogDebug($"found '{keysToExpire.Count}' keys in '{region}' that will be removed");
 
-                if (keysToExpire.Any() && Logger.IsEnabled(LogLevel.Trace))
-                    Logger.LogTrace($"expired keys that will be removed from region '{region}': {string.Join("; ", keysToExpire)}");
+                if (keysToExpire.Any() && _logger.IsEnabled(LogLevel.Trace))
+                    _logger.LogTrace($"expired keys that will be removed from region '{region}': {string.Join("; ", keysToExpire)}");
 
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                Logger.LogTrace("removing keys from store");
+                _logger.LogTrace("removing keys from store");
                 await tempStore.Remove(region, keysToExpire);
 
-                Logger.LogTrace("publishing event for expired keys");
-                await eventBus.Publish(new EventMessage
-                {
-                    Event = new TemporaryKeysExpired
+                _logger.LogTrace("publishing event for expired keys");
+                await eventBus.Publish(
+                    new EventMessage
                     {
-                        Structure = structure,
-                        Version = version,
-                        Keys = keysToExpire
-                    },
-                    EventType = nameof(TemporaryKeysExpired)
-                });
+                        Event = new TemporaryKeysExpired
+                        {
+                            Structure = structure,
+                            Version = version,
+                            Keys = keysToExpire
+                        },
+                        EventType = nameof(TemporaryKeysExpired)
+                    });
             }
         }
     }

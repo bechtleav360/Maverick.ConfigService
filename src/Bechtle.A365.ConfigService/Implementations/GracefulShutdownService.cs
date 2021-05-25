@@ -11,16 +11,15 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// <summary>
     ///     handle all required tasks to let this service shutdown gracefully
     /// </summary>
-    public class GracefulShutdownService : HostedServiceBase
+    public class GracefulShutdownService : BackgroundService
     {
         private readonly ILogger _logger;
         private readonly IHostApplicationLifetime _lifetime;
 
         /// <inheritdoc cref="GracefulShutdownService" />
-        public GracefulShutdownService(IServiceProvider provider,
-                                       IHostApplicationLifetime lifetime,
-                                       ILogger<GracefulShutdownService> logger)
-            : base(provider)
+        public GracefulShutdownService(
+            IHostApplicationLifetime lifetime,
+            ILogger<GracefulShutdownService> logger)
         {
             _logger = logger;
             _lifetime = lifetime;
