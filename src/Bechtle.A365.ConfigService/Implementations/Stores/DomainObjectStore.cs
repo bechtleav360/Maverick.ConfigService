@@ -1,216 +1,298 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Configuration;
+using LiteDB;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
     /// <summary>
-    ///     default ObjectStore using <see cref="IEventStore" /> and <see cref="ISnapshotStore" /> for retrieving Objects
+    ///     default ObjectStore using <see cref="ILiteDatabase" /> for storing objects
     /// </summary>
     public sealed class DomainObjectStore : IDomainObjectStore
     {
-        private readonly IConfiguration _configuration;
-        private readonly TimeSpan _defaultTimeSpan = TimeSpan.FromMinutes(15);
-        private readonly IEventStore _eventStore;
         private readonly ILogger<DomainObjectStore> _logger;
-        private readonly IMemoryCache _memoryCache;
-        private readonly ISnapshotStore _snapshotStore;
+        private readonly ILiteDatabase _database;
 
         /// <inheritdoc cref="DomainObjectStore" />
-        public DomainObjectStore(IEventStore eventStore,
-                                 ISnapshotStore snapshotStore,
-                                 IMemoryCache memoryCache,
-                                 IConfiguration configuration,
-                                 ILogger<DomainObjectStore> logger)
+        public DomainObjectStore(ILogger<DomainObjectStore> logger)
         {
-            _eventStore = eventStore;
-            _snapshotStore = snapshotStore;
-            _memoryCache = memoryCache;
-            _configuration = configuration;
             _logger = logger;
+            _database = new LiteDatabase(
+                new ConnectionString
+                {
+                    Connection = ConnectionType.Shared,
+                    Filename = "data/projections.db"
+                });
+        }
+
+        /// <inheritdoc />
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return new ValueTask(Task.CompletedTask);
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            _snapshotStore?.Dispose();
+            _database?.Dispose();
         }
 
         /// <inheritdoc />
-        public async ValueTask DisposeAsync()
-        {
-            if (_snapshotStore != null)
-                await _snapshotStore.DisposeAsync();
-        }
-
-        /// <inheritdoc />
-        public Task<IResult<T>> ReplayObject<T>() where T : DomainObject, new()
-            => ReplayObject<T>(long.MaxValue);
-
-        /// <inheritdoc />
-        public Task<IResult<T>> ReplayObject<T>(long maxVersion) where T : DomainObject, new()
-            => ReplayObjectInternal(new T(), typeof(T).Name, maxVersion, typeof(T).Name);
-
-        /// <inheritdoc />
-        public Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier) where T : DomainObject
-            => ReplayObject(domainObject, identifier, long.MaxValue);
-
-        /// <inheritdoc />
-        public Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier, long maxVersion) where T : DomainObject
-            => ReplayObjectInternal(domainObject, identifier, maxVersion, identifier);
-
-        private async Task ApplyLatestSnapshot<T>(T domainObject, string identifier, long maxVersion, string cacheKey)
-            where T : DomainObject
-        {
-            _logger.LogDebug($"no cached item for key '{cacheKey}' found, attempting to " +
-                             $"retrieve latest snapshot below or at version {maxVersion} for '{identifier}'");
-
-            var latestSnapshot = await _snapshotStore.GetSnapshot<T>(identifier, maxVersion);
-
-            if (latestSnapshot.IsError)
-                return;
-
-            _logger.LogDebug($"snapshot for '{identifier}' found, " +
-                             $"version '{latestSnapshot.Data.Version}', " +
-                             $"meta '{latestSnapshot.Data.MetaVersion}'");
-
-            domainObject.ApplySnapshot(latestSnapshot.Data);
-        }
-
-        private TimeSpan GetCacheTime()
+        public Task<IResult<long>> GetProjectedVersion()
         {
             try
             {
-                var span = _configuration.GetSection("MemoryCache:Local:Duration").Get<TimeSpan?>();
+                ILiteCollection<StorageMetadata> collection = _database.GetCollection<StorageMetadata>();
+                StorageMetadata lastEntry = collection.Query()
+                                                      .OrderByDescending(e => e.CreatedAt)
+                                                      .FirstOrDefault();
 
-                if (span is null || span.Value <= TimeSpan.Zero)
-                    return _defaultTimeSpan;
+                if (lastEntry is null)
+                {
+                    _logger.LogInformation("no record of any projected events found, returning -1 as marker-value");
+                    return Task.FromResult(Result.Success<long>(-1));
+                }
 
-                return span.Value;
-            }
-            catch (Exception)
-            {
-                return _defaultTimeSpan;
-            }
-        }
-
-        private async Task<IResult<T>> ReplayObjectInternal<T>(T domainObject,
-                                                               string identifier,
-                                                               long maxVersion,
-                                                               string cacheKey)
-            where T : DomainObject
-        {
-            try
-            {
-                if (TryGetCachedItem(cacheKey, maxVersion, out T cachedInstance))
-                    domainObject = cachedInstance;
-                else
-                    await ApplyLatestSnapshot(domainObject, identifier, maxVersion, cacheKey);
-
-                _logger.LogDebug($"replaying events for '{identifier}', '{domainObject.MetaVersion}' => '{maxVersion}'");
-
-                // if the target-object is in any way streamed we save a snapshot of it
-                if ((await StreamObjectToVersion(domainObject, maxVersion, identifier)).Any())
-                    IncrementalSnapshotService.QueueSnapshot(domainObject.CreateSnapshot());
-
-                var size = domainObject.CalculateCacheSize();
-                var priority = domainObject.GetCacheItemPriority();
-                var cacheDuration = GetCacheTime();
-
-                _logger.LogInformation($"item cached: duration={cacheDuration:g}; priority={priority}; size={size}; key={cacheKey}");
-
-                var cts = new CancellationTokenSource(cacheDuration);
-                (CancellationTokenSource, ILogger<DomainObjectStore>) callbackParams = (cts, _logger);
-
-                _memoryCache.Set(cacheKey,
-                                 domainObject,
-                                 new MemoryCacheEntryOptions()
-                                     .SetPriority(priority)
-                                     .SetSize(size)
-                                     .AddExpirationToken(new CancellationChangeToken(cts.Token))
-                                     .RegisterPostEvictionCallback((key, value, reason, state) =>
-                                     {
-                                         var (tokenSource, logger) = ((CancellationTokenSource, ILogger<DomainObjectStore>)) state;
-                                         tokenSource?.Dispose();
-                                         logger?.LogInformation($"cached item '{key}' evicted: {reason}");
-                                     }, callbackParams));
-
-                return Result.Success(domainObject);
+                return Task.FromResult(Result.Success(lastEntry.LastWrittenEvent));
             }
             catch (Exception e)
             {
-                _logger.LogWarning(e, $"failed to retrieve {typeof(T).Name} from EventStore (" +
-                                      $"{nameof(identifier)}: {identifier}, " +
-                                      $"{nameof(maxVersion)}: {maxVersion}, " +
-                                      $"{nameof(cacheKey)}: {cacheKey})");
-                return Result.Error<T>($"failed to retrieve {typeof(T).Name} from EventStore", ErrorCode.FailedToRetrieveItem);
+                _logger.LogWarning(e, "unable to read latest projected event");
+                return Task.FromResult(Result.Error<long>("unable to read latest projected event", ErrorCode.DbQueryError));
             }
         }
 
-        private async Task<List<long>> StreamObjectToVersion(DomainObject domainObject, long maxVersion, string identifier)
+        /// <inheritdoc />
+        public Task<IResult> SetProjectedVersion(string eventId, long eventVersion, string eventType)
         {
-            // skip streaming entirely if the object is at or above the desired version
-            if (domainObject.MetaVersion >= maxVersion)
-                return new List<long>();
-
-            var appliedEvents = new List<long>();
-
-            await _eventStore.ReplayEventsAsStream(
-                tuple =>
-                {
-                    var (recordedEvent, domainEvent) = tuple;
-
-                    // stop at the designated max-version
-                    if (recordedEvent.EventNumber > maxVersion)
-                        return false;
-
-                    var versionBefore = domainObject.CurrentVersion;
-
-                    domainObject.ApplyEvent(new ReplayedEvent
-                    {
-                        UtcTime = recordedEvent.UtcTime.ToUniversalTime(),
-                        Version = recordedEvent.EventNumber,
-                        DomainEvent = domainEvent
-                    });
-
-                    if (domainObject.CurrentVersion > versionBefore)
-                    {
-                        _logger.LogTrace($"applied event {recordedEvent.EventNumber} / '{recordedEvent.EventType}' to '{identifier}'");
-                        appliedEvents.Add(recordedEvent.EventNumber);
-                    }
-
-                    return true;
-                }, startIndex: domainObject.MetaVersion);
-
-            _logger.LogDebug($"applied {appliedEvents.Count} events to '{identifier}': {string.Join(", ", appliedEvents)}");
-            return appliedEvents;
-        }
-
-        private bool TryGetCachedItem<T>(string cacheKey, long maxVersion, out T item)
-            where T : DomainObject
-        {
-            if (!_memoryCache.TryGetValue(cacheKey, out item))
+            try
             {
-                item = null;
-                return false;
+                ILiteCollection<StorageMetadata> collection = _database.GetCollection<StorageMetadata>();
+                var entry = new StorageMetadata
+                {
+                    Id = Guid.NewGuid(),
+                    CreatedAt = DateTime.UtcNow,
+                    LastWrittenEvent = eventVersion,
+                    LastWrittenEventId = eventId,
+                    LastWrittenEventType = eventType
+                };
+
+                collection.Insert(entry);
+                return Task.FromResult(Result.Success());
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to update projection metadata; eventId={EventId}; eventVersion={EventVersion}; eventType={EventType}",
+                    eventId,
+                    eventVersion,
+                    eventType);
+                return Task.FromResult(
+                    Result.Error(
+                        $"unable to update projection metadata; eventId={eventId}; eventVersion={eventVersion}; eventType={eventType}",
+                        ErrorCode.DbUpdateError));
+            }
+        }
+
+        /// <inheritdoc />
+        public Task<IResult> Store<TObject, TIdentifier>(TObject domainObject)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name;
+            try
+            {
+                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.Upsert(domainObject);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to update/insert domainObject into collection '{CollectionName}'",
+                    collectionName);
+                return Task.FromResult(
+                    Result.Error(
+                        $"unable to update/insert domainObject into collection '{collectionName}'",
+                        ErrorCode.DbUpdateError));
             }
 
-            _logger.LogDebug($"retrieved cached item for key '{cacheKey}'");
+            return Task.FromResult(Result.Success());
+        }
 
-            if (item.CurrentVersion <= maxVersion)
-                return true;
+        /// <inheritdoc />
+        public Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name;
+            try
+            {
+                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                TObject domainObject = collection.Query()
+                                                 .Where(o => o.Id == identifier)
+                                                 .OrderByDescending(o => o.MetaVersion)
+                                                 .FirstOrDefault();
 
-            _logger.LogDebug($"cached item for key '{cacheKey}' is beyond maximum allowed version {item.CurrentVersion} > {maxVersion}");
-            return false;
+                if (domainObject is { })
+                {
+                    return Task.FromResult(Result.Success(domainObject));
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to update/insert domainObject into collection '{CollectionName}'",
+                    collectionName);
+                return Task.FromResult(
+                    Result.Error<TObject>(
+                        $"unable to update/insert domainObject into collection '{collectionName}'",
+                        ErrorCode.DbUpdateError));
+            }
+
+            _logger.LogWarning(
+                "no domainObject with id '{Identifier}' found in collection '{CollectionName}'",
+                identifier.ToString(),
+                collectionName);
+            return Task.FromResult(
+                Result.Error<TObject>(
+                    $"no domainObject with id '{identifier}' found in collection '{collectionName}'",
+                    ErrorCode.DbQueryError));
+        }
+
+        /// <inheritdoc />
+        public Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier, long maxVersion)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name;
+            try
+            {
+                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                TObject domainObject = collection.Query()
+                                                 .Where(o => o.Id == identifier)
+                                                 .Where(o => o.CurrentVersion <= maxVersion)
+                                                 .OrderByDescending(o => o.MetaVersion)
+                                                 .FirstOrDefault();
+
+                if (domainObject is { })
+                {
+                    return Task.FromResult(Result.Success(domainObject));
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to update/insert domainObject into collection '{CollectionName}' with id '{Identifier}'",
+                    collectionName,
+                    identifier);
+                return Task.FromResult(
+                    Result.Error<TObject>(
+                        $"unable to update/insert domainObject into collection '{collectionName}' with id '{identifier}'",
+                        ErrorCode.DbUpdateError));
+            }
+
+            _logger.LogWarning(
+                "no domainObject with id '{Identifier}' found in collection '{CollectionName}'",
+                identifier.ToString(),
+                collectionName);
+            return Task.FromResult(
+                Result.Error<TObject>(
+                    $"no domainObject with id '{identifier}' found in collection '{collectionName}'",
+                    ErrorCode.DbQueryError));
+        }
+
+        /// <inheritdoc />
+        public Task<IResult> Remove<TObject, TIdentifier>(TIdentifier identifier)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name;
+            try
+            {
+                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.DeleteMany(o => o.Id == identifier);
+                return Task.FromResult(Result.Success());
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to remove domainObject from collection '{CollectionName}' with id '{Identifier}'",
+                    collectionName,
+                    identifier);
+                return Task.FromResult(
+                    Result.Error(
+                        $"unable to remove domainObject from collection '{collectionName}' with id '{identifier}'",
+                        ErrorCode.DbUpdateError));
+            }
+        }
+
+        /// <inheritdoc />
+        public Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>() where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name;
+            try
+            {
+                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                IList<TIdentifier> ids = collection.Query()
+                                                   .Select(o => o.Id)
+                                                   .ToList();
+
+                return Task.FromResult(Result.Success(ids));
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to list objects in collection '{CollectionName}'",
+                    collectionName);
+                return Task.FromResult(
+                    Result.Error<IList<TIdentifier>>(
+                        $"unable to list objects in collection '{collectionName}'",
+                        ErrorCode.DbUpdateError));
+            }
+        }
+
+        /// <summary>
+        ///     Additional metadata that is stored in a separate collection along the projected DomainObjects.
+        ///     These Records aren't meant to be updated, only written.
+        /// </summary>
+        private class StorageMetadata
+        {
+            /// <summary>
+            ///     Unique Id for this entry
+            /// </summary>
+            public Guid Id { get; set; }
+
+            /// <summary>
+            ///     Timestamp when this entry was written
+            /// </summary>
+            public DateTime CreatedAt { get; set; }
+
+            /// <summary>
+            ///     last DomainEvent that was projected and written to this Store
+            /// </summary>
+            public long LastWrittenEvent { get; set; }
+
+            /// <summary>
+            ///     generic Id of the last event that was written
+            /// </summary>
+            public string LastWrittenEventId { get; set; }
+
+            /// <summary>
+            ///     Type of the last event that was written
+            /// </summary>
+            public string LastWrittenEventType { get; set; }
         }
     }
 }

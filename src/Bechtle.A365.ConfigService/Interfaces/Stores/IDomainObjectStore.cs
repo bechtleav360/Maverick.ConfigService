@@ -1,49 +1,85 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
+using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
     /// <summary>
-    ///     Store to retrieve the latest available Version of a <see cref="DomainObject" />
+    ///     Store to retrieve the latest available Version of a <see cref="DomainObject{TIdentifier}" />
     /// </summary>
     public interface IDomainObjectStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
-        ///     get the latest version of a simple <see cref="DomainObject" />
+        ///     Check the store for the highest projected version (using <see cref="DomainObject{T}.MetaVersion" />)
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        Task<IResult<T>> ReplayObject<T>() where T : DomainObject, new();
+        /// <returns>the last event-number that was projected, or a failed result</returns>
+        Task<IResult<long>> GetProjectedVersion();
 
         /// <summary>
-        ///     get the latest version of a simple <see cref="DomainObject" />, up to <paramref name="maxVersion" />
+        ///     Set the last event# that was projected, and from which a new Projection should continue
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="maxVersion">inclusive upper Version-Limit</param>
-        /// <returns></returns>
-        Task<IResult<T>> ReplayObject<T>(long maxVersion) where T : DomainObject, new();
+        /// <param name="eventId">generic event-id</param>
+        /// <param name="eventVersion">event-number within the stream</param>
+        /// <param name="eventType">type of event that was projected</param>
+        /// <returns>result of the store-operation</returns>
+        Task<IResult> SetProjectedVersion(string eventId, long eventVersion, string eventType);
 
         /// <summary>
-        ///     stream the given <see cref="DomainObject" /> to its latest version,
-        ///     identified by <paramref name="identifier" />
+        ///     store / update the given DomainObject in the underlying store
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="domainObject"></param>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
-        Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier) where T : DomainObject;
+        /// <param name="domainObject">valid instance of any DomainObject</param>
+        /// <typeparam name="TObject">Subtype of <see cref="DomainObject{T}" /></typeparam>
+        /// <typeparam name="TIdentifier">Type of Id the DomainObject uses</typeparam>
+        /// <returns>result of the store-operation</returns>
+        Task<IResult> Store<TObject, TIdentifier>(TObject domainObject)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
 
         /// <summary>
-        ///     stream the given <see cref="DomainObject" /> to its latest version,
-        ///     identified by <paramref name="identifier" />, up to <paramref name="maxVersion" />
+        ///     Load a previously stored instance of a DomainObject from the underlying store
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="domainObject"></param>
-        /// <param name="identifier"></param>
-        /// <param name="maxVersion"></param>
-        /// <returns></returns>
-        Task<IResult<T>> ReplayObject<T>(T domainObject, string identifier, long maxVersion) where T : DomainObject;
+        /// <param name="identifier">public identifier for the desired DomainObject</param>
+        /// <typeparam name="TObject">Subtype of <see cref="DomainObject{T}" /></typeparam>
+        /// <typeparam name="TIdentifier">Type of Id the DomainObject uses</typeparam>
+        /// <returns>result of the store-operation</returns>
+        Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
+
+        /// <summary>
+        ///     Load a previously stored instance of a DomainObject from the underlying store, or the nearest one below the given version
+        /// </summary>
+        /// <param name="identifier">public identifier for the desired DomainObject</param>
+        /// <param name="maxVersion">highest version that can be retrieved from the store</param>
+        /// <typeparam name="TObject">Subtype of <see cref="DomainObject{T}" /></typeparam>
+        /// <typeparam name="TIdentifier">Type of Id the DomainObject uses</typeparam>
+        /// <returns>result of the store-operation</returns>
+        Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier, long maxVersion)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
+
+        /// <summary>
+        ///     Remove a DomainObject from the store
+        /// </summary>
+        /// <param name="identifier">public identifier for the desired DomainObject</param>
+        /// <typeparam name="TObject">Subtype of <see cref="DomainObject{T}" /></typeparam>
+        /// <typeparam name="TIdentifier">Type of Id the DomainObject uses</typeparam>
+        /// <returns>result of the store-operation</returns>
+        Task<IResult> Remove<TObject, TIdentifier>(TIdentifier identifier)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
+
+        /// <summary>
+        ///     List all objects of type <typeparamref name="TObject" />
+        /// </summary>
+        /// <typeparam name="TObject">type of object to list</typeparam>
+        /// <typeparam name="TIdentifier">identifier used by <typeparamref name="TObject"/></typeparam>
+        /// <returns>result of the operation</returns>
+        Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>()
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
     }
 }
