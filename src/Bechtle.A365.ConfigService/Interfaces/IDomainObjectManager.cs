@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -26,7 +27,7 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="identifier">valid identifier for an existing Environment</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult<ConfigEnvironment>> DeleteEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
+        Task<IResult> DeleteEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Get a single stored Structure
@@ -50,7 +51,7 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="identifier">valid identifier for an existing Layer</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult<EnvironmentLayer>> DeleteLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
+        Task<IResult> DeleteLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Get a single stored Configuration
@@ -102,9 +103,15 @@ namespace Bechtle.A365.ConfigService.Interfaces
         ///     Create a new Configuration with the given identifier
         /// </summary>
         /// <param name="identifier">valid identifier for a Configuration</param>
+        /// <param name="validFrom">start-date from which the configuration should be valid</param>
+        /// <param name="validTo">end-date until which the configuration should be valid</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult> CreateConfiguration(ConfigurationIdentifier identifier, CancellationToken cancellationToken);
+        Task<IResult> CreateConfiguration(
+            ConfigurationIdentifier identifier,
+            DateTime? validFrom,
+            DateTime? validTo,
+            CancellationToken cancellationToken);
 
         /// <summary>
         ///     Assign a ordered list of Layers to a given Environment
@@ -129,14 +136,13 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken);
 
         /// <summary>
-        ///     Modify the keys of a Layer
+        ///     Get the keys of a Layer
         /// </summary>
         /// <param name="identifier">valid identifier for an existing Layer</param>
-        /// <param name="keys">list of that overwrite the current Layer</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
         /// <returns></returns>
-        Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<EnvironmentLayerKey> keys, CancellationToken cancellationToken);
+        Task<IResult<IList<EnvironmentLayerKey>>> GetLayerKeys(LayerIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Modify the Variables of a Structure

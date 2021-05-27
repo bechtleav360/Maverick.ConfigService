@@ -165,7 +165,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Task.FromResult(
                 Result.Error<TObject>(
                     $"no domainObject with id '{identifier}' found in collection '{collectionName}'",
-                    ErrorCode.DbQueryError));
+                    ErrorCode.NotFound));
         }
 
         /// <inheritdoc />
@@ -208,7 +208,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Task.FromResult(
                 Result.Error<TObject>(
                     $"no domainObject with id '{identifier}' found in collection '{collectionName}'",
-                    ErrorCode.DbQueryError));
+                    ErrorCode.NotFound));
         }
 
         /// <inheritdoc />
