@@ -19,17 +19,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public class LayerProjectionStore : ILayerProjectionStore
     {
         private readonly ILogger<LayerProjectionStore> _logger;
-        private readonly IDomainObjectStore _domainObjectStore;
         private readonly IDomainObjectManager _domainObjectManager;
 
         /// <inheritdoc cref="LayerProjectionStore" />
         public LayerProjectionStore(
             ILogger<LayerProjectionStore> logger,
-            IDomainObjectStore domainObjectStore,
             IDomainObjectManager domainObjectManager)
         {
             _logger = logger;
-            _domainObjectStore = domainObjectStore;
             _domainObjectManager = domainObjectManager;
         }
 
@@ -527,14 +524,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public void Dispose()
         {
-            _domainObjectStore?.Dispose();
         }
 
         /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
-            if (_domainObjectStore != null)
-                await _domainObjectStore.DisposeAsync();
         }
     }
 }

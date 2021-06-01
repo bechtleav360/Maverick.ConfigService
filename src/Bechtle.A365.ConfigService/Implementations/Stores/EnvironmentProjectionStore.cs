@@ -20,17 +20,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public sealed class EnvironmentProjectionStore : IEnvironmentProjectionStore
     {
         private readonly IDomainObjectManager _domainObjectManager;
-        private readonly IDomainObjectStore _domainObjectStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
 
         /// <inheritdoc cref="EnvironmentProjectionStore" />
         public EnvironmentProjectionStore(
             ILogger<EnvironmentProjectionStore> logger,
-            IDomainObjectStore domainObjectStore,
             IDomainObjectManager domainObjectManager)
         {
             _logger = logger;
-            _domainObjectStore = domainObjectStore;
             _domainObjectManager = domainObjectManager;
         }
 
@@ -61,14 +58,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public void Dispose()
         {
-            _domainObjectStore?.Dispose();
         }
 
         /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
-            if (_domainObjectStore != null)
-                await _domainObjectStore.DisposeAsync();
         }
 
         /// <inheritdoc />
