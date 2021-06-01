@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -15,28 +16,28 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc />
     public sealed class StructureProjectionStore : IStructureProjectionStore
     {
+        private readonly IDomainObjectManager _domainObjectManager;
         private readonly IDomainObjectStore _domainObjectStore;
-        private readonly IEventStore _eventStore;
         private readonly ILogger<StructureProjectionStore> _logger;
-        private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc cref="StructureProjectionStore" />
-        public StructureProjectionStore(ILogger<StructureProjectionStore> logger,
-                                        IDomainObjectStore domainObjectStore,
-                                        IEventStore eventStore,
-                                        IEnumerable<ICommandValidator> validators)
+        public StructureProjectionStore(
+            ILogger<StructureProjectionStore> logger,
+            IDomainObjectStore domainObjectStore,
+            IDomainObjectManager domainObjectManager)
         {
             _logger = logger;
             _domainObjectStore = domainObjectStore;
-            _eventStore = eventStore;
-            _validators = validators.ToList();
+            _domainObjectManager = domainObjectManager;
         }
 
         /// <inheritdoc />
         public async ValueTask DisposeAsync()
         {
             if (_domainObjectStore != null)
+            {
                 await _domainObjectStore.DisposeAsync();
+            }
         }
 
         /// <inheritdoc />
@@ -46,64 +47,31 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult> Create(StructureIdentifier identifier,
-                                          IDictionary<string, string> keys,
-                                          IDictionary<string, string> variables)
+        public async Task<IResult> Create(
+            StructureIdentifier identifier,
+            IDictionary<string, string> keys,
+            IDictionary<string, string> variables)
         {
             _logger.LogDebug($"attempting to create new structure '{identifier}'");
 
-            var structResult = await _domainObjectStore.ReplayObject(new ConfigStructure(identifier), identifier.ToString());
-            if (structResult.IsError)
-                return structResult;
-
-            var structure = structResult.Data;
-
-            _logger.LogDebug("creating Structure");
-            var result = structure.Create(keys, variables);
-            if (result.IsError)
-                return result;
-
-            _logger.LogDebug("validating resulting events");
-            var errors = structure.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            _logger.LogDebug("writing generated events to ES");
-            return await structure.WriteRecordedEvents(_eventStore);
+            return await _domainObjectManager.CreateStructure(identifier, keys, variables, CancellationToken.None);
         }
 
         /// <inheritdoc />
         public async Task<IResult> DeleteVariables(StructureIdentifier identifier, ICollection<string> variablesToDelete)
         {
-            _logger.LogDebug($"attempting to delete variables from structure '{identifier}'");
+            _logger.LogDebug("attempting to delete variables from structure '{Identifier}'", identifier);
 
-            var structResult = await _domainObjectStore.ReplayObject(new ConfigStructure(identifier), identifier.ToString());
-            if (structResult.IsError)
-                return structResult;
+            List<ConfigKeyAction> deleteActions = variablesToDelete.Select(ConfigKeyAction.Delete).ToList();
+            _logger.LogDebug(
+                "removing {RemovedKeyCount} variables from '{Identifier}'",
+                deleteActions.Count,
+                identifier);
 
-            var structure = structResult.Data;
-
-            _logger.LogDebug($"removing '{variablesToDelete.Count}' variables from '{identifier}' " +
-                             $"at version '{structure.CurrentVersion}' / {structure.MetaVersion}");
-
-            var updateResult = structure.DeleteVariables(variablesToDelete);
-            if (updateResult.IsError)
-                return updateResult;
-
-            _logger.LogDebug("validating resulting events");
-            var errors = structure.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await structure.WriteRecordedEvents(_eventStore);
+            return await _domainObjectManager.ModifyStructureVariables(
+                       identifier,
+                       deleteActions,
+                       CancellationToken.None);
         }
 
         /// <inheritdoc />
@@ -113,20 +81,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 _logger.LogDebug("collecting available structures");
 
-                var listResult = await _domainObjectStore.ReplayObject<ConfigStructureList>();
-                if (listResult.IsError)
-                    return Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier>());
-
-                var structures = listResult.Data.GetIdentifiers();
-
-                _logger.LogDebug($"got '{structures.Count}' structures, filtering / ordering now");
-                var result = structures.OrderBy(s => s.Name)
-                                       .ThenByDescending(s => s.Version)
-                                       .Skip(range.Offset)
-                                       .Take(range.Length)
-                                       .ToList();
-
-                return Result.Success<IList<StructureIdentifier>>(result);
+                return await _domainObjectManager.GetStructures(range, CancellationToken.None);
             }
             catch (Exception e)
             {
@@ -140,24 +95,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                _logger.LogDebug($"collecting available versions of structure '{name}'");
+                _logger.LogDebug("collecting available versions of structure '{StructureName}'", name);
 
-                var listResult = await _domainObjectStore.ReplayObject<ConfigStructureList>();
+                IResult<IList<StructureIdentifier>> listResult = await _domainObjectManager.GetStructures(name, range, CancellationToken.None);
                 if (listResult.IsError)
-                    return Result.Success<IList<int>>(new List<int>());
+                {
+                    return Result.Error<IList<int>>(listResult.Message, listResult.Code);
+                }
 
-                var structures = listResult.Data.GetIdentifiers();
+                IList<int> versions = listResult.Data
+                                                .Select(id => id.Version)
+                                                .ToList();
 
-                _logger.LogDebug($"got '{structures.Count}' structures, filtering / ordering now");
-
-                var result = structures.Where(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                                       .OrderByDescending(s => s.Version)
-                                       .Skip(range.Offset)
-                                       .Take(range.Length)
-                                       .Select(s => s.Version)
-                                       .ToList();
-
-                return Result.Success<IList<int>>(result);
+                return Result.Success(versions);
             }
             catch (Exception e)
             {
@@ -171,39 +121,33 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                _logger.LogDebug($"retrieving keys of structure '{identifier}'");
+                _logger.LogDebug("retrieving keys of structure '{Identifier}'", identifier);
 
-                var structResult = await _domainObjectStore.ReplayObject(new ConfigStructure(identifier), identifier.ToString());
-                if (structResult.IsError)
-                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
-                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
-                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
-                                                                     ")",
-                                                                     ErrorCode.NotFound);
+                IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
+                if (structureResult.IsError)
+                {
+                    return Result.Error<IDictionary<string, string>>(structureResult.Message, structureResult.Code);
+                }
 
-                var structure = structResult.Data;
+                ConfigStructure structure = structureResult.Data;
 
-                _logger.LogDebug($"got structure at version '{structure.CurrentVersion}' / {structure.MetaVersion}");
+                _logger.LogDebug("got structure at version '{CurrentVersion}' / {MetaVersion}", structure.CurrentVersion, structure.MetaVersion);
 
-                var result = structure.Keys
-                                      .OrderBy(k => k.Key)
-                                      .Skip(range.Offset)
-                                      .Take(range.Length)
-                                      .ToImmutableSortedDictionary(k => k.Key,
-                                                                   k => k.Value,
-                                                                   StringComparer.OrdinalIgnoreCase);
+                ImmutableSortedDictionary<string, string> result = structure.Keys
+                                                                            .OrderBy(k => k.Key)
+                                                                            .Skip(range.Offset)
+                                                                            .Take(range.Length)
+                                                                            .ToImmutableSortedDictionary(
+                                                                                k => k.Key,
+                                                                                k => k.Value,
+                                                                                StringComparer.OrdinalIgnoreCase);
 
                 return Result.Success<IDictionary<string, string>>(result);
             }
             catch (Exception e)
             {
-                _logger.LogError("failed to retrieve keys for structure " +
-                                 $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version}): {e}");
-
-                return Result.Error<IDictionary<string, string>>(
-                    "failed to retrieve keys for structure " +
-                    $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})",
-                    ErrorCode.DbQueryError);
+                _logger.LogError(e, "failed to retrieve keys for structure {Identifier}", identifier);
+                return Result.Error<IDictionary<string, string>>($"failed to retrieve keys for structure {identifier}", ErrorCode.DbQueryError);
             }
         }
 
@@ -212,69 +156,46 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                _logger.LogDebug($"retrieving variables of structure '{identifier}'");
+                _logger.LogDebug("retrieving variables of structure '{Identifier}'", identifier);
 
-                var structResult = await _domainObjectStore.ReplayObject(new ConfigStructure(identifier), identifier.ToString());
-                if (structResult.IsError)
-                    return Result.Error<IDictionary<string, string>>("no structure found with (" +
-                                                                     $"{nameof(identifier.Name)}: {identifier.Name}; " +
-                                                                     $"{nameof(identifier.Version)}: {identifier.Version}" +
-                                                                     ")",
-                                                                     ErrorCode.NotFound);
+                IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
+                if (structureResult.IsError)
+                {
+                    return Result.Error<IDictionary<string, string>>(structureResult.Message, structureResult.Code);
+                }
 
-                var structure = structResult.Data;
+                ConfigStructure structure = structureResult.Data;
 
-                _logger.LogDebug($"got structure at version '{structure.CurrentVersion}' / {structure.MetaVersion}");
+                _logger.LogDebug("got structure at version '{CurrentVersion}' / {MetaVersion}", structure.CurrentVersion, structure.MetaVersion);
 
-                var result = structure.Variables
-                                      .OrderBy(v => v.Key)
-                                      .Skip(range.Offset)
-                                      .Take(range.Length)
-                                      .ToImmutableSortedDictionary(k => k.Key,
-                                                                   k => k.Value,
-                                                                   StringComparer.OrdinalIgnoreCase);
+                ImmutableSortedDictionary<string, string> result = structure.Variables
+                                                                            .OrderBy(k => k.Key)
+                                                                            .Skip(range.Offset)
+                                                                            .Take(range.Length)
+                                                                            .ToImmutableSortedDictionary(
+                                                                                k => k.Key,
+                                                                                k => k.Value,
+                                                                                StringComparer.OrdinalIgnoreCase);
 
                 return Result.Success<IDictionary<string, string>>(result);
             }
             catch (Exception e)
             {
-                _logger.LogError("failed to retrieve variables for structure " +
-                                 $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version}): {e}");
-
-                return Result.Error<IDictionary<string, string>>(
-                    "failed to retrieve variables for structure " +
-                    $"({nameof(identifier.Name)}: {identifier.Name}; {nameof(identifier.Version)}: {identifier.Version})",
-                    ErrorCode.DbQueryError);
+                _logger.LogError(e, "failed to retrieve variables for structure {Identifier}", identifier);
+                return Result.Error<IDictionary<string, string>>($"failed to retrieve variables for structure {identifier}", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
         public async Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables)
         {
-            _logger.LogDebug($"updating '{variables.Count}' variables of structure '{identifier}'");
+            _logger.LogDebug("updating '{VariableCount}' variables of structure '{Identifier}'", variables.Count, identifier);
 
-            var structResult = await _domainObjectStore.ReplayObject(new ConfigStructure(identifier), identifier.ToString());
-            if (structResult.IsError)
-                return structResult;
-
-            var structure = structResult.Data;
-
-            _logger.LogDebug($"updating '{variables.Count}' variables in '{identifier}' " +
-                             $"at version '{structure.CurrentVersion}' / {structure.MetaVersion}");
-
-            var updateResult = structure.ModifyVariables(variables);
-            if (updateResult.IsError)
-                return updateResult;
-
-            var errors = structure.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await structure.WriteRecordedEvents(_eventStore);
+            return await _domainObjectManager.ModifyStructureVariables(
+                       identifier,
+                       variables.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
+                                .ToList(),
+                       CancellationToken.None);
         }
     }
 }

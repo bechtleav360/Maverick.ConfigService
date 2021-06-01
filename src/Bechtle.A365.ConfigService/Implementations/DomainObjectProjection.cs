@@ -265,7 +265,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
 
-            IResult<IList<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>();
+            IResult<IList<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
             if (envIdResult.IsError)
             {
                 return envIdResult;

@@ -14,12 +14,69 @@ namespace Bechtle.A365.ConfigService.Interfaces
     public interface IDomainObjectManager
     {
         /// <summary>
-        ///     Get a single stored Environment
+        ///     Assign a ordered list of Layers to a given Environment
         /// </summary>
-        /// <param name="identifier">valid identifier for the Environment</param>
+        /// <param name="environmentIdentifier">valid identifier for an existing Environment</param>
+        /// <param name="layerIdentifiers">list of valid identifiers for existing Layers</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult<ConfigEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
+        Task<IResult> AssignEnvironmentLayers(
+            EnvironmentIdentifier environmentIdentifier,
+            IList<LayerIdentifier> layerIdentifiers,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Create a new Configuration with the given identifier
+        /// </summary>
+        /// <param name="identifier">valid identifier for a Configuration</param>
+        /// <param name="validFrom">start-date from which the configuration should be valid</param>
+        /// <param name="validTo">end-date until which the configuration should be valid</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult> CreateConfiguration(
+            ConfigurationIdentifier identifier,
+            DateTime? validFrom,
+            DateTime? validTo,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Create a new Environment with the given identifier
+        /// </summary>
+        /// <param name="identifier">valid identifier for an Environment that does not yet exist</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult> CreateEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Create a new Environment with the given identifier
+        /// </summary>
+        /// <param name="identifier">valid identifier for an Environment that does not yet exist</param>
+        /// <param name="isDefault">create environment as Default-Environment</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult> CreateEnvironment(EnvironmentIdentifier identifier, bool isDefault, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Create a new Layer with the given identifier
+        /// </summary>
+        /// <param name="identifier">valid identifier for a Layer that does not yet exist</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult> CreateLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Create a new Structure with the given
+        /// </summary>
+        /// <param name="identifier">valid identifier for the a Structure that does not yet exist</param>
+        /// <param name="keys">Dictionary of Keys permanently assigned to this specific Structure</param>
+        /// <param name="variables">Dictionary of Variables assigned to this specific Structure</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult> CreateStructure(
+            StructureIdentifier identifier,
+            IDictionary<string, string> keys,
+            IDictionary<string, string> variables,
+            CancellationToken cancellationToken);
 
         /// <summary>
         ///     Remove a single stored Environment
@@ -28,22 +85,6 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
         Task<IResult> DeleteEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
-
-        /// <summary>
-        ///     Get a single stored Structure
-        /// </summary>
-        /// <param name="identifier">valid identifier for the Structure</param>
-        /// <param name="cancellationToken">token to cancel the operation with</param>
-        /// <returns>Result of the Operation</returns>
-        Task<IResult<ConfigStructure>> GetStructure(StructureIdentifier identifier, CancellationToken cancellationToken);
-
-        /// <summary>
-        ///     Get a single stored Layer
-        /// </summary>
-        /// <param name="identifier">valid identifier for the Layer</param>
-        /// <param name="cancellationToken">token to cancel the operation with</param>
-        /// <returns>Result of the Operation</returns>
-        Task<IResult<EnvironmentLayer>> GetLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Remove a single stored Layer
@@ -62,6 +103,32 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<PreparedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a list of all stored Configuration-ids
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Configuration-ids
+        /// </summary>
+        /// <param name="structure">constrain results to those that have this structure</param>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(StructureIdentifier structure, QueryRange range, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Configuration-ids
+        /// </summary>
+        /// <param name="environment">constrain results to those that have this environment</param>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(EnvironmentIdentifier environment, QueryRange range, CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Get a single stored Configurations Keys
         /// </summary>
         /// <param name="identifier">valid identifier for the Configuration</param>
@@ -70,60 +137,70 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<IDictionary<string, string>>> GetConfigurationKeys(ConfigurationIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
-        ///     Create a new Environment with the given identifier
+        ///     Get a single stored Environment
         /// </summary>
-        /// <param name="identifier">valid identifier for an Environment that does not yet exist</param>
+        /// <param name="identifier">valid identifier for the Environment</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult> CreateEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
+        Task<IResult<ConfigEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
-        ///     Create a new Structure with the given
+        ///     Get a list of all stored Environment-ids
         /// </summary>
-        /// <param name="identifier">valid identifier for the a Structure that does not yet exist</param>
-        /// <param name="keys">Dictionary of Keys permanently assigned to this specific Structure</param>
-        /// <param name="variables">Dictionary of Variables assigned to this specific Structure</param>
+        /// <param name="range">range of ids to retrieve</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult> CreateStructure(
-            StructureIdentifier identifier,
-            IDictionary<string, string> keys,
-            IDictionary<string, string> variables,
-            CancellationToken cancellationToken);
+        Task<IResult<IList<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, CancellationToken cancellationToken);
 
         /// <summary>
-        ///     Create a new Layer with the given identifier
+        ///     Get a single stored Layer
         /// </summary>
-        /// <param name="identifier">valid identifier for a Layer that does not yet exist</param>
+        /// <param name="identifier">valid identifier for the Layer</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult> CreateLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
+        Task<IResult<EnvironmentLayer>> GetLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
-        ///     Create a new Configuration with the given identifier
+        ///     Get a all stored Layer-ids
         /// </summary>
-        /// <param name="identifier">valid identifier for a Configuration</param>
-        /// <param name="validFrom">start-date from which the configuration should be valid</param>
-        /// <param name="validTo">end-date until which the configuration should be valid</param>
+        /// <param name="range">range of ids to retrieve</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult> CreateConfiguration(
-            ConfigurationIdentifier identifier,
-            DateTime? validFrom,
-            DateTime? validTo,
-            CancellationToken cancellationToken);
+        Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken);
 
         /// <summary>
-        ///     Assign a ordered list of Layers to a given Environment
+        ///     Get the keys of a Layer
         /// </summary>
-        /// <param name="environmentIdentifier">valid identifier for an existing Environment</param>
-        /// <param name="layerIdentifiers">list of valid identifiers for existing Layers</param>
+        /// <param name="identifier">valid identifier for an existing Layer</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult> AssignEnvironmentLayers(
-            EnvironmentIdentifier environmentIdentifier,
-            IList<LayerIdentifier> layerIdentifiers,
-            CancellationToken cancellationToken);
+        /// <returns></returns>
+        Task<IResult<IList<EnvironmentLayerKey>>> GetLayerKeys(LayerIdentifier identifier, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a single stored Structure
+        /// </summary>
+        /// <param name="identifier">valid identifier for the Structure</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<ConfigStructure>> GetStructure(StructureIdentifier identifier, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Structure-ids
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<StructureIdentifier>>> GetStructures(QueryRange range, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Structure-ids
+        /// </summary>
+        /// <param name="name">name of the structure to list</param>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Modify the keys of a Layer
@@ -134,15 +211,6 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <returns>Result of the Operation</returns>
         /// <returns></returns>
         Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken);
-
-        /// <summary>
-        ///     Get the keys of a Layer
-        /// </summary>
-        /// <param name="identifier">valid identifier for an existing Layer</param>
-        /// <param name="cancellationToken">token to cancel the operation with</param>
-        /// <returns>Result of the Operation</returns>
-        /// <returns></returns>
-        Task<IResult<IList<EnvironmentLayerKey>>> GetLayerKeys(LayerIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Modify the Variables of a Structure

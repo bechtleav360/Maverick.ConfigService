@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -15,8 +16,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// </summary>
     public sealed class DomainObjectStore : IDomainObjectStore
     {
-        private readonly ILogger<DomainObjectStore> _logger;
         private readonly ILiteDatabase _database;
+        private readonly ILogger<DomainObjectStore> _logger;
 
         /// <inheritdoc cref="DomainObjectStore" />
         public DomainObjectStore(ILogger<DomainObjectStore> logger)
@@ -69,62 +70,63 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult> SetProjectedVersion(string eventId, long eventVersion, string eventType)
-        {
-            try
-            {
-                ILiteCollection<StorageMetadata> collection = _database.GetCollection<StorageMetadata>();
-                var entry = new StorageMetadata
-                {
-                    Id = Guid.NewGuid(),
-                    CreatedAt = DateTime.UtcNow,
-                    LastWrittenEvent = eventVersion,
-                    LastWrittenEventId = eventId,
-                    LastWrittenEventType = eventType
-                };
-
-                collection.Insert(entry);
-                return Task.FromResult(Result.Success());
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(
-                    e,
-                    "unable to update projection metadata; eventId={EventId}; eventVersion={EventVersion}; eventType={EventType}",
-                    eventId,
-                    eventVersion,
-                    eventType);
-                return Task.FromResult(
-                    Result.Error(
-                        $"unable to update projection metadata; eventId={eventId}; eventVersion={eventVersion}; eventType={eventType}",
-                        ErrorCode.DbUpdateError));
-            }
-        }
-
-        /// <inheritdoc />
-        public Task<IResult> Store<TObject, TIdentifier>(TObject domainObject)
-            where TObject : DomainObject<TIdentifier>
-            where TIdentifier : Identifier
+        public Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(QueryRange range)
+            where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
         {
             string collectionName = typeof(TObject).Name;
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                collection.Upsert(domainObject);
+                IList<TIdentifier> ids = collection.Query()
+                                                   .Select(o => o.Id)
+                                                   .Skip(range.Offset)
+                                                   .Limit(range.Length)
+                                                   .ToList();
+
+                return Task.FromResult(Result.Success(ids));
             }
             catch (Exception e)
             {
                 _logger.LogWarning(
                     e,
-                    "unable to update/insert domainObject into collection '{CollectionName}'",
+                    "unable to list objects in collection '{CollectionName}'",
                     collectionName);
                 return Task.FromResult(
-                    Result.Error(
-                        $"unable to update/insert domainObject into collection '{collectionName}'",
+                    Result.Error<IList<TIdentifier>>(
+                        $"unable to list objects in collection '{collectionName}'",
                         ErrorCode.DbUpdateError));
             }
+        }
 
-            return Task.FromResult(Result.Success());
+        /// <inheritdoc />
+        public Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(Expression<Func<TObject, bool>> filter, QueryRange range)
+            where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name;
+            try
+            {
+                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                IList<TIdentifier> ids = collection.Query()
+                                                   .OrderBy(o => o.CurrentVersion)
+                                                   .Where(filter)
+                                                   .Select(o => o.Id)
+                                                   .Skip(range.Offset)
+                                                   .Limit(range.Length)
+                                                   .ToList();
+
+                return Task.FromResult(Result.Success(ids));
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to list objects in collection '{CollectionName}'",
+                    collectionName);
+                return Task.FromResult(
+                    Result.Error<IList<TIdentifier>>(
+                        $"unable to list objects in collection '{collectionName}'",
+                        ErrorCode.DbUpdateError));
+            }
         }
 
         /// <inheritdoc />
@@ -238,29 +240,62 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>() where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
+        public Task<IResult> SetProjectedVersion(string eventId, long eventVersion, string eventType)
         {
-            string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                IList<TIdentifier> ids = collection.Query()
-                                                   .Select(o => o.Id)
-                                                   .ToList();
+                ILiteCollection<StorageMetadata> collection = _database.GetCollection<StorageMetadata>();
+                var entry = new StorageMetadata
+                {
+                    Id = Guid.NewGuid(),
+                    CreatedAt = DateTime.UtcNow,
+                    LastWrittenEvent = eventVersion,
+                    LastWrittenEventId = eventId,
+                    LastWrittenEventType = eventType
+                };
 
-                return Task.FromResult(Result.Success(ids));
+                collection.Insert(entry);
+                return Task.FromResult(Result.Success());
             }
             catch (Exception e)
             {
                 _logger.LogWarning(
                     e,
-                    "unable to list objects in collection '{CollectionName}'",
-                    collectionName);
+                    "unable to update projection metadata; eventId={EventId}; eventVersion={EventVersion}; eventType={EventType}",
+                    eventId,
+                    eventVersion,
+                    eventType);
                 return Task.FromResult(
-                    Result.Error<IList<TIdentifier>>(
-                        $"unable to list objects in collection '{collectionName}'",
+                    Result.Error(
+                        $"unable to update projection metadata; eventId={eventId}; eventVersion={eventVersion}; eventType={eventType}",
                         ErrorCode.DbUpdateError));
             }
+        }
+
+        /// <inheritdoc />
+        public Task<IResult> Store<TObject, TIdentifier>(TObject domainObject)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name;
+            try
+            {
+                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.Upsert(domainObject);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to update/insert domainObject into collection '{CollectionName}'",
+                    collectionName);
+                return Task.FromResult(
+                    Result.Error(
+                        $"unable to update/insert domainObject into collection '{collectionName}'",
+                        ErrorCode.DbUpdateError));
+            }
+
+            return Task.FromResult(Result.Success());
         }
 
         /// <summary>
@@ -270,14 +305,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private class StorageMetadata
         {
             /// <summary>
-            ///     Unique Id for this entry
-            /// </summary>
-            public Guid Id { get; set; }
-
-            /// <summary>
             ///     Timestamp when this entry was written
             /// </summary>
             public DateTime CreatedAt { get; set; }
+
+            /// <summary>
+            ///     Unique Id for this entry
+            /// </summary>
+            public Guid Id { get; set; }
 
             /// <summary>
             ///     last DomainEvent that was projected and written to this Store

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
+using Bechtle.A365.Common.Utilities.Extensions;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
@@ -17,120 +19,43 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc />
     public sealed class EnvironmentProjectionStore : IEnvironmentProjectionStore
     {
+        private readonly IDomainObjectManager _domainObjectManager;
         private readonly IDomainObjectStore _domainObjectStore;
-        private readonly IEventStore _eventStore;
         private readonly ILogger<EnvironmentProjectionStore> _logger;
-        private readonly IList<ICommandValidator> _validators;
 
         /// <inheritdoc cref="EnvironmentProjectionStore" />
-        public EnvironmentProjectionStore(IEventStore eventStore,
-                                          IDomainObjectStore domainObjectStore,
-                                          ILogger<EnvironmentProjectionStore> logger,
-                                          IEnumerable<ICommandValidator> validators)
+        public EnvironmentProjectionStore(
+            ILogger<EnvironmentProjectionStore> logger,
+            IDomainObjectStore domainObjectStore,
+            IDomainObjectManager domainObjectManager)
         {
             _logger = logger;
-            _validators = validators.ToList();
-            _eventStore = eventStore;
             _domainObjectStore = domainObjectStore;
+            _domainObjectManager = domainObjectManager;
         }
 
         /// <inheritdoc />
         public async Task<IResult> AssignLayers(EnvironmentIdentifier identifier, IList<LayerIdentifier> layers)
         {
-            _logger.LogDebug($"attempting to assign {layers.Count} layers to '{identifier}'");
+            _logger.LogDebug("assigning {LayerCount} to {Identifier}", layers.Count, identifier);
 
-            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            if (!envResult.Data.Created)
-                return Result.Error("environment does not exist", ErrorCode.NotFound);
-
-            var environment = envResult.Data;
-
-            // check if all layers are valid and can be assigned right now
-            foreach (var layerId in layers)
-            {
-                var layerResult = await _domainObjectStore.ReplayObject(new EnvironmentLayer(layerId), layerId.ToString());
-                if (layerResult.IsError)
-                    return layerResult;
-
-                if (!layerResult.Data.Created)
-                    return Result.Error($"layer {layerId} does not exist", ErrorCode.NotFound);
-            }
-
-            _logger.LogDebug("assigning layers");
-            var result = environment.AssignLayers(layers);
-
-            if (result.IsError)
-                return result;
-
-            _logger.LogDebug("validating generated events");
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
+            return await _domainObjectManager.AssignEnvironmentLayers(identifier, layers, CancellationToken.None);
         }
 
         /// <inheritdoc />
         public async Task<IResult> Create(EnvironmentIdentifier identifier, bool isDefault)
         {
-            _logger.LogDebug($"attempting to create new {(isDefault ? "Default" : "")}Environment '{identifier}'");
+            _logger.LogDebug("attempting to create new Environment {Identifier}; Default={IsDefault}", identifier, isDefault);
 
-            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            var environment = envResult.Data;
-
-            _logger.LogDebug("creating environment");
-            var createResult = environment.Create(isDefault);
-            if (createResult.IsError)
-                return createResult;
-
-            _logger.LogDebug("validating resulting events");
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
+            return await _domainObjectManager.CreateEnvironment(identifier, isDefault, CancellationToken.None);
         }
 
         /// <inheritdoc />
         public async Task<IResult> Delete(EnvironmentIdentifier identifier)
         {
-            _logger.LogDebug($"attempting to delete environment '{identifier}'");
+            _logger.LogDebug("attempting to delete environment {Identifier}", identifier);
 
-            var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
-            if (envResult.IsError)
-                return envResult;
-
-            var environment = envResult.Data;
-
-            _logger.LogDebug("deleting environment");
-            var createResult = environment.Delete();
-            if (createResult.IsError)
-                return createResult;
-
-            _logger.LogDebug("validating resulting events");
-            var errors = environment.Validate(_validators);
-            if (errors.Any())
-                return Result.Error("failed to validate generated DomainEvents",
-                                    ErrorCode.ValidationFailed,
-                                    errors.Values
-                                          .SelectMany(_ => _)
-                                          .ToList());
-
-            return await environment.WriteRecordedEvents(_eventStore);
+            return await _domainObjectManager.DeleteEnvironment(identifier, CancellationToken.None);
         }
 
         /// <inheritdoc />
@@ -152,23 +77,24 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version)
         {
-            var envResult = await (version <= 0
-                                       ? _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString())
-                                       : _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString(), version));
+            _logger.LogDebug("retrieving layers of environment {Identifier}", identifier);
 
-            if (envResult.IsError)
-                return Result.Error<IList<LayerIdentifier>>(
-                    "no environment found with (" +
-                    $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                    $"{nameof(identifier.Name)}: {identifier.Name})",
-                    ErrorCode.NotFound);
+            IResult<ConfigEnvironment> environmentResult = await _domainObjectManager.GetEnvironment(identifier, CancellationToken.None);
+            if (environmentResult.IsError)
+            {
+                _logger.LogWarning(
+                    "unable to load environment {Identifier}: {ErrorCode} {Message}",
+                    identifier,
+                    environmentResult.Code,
+                    environmentResult.Message);
 
-            var environment = envResult.Data;
+                return Result.Error<IList<LayerIdentifier>>(environmentResult.Message, environmentResult.Code);
+            }
 
-            return Result.Success<IList<LayerIdentifier>>(environment.Layers
-                                                                     ?.OrderBy(l => l.Name)
-                                                                     ?.ToList()
-                                                          ?? new List<LayerIdentifier>());
+            ConfigEnvironment environment = environmentResult.Data;
+            IList<LayerIdentifier> layers = environment.Layers.OrderBy(l => l.Name).ToList();
+
+            return Result.Success(layers);
         }
 
         /// <inheritdoc />
@@ -178,106 +104,73 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range, long version)
         {
-            try
-            {
-                _logger.LogDebug($"collecting available environments, range={range}");
-
-                var envList = await (version <= 0
-                                         ? _domainObjectStore.ReplayObject<ConfigEnvironmentList>()
-                                         : _domainObjectStore.ReplayObject<ConfigEnvironmentList>(version));
-
-                List<EnvironmentIdentifier> identifiers;
-
-                if (envList.IsError)
-                {
-                    identifiers = new List<EnvironmentIdentifier>();
-                    _logger.LogInformation($"could not build EnvironmentList to collect environments: {envList.Code}; {envList.Message}");
-                }
-                else
-                {
-                    identifiers = envList.Data
-                                         .GetIdentifiers()
-                                         .OrderBy(e => e.Category)
-                                         .ThenBy(e => e.Name)
-                                         .Skip(range.Offset)
-                                         .Take(range.Length)
-                                         .ToList();
-
-                    _logger.LogDebug($"collected '{identifiers.Count}' identifiers");
-                }
-
-                return Result.Success<IList<EnvironmentIdentifier>>(identifiers);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "failed to retrieve environments");
-                return Result.Error<IList<EnvironmentIdentifier>>("failed to retrieve environments", ErrorCode.DbQueryError);
-            }
+            _logger.LogDebug("collecting available environments, range={Range}", range);
+            return await _domainObjectManager.GetEnvironments(range, CancellationToken.None);
         }
 
         /// <inheritdoc />
-        public Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier,
-                                                                               string key,
-                                                                               QueryRange range)
+        public Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
+            EnvironmentIdentifier identifier,
+            string key,
+            QueryRange range)
             => GetKeyAutoComplete(identifier, key, range, long.MaxValue);
 
         /// <inheritdoc />
-        public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier,
-                                                                                     string key,
-                                                                                     QueryRange range,
-                                                                                     long version)
+        public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
+            EnvironmentIdentifier identifier,
+            string key,
+            QueryRange range,
+            long version)
         {
             try
             {
-                _logger.LogDebug($"attempting to retrieve next paths in '{identifier}' for path '{key}', range={range}");
+                _logger.LogDebug(
+                    "attempting to retrieve next paths in {Identifier} for path '{Path}', range={Range}",
+                    identifier,
+                    key,
+                    range);
 
                 _logger.LogDebug("removing escape-sequences from key");
                 key = Uri.UnescapeDataString(key ?? string.Empty);
                 _logger.LogDebug($"using new key='{key}'");
 
-                var envResult = await (version <= 0
-                                           ? _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString())
-                                           : _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString(), version));
+                var environmentResult = await _domainObjectManager.GetEnvironment(identifier, CancellationToken.None);
+                if (environmentResult.IsError)
+                {
+                    _logger.LogWarning(
+                        "unable to retrieve environment {Identifier}: {ErrorCode}, {Message}",
+                        identifier,
+                        environmentResult.Code,
+                        environmentResult.Message);
 
-                if (envResult.IsError)
-                    return Result.Error<IList<DtoConfigKeyCompletion>>(
-                        "no environment found with (" +
-                        $"{nameof(identifier.Category)}: {identifier.Category}; " +
-                        $"{nameof(identifier.Name)}: {identifier.Name})",
-                        ErrorCode.NotFound);
+                    return Result.Error<IList<DtoConfigKeyCompletion>>(environmentResult.Message, environmentResult.Code);
+                }
 
-                var environment = envResult.Data;
-
-                var layerResult = await environment.GetLayers(_domainObjectStore);
-                if (layerResult.IsError)
-                    return Result.Error<IList<DtoConfigKeyCompletion>>(layerResult.Message, layerResult.Code);
-                var layers = layerResult.Data;
-
-                var paths = new List<EnvironmentLayerKeyPath>();
-
-                foreach (var entry in layers.SelectMany(layer => layer.KeyPaths))
-                    MergePaths(paths, entry);
+                ConfigEnvironment environment = environmentResult.Data;
+                List<EnvironmentLayerKeyPath> paths = environment.KeyPaths;
 
                 // send auto-completion data for all roots
                 if (string.IsNullOrWhiteSpace(key))
                 {
                     _logger.LogDebug("early-exit, sending root-paths because key was empty");
                     return Result.Success<IList<DtoConfigKeyCompletion>>(
-                        paths.Select(p => new DtoConfigKeyCompletion
-                             {
-                                 HasChildren = p.Children.Any(),
-                                 FullPath = p.FullPath,
-                                 Completion = p.Path
-                             })
+                        paths.Select(
+                                 p => new DtoConfigKeyCompletion
+                                 {
+                                     HasChildren = p.Children.Any(),
+                                     FullPath = p.FullPath,
+                                     Completion = p.Path
+                                 })
                              .OrderBy(p => p.Completion)
                              .ToList());
                 }
 
-                var parts = new Queue<string>(key.Contains('/')
-                                                  ? key.Split('/')
-                                                  : new[] {key});
+                var parts = new Queue<string>(
+                    key.Contains('/')
+                        ? key.Split('/')
+                        : new[] {key});
 
-                var rootPart = parts.Dequeue();
+                string rootPart = parts.Dequeue();
 
                 _logger.LogDebug($"starting with path '{rootPart}'");
 
@@ -286,8 +179,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 {
                     _logger.LogDebug("no further parts found, returning direct children");
 
-                    var possibleRoots = paths.Where(p => p.Path.Contains(rootPart))
-                                             .ToList();
+                    List<EnvironmentLayerKeyPath> possibleRoots = paths.Where(p => p.Path.Contains(rootPart))
+                                                                       .ToList();
 
                     // if there is only one possible root, and that one matches what were searching for
                     // we're returning all paths directly below that one
@@ -307,17 +200,18 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     }
 
                     return Result.Success<IList<DtoConfigKeyCompletion>>(
-                        selectedRoots.Select(p => new DtoConfigKeyCompletion
-                                     {
-                                         HasChildren = p.Children.Any(),
-                                         FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
-                                         Completion = p.Path
-                                     })
+                        selectedRoots.Select(
+                                         p => new DtoConfigKeyCompletion
+                                         {
+                                             HasChildren = p.Children.Any(),
+                                             FullPath = p.Children.Any() ? p.FullPath + '/' : p.FullPath,
+                                             Completion = p.Path
+                                         })
                                      .OrderBy(p => p.Completion)
                                      .ToList());
                 }
 
-                var root = paths.FirstOrDefault(p => p.Path == rootPart);
+                EnvironmentLayerKeyPath root = paths.FirstOrDefault(p => p.Path == rootPart);
 
                 if (root is null)
                 {
@@ -327,18 +221,21 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         ErrorCode.NotFound);
                 }
 
-                var result = GetKeyAutoCompleteInternal(root, parts.ToList(), range);
+                IResult<IList<DtoConfigKeyCompletion>> result = GetKeyAutoCompleteInternal(root, parts.ToList(), range);
 
                 return result;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to get autocomplete data for '{key}' in " +
-                                    $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name})");
+                _logger.LogError(
+                    e,
+                    "failed to get autocomplete data for '{Path}' in {Identifier}",
+                    key,
+                    identifier);
 
-                return Result.Error<IList<DtoConfigKeyCompletion>>($"failed to get autocomplete data for '{key}' in " +
-                                                                   $"({nameof(identifier.Category)}: {identifier.Category}; {nameof(identifier.Name)}: {identifier.Name}): {e}",
-                                                                   ErrorCode.DbQueryError);
+                return Result.Error<IList<DtoConfigKeyCompletion>>(
+                    $"failed to get autocomplete data for '{key}' in {identifier}: {e}",
+                    ErrorCode.DbQueryError);
             }
         }
 
@@ -347,16 +244,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger.LogDebug($"retrieving keys for {parameters.Identifier} to return as objects");
 
-            var result = await GetKeysInternal(parameters,
-                                               item => new DtoConfigKey
-                                               {
-                                                   Key = item.Key,
-                                                   Value = item.Value,
-                                                   Description = item.Description,
-                                                   Type = item.Type
-                                               },
-                                               item => item.Key,
-                                               items => items);
+            var result = await GetKeysInternal(
+                             parameters,
+                             item => new DtoConfigKey
+                             {
+                                 Key = item.Key,
+                                 Value = item.Value,
+                                 Description = item.Description,
+                                 Type = item.Type
+                             },
+                             item => item.Key,
+                             items => items);
 
             if (result.IsError)
                 return result;
@@ -376,12 +274,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger.LogDebug($"retrieving keys of environment '{parameters.Identifier}'");
 
-            var result = await GetKeysInternal(parameters,
-                                               item => item,
-                                               item => item.Key,
-                                               keys => (IDictionary<string, string>) keys.ToImmutableDictionary(item => item.Key,
-                                                   item => item.Value,
-                                                   StringComparer.OrdinalIgnoreCase));
+            var result = await GetKeysInternal(
+                             parameters,
+                             item => item,
+                             item => item.Key,
+                             keys => (IDictionary<string, string>) keys.ToImmutableDictionary(
+                                 item => item.Key,
+                                 item => item.Value,
+                                 StringComparer.OrdinalIgnoreCase));
 
             if (result.IsError)
                 return result;
@@ -394,9 +294,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return result;
         }
 
-        private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(IList<TItem> items,
-                                                                    Func<TItem, string> keySelector,
-                                                                    string preferredMatch)
+        private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(
+            IList<TItem> items,
+            Func<TItem, string> keySelector,
+            string preferredMatch)
             where TItem : class
         {
             _logger.LogDebug($"applying PreferredMatch filter to '{items.Count}' items, using {nameof(preferredMatch)}='{preferredMatch}'");
@@ -404,9 +305,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
 
             if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug(exactMatch is null
-                                     ? $"no exact match found in '{items.Count}' items for query '{preferredMatch}'"
-                                     : $"preferred match found in '{items.Count}' items for query '{preferredMatch}'");
+                _logger.LogDebug(
+                    exactMatch is null
+                        ? $"no exact match found in '{items.Count}' items for query '{preferredMatch}'"
+                        : $"preferred match found in '{items.Count}' items for query '{preferredMatch}'");
 
             return exactMatch is null
                        ? items
@@ -420,9 +322,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="parts"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(EnvironmentLayerKeyPath root,
-                                                                                  ICollection<string> parts,
-                                                                                  QueryRange range)
+        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(
+            EnvironmentLayerKeyPath root,
+            ICollection<string> parts,
+            QueryRange range)
         {
             _logger.LogDebug($"walking path from '{root.FullPath}' using ({string.Join(",", parts)}), range={range}");
 
@@ -481,8 +384,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 var walkedPathStr = string.Join(" => ", walkedPath);
 
-                var logMsg = $"no matching objects for '{part}' found; " +
-                             $"path taken to get to this dead-end: {walkedPathStr}";
+                var logMsg = $"no matching objects for '{part}' found; " + $"path taken to get to this dead-end: {walkedPathStr}";
 
                 _logger.LogDebug(logMsg);
 
@@ -490,12 +392,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
 
             return Result.Success<IList<DtoConfigKeyCompletion>>(
-                result.Select(p => new DtoConfigKeyCompletion
-                      {
-                          FullPath = p.FullPath,
-                          HasChildren = p.Children.Any(),
-                          Completion = p.Path
-                      })
+                result.Select(
+                          p => new DtoConfigKeyCompletion
+                          {
+                              FullPath = p.FullPath,
+                              HasChildren = p.Children.Any(),
+                              Completion = p.Path
+                          })
                       .OrderBy(p => p.Completion)
                       .Skip(range.Offset)
                       .Take(range.Length)
@@ -510,82 +413,60 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <param name="keySelector">selector pointing to the 'Key' property of the intermediate representation</param>
         /// <param name="transform">final transformation applied to the result-set</param>
         /// <returns></returns>
-        private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(KeyQueryParameters<EnvironmentIdentifier> parameters,
-                                                                             Expression<Func<EnvironmentLayerKey, TItem>> selector,
-                                                                             Func<TItem, string> keySelector,
-                                                                             Func<IEnumerable<TItem>, TResult> transform)
+        private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(
+            KeyQueryParameters<EnvironmentIdentifier> parameters,
+            Expression<Func<EnvironmentLayerKey, TItem>> selector,
+            Func<TItem, string> keySelector,
+            Func<IEnumerable<TItem>, TResult> transform)
             where TItem : class
         {
             try
             {
-                _logger.LogDebug("retrieving keys using parameters:" +
-                                 $"{nameof(parameters.Identifier)}: {parameters.Identifier}, " +
-                                 $"{nameof(parameters.Filter)}: {parameters.Filter}, " +
-                                 $"{nameof(parameters.PreferExactMatch)}: {parameters.PreferExactMatch}, " +
-                                 $"{nameof(parameters.Range)}: {parameters.Range}, " +
-                                 $"{nameof(parameters.RemoveRoot)}: {parameters.RemoveRoot}");
+                _logger.LogDebug(
+                    "retrieving keys using parameters:"
+                    + $"{nameof(parameters.Identifier)}: {parameters.Identifier}, "
+                    + $"{nameof(parameters.Filter)}: {parameters.Filter}, "
+                    + $"{nameof(parameters.PreferExactMatch)}: {parameters.PreferExactMatch}, "
+                    + $"{nameof(parameters.Range)}: {parameters.Range}, "
+                    + $"{nameof(parameters.RemoveRoot)}: {parameters.RemoveRoot}");
 
-                // if TargetVersion is above 0, we try to find the specified version of ConfigEnvironment
-                var envResult = await (parameters.TargetVersion <= 0
-                                           ? _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Identifier),
-                                                                             parameters.Identifier.ToString())
-                                           : _domainObjectStore.ReplayObject(new ConfigEnvironment(parameters.Identifier),
-                                                                             parameters.Identifier.ToString(),
-                                                                             parameters.TargetVersion));
+                IResult<ConfigEnvironment> envResult = await _domainObjectManager.GetEnvironment(parameters.Identifier, CancellationToken.None);
                 if (envResult.IsError)
                     return Result.Error<TResult>(envResult.Message, envResult.Code);
 
-                var environment = envResult.Data;
+                ConfigEnvironment environment = envResult.Data;
 
-                if (!environment.Created)
-                    return Result.Error<TResult>($"environment '{environment.Identifier}' does not exist", ErrorCode.NotFound);
-
-                var keyResult = await environment.GetKeys(_domainObjectStore);
-                if (keyResult.IsError)
-                    return Result.Error<TResult>(keyResult.Message, keyResult.Code);
-
-                var query = keyResult.Data
-                                     .AsQueryable();
+                IQueryable<EnvironmentLayerKey> query = environment.Keys.Values.AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(parameters.Filter))
                 {
-                    _logger.LogDebug($"adding filter '{parameters.Filter}'");
+                    _logger.LogDebug("adding filter '{Filter}'", parameters.Filter);
                     query = query.Where(k => k.Key.StartsWith(parameters.Filter));
                 }
 
                 _logger.LogDebug("ordering, and paging data");
-                var keys = query.OrderBy(k => k.Key)
-                                .Skip(parameters.Range.Offset)
-                                .Take(parameters.Range.Length)
-                                .Select(selector)
-                                .ToList();
+                List<TItem> keys = query.OrderBy(k => k.Key)
+                                        .Skip(parameters.Range.Offset)
+                                        .Take(parameters.Range.Length)
+                                        .Select(selector)
+                                        .ToList();
 
                 if (!string.IsNullOrWhiteSpace(parameters.PreferExactMatch))
                 {
-                    _logger.LogDebug($"applying preferredMatch filter: '{parameters.PreferExactMatch}'");
+                    _logger.LogDebug("applying preferredMatch filter: '{Filter}'", parameters.PreferExactMatch);
                     keys = ApplyPreferredExactFilter(keys, keySelector, parameters.PreferExactMatch).ToList();
                 }
 
                 _logger.LogDebug("transforming result using closure");
-                var result = transform(keys);
+                TResult result = transform(keys);
 
                 return Result.Success(result);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to retrieve keys for environment ({parameters.Identifier})");
+                _logger.LogError(e, "failed to retrieve keys for environment {Identifier}", parameters.Identifier);
                 return Result.Error<TResult>($"failed to retrieve keys for environment ({parameters.Identifier})", ErrorCode.DbQueryError);
             }
-        }
-
-        private void MergePaths(IList<EnvironmentLayerKeyPath> paths, EnvironmentLayerKeyPath entry)
-        {
-            var existingEntry = paths.FirstOrDefault(e => e.Path == entry.Path);
-            if (existingEntry is null)
-                paths.Add(entry);
-            else
-                foreach (var child in entry.Children)
-                    MergePaths(existingEntry.Children, child);
         }
 
         /// <summary>
@@ -609,14 +490,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (keys.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
                     _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
-                    return Result.Success((IDictionary<string, string>) keys.ToDictionary(kvp => kvp.Key.Substring(root.Length),
-                                                                                          kvp => kvp.Value,
-                                                                                          StringComparer.OrdinalIgnoreCase));
+                    return Result.Success(
+                        (IDictionary<string, string>) keys.ToDictionary(
+                            kvp => kvp.Key.Substring(root.Length),
+                            kvp => kvp.Value,
+                            StringComparer.OrdinalIgnoreCase));
                 }
 
                 _logger.LogDebug($"could not remove root '{root}' from all entries - not all items share same root");
-                return Result.Error<IDictionary<string, string>>($"could not remove root '{root}' from all entries - not all items share same root",
-                                                                 ErrorCode.InvalidData);
+                return Result.Error<IDictionary<string, string>>(
+                    $"could not remove root '{root}' from all entries - not all items share same root",
+                    ErrorCode.InvalidData);
             }
             catch (Exception e)
             {
@@ -646,18 +530,21 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (keyList.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
                     _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
-                    return Result.Success(keyList.Select(entry =>
-                                                 {
-                                                     entry.Key = entry.Key.Substring(root.Length);
-                                                     return entry;
-                                                 })
-                                                 .ToList()
-                                                 .AsEnumerable());
+                    return Result.Success(
+                        keyList.Select(
+                                   entry =>
+                                   {
+                                       entry.Key = entry.Key.Substring(root.Length);
+                                       return entry;
+                                   })
+                               .ToList()
+                               .AsEnumerable());
                 }
 
                 _logger.LogDebug($"could not remove root '{root}' from all ConfigKeys - not all items share same root");
-                return Result.Error<IEnumerable<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys - not all items share same root",
-                                                               ErrorCode.InvalidData);
+                return Result.Error<IEnumerable<DtoConfigKey>>(
+                    $"could not remove root '{root}' from all ConfigKeys - not all items share same root",
+                    ErrorCode.InvalidData);
             }
             catch (Exception e)
             {

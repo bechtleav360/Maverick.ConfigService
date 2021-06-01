@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -75,10 +76,23 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <summary>
         ///     List all objects of type <typeparamref name="TObject" />
         /// </summary>
+        /// <param name="range">range of items to retrieve</param>
         /// <typeparam name="TObject">type of object to list</typeparam>
         /// <typeparam name="TIdentifier">identifier used by <typeparamref name="TObject"/></typeparam>
         /// <returns>result of the operation</returns>
-        Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>()
+        Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(QueryRange range)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
+
+        /// <summary>
+        ///     List all objects of type <typeparamref name="TObject" />
+        /// </summary>
+        /// <param name="filter">expression used to filter the result-set</param>
+        /// <param name="range">range of items to retrieve</param>
+        /// <typeparam name="TObject">type of object to list</typeparam>
+        /// <typeparam name="TIdentifier">identifier used by <typeparamref name="TObject"/></typeparam>
+        /// <returns>result of the operation</returns>
+        Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(Expression<Func<TObject, bool>> filter, QueryRange range)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier;
     }
