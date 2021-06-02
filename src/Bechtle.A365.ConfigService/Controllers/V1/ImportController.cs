@@ -23,10 +23,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IDataImporter _importer;
 
         /// <inheritdoc />
-        public ImportController(IServiceProvider provider,
-                                ILogger<ImportController> logger,
+        public ImportController(ILogger<ImportController> logger,
                                 IDataImporter importer)
-            : base(provider, logger)
+            : base(logger)
         {
             _importer = importer;
         }

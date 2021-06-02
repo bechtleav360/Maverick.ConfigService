@@ -30,13 +30,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public PreviewController(IServiceProvider provider,
-                                 ILogger<PreviewController> logger,
+        public PreviewController(ILogger<PreviewController> logger,
                                  IConfigurationCompiler compiler,
                                  IProjectionStore store,
                                  IConfigurationParser parser,
                                  IJsonTranslator translator)
-            : base(provider, logger)
+            : base(logger)
         {
             _compiler = compiler;
             _store = store;

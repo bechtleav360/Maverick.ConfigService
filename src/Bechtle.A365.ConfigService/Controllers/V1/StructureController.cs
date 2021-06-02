@@ -25,11 +25,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public StructureController(IServiceProvider provider,
-                                   ILogger<StructureController> logger,
+        public StructureController(ILogger<StructureController> logger,
                                    IProjectionStore store,
                                    IJsonTranslator translator)
-            : base(provider, logger)
+            : base(logger)
         {
             _store = store;
             _translator = translator;

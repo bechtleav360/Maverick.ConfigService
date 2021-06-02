@@ -26,11 +26,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly ITemporaryKeyStore _keyStore;
 
         /// <inheritdoc />
-        public TemporaryKeyController(IServiceProvider provider,
-                                      ILogger<TemporaryKeyController> logger,
+        public TemporaryKeyController(ILogger<TemporaryKeyController> logger,
                                       ITemporaryKeyStore keyStore,
                                       IEventBus eventBus)
-            : base(provider, logger)
+            : base(logger)
         {
             _keyStore = keyStore;
             _eventBus = eventBus;

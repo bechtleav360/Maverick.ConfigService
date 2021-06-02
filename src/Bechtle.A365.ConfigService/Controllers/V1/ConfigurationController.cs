@@ -27,11 +27,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IEventBus _eventBus;
 
         /// <inheritdoc />
-        public ConfigurationController(IServiceProvider provider,
-                                       ILogger<ConfigurationController> logger,
+        public ConfigurationController(ILogger<ConfigurationController> logger,
                                        IProjectionStore store,
                                        IEventBus eventBus)
-            : base(provider, logger)
+            : base(logger)
         {
             _store = store;
             _eventBus = eventBus;

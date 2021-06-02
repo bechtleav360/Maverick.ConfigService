@@ -22,10 +22,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IDataExporter _exporter;
 
         /// <inheritdoc />
-        public ExportController(IServiceProvider provider,
-                                ILogger<ExportController> logger,
+        public ExportController(ILogger<ExportController> logger,
                                 IDataExporter exporter)
-            : base(provider, logger)
+            : base(logger)
         {
             _exporter = exporter;
         }

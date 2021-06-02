@@ -18,10 +18,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IOptionsMonitor<EventBusConnectionConfiguration> _config;
 
         /// <inheritdoc />
-        public ConnectionController(IServiceProvider provider,
-                                    ILogger<ConnectionController> logger,
+        public ConnectionController(ILogger<ConnectionController> logger,
                                     IOptionsMonitor<EventBusConnectionConfiguration> config)
-            : base(provider, logger)
+            : base(logger)
         {
             _config = config;
         }

@@ -20,10 +20,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IProjectionStore _store;
 
         /// <inheritdoc />
-        public SearchController(IServiceProvider provider,
-                                ILogger<SearchController> logger,
+        public SearchController(ILogger<SearchController> logger,
                                 IProjectionStore store)
-            : base(provider, logger)
+            : base(logger)
         {
             _store = store;
         }

@@ -18,10 +18,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public ConversionController(IServiceProvider provider,
-                                    ILogger<ConversionController> logger,
+        public ConversionController(ILogger<ConversionController> logger,
                                     IJsonTranslator translator)
-            : base(provider, logger)
+            : base(logger)
         {
             _translator = translator;
         }
