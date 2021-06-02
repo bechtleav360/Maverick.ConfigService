@@ -1,97 +1,72 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
-using Bechtle.A365.ConfigService.Interfaces.Stores;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
     /// <inheritdoc />
     public class DataImporter : IDataImporter
     {
-        private readonly IDomainObjectStore _domainObjectStore;
-        private readonly IEventStore _eventStore;
-        private readonly ICommandValidator[] _validators;
+        private readonly IDomainObjectManager _domainObjectManager;
 
         /// <inheritdoc cref="DataImporter" />
-        public DataImporter(IEventStore eventStore,
-                            IDomainObjectStore domainObjectStore,
-                            IEnumerable<ICommandValidator> validators)
+        public DataImporter(IDomainObjectManager domainObjectManager)
         {
-            _eventStore = eventStore;
-            _domainObjectStore = domainObjectStore;
-            _validators = validators.ToArray();
+            _domainObjectManager = domainObjectManager;
         }
 
         /// <inheritdoc />
         public async Task<IResult> Import(ConfigExport export)
         {
             if (export is null)
+            {
                 return Result.Error($"{nameof(export)} must not be null", ErrorCode.InvalidData);
+            }
 
-            foreach (var layerExport in export.Layers)
+            foreach (LayerExport layerExport in export.Layers)
             {
                 var identifier = new LayerIdentifier(layerExport.Name);
 
-                var layerResult = await _domainObjectStore.ReplayObject(new EnvironmentLayer(identifier), identifier.ToString());
-                if (layerResult.IsError)
-                    return layerResult;
+                IResult importResult = await _domainObjectManager.ImportLayer(
+                                           identifier,
+                                           layerExport.Keys
+                                                      .Select(k => new EnvironmentLayerKey(k.Key, k.Value, k.Type, k.Description, 0))
+                                                      .ToList(),
+                                           CancellationToken.None);
 
-                var layer = layerResult.Data;
-
-                if (!layer.Created)
-                    layer.Create();
-
-                layer.ImportKeys(layerExport.Keys
-                                            .Select(k => new EnvironmentLayerKey(k.Key, k.Value, k.Type, k.Description, 0))
-                                            .ToList());
-
-                var errors = layer.Validate(_validators);
-                if (errors.Any())
+                if (importResult.IsError)
                 {
-                    var errorMessages = string.Join("\r\n", errors.Values
-                                                                  .SelectMany(_ => _)
-                                                                  .Select(r => r.Message));
-
-                    return Result.Error($"data-validation failed; {errorMessages}", ErrorCode.ValidationFailed);
+                    return importResult;
                 }
-
-                var result = await layer.WriteRecordedEvents(_eventStore);
-                if (result.IsError)
-                    return result;
             }
 
-            foreach (var envExport in export.Environments)
+            foreach (EnvironmentExport envExport in export.Environments)
             {
                 var identifier = new EnvironmentIdentifier(envExport.Category, envExport.Name);
 
-                var envResult = await _domainObjectStore.ReplayObject(new ConfigEnvironment(identifier), identifier.ToString());
+                IResult<ConfigEnvironment> envResult = await _domainObjectManager.GetEnvironment(identifier, CancellationToken.None);
                 if (envResult.IsError)
-                    return envResult;
-
-                var environment = envResult.Data;
-                if (!environment.Created)
-                    environment.Create();
-
-                environment.AssignLayers(envExport.Layers);
-
-                var errors = environment.Validate(_validators);
-                if (errors.Any())
                 {
-                    var errorMessages = string.Join("\r\n", errors.Values
-                                                                  .SelectMany(_ => _)
-                                                                  .Select(r => r.Message));
-
-                    return Result.Error($"data-validation failed; {errorMessages}", ErrorCode.ValidationFailed);
+                    if (envResult.Code == ErrorCode.NotFound)
+                    {
+                        IResult creationResult = await _domainObjectManager.CreateEnvironment(identifier, CancellationToken.None);
+                        if (creationResult.IsError)
+                        {
+                            return creationResult;
+                        }
+                    }
                 }
 
-                var result = await environment.WriteRecordedEvents(_eventStore);
-                if (result.IsError)
-                    return result;
+                IResult layerAssignResult = await _domainObjectManager.AssignEnvironmentLayers(identifier, envExport.Layers, CancellationToken.None);
+                if (layerAssignResult.IsError)
+                {
+                    return layerAssignResult;
+                }
             }
 
             return Result.Success();

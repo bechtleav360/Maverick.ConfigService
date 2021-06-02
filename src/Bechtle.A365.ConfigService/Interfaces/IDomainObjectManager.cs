@@ -103,6 +103,14 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<PreparedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a single stored Configurations Keys
+        /// </summary>
+        /// <param name="identifier">valid identifier for the Configuration</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IDictionary<string, string>>> GetConfigurationKeys(ConfigurationIdentifier identifier, CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Get a list of all stored Configuration-ids
         /// </summary>
         /// <param name="range">range of ids to retrieve</param>
@@ -126,15 +134,10 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="range">range of ids to retrieve</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(EnvironmentIdentifier environment, QueryRange range, CancellationToken cancellationToken);
-
-        /// <summary>
-        ///     Get a single stored Configurations Keys
-        /// </summary>
-        /// <param name="identifier">valid identifier for the Configuration</param>
-        /// <param name="cancellationToken">token to cancel the operation with</param>
-        /// <returns>Result of the Operation</returns>
-        Task<IResult<IDictionary<string, string>>> GetConfigurationKeys(ConfigurationIdentifier identifier, CancellationToken cancellationToken);
+        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+            EnvironmentIdentifier environment,
+            QueryRange range,
+            CancellationToken cancellationToken);
 
         /// <summary>
         ///     Get a single stored Environment
@@ -161,14 +164,6 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<EnvironmentLayer>> GetLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
-        ///     Get a all stored Layer-ids
-        /// </summary>
-        /// <param name="range">range of ids to retrieve</param>
-        /// <param name="cancellationToken">token to cancel the operation with</param>
-        /// <returns>Result of the Operation</returns>
-        Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken);
-
-        /// <summary>
         ///     Get the keys of a Layer
         /// </summary>
         /// <param name="identifier">valid identifier for an existing Layer</param>
@@ -176,6 +171,14 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <returns>Result of the Operation</returns>
         /// <returns></returns>
         Task<IResult<IList<EnvironmentLayerKey>>> GetLayerKeys(LayerIdentifier identifier, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a all stored Layer-ids
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Get a single stored Structure
@@ -201,6 +204,17 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
         Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Import a Layer with the given Keys.
+        ///     Will create Layer if it doesn't exist.
+        ///     Will overwrite any existing keys.
+        /// </summary>
+        /// <param name="identifier">valid identifier for an <see cref="EnvironmentLayer" /></param>
+        /// <param name="keys">list of keys to assign to this Layer</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>result of the operation</returns>
+        Task<IResult> ImportLayer(LayerIdentifier identifier, IList<EnvironmentLayerKey> keys, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Modify the keys of a Layer

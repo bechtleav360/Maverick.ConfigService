@@ -206,6 +206,57 @@ namespace Bechtle.A365.ConfigService.Implementations
             => ListObjects<ConfigStructure, StructureIdentifier>(s => s.Id.Name == name, range, cancellationToken);
 
         /// <inheritdoc />
+        public async Task<IResult> ImportLayer(LayerIdentifier identifier, IList<EnvironmentLayerKey> keys, CancellationToken cancellationToken)
+        {
+            var events = new List<IDomainEvent>();
+
+            IResult<EnvironmentLayer> result = await LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, cancellationToken);
+            if (result.IsError)
+            {
+                if (result.Code == ErrorCode.NotFound)
+                {
+                    events.Add(
+                        new DomainEvent<EnvironmentLayerCreated>(
+                            "Anonymous",
+                            new EnvironmentLayerCreated(identifier)));
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "unable to load layer with id '{Identifier}': {ErrorCode} {Message}",
+                        identifier,
+                        result.Code,
+                        result.Message);
+                    return result;
+                }
+            }
+
+            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
+            if (lastProjectedEventResult.IsError)
+            {
+                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
+                return lastProjectedEventResult;
+            }
+
+            long lastProjectedEvent = lastProjectedEventResult.Data;
+            ConfigKeyAction[] actions = keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                            .ToArray();
+            events.Add(
+                new DomainEvent<EnvironmentLayerKeysModified>(
+                    "Anonymous",
+                    new EnvironmentLayerKeysModified(
+                        identifier,
+                        actions)));
+
+            await _eventStore.WriteEventsAsync(
+                events,
+                _eventStoreConfiguration.Stream,
+                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+
+            return Result.Success();
+        }
+
+        /// <inheritdoc />
         public async Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken)
         {
             IResult<EnvironmentLayer> result = await LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, cancellationToken);
