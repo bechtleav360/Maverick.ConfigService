@@ -4,19 +4,11 @@ using System.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
-    /// <inheritdoc cref="DomainEvent" />
     /// <summary>
     ///     a Layer with accompanying keys has been imported
     /// </summary>
     public class EnvironmentLayerKeysImported : DomainEvent, IEquatable<EnvironmentLayerKeysImported>
     {
-        /// <inheritdoc />
-        public EnvironmentLayerKeysImported(LayerIdentifier identifier, ConfigKeyAction[] modifiedKeys)
-        {
-            Identifier = identifier;
-            ModifiedKeys = modifiedKeys;
-        }
-
         /// <inheritdoc cref="LayerIdentifier" />
         public LayerIdentifier Identifier { get; }
 
@@ -25,29 +17,51 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public ConfigKeyAction[] ModifiedKeys { get; }
 
-        public static bool operator ==(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => Equals(left, right);
-
-        public static bool operator !=(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => !Equals(left, right);
-
-        public override bool Equals(object obj)
+        /// <inheritdoc />
+        public EnvironmentLayerKeysImported(LayerIdentifier identifier, ConfigKeyAction[] modifiedKeys)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((EnvironmentLayerKeysImported) obj);
+            Identifier = identifier;
+            ModifiedKeys = modifiedKeys;
         }
 
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentLayerKeysImported, strict);
-
-        public virtual bool Equals(EnvironmentLayerKeysImported other) => Equals(other, false);
-
-        public virtual bool Equals(EnvironmentLayerKeysImported other, bool _)
+        public virtual bool Equals(EnvironmentLayerKeysImported other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return Equals(Identifier, other.Identifier)
                    && Equals(ModifiedKeys, other.ModifiedKeys);
         }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != GetType())
+            {
+                return false;
+            }
+
+            return Equals((EnvironmentLayerKeysImported) obj);
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
 
         public override int GetHashCode()
         {
@@ -65,6 +79,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        public static bool operator ==(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => Equals(left, right);
+
+        public static bool operator !=(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => !Equals(left, right);
+
         /// <inheritdoc />
         public override IList<DomainEvent> Split()
         {
@@ -74,12 +92,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
 
             // double to force floating-point division, so we can round up and not miss any keys during partitioning
             double totalKeys = ModifiedKeys.Length;
-            int partitions = 2;
-            int keysPerPartition = (int) Math.Ceiling(totalKeys / partitions);
+            var partitions = 2;
+            var keysPerPartition = (int) Math.Ceiling(totalKeys / partitions);
 
-            int counter = 0;
+            var counter = 0;
             var nextImport = new List<ConfigKeyAction>();
-            foreach(ConfigKeyAction action in ModifiedKeys)
+            foreach (ConfigKeyAction action in ModifiedKeys)
             {
                 nextImport.Add(action);
                 ++counter;

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -34,7 +32,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using NLog.Web;
 using Prometheus;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace Bechtle.A365.ConfigService
@@ -170,22 +167,20 @@ namespace Bechtle.A365.ConfigService
             RegisterOptions(services);
             RegisterMvc(services);
             RegisterVersioning(services);
-            RegisterSwagger(services);
             RegisterDiServices(services);
             RegisterSecretStores(services);
             RegisterHealthEndpoints(services);
+            RegisterProjections(services);
         }
 
         private void RegisterAzureSecretStore(IConfigurationSection section, IServiceCollection services)
-            => services.AddScoped<ISecretConfigValueProvider, AzureSecretStore>(_logger);
+            => services.AddScoped<ISecretConfigValueProvider, AzureSecretStore>();
 
         private void RegisterConfiguredSecretStore(IConfigurationSection section, IServiceCollection services)
-            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>(_logger);
+            => services.AddScoped<ISecretConfigValueProvider, ConfiguredSecretStore>();
 
         private void RegisterDiServices(IServiceCollection services)
         {
-            _logger.LogInformation("Registering App-Services");
-
             // setup services for DI
             services.AddMemoryCache(
                         options =>
@@ -209,19 +204,18 @@ namespace Bechtle.A365.ConfigService
 
                             options.Configuration = connectionString;
                         })
-                    .AddTransient<IProjectionStore, ProjectionStore>(_logger)
-                    .AddTransient<ILayerProjectionStore, LayerProjectionStore>(_logger)
-                    .AddTransient<IStructureProjectionStore, StructureProjectionStore>(_logger)
-                    .AddTransient<IEnvironmentProjectionStore, EnvironmentProjectionStore>(_logger)
-                    .AddTransient<IConfigurationProjectionStore, ConfigurationProjectionStore>(_logger)
-                    .AddTransient<ITemporaryKeyStore, TemporaryKeyStore>(_logger)
-                    .AddTransient<IConfigurationCompiler, ConfigurationCompiler>(_logger)
-                    .AddTransient<IJsonTranslator, JsonTranslator>(_logger)
-                    .AddTransient<IConfigurationParser, AntlrConfigurationParser>(_logger)
-                    .AddTransient<IDataExporter, DataExporter>(_logger)
-                    .AddTransient<IDataImporter, DataImporter>(_logger)
+                    .AddTransient<IProjectionStore, ProjectionStore>()
+                    .AddTransient<ILayerProjectionStore, LayerProjectionStore>()
+                    .AddTransient<IStructureProjectionStore, StructureProjectionStore>()
+                    .AddTransient<IEnvironmentProjectionStore, EnvironmentProjectionStore>()
+                    .AddTransient<IConfigurationProjectionStore, ConfigurationProjectionStore>()
+                    .AddTransient<ITemporaryKeyStore, TemporaryKeyStore>()
+                    .AddTransient<IConfigurationCompiler, ConfigurationCompiler>()
+                    .AddTransient<IJsonTranslator, JsonTranslator>()
+                    .AddTransient<IConfigurationParser, AntlrConfigurationParser>()
+                    .AddTransient<IDataExporter, DataExporter>()
+                    .AddTransient<IDataImporter, DataImporter>()
                     .AddTransient<IEventBus, WebSocketEventBusClient>(
-                        _logger,
                         provider =>
                         {
                             var config = provider.GetRequiredService<IOptionsMonitor<EventBusConnectionConfiguration>>().CurrentValue;
@@ -236,9 +230,10 @@ namespace Bechtle.A365.ConfigService
                                 new Uri(new Uri(config.Server), config.Hub).ToString(),
                                 provider.GetService<ILoggerFactory>());
                         })
-                    .AddTransient<ICommandValidator, InternalDataCommandValidator>(_logger)
-                    .AddTransient<IDomainObjectStore, DomainObjectStore>(_logger)
-                    .AddSingleton<IJsonTranslator, JsonTranslator>(_logger)
+                    .AddTransient<ICommandValidator, InternalDataCommandValidator>()
+                    .AddTransient<IDomainObjectStore, DomainObjectStore>()
+                    .AddTransient<IDomainObjectManager, DomainObjectManager>()
+                    .AddSingleton<IJsonTranslator, JsonTranslator>()
                     .AddEventStore(
                         Configuration.GetSection("EventStoreConnection"),
                         services.BuildServiceProvider().GetService<ILoggerFactory>(),
@@ -256,15 +251,12 @@ namespace Bechtle.A365.ConfigService
                             typeof(StructureDeleted),
                             typeof(StructureVariablesModified),
                         })
-                    .AddHostedService<GracefulShutdownService>(_logger)
-                    .AddHostedService<TemporaryKeyCleanupService>(_logger);
+                    .AddHostedService<GracefulShutdownService>()
+                    .AddHostedService<TemporaryKeyCleanupService>();
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)
         {
-            _logger.LogInformation("Registering Health Endpoint");
-            _logger.LogDebug("building intermediate-service-provider");
-
             var signalrServer = Configuration.GetSection("EventBusConnection:Server").Get<string>();
             var signalrHub = Configuration.GetSection("EventBusConnection:Hub").Get<string>();
 
@@ -313,8 +305,6 @@ namespace Bechtle.A365.ConfigService
 
         private void RegisterMvc(IServiceCollection services)
         {
-            _logger.LogInformation("registering MVC-Middleware with metrics-support");
-
             // setup MVC
             services.AddMvc()
                     .AddJsonOptions(
@@ -350,10 +340,6 @@ namespace Bechtle.A365.ConfigService
                 ("Azure", RegisterAzureSecretStore)
             };
 
-            _logger.LogInformation(
-                $"looking for an enabled SecretStore ({storeBaseSection}:{{Store}}:[Enabled]) "
-                + $"in this order ({string.Join(", ", storeRegistrations.Select(t => $"{t.Section}"))})");
-
             // look for all enabled stores, and collect some metadata
             var selectedStores = storeRegistrations.Select(
                                                        t =>
@@ -372,40 +358,15 @@ namespace Bechtle.A365.ConfigService
 
             if (selectedStores.Count == 0)
             {
-                _logger.LogWarning($"no actual secret-stores have been registered, using {nameof(VoidSecretStore)} as fallback");
-                services.AddScoped<ISecretConfigValueProvider, VoidSecretStore>(_logger);
+                services.AddScoped<ISecretConfigValueProvider, VoidSecretStore>();
                 return;
             }
-
-            if (selectedStores.Count > 1)
-                _logger.LogError(
-                    "multiple stores have been enabled ("
-                    + string.Join(", ", selectedStores.Select(t => t.SectionName))
-                    + $"), but only one will be registered ({selectedStores.First().SectionName})");
 
             selectedStores[0].RegistryFunc?.Invoke(selectedStores[0].Section, services);
         }
 
-        private void RegisterSwagger(IServiceCollection services)
-        {
-            _logger.LogInformation("registering Swagger");
-
-            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>()
-                    .AddSwaggerGen(
-                        options =>
-                        {
-                            options.CustomSchemaIds(t => t.FullName);
-
-                            var ass = Assembly.GetEntryAssembly();
-                            if (!(ass is null))
-                                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, $"{ass.GetName().Name}.xml"));
-                        });
-        }
-
         private void RegisterVersioning(IServiceCollection services)
         {
-            _logger.LogInformation("registering API-Version support");
-
             // setup API-Versioning and Swagger
             services.AddApiVersioning(
                         options =>
@@ -422,6 +383,11 @@ namespace Bechtle.A365.ConfigService
                             options.GroupNameFormat = "'v'VVV";
                             options.SubstituteApiVersionInUrl = true;
                         });
+        }
+
+        private void RegisterProjections(IServiceCollection services)
+        {
+            services.AddHostedService<DomainObjectProjection>();
         }
     }
 }

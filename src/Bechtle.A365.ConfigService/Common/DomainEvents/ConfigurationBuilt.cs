@@ -2,22 +2,11 @@
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
-    /// <inheritdoc cref="DomainEvent" />
     /// <summary>
     ///     a Configuration has been built with information from <see cref="EnvironmentIdentifier" /> and <see cref="StructureIdentifier" />
     /// </summary>
     public class ConfigurationBuilt : DomainEvent, IEquatable<ConfigurationBuilt>
     {
-        /// <inheritdoc />
-        public ConfigurationBuilt(ConfigurationIdentifier identifier,
-                                  DateTime? validFrom,
-                                  DateTime? validTo)
-        {
-            Identifier = identifier;
-            ValidFrom = validFrom;
-            ValidTo = validTo;
-        }
-
         /// <inheritdoc cref="ConfigurationIdentifier" />
         public ConfigurationIdentifier Identifier { get; }
 
@@ -31,26 +20,51 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public DateTime? ValidTo { get; }
 
-        public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
-
-        public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
-
-        public override bool Equals(object obj)
+        /// <inheritdoc />
+        public ConfigurationBuilt(
+            ConfigurationIdentifier identifier,
+            DateTime? validFrom,
+            DateTime? validTo)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((ConfigurationBuilt) obj);
+            Identifier = identifier;
+            ValidFrom = validFrom;
+            ValidTo = validTo;
         }
-
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other as ConfigurationBuilt, strict);
 
         public virtual bool Equals(ConfigurationBuilt other) => Equals(other, false);
 
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != GetType())
+            {
+                return false;
+            }
+
+            return Equals((ConfigurationBuilt) obj);
+        }
+
         public virtual bool Equals(ConfigurationBuilt other, bool strict)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return strict
                        ? Equals(Identifier, other.Identifier)
                          && ValidFrom.Equals(other.ValidFrom)
@@ -58,11 +72,14 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                        : Equals(Identifier, other.Identifier);
         }
 
+        /// <inheritdoc />
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
+
         public override int GetHashCode()
         {
             unchecked
             {
-                var hashCode = Identifier != null ? Identifier.GetHashCode() : 0;
+                int hashCode = Identifier != null ? Identifier.GetHashCode() : 0;
                 hashCode = (hashCode * 397) ^ ValidFrom.GetHashCode();
                 hashCode = (hashCode * 397) ^ ValidTo.GetHashCode();
                 return hashCode;
@@ -76,5 +93,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
             }
         };
+
+        public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
+
+        public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
     }
 }

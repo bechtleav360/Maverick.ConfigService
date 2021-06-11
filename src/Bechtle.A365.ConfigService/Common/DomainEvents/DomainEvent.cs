@@ -20,6 +20,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <returns>true if both DomainEvents represent the same event</returns>
         public abstract bool Equals(DomainEvent other, bool strict);
 
+        public static string GetEventType<T>() where T : DomainEvent => typeof(T).Name;
+
+        public static string GetEventType(Type domainEventType)
+        {
+            if (typeof(DomainEvent).IsAssignableFrom(domainEventType))
+            {
+                return domainEventType.Name;
+            }
+
+            throw new NotSupportedException($"type '{domainEventType.FullName}' does not inherit from '{typeof(DomainEvent).FullName}'");
+        }
+
         /// <summary>
         ///     Get the public Metadata for this DomainEvent
         /// </summary>
@@ -31,14 +43,5 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         /// <returns>list of smaller DomainEvents, or list with this DomainEvent if it can't be split again</returns>
         public virtual IList<DomainEvent> Split() => new List<DomainEvent> {this};
-
-        public static string GetEventType<T>() where T : DomainEvent => typeof(T).Name;
-
-        public static string GetEventType(Type domainEventType)
-        {
-            if (typeof(DomainEvent).IsAssignableFrom(domainEventType))
-                return domainEventType.Name;
-            throw new NotSupportedException($"type '{domainEventType.FullName}' does not inherit from '{typeof(DomainEvent).FullName}'");
-        }
     }
 }

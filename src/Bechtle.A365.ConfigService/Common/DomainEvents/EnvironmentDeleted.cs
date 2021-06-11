@@ -2,43 +2,57 @@
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
-    /// <inheritdoc cref="DomainEvent" />
     /// <summary>
     ///     an Environment with the given identifier has been deleted
     /// </summary>
     public class EnvironmentDeleted : DomainEvent, IEquatable<EnvironmentDeleted>
     {
+        /// <inheritdoc cref="EnvironmentIdentifier" />
+        public EnvironmentIdentifier Identifier { get; }
+
         /// <inheritdoc />
         public EnvironmentDeleted(EnvironmentIdentifier identifier)
         {
             Identifier = identifier;
         }
 
-        /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; }
+        public virtual bool Equals(EnvironmentDeleted other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
 
-        public static bool operator ==(EnvironmentDeleted left, EnvironmentDeleted right) => Equals(left, right);
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
 
-        public static bool operator !=(EnvironmentDeleted left, EnvironmentDeleted right) => !Equals(left, right);
+            return Equals(Identifier, other.Identifier);
+        }
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != GetType())
+            {
+                return false;
+            }
+
             return Equals((EnvironmentDeleted) obj);
         }
 
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other as EnvironmentDeleted, strict);
-
-        public virtual bool Equals(EnvironmentDeleted other) => Equals(other, false);
-
-        public virtual bool Equals(EnvironmentDeleted other, bool _)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Equals(Identifier, other.Identifier);
-        }
+        /// <inheritdoc />
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
 
         public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;
 
@@ -49,5 +63,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
             }
         };
+
+        public static bool operator ==(EnvironmentDeleted left, EnvironmentDeleted right) => Equals(left, right);
+
+        public static bool operator !=(EnvironmentDeleted left, EnvironmentDeleted right) => !Equals(left, right);
     }
 }
