@@ -7,6 +7,41 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public class EnvironmentLayerKey : IEquatable<EnvironmentLayerKey>
     {
+        /// <summary>
+        ///     Description of the Contents of this Key
+        /// </summary>
+        public string Description { get; set; }
+
+        /// <summary>
+        ///     Full-Path for this Key
+        /// </summary>
+        public string Key { get; set; }
+
+        /// <summary>
+        ///     Intended Value-Type of this Key
+        /// </summary>
+        public string Type { get; set; }
+
+        /// <summary>
+        ///     String-Representation of the actual Value
+        /// </summary>
+        public string Value { get; set; }
+
+        /// <summary>
+        ///     internal data-version
+        /// </summary>
+        public long Version { get; set; }
+
+        /// <inheritdoc cref="EnvironmentLayerKey" />
+        public EnvironmentLayerKey()
+        {
+            Key = string.Empty;
+            Value = string.Empty;
+            Type = string.Empty;
+            Description = string.Empty;
+            Version = 0;
+        }
+
         /// <inheritdoc cref="EnvironmentLayerKey" />
         public EnvironmentLayerKey(string key, string value, string type, string description, long version)
         {
@@ -17,36 +52,19 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Version = version;
         }
 
-        /// <summary>
-        ///     Description of the Contents of this Key
-        /// </summary>
-        public string Description { get; }
-
-        /// <summary>
-        ///     Full-Path for this Key
-        /// </summary>
-        public string Key { get; }
-
-        /// <summary>
-        ///     Intended Value-Type of this Key
-        /// </summary>
-        public string Type { get; }
-
-        /// <summary>
-        ///     String-Representation of the actual Value
-        /// </summary>
-        public string Value { get; }
-
-        /// <summary>
-        ///     internal data-version
-        /// </summary>
-        public long Version { get; }
-
         /// <inheritdoc />
         public virtual bool Equals(EnvironmentLayerKey other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return Description == other.Description
                    && Key == other.Key
                    && Type == other.Type
@@ -57,9 +75,21 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != GetType())
+            {
+                return false;
+            }
+
             return Equals((EnvironmentLayerKey) obj);
         }
 

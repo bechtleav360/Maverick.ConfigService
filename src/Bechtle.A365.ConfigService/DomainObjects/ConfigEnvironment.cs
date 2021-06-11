@@ -18,14 +18,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public bool IsDefault { get; set; }
 
         /// <summary>
-        ///     ordered layers used to represent this Environment
-        /// </summary>
-        public List<LayerIdentifier> Layers { get; set; }
-
-        /// <summary>
         ///     Json-Representation of the actual Data
         /// </summary>
         public string Json { get; set; }
+
+        /// <summary>
+        ///     Keys represented as nested objects
+        /// </summary>
+        public List<EnvironmentLayerKeyPath> KeyPaths { get; set; }
 
         /// <summary>
         ///     Actual Data of this Environment
@@ -33,9 +33,17 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public Dictionary<string, EnvironmentLayerKey> Keys { get; set; }
 
         /// <summary>
-        ///     Keys represented as nested objects
+        ///     ordered layers used to represent this Environment
         /// </summary>
-        public List<EnvironmentLayerKeyPath> KeyPaths { get; set; }
+        public List<LayerIdentifier> Layers { get; set; }
+
+        /// <inheritdoc />
+        public ConfigEnvironment()
+        {
+            Id = null;
+            IsDefault = false;
+            Layers = new List<LayerIdentifier>();
+        }
 
         /// <inheritdoc />
         public ConfigEnvironment(EnvironmentIdentifier identifier)

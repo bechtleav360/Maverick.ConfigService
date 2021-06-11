@@ -12,6 +12,7 @@ using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Bechtle.A365.ServiceBase.Services.V1;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -22,60 +23,30 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// </summary>
     public class DomainObjectProjection : EventSubscriptionBase
     {
-        private readonly IOptionsSnapshot<EventStoreConnectionConfiguration> _configuration;
+        private readonly IOptions<EventStoreConnectionConfiguration> _configuration;
         private readonly ILogger<DomainObjectProjection> _logger;
         private readonly IDomainObjectStore _objectStore;
-        private readonly IConfigurationCompiler _compiler;
-        private readonly IConfigurationParser _parser;
-        private readonly IJsonTranslator _translator;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         ///     Create a new instance of <see cref="DomainObjectProjection" />
         /// </summary>
         /// <param name="eventStore">EventStore that handles the underlying subscription</param>
         /// <param name="objectStore">store for the projected DomainObjects</param>
-        /// <param name="compiler">compiler to build configurations when <see cref="ConfigurationBuilt" /> is handled</param>
-        /// <param name="parser">parser for compilation-process</param>
-        /// <param name="translator">json-translator for the compilation-process</param>
+        /// <param name="serviceProvider">serviceProvider used to retrieve components for compiling configurations</param>
         /// <param name="configuration">options used to configure the subscription</param>
         /// <param name="logger">logger to write information to</param>
         public DomainObjectProjection(
             IEventStore eventStore,
             IDomainObjectStore objectStore,
-            IConfigurationCompiler compiler,
-            IConfigurationParser parser,
-            IJsonTranslator translator,
-            IOptionsSnapshot<EventStoreConnectionConfiguration> configuration,
+            IServiceProvider serviceProvider,
+            IOptions<EventStoreConnectionConfiguration> configuration,
             ILogger<DomainObjectProjection> logger) : base(eventStore)
         {
             _objectStore = objectStore;
-            _compiler = compiler;
-            _parser = parser;
-            _translator = translator;
+            _serviceProvider = serviceProvider;
             _configuration = configuration;
             _logger = logger;
-        }
-
-        /// <inheritdoc />
-        protected override async Task OnDomainEventReceived(StreamedEventHeader eventHeader, IDomainEvent domainEvent)
-        {
-            Task task = domainEvent switch
-            {
-                IDomainEvent<ConfigurationBuilt> e => HandleConfigurationBuilt(eventHeader, e),
-                IDomainEvent<DefaultEnvironmentCreated> e => HandleDefaultEnvironmentCreated(eventHeader, e),
-                IDomainEvent<EnvironmentCreated> e => HandleEnvironmentCreated(eventHeader, e),
-                IDomainEvent<EnvironmentDeleted> e => HandleEnvironmentDeleted(eventHeader, e),
-                IDomainEvent<EnvironmentLayerCreated> e => HandleEnvironmentLayerCreated(eventHeader, e),
-                IDomainEvent<EnvironmentLayerDeleted> e => HandleEnvironmentLayerDeleted(eventHeader, e),
-                IDomainEvent<EnvironmentLayerKeysImported> e => HandleEnvironmentLayerKeysImported(eventHeader, e),
-                IDomainEvent<EnvironmentLayerKeysModified> e => HandleEnvironmentLayerKeysModified(eventHeader, e),
-                IDomainEvent<StructureCreated> e => HandleStructureCreated(eventHeader, e),
-                IDomainEvent<StructureDeleted> e => HandleStructureDeleted(eventHeader, e),
-                IDomainEvent<StructureVariablesModified> e => HandleStructureVariablesModified(eventHeader, e),
-                _ => Task.CompletedTask
-            };
-
-            await task;
         }
 
         /// <inheritdoc />
@@ -116,6 +87,150 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
         }
 
+        /// <inheritdoc />
+        protected override async Task OnDomainEventReceived(StreamedEventHeader eventHeader, IDomainEvent domainEvent)
+        {
+            try
+            {
+                Task task = domainEvent switch
+                {
+                    IDomainEvent<ConfigurationBuilt> e => HandleConfigurationBuilt(eventHeader, e),
+                    IDomainEvent<DefaultEnvironmentCreated> e => HandleDefaultEnvironmentCreated(eventHeader, e),
+                    IDomainEvent<EnvironmentCreated> e => HandleEnvironmentCreated(eventHeader, e),
+                    IDomainEvent<EnvironmentDeleted> e => HandleEnvironmentDeleted(eventHeader, e),
+                    IDomainEvent<EnvironmentLayerCreated> e => HandleEnvironmentLayerCreated(eventHeader, e),
+                    IDomainEvent<EnvironmentLayerDeleted> e => HandleEnvironmentLayerDeleted(eventHeader, e),
+                    IDomainEvent<EnvironmentLayerKeysImported> e => HandleEnvironmentLayerKeysImported(eventHeader, e),
+                    IDomainEvent<EnvironmentLayerKeysModified> e => HandleEnvironmentLayerKeysModified(eventHeader, e),
+                    IDomainEvent<StructureCreated> e => HandleStructureCreated(eventHeader, e),
+                    IDomainEvent<StructureDeleted> e => HandleStructureDeleted(eventHeader, e),
+                    IDomainEvent<StructureVariablesModified> e => HandleStructureVariablesModified(eventHeader, e),
+                    _ => Task.CompletedTask
+                };
+
+                await task;
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "error while projecting domainEvent {DomainEventId}#{DomainEventNumber} of type {DomainEventType}",
+                    eventHeader?.EventId,
+                    eventHeader?.EventNumber,
+                    eventHeader?.EventType);
+                throw;
+            }
+        }
+
+        /// <summary>
+        ///     Compile the configuration that this object represents
+        /// </summary>
+        /// <param name="config">config to compile and update</param>
+        /// <param name="compiler">compiler used to compile the actual Configuration</param>
+        /// <param name="parser">parser to parse the configuration - used together with <paramref name="compiler" /></param>
+        /// <param name="translator">translator to convert compiled configuration to JSON for quicker access</param>
+        /// <returns>Result of the operation</returns>
+        private async Task<IResult> Compile(
+            PreparedConfiguration config,
+            IConfigurationCompiler compiler,
+            IConfigurationParser parser,
+            IJsonTranslator translator)
+        {
+            _logger?.LogDebug($"version used during compilation: {config.CurrentVersion}");
+
+            IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(config.Id.Environment);
+            if (envResult.IsError)
+            {
+                return envResult;
+            }
+
+            IResult<ConfigStructure> structResult = await _objectStore.Load<ConfigStructure, StructureIdentifier>(config.Id.Structure);
+            if (structResult.IsError)
+            {
+                return structResult;
+            }
+
+            ConfigEnvironment environment = envResult.Data;
+            ConfigStructure structure = structResult.Data;
+
+            try
+            {
+                IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment);
+                if (environmentDataResult.IsError)
+                {
+                    return environmentDataResult;
+                }
+
+                Dictionary<string, EnvironmentLayerKey> environmentData = environmentDataResult.Data;
+
+                CompilationResult compilationResult = compiler.Compile(
+                    new EnvironmentCompilationInfo
+                    {
+                        Name = $"{config.Id.Environment.Category}/{config.Id.Environment.Name}",
+                        Keys = environmentData.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)
+                    },
+                    new StructureCompilationInfo
+                    {
+                        Name = $"{config.Id.Structure.Name}/{config.Id.Structure.Version}",
+                        Keys = structure.Keys,
+                        Variables = structure.Variables
+                    },
+                    parser);
+
+                config.Keys = compilationResult.CompiledConfiguration;
+                config.Json = translator.ToJson(config.Keys).ToString();
+                config.UsedKeys = compilationResult.GetUsedKeys().ToList();
+
+                return Result.Success();
+            }
+            catch (Exception e)
+            {
+                _logger?.LogWarning(e, "failed to compile configuration, see exception for more details");
+                return Result.Error($"failed to compile configuration: {e.Message}", ErrorCode.InvalidData);
+            }
+        }
+
+        /// <summary>
+        ///     Generate the autocomplete-paths for this layer
+        /// </summary>
+        /// <param name="keys">map of Key => Object</param>
+        /// <returns></returns>
+        private List<EnvironmentLayerKeyPath> GenerateKeyPaths(IDictionary<string, EnvironmentLayerKey> keys)
+        {
+            var roots = new List<EnvironmentLayerKeyPath>();
+
+            foreach ((string key, EnvironmentLayerKey _) in keys.OrderBy(k => k.Key))
+            {
+                string[] parts = key.Split('/');
+
+                string rootPart = parts.First();
+                EnvironmentLayerKeyPath root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
+
+                if (root is null)
+                {
+                    root = new EnvironmentLayerKeyPath(rootPart);
+                    roots.Add(root);
+                }
+
+                EnvironmentLayerKeyPath current = root;
+
+                foreach (string part in parts.Skip(1))
+                {
+                    EnvironmentLayerKeyPath next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (next is null)
+                    {
+                        next = new EnvironmentLayerKeyPath(part, current);
+                        current.Children.Add(next);
+                    }
+
+                    current = next;
+                }
+            }
+
+            return roots;
+        }
+
         private async Task HandleConfigurationBuilt(StreamedEventHeader eventHeader, IDomainEvent<ConfigurationBuilt> domainEvent)
         {
             var config = new PreparedConfiguration(domainEvent.Payload.Identifier)
@@ -129,7 +244,13 @@ namespace Bechtle.A365.ConfigService.Implementations
                 ValidTo = domainEvent.Payload.ValidTo
             };
 
-            IResult compilationResult = await Compile(config);
+            using IServiceScope scope = _serviceProvider.CreateScope();
+
+            var compiler = scope.ServiceProvider.GetRequiredService<IConfigurationCompiler>();
+            var parser = scope.ServiceProvider.GetRequiredService<IConfigurationParser>();
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
+
+            IResult compilationResult = await Compile(config, compiler, parser, translator);
 
             await _objectStore.Store<PreparedConfiguration, ConfigurationIdentifier>(config);
         }
@@ -204,7 +325,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                     keyVersion);
             }
 
-            await OnLayerKeysChanged(layer);
+            using IServiceScope scope = _serviceProvider.CreateScope();
+
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
+
+            await OnLayerKeysChanged(layer, translator);
         }
 
         private async Task HandleEnvironmentLayerKeysModified(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerKeysModified> domainEvent)
@@ -254,51 +379,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                     keyVersion);
             }
 
-            await OnLayerKeysChanged(layer);
-        }
+            using IServiceScope scope = _serviceProvider.CreateScope();
 
-        private async Task<IResult> OnLayerKeysChanged(EnvironmentLayer layer)
-        {
-            layer.KeyPaths = GenerateKeyPaths(layer.Keys);
-            layer.Json = _translator.ToJson(layer.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Key))
-                                    .ToString();
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
-
-            IResult<IList<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
-            if (envIdResult.IsError)
-            {
-                return envIdResult;
-            }
-
-            foreach (EnvironmentIdentifier envId in envIdResult.Data)
-            {
-                IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
-                if (environmentResult.IsError)
-                {
-                    return environmentResult;
-                }
-
-                ConfigEnvironment environment = environmentResult.Data;
-                if (!environment.Layers.Contains(layer.Id))
-                {
-                    continue;
-                }
-
-                IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment);
-                if (environmentDataResult.IsError)
-                {
-                    return environmentDataResult;
-                }
-
-                environment.Keys = environmentDataResult.Data;
-                environment.Json = _translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
-                environment.KeyPaths = GenerateKeyPaths(environment.Keys);
-
-                await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
-            }
-
-            return Result.Success();
+            await OnLayerKeysChanged(layer, translator);
         }
 
         private async Task HandleStructureCreated(StreamedEventHeader eventHeader, IDomainEvent<StructureCreated> domainEvent)
@@ -346,65 +431,48 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
         }
 
-        /// <summary>
-        ///     Compile the configuration that this object represents
-        /// </summary>
-        /// <param name="config">config to compile and update</param>
-        /// <returns>Result of the operation</returns>
-        private async Task<IResult> Compile(PreparedConfiguration config)
+        private async Task<IResult> OnLayerKeysChanged(EnvironmentLayer layer, IJsonTranslator translator)
         {
-            _logger?.LogDebug($"version used during compilation: {config.CurrentVersion}");
+            // layer.KeyPaths = GenerateKeyPaths(layer.Keys);
+            layer.Json = translator.ToJson(layer.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Key))
+                                   .ToString();
 
-            IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(config.Id.Environment);
-            if (envResult.IsError)
+            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
+
+            IResult<IList<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
+            if (envIdResult.IsError)
             {
-                return envResult;
+                return envIdResult;
             }
 
-            IResult<ConfigStructure> structResult = await _objectStore.Load<ConfigStructure, StructureIdentifier>(config.Id.Structure);
-            if (structResult.IsError)
+            foreach (EnvironmentIdentifier envId in envIdResult.Data)
             {
-                return structResult;
-            }
+                IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
+                if (environmentResult.IsError)
+                {
+                    return environmentResult;
+                }
 
-            ConfigEnvironment environment = envResult.Data;
-            ConfigStructure structure = structResult.Data;
+                ConfigEnvironment environment = environmentResult.Data;
+                if (!environment.Layers.Contains(layer.Id))
+                {
+                    continue;
+                }
 
-            try
-            {
                 IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment);
                 if (environmentDataResult.IsError)
                 {
                     return environmentDataResult;
                 }
 
-                Dictionary<string, EnvironmentLayerKey> environmentData = environmentDataResult.Data;
+                environment.Keys = environmentDataResult.Data;
+                environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
+                environment.KeyPaths = GenerateKeyPaths(environment.Keys);
 
-                CompilationResult compilationResult = _compiler.Compile(
-                    new EnvironmentCompilationInfo
-                    {
-                        Name = $"{config.Id.Environment.Category}/{config.Id.Environment.Name}",
-                        Keys = environmentData.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)
-                    },
-                    new StructureCompilationInfo
-                    {
-                        Name = $"{config.Id.Structure.Name}/{config.Id.Structure.Version}",
-                        Keys = structure.Keys,
-                        Variables = structure.Variables
-                    },
-                    _parser);
-
-                config.Keys = compilationResult.CompiledConfiguration;
-                config.Json = _translator.ToJson(config.Keys).ToString();
-                config.UsedKeys = compilationResult.GetUsedKeys().ToList();
-
-                return Result.Success();
+                await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
             }
-            catch (Exception e)
-            {
-                _logger?.LogWarning(e, "failed to compile configuration, see exception for more details");
-                return Result.Error($"failed to compile configuration: {e.Message}", ErrorCode.InvalidData);
-            }
+
+            return Result.Success();
         }
 
         private async Task<IResult<Dictionary<string, EnvironmentLayerKey>>> ResolveEnvironmentKeys(ConfigEnvironment environment)
@@ -426,47 +494,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             return Result.Success(environmentData);
-        }
-
-        /// <summary>
-        ///     Generate the autocomplete-paths for this layer
-        /// </summary>
-        /// <param name="keys">map of Key => Object</param>
-        /// <returns></returns>
-        private List<EnvironmentLayerKeyPath> GenerateKeyPaths(IDictionary<string, EnvironmentLayerKey> keys)
-        {
-            var roots = new List<EnvironmentLayerKeyPath>();
-
-            foreach ((string key, EnvironmentLayerKey _) in keys.OrderBy(k => k.Key))
-            {
-                string[] parts = key.Split('/');
-
-                string rootPart = parts.First();
-                EnvironmentLayerKeyPath root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
-
-                if (root is null)
-                {
-                    root = new EnvironmentLayerKeyPath(rootPart);
-                    roots.Add(root);
-                }
-
-                EnvironmentLayerKeyPath current = root;
-
-                foreach (string part in parts.Skip(1))
-                {
-                    EnvironmentLayerKeyPath next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
-
-                    if (next is null)
-                    {
-                        next = new EnvironmentLayerKeyPath(part, current);
-                        current.Children.Add(next);
-                    }
-
-                    current = next;
-                }
-            }
-
-            return roots;
         }
     }
 }

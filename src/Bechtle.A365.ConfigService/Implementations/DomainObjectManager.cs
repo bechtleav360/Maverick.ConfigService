@@ -13,6 +13,7 @@ using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Bechtle.A365.ServiceBase.EventStore.DomainEventBase;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
@@ -38,13 +39,13 @@ namespace Bechtle.A365.ConfigService.Implementations
         public DomainObjectManager(
             IDomainObjectStore objectStore,
             IEventStore eventStore,
-            EventStoreConnectionConfiguration eventStoreConfiguration,
+            IOptionsSnapshot<EventStoreConnectionConfiguration> eventStoreConfiguration,
             IEnumerable<ICommandValidator> validators,
             ILogger<DomainObjectManager> logger)
         {
             _objectStore = objectStore;
             _eventStore = eventStore;
-            _eventStoreConfiguration = eventStoreConfiguration;
+            _eventStoreConfiguration = eventStoreConfiguration.Value;
             _validators = validators.ToList();
             _logger = logger;
         }

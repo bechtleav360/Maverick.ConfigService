@@ -28,6 +28,15 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public List<EnvironmentLayerKeyPath> KeyPaths { get; set; }
 
         /// <inheritdoc />
+        public EnvironmentLayer()
+        {
+            Id = null;
+            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
+            KeyPaths = new List<EnvironmentLayerKeyPath>();
+            Json = "{}";
+        }
+
+        /// <inheritdoc />
         public EnvironmentLayer(LayerIdentifier identifier)
         {
             if (identifier is null)
@@ -42,6 +51,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
             Id = identifier;
             Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
+            KeyPaths = new List<EnvironmentLayerKeyPath>();
+            Json = "{}";
         }
     }
 }

@@ -1,15 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.Compilation;
-using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
-using Bechtle.A365.ConfigService.Interfaces.Stores;
-using Bechtle.A365.ConfigService.Parsing;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
 {
@@ -18,29 +9,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// </summary>
     public sealed class PreparedConfiguration : DomainObject<ConfigurationIdentifier>
     {
-        private readonly DateTime _unixEpoch = new DateTime(1970, 1, 1, 1, 1, 1, DateTimeKind.Utc);
-
-        /// <inheritdoc />
-        public PreparedConfiguration(ConfigurationIdentifier identifier)
-        {
-            if (identifier is null)
-                throw new ArgumentNullException(nameof(identifier));
-
-            if (identifier.Environment is null)
-                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Environment)} is null");
-
-            if (identifier.Structure is null)
-                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Structure)} is null");
-
-            Id = identifier;
-            ConfigurationVersion = -1;
-            Json = string.Empty;
-            Keys = new Dictionary<string, string>();
-            UsedKeys = new List<string>();
-            ValidFrom = null;
-            ValidTo = null;
-        }
-
         /// <summary>
         ///     Data-Version from which this Configuration was built
         /// </summary>
@@ -73,5 +41,44 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     End-Time until which this Configuration is Valid
         /// </summary>
         public DateTime? ValidTo { get; set; }
+
+        /// <inheritdoc />
+        public PreparedConfiguration()
+        {
+            Id = null;
+            ConfigurationVersion = -1;
+            Json = string.Empty;
+            Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            UsedKeys = new List<string>();
+            ValidFrom = null;
+            ValidTo = null;
+        }
+
+        /// <inheritdoc />
+        public PreparedConfiguration(ConfigurationIdentifier identifier)
+        {
+            if (identifier is null)
+            {
+                throw new ArgumentNullException(nameof(identifier));
+            }
+
+            if (identifier.Environment is null)
+            {
+                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Environment)} is null");
+            }
+
+            if (identifier.Structure is null)
+            {
+                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Structure)} is null");
+            }
+
+            Id = identifier;
+            ConfigurationVersion = -1;
+            Json = string.Empty;
+            Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            UsedKeys = new List<string>();
+            ValidFrom = null;
+            ValidTo = null;
+        }
     }
 }
