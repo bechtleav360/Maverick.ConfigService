@@ -55,7 +55,10 @@ namespace Bechtle.A365.ConfigService.Implementations
             EnvironmentIdentifier environmentIdentifier,
             IList<LayerIdentifier> layerIdentifiers,
             CancellationToken cancellationToken)
-            => throw new NotImplementedException();
+            => ModifyObject<ConfigEnvironment, EnvironmentIdentifier>(
+                environmentIdentifier,
+                new List<DomainEvent> {new EnvironmentLayersModified(environmentIdentifier, layerIdentifiers.ToList())},
+                cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult> CreateConfiguration(
@@ -258,80 +261,18 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         /// <inheritdoc />
-        public async Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken)
-        {
-            IResult<EnvironmentLayer> result = await LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, cancellationToken);
-            if (result.IsError)
-            {
-                _logger.LogWarning(
-                    "unable to load layer with id '{Identifier}': {ErrorCode} {Message}",
-                    identifier,
-                    result.Code,
-                    result.Message);
-                return result;
-            }
-
-            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
-            if (lastProjectedEventResult.IsError)
-            {
-                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
-                return lastProjectedEventResult;
-            }
-
-            long lastProjectedEvent = lastProjectedEventResult.Data;
-
-            await _eventStore.WriteEventsAsync(
-                new List<IDomainEvent>
-                {
-                    new DomainEvent<EnvironmentLayerKeysModified>(
-                        "Anonymous",
-                        new EnvironmentLayerKeysModified(
-                            identifier,
-                            actions.ToArray()))
-                },
-                _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
-
-            return Result.Success();
-        }
+        public Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken)
+            => ModifyObject<EnvironmentLayer, LayerIdentifier>(
+                identifier,
+                new List<DomainEvent> {new EnvironmentLayerKeysModified(identifier, actions.ToArray())},
+                cancellationToken);
 
         /// <inheritdoc />
-        public async Task<IResult> ModifyStructureVariables(StructureIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken)
-        {
-            IResult<ConfigStructure> result = await LoadObject<ConfigStructure, StructureIdentifier>(identifier, cancellationToken);
-            if (result.IsError)
-            {
-                _logger.LogWarning(
-                    "unable to load structure with id '{Identifier}': {ErrorCode} {Message}",
-                    identifier,
-                    result.Code,
-                    result.Message);
-                return result;
-            }
-
-            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
-            if (lastProjectedEventResult.IsError)
-            {
-                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
-                return lastProjectedEventResult;
-            }
-
-            long lastProjectedEvent = lastProjectedEventResult.Data;
-
-            await _eventStore.WriteEventsAsync(
-                new List<IDomainEvent>
-                {
-                    new DomainEvent<StructureVariablesModified>(
-                        "Anonymous",
-                        new StructureVariablesModified(
-                            identifier,
-                            actions.ToArray()))
-                },
-                _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
-
-            return Result.Success();
-        }
+        public Task<IResult> ModifyStructureVariables(StructureIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken)
+            => ModifyObject<ConfigStructure, StructureIdentifier>(
+                identifier,
+                new List<DomainEvent> {new StructureVariablesModified(identifier, actions.ToArray())},
+                cancellationToken);
 
         private async Task<IResult> CreateObject<TObject, TIdentifier>(
             TIdentifier identifier,
@@ -511,6 +452,58 @@ namespace Bechtle.A365.ConfigService.Implementations
                 result.Message);
 
             return result;
+        }
+
+        private async Task<IResult> ModifyObject<TObject, TIdentifier>(
+            TIdentifier identifier,
+            IList<DomainEvent> modificationEvents,
+            CancellationToken cancellationToken)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            _logger.LogDebug("validating resulting events");
+            IDictionary<DomainEvent, IList<IResult>> errors = Validate(_validators, modificationEvents);
+            if (errors.Any())
+            {
+                return Result.Error(
+                    "failed to validate generated DomainEvents",
+                    ErrorCode.ValidationFailed,
+                    errors.Values
+                          .SelectMany(_ => _)
+                          .ToList());
+            }
+
+            IResult<TObject> result = await LoadObject<TObject, TIdentifier>(identifier, cancellationToken);
+            if (result.IsError)
+            {
+                _logger.LogWarning(
+                    "unable to load {DomainObject} with id '{Identifier}': {ErrorCode} {Message}",
+                    typeof(TObject).Name,
+                    identifier,
+                    result.Code,
+                    result.Message);
+                return result;
+            }
+
+            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
+            if (lastProjectedEventResult.IsError)
+            {
+                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
+                return lastProjectedEventResult;
+            }
+
+            long lastProjectedEvent = lastProjectedEventResult.Data;
+
+            // convert *our*-type of DomainEvent to the generic late-binding one
+            IList<IDomainEvent> domainEvents = modificationEvents.Select(e => (IDomainEvent) new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
+                                                                 .ToList();
+
+            await _eventStore.WriteEventsAsync(
+                domainEvents,
+                _eventStoreConfiguration.Stream,
+                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+
+            return Result.Success();
         }
 
         /// <summary>
