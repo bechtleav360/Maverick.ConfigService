@@ -2,16 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Runtime.Serialization;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Cli.Commands.MigrationModels;
 using Bechtle.A365.ServiceBase.Commands;
-using Bechtle.A365.ServiceBase.EventStore.Abstractions;
-using Bechtle.A365.ServiceBase.EventStore.DomainEventBase;
 using EventStore.Client;
 using McMaster.Extensions.CommandLineUtils;
 using Newtonsoft.Json;
@@ -19,9 +13,17 @@ using StreamPosition = EventStore.Client.StreamPosition;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Migrate ConfigStream-Data from one version to another
+    /// </summary>
     [Command("stream", Description = "migrate the EventStore-Stream from one to another version")]
     public class MigrateStreamCommand : SubCommand<MigrateCommand>
     {
+        /// <summary>
+        ///     Explicit option to set the desired Accuracy.
+        ///     Most/All migrations are only available in the Lossy-Flavour,
+        ///     but we want the user to acknowledge that the migration is Lossy be providing the Option
+        /// </summary>
         [Option(
             "-a|--accuracy",
             "Accuracy with which the Stream will be migrated from one version to another\r\n"
@@ -30,24 +32,44 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             CommandOptionType.SingleValue)]
         public MigrationAccuracy Accuracy { get; set; } = MigrationAccuracy.Lossless;
 
+        /// <summary>
+        ///     ConnectionString with which to connect directly to the EventStore
+        /// </summary>
         [Option("-c|--connection-string", "connection-string to use when connecting to EventStore", CommandOptionType.SingleValue)]
         public string EventStoreConnectionString { get; set; } = string.Empty;
 
+        /// <summary>
+        ///     Name of the Stream to migrate
+        /// </summary>
         [Option("-n|--stream", "Stream to migrate to the new Version", CommandOptionType.SingleValue)]
         public string EventStoreStream { get; set; } = string.Empty;
 
+        /// <summary>
+        ///     Version the data inside the Stream is currently at
+        /// </summary>
         [Option("-f|--from", "current version of the targeted EventStore-Stream", CommandOptionType.SingleValue)]
         public StreamVersion From { get; set; } = StreamVersion.Undefined;
 
+        /// <summary>
+        ///     Flag telling the CLI to ignore errors during migration.
+        ///     This might be necessary when some Events contain now-invalid data and can prevent migration
+        /// </summary>
         [Option(
             "--ignore-replay-errors",
             "ignore non-critical errors that might change the migration-result. this might be necessary to force migrations of faulty streams",
             CommandOptionType.SingleOrNoValue)]
         public bool IgnoreReplayErrors { get; set; } = false;
 
+        /// <summary>
+        ///     Version the data inside the Stream should be migrated to
+        /// </summary>
         [Option("-t|--to", "target version of the targeted EventStore-Stream", CommandOptionType.SingleValue)]
         public StreamVersion To { get; set; } = StreamVersion.Undefined;
 
+        /// <summary>
+        ///     Use the generated State from a previous run.
+        ///     This needs to be explicitly set to avoid accidentally overriding files
+        /// </summary>
         [Option(
             "-l|--local",
             "use the previously generated local 'migrated-state.json' for the migration. "
@@ -55,6 +77,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             CommandOptionType.NoValue)]
         public bool UseLocalData { get; set; } = false;
 
+        /// <summary>
+        ///     Accuracy with which the app should migrate the data
+        /// </summary>
         public enum MigrationAccuracy
         {
             /// <summary>
@@ -74,9 +99,27 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         public enum StreamVersion
         {
+            /// <summary>
+            ///     Version is not defined - default-value to catch errors
+            /// </summary>
             Undefined = 0,
+
+            /// <summary>
+            ///     First version of DomainEvents that can be migrated.
+            ///     This is the Version where Environments were modified directly
+            /// </summary>
             Initial = 1,
+
+            /// <summary>
+            ///     Second version of DomainEvents.
+            ///     This is the version that split Environments into Layers that can be assigned and modified
+            /// </summary>
             LayeredEnvironments = 2,
+
+            /// <summary>
+            ///     Third version of DomainEvents.
+            ///     This is the version that wrapped all DomainEvents in the IDomainEvent shell provided by ServiceBase.
+            /// </summary>
             ServiceBased = 3
         }
 
@@ -379,6 +422,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                         {
                             TypeNameHandling = TypeNameHandling.All
                         });
+
+                    if (state is null)
+                    {
+                        Output.WriteError("could not deserialize backup into object");
+                        return 1;
+                    }
                 }
                 catch (JsonException e)
                 {
@@ -430,547 +479,5 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             return currentState;
         }
-
-        /// <summary>
-        ///     type of action to apply to a key
-        /// </summary>
-        private enum InitialKeyActionTypeRepr
-        {
-            /// <summary>
-            ///     add / update the value of the key
-            /// </summary>
-            Set,
-
-            /// <summary>
-            ///     remove the key
-            /// </summary>
-            Delete
-        }
-
-        private class LossyLayeredEnvironmentRepository : IState
-        {
-            private List<EventStoreOption> _options;
-
-            public string EventStoreConnectionString;
-
-            // public so it can be properly de-/serialized
-            public readonly List<IDomainEvent> RecordedDomainEvents = new List<IDomainEvent>();
-
-            /// <summary>
-            ///     take the Domain-Event and apply its changes.
-            /// </summary>
-            /// <param name="recordedEvent">some recorded event from the EventStore</param>
-            /// <param name="ignoreReplayErrors">flag indicating if replay-errors should be ignored or throw an <see cref="MigrationReplayException" /></param>
-            public void ApplyEvent(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
-            {
-                switch (recordedEvent.Event.EventType)
-                {
-                    case "DefaultEnvironmentCreated":
-                        WrapDomainEvent<DefaultEnvironmentCreated>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentCreated":
-                        WrapDomainEvent<EnvironmentCreated>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentDeleted":
-                        WrapDomainEvent<EnvironmentDeleted>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentLayerCreated":
-                        WrapDomainEvent<EnvironmentLayerCreated>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentLayerDeleted":
-                        WrapDomainEvent<EnvironmentLayerDeleted>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentLayerKeysImported":
-                        WrapDomainEvent<EnvironmentLayerKeysImported>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentLayerKeysModified":
-                        WrapDomainEvent<EnvironmentLayerKeysModified>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentLayersModified":
-                        WrapDomainEvent<EnvironmentLayersModified>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentKeysModified":
-                        WrapDomainEvent<EnvironmentLayerKeysModified>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentKeysImported":
-                        WrapDomainEvent<EnvironmentLayerKeysImported>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "ConfigurationBuilt":
-                        WrapDomainEvent<ConfigurationBuilt>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "StructureCreated":
-                        WrapDomainEvent<StructureCreated>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "StructureDeleted":
-                        WrapDomainEvent<StructureDeleted>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "StructureVariablesModified":
-                        WrapDomainEvent<StructureVariablesModified>(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    default:
-                        throw new MigrationReplayException($"could not handle event of type '{recordedEvent.Event.EventType}'");
-                }
-            }
-
-            /// <inheritdoc />
-            public List<(string Type, byte[] Data, byte[] Metadata)> GenerateEventData()
-                => RecordedDomainEvents.Select(e => (e.Type, Data: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(e)), new byte[0]))
-                                       .ToList();
-
-            private void WrapDomainEvent<T>(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
-                where T : DomainEvent
-            {
-                _options ??= GetEventStoreOptionsAsync().RunSync();
-
-                var maxAppendSize = long.Parse(
-                    _options?.FirstOrDefault(
-                                o => o.Name.Equals(
-                                    "MaxAppendSize",
-                                    StringComparison.OrdinalIgnoreCase))
-                            ?.Value
-                    ?? "0");
-
-                try
-                {
-                    var rawEvent = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(recordedEvent.Event.Data.Span));
-
-                    // split events into smaller events where necessary
-                    List<DomainEvent> events = Split(rawEvent, maxAppendSize);
-                    IEnumerable<LateBindingDomainEvent<DomainEvent>> domainEvents = events.Select(e => new LateBindingDomainEvent<DomainEvent>("Anonymous", e));
-
-                    RecordedDomainEvents.AddRange(domainEvents);
-                }
-                catch (JsonException)
-                {
-                    if (!ignoreReplayErrors)
-                    {
-                        throw new MigrationReplayException($"unable to wrap event of type {typeof(T).Name}");
-                    }
-                }
-            }
-
-            private List<DomainEvent> Split<TEvent>(TEvent @event, long maxSize)
-                where TEvent : DomainEvent
-            {
-                var events = new List<DomainEvent> {@event};
-
-                // split into smaller parts as long as anything gets split
-                int countBeforeSplit = 0;
-                do
-                {
-                    countBeforeSplit = events.Count;
-
-                    // split events into smaller parts when they would likely exceed the maxmimum size
-                    events = events.SelectMany(
-                                       e => ApproximateSizeOfDomainEvent(e) >= maxSize
-                                                ? e.Split()
-                                                : new[] {e})
-                                   .ToList();
-                }
-                while (events.Count != countBeforeSplit);
-
-                return events;
-            }
-
-            private long ApproximateSizeOfDomainEvent<TEvent>(TEvent @event)
-                where TEvent : DomainEvent
-            {
-                var domainEvent = new DomainEvent<TEvent>("Anonymous", @event);
-                string json = JsonConvert.SerializeObject(domainEvent, Formatting.Indented);
-                byte[] bytes = Encoding.UTF8.GetBytes(json);
-
-                return bytes.Length;
-            }
-
-            private async Task<List<EventStoreOption>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
-            {
-                var storeUri = new Uri(EventStoreConnectionString);
-
-                Uri optionsUri = storeUri.Query.Contains("tls=true", StringComparison.OrdinalIgnoreCase)
-                                     ? new Uri($"https://{storeUri.Authority}{storeUri.AbsolutePath}info/options")
-                                     : new Uri($"http://{storeUri.Authority}{storeUri.AbsolutePath}info/options");
-
-                // yes creating HttpClient is frowned upon, but we don't need it *that* often and can immediately release it
-                var httpClient = new HttpClient();
-                HttpResponseMessage response;
-
-                try
-                {
-                    response = await httpClient.GetAsync(optionsUri, cancellationToken);
-
-                    if (response is null)
-                    {
-                        return null;
-                    }
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
-
-                string json = await response.Content.ReadAsStringAsync();
-                try
-                {
-                    return JsonConvert.DeserializeObject<List<EventStoreOption>>(json);
-                }
-                catch (JsonException)
-                {
-                    return null;
-                }
-            }
-
-            /// <summary>
-            ///     a single entry returned from [EventStore]/options
-            /// </summary>
-            private class EventStoreOption
-            {
-                /// <summary>
-                ///     Name of the Option
-                /// </summary>
-                public string Name { get; set; }
-
-                /// <summary>
-                ///     Value of the Option
-                /// </summary>
-                public string Value { get; set; }
-            }
-        }
-
-        private interface IState
-        {
-            /// <summary>
-            ///     take the Domain-Event and apply its changes.
-            /// </summary>
-            /// <param name="recordedEvent">some recorded event from the EventStore</param>
-            /// <param name="ignoreReplayErrors">flag indicating if replay-errors should be ignored or throw an <see cref="MigrationReplayException" /></param>
-            void ApplyEvent(ResolvedEvent recordedEvent, bool ignoreReplayErrors);
-
-            List<(string Type, byte[] Data, byte[] Metadata)> GenerateEventData();
-        }
-
-        /// <summary>
-        ///     Records and represents the total state of a ConfigService-EventStream.
-        ///     Uses this information to generate the equivalent state in the migrated form.
-        /// </summary>
-        private class LossyInitialRecordedRepository : IState
-        {
-            // public so it can be properly de-/serialized
-            public readonly List<InitialEnvRepr> Environments = new List<InitialEnvRepr>();
-
-            /// <inheritdoc />
-            public void ApplyEvent(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
-            {
-                switch (recordedEvent.Event.EventType)
-                {
-                    case "DefaultEnvironmentCreated":
-                        ApplyDefaultEnvironmentCreated(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentCreated":
-                        ApplyEnvironmentCreated(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentDeleted":
-                        ApplyEnvironmentDeleted(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentKeysModified":
-                        ApplyKeysModified(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    case "EnvironmentKeysImported":
-                        ApplyKeysImported(recordedEvent, ignoreReplayErrors);
-                        break;
-
-                    // we don't care about all other events in this Lossy format
-                    // we only care about the current Environments and their Data
-                    case "ConfigurationBuilt":
-                    case "StructureCreated":
-                    case "StructureDeleted":
-                    case "StructureVariablesModified":
-                        break;
-
-                    default:
-                        throw new MigrationReplayException($"could not handle event of type '{recordedEvent.Event.EventType}'");
-                }
-            }
-
-            /// <inheritdoc />
-            public List<(string Type, byte[] Data, byte[] Metadata)> GenerateEventData()
-                => Environments.SelectMany(
-                                   e => new List<DomainEvent>
-                                   {
-                                       e.IsDefault
-                                           ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
-                                           : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
-                                       new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
-                                       new EnvironmentLayersModified(
-                                           new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
-                                           new List<LayerIdentifier>
-                                           {
-                                               new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
-                                           }),
-                                       // don't generate Keys-Imported event when there are no keys to import
-                                       // will be filtered out in the next step
-                                       e.Keys.Any()
-                                           ? new EnvironmentLayerKeysImported(
-                                               new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
-                                               e.Keys
-                                                .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
-                                                .ToArray())
-                                           : null
-                                   })
-                               .Where(e => e != null)
-                               .Select(
-                                   e => (Type: e.EventType,
-                                            Data: Encoding.UTF8.GetBytes(
-                                                JsonConvert.SerializeObject(e)),
-                                            Metadata: Encoding.UTF8.GetBytes(
-                                                JsonConvert.SerializeObject(e.GetMetadata())
-                                            )))
-                               .ToList();
-
-            private void ApplyDefaultEnvironmentCreated(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
-            {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(
-                    Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
-                    new {Identifier = new InitialEnvIdRepr()});
-
-                if (Environments.Any(
-                        repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                && repr.Identifier.Name == domainEvent.Identifier.Name
-                                && repr.IsDefault)
-                    && !ignoreReplayErrors)
-                {
-                    throw new MigrationReplayException($"environment '{domainEvent.Identifier}' already created or not deleted previously");
-                }
-
-                Environments.Add(
-                    new InitialEnvRepr
-                    {
-                        Identifier = domainEvent.Identifier,
-                        IsDefault = true,
-                        Keys = new List<InitialKeyRepr>()
-                    });
-            }
-
-            private void ApplyEnvironmentCreated(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
-            {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(
-                    Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
-                    new {Identifier = new InitialEnvIdRepr()});
-
-                if (Environments.Any(
-                        repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                                && repr.Identifier.Name == domainEvent.Identifier.Name
-                                && !repr.IsDefault)
-                    && !ignoreReplayErrors)
-                {
-                    throw new MigrationReplayException($"environment '{domainEvent.Identifier}' already created or not deleted previously");
-                }
-
-                Environments.Add(
-                    new InitialEnvRepr
-                    {
-                        Identifier = domainEvent.Identifier,
-                        IsDefault = false,
-                        Keys = new List<InitialKeyRepr>()
-                    });
-            }
-
-            private void ApplyEnvironmentDeleted(ResolvedEvent resolvedEvent, bool ignoreReplayErrors)
-            {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(
-                    Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
-                    new {Identifier = new InitialEnvIdRepr()});
-
-                int existingIndex = Environments.FindIndex(
-                    repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                            && repr.Identifier.Name == domainEvent.Identifier.Name
-                            && !repr.IsDefault);
-
-                if (existingIndex == -1 && !ignoreReplayErrors)
-                {
-                    throw new MigrationReplayException($"can't find environment '{domainEvent.Identifier}' to delete, not created or already deleted");
-                }
-
-                if (existingIndex >= 0)
-                {
-                    Environments.RemoveAt(existingIndex);
-                }
-            }
-
-            /// <summary>
-            ///     apply changes to the stored keys in an environment
-            /// </summary>
-            /// <param name="resolvedEvent">EventStore-event with associated meta-/data</param>
-            /// <param name="ignoreReplayErrors">true, to ignore errors that may change the result of the replay</param>
-            /// <param name="importEnvironment">create non-existent environments if necessary (Import-Behaviour)</param>
-            private void ApplyKeyModifications(ResolvedEvent resolvedEvent, bool ignoreReplayErrors, bool importEnvironment)
-            {
-                var domainEvent = JsonConvert.DeserializeAnonymousType(
-                    Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
-                    new
-                    {
-                        Identifier = new InitialEnvIdRepr(),
-                        ModifiedKeys = new List<InitialKeyActionRepr>()
-                    });
-
-                InitialEnvRepr existing = Environments.FirstOrDefault(
-                    repr => repr.Identifier.Category == domainEvent.Identifier.Category
-                            && repr.Identifier.Name == domainEvent.Identifier.Name);
-
-                if (existing is null)
-                {
-                    if (importEnvironment)
-                    {
-                        existing = new InitialEnvRepr {Identifier = domainEvent.Identifier, Keys = new List<InitialKeyRepr>()};
-                        Environments.Add(existing);
-                    }
-                    else
-                    {
-                        if (ignoreReplayErrors)
-                        {
-                            return;
-                        }
-
-                        throw new MigrationReplayException(
-                            $"unable to find Environment '{domainEvent.Identifier.Category}'/'{domainEvent.Identifier.Name}'");
-                    }
-                }
-
-                foreach (InitialKeyActionRepr action in domainEvent.ModifiedKeys.Where(a => a.Type == InitialKeyActionTypeRepr.Delete))
-                {
-                    int existingIndex = existing.Keys.FindIndex(e => e.Key.Equals(action.Key, StringComparison.OrdinalIgnoreCase));
-
-                    if (existingIndex >= 0)
-                    {
-                        existing.Keys.RemoveAt(existingIndex);
-                    }
-                }
-
-                foreach (InitialKeyActionRepr action in domainEvent.ModifiedKeys.Where(a => a.Type == InitialKeyActionTypeRepr.Set))
-                {
-                    int existingIndex = existing.Keys.FindIndex(e => e.Key.Equals(action.Key, StringComparison.OrdinalIgnoreCase));
-
-                    if (existingIndex >= 0)
-                    {
-                        existing.Keys[existingIndex] = new InitialKeyRepr
-                        {
-                            Key = action.Key,
-                            Value = action.Value,
-                            Description = action.Description,
-                            Type = action.ValueType
-                        };
-                    }
-                    else
-                    {
-                        existing.Keys.Add(
-                            new InitialKeyRepr
-                            {
-                                Key = action.Key,
-                                Value = action.Value,
-                                Description = action.Description,
-                                Type = action.ValueType
-                            });
-                    }
-                }
-            }
-
-            private void ApplyKeysImported(ResolvedEvent resolvedEvent, bool ignoreReplayErrors) =>
-                ApplyKeyModifications(resolvedEvent, ignoreReplayErrors, true);
-
-            private void ApplyKeysModified(ResolvedEvent resolvedEvent, bool ignoreReplayErrors) =>
-                ApplyKeyModifications(resolvedEvent, ignoreReplayErrors, false);
-        }
-
-        // all structs / fields are being used and assigned, but only while deserializing from JSON
-#pragma warning disable S3459 // Unassigned members should be removed
-#pragma warning disable 649
-        /// <summary>
-        ///     internal representation of an Environment-Id in its 'Initial' version
-        /// </summary>
-        private struct InitialEnvIdRepr
-        {
-            public string Category;
-
-            public string Name;
-        }
-
-        /// <summary>
-        ///     internal representation of an Environment in its 'Initial' version
-        /// </summary>
-        private class InitialEnvRepr
-        {
-            public InitialEnvIdRepr Identifier;
-
-            public bool IsDefault;
-
-            public List<InitialKeyRepr> Keys;
-        }
-
-        /// <summary>
-        ///     internal representation of an Environment-Key in its 'Initial' version
-        /// </summary>
-        private struct InitialKeyRepr
-        {
-            public string Key;
-
-            public string Value;
-
-            public string Description;
-
-            public string Type;
-        }
-
-        /// <summary>
-        ///     internal representation of an Environment-Key-Action in its 'Initial' version
-        /// </summary>
-        private struct InitialKeyActionRepr
-        {
-            public string Key;
-
-            public string Value;
-
-            public string Description;
-
-            public string ValueType;
-
-            public InitialKeyActionTypeRepr Type;
-        }
-
-        /// <summary>
-        ///     Exception indicating that some invalid operation occurred in the EventStream, which may alter the result of the Migration.
-        /// </summary>
-        [Serializable]
-        private class MigrationReplayException : Exception
-        {
-            /// <inheritdoc />
-            public MigrationReplayException(string message) : base(message)
-            {
-            }
-
-            /// <inheritdoc />
-            protected MigrationReplayException(SerializationInfo info, StreamingContext context) : base(info, context)
-            {
-            }
-        }
-#pragma warning restore 649
-#pragma warning restore S3459 // Unassigned members should be removed
-        // all structs / fields are being used and assigned, but only while deserializing from JSON
     }
 }
