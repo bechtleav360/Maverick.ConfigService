@@ -109,6 +109,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                 };
 
                 await task;
+
+                await _objectStore.SetProjectedVersion(
+                    eventHeader.EventId.ToString("D"),
+                    (long) eventHeader.EventNumber,
+                    eventHeader.EventType);
             }
             catch (Exception e)
             {
