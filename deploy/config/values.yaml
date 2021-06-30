@@ -211,14 +211,14 @@ app:
   ##
   securityContext:
     enabled: true
-    fsGroup: 1000640000
+    fsGroup:
 
   ## Container Security Context
   ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   ##
   containerSecurityContext:
     enabled: true
-    runAsUser: 1000640000
+    runAsUser:
 
   ## Custom Liveness probe
   ##
@@ -546,8 +546,6 @@ commonAnnotations: {}
 ## Common labels to add to all resources (sub-charts are not considered). Evaluated as a template
 ##
 commonLabels: {}
-
-
 
 service:
   ## Service type
