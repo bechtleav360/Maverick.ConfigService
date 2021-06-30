@@ -1,0 +1,16 @@
+{{- if and .Values.ingress.enabled (.Capabilities.APIVersions.Has "route.openshift.io/v1/Route") }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: {{ include "common.names.fullname" . }}
+    weight: 100
+  tls:
+    termination: edge
+{{- end }}
