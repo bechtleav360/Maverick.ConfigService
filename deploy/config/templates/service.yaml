@@ -12,7 +12,7 @@ metadata:
     {{- if .Values.service.serviceLabels }}
     {{ toYaml .Values.service.serviceLabels | indent 4 }}
     {{- end }}
-  name: {{ include "app.fullname" . }}
+  name: {{ include "common.names.fullname" . }}
 spec:
   type: {{ .Values.service.type }}
   ports:

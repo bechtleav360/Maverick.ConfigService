@@ -1,22 +1,6 @@
 {{/* vim: set filetype=mustache: */}}
 
 {{/*
-Fully qualified app name for PostgreSQL
-*/}}
-{{- define "app.fullname" -}}
-{{- if .Values.fullnameOverride -}}
-{{- printf "%s" .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- printf "%s" .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
 Return the proper image name
 {{ include "common.images.image" ( dict "imageRoot" .Values.path.to.the.image "global" $) }}
 */}}

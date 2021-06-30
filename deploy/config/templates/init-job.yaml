@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "app.fullname" . }}-init
+  name: {{ include "common.names.fullname" . }}-init
   labels: {{ include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: init
     {{- if .Values.commonLabels }}
@@ -57,17 +57,17 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "app.serviceAccountName" . }}
       initContainers:
-      - name: {{ include "app.fullname" . }}-init-init
+      - name: {{ include "common.names.fullname" . }}-init-init
         image: {{ include "curl.image" . }}
         imagePullPolicy: {{ .Values.curlImage.pullPolicy | quote }}
-        command: ['sh', '-c', 'until curl http://{{ include "app.fullname" . }}; do echo waiting for configservice; sleep 5; done;']
+        command: ['sh', '-c', 'until curl http://{{ include "common.names.fullname" . }}; do echo waiting for configservice; sleep 5; done;']
       {{- if or .Values.initJob.extraInitContainers -}}
       {{- include "common.tplvalues.render" ( dict "value" (coalesce .Values.initJob.extraInitContainers ) "context" $ ) | nindent 8 -}}
       {{- end }}
       containers:
         - image: {{ include "cli.image" . }}
           imagePullPolicy: {{ .Values.cliImage.pullPolicy | quote }}
-          name: {{ include "app.fullname" . }}-init
+          name: {{ include "common.names.fullname" . }}-init
           {{- if .Values.initJob.command }}
           command: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.command "context" $) | nindent 12 }}
           {{- else }}
@@ -76,7 +76,7 @@ spec:
           {{- if .Values.initJob.args }}
           args: {{- include "common.tplvalues.render" (dict "value" .Values.initJob.args "context" $) | nindent 12 }}
           {{- else }}
-          args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ include "app.fullname" . }} -f export_presales.json -f config/config-overwrite.json"]
+          args: ["tar -zxvf config/config.tar.gz && dotnet Bechtle.A365.ConfigService.Cli.dll import -s http://{{ include "common.names.fullname" . }} -f export_presales.json -f config/config-overwrite.json"]
           {{- end }}
           env:
             {{- if .Values.initJob.extraEnvVars }}
