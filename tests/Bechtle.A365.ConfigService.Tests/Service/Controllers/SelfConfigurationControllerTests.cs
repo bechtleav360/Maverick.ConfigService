@@ -42,7 +42,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new SelfConfigurationController(
-                provider,
                 provider.GetService<ILogger<SelfConfigurationController>>(),
                 _translator);
         }

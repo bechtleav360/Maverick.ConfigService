@@ -36,7 +36,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new ConfigurationController(
-                provider,
                 provider.GetService<ILogger<ConfigurationController>>(),
                 _projectionStore.Object,
                 _eventBus.Object);

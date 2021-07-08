@@ -32,7 +32,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new ImportController(
-                provider,
                 provider.GetService<ILogger<ImportController>>(),
                 _dataImporter.Object);
         }

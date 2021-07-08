@@ -40,7 +40,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new InspectionController(
-                provider,
                 provider.GetService<ILogger<InspectionController>>(),
                 _compiler.Object,
                 _parser.Object,

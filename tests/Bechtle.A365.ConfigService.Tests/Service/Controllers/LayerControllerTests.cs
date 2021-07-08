@@ -44,8 +44,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             var provider = _services.BuildServiceProvider();
 
-            return new LayerController(provider,
-                                       provider.GetService<ILogger<LayerController>>(),
+            return new LayerController(provider.GetService<ILogger<LayerController>>(),
                                        _projectionStoreMock.Object,
                                        _jsonTranslatorMock.Object);
         }

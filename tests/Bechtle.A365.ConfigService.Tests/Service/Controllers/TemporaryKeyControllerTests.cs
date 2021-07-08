@@ -32,7 +32,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new TemporaryKeyController(
-                provider,
                 provider.GetService<ILogger<TemporaryKeyController>>(),
                 _keyStore.Object,
                 _eventBus.Object);

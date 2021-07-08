@@ -30,7 +30,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new SearchController(
-                provider,
                 provider.GetService<ILogger<SearchController>>(),
                 _projectionStore.Object);
         }

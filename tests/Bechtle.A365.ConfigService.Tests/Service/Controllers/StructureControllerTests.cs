@@ -34,7 +34,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new StructureController(
-                provider,
                 provider.GetService<ILogger<StructureController>>(),
                 _projectionStore.Object,
                 _translator.Object);

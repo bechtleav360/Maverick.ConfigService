@@ -27,7 +27,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new ConversionController(
-                provider,
                 provider.GetService<ILogger<ConversionController>>(),
                 _translator.Object);
         }

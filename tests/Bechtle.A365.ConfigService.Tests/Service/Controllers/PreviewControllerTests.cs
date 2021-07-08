@@ -39,7 +39,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new PreviewController(
-                provider,
                 provider.GetService<ILogger<PreviewController>>(),
                 _compiler.Object,
                 _projectionStore.Object,

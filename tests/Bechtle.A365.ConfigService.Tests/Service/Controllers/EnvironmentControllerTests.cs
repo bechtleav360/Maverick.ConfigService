@@ -46,8 +46,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             var provider = _services.BuildServiceProvider();
 
-            return new EnvironmentController(provider,
-                                             provider.GetService<ILogger<EnvironmentController>>(),
+            return new EnvironmentController(provider.GetService<ILogger<EnvironmentController>>(),
                                              _projectionStoreMock.Object,
                                              _jsonTranslatorMock.Object);
         }

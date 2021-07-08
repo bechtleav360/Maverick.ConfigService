@@ -29,7 +29,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                                   .BuildServiceProvider();
 
             return new ExportController(
-                provider,
                 provider.GetService<ILogger<ExportController>>(),
                 _dataExporter.Object);
         }
