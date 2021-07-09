@@ -1,17 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Common.Compilation;
-using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
-using Bechtle.A365.ConfigService.Parsing;
-using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;

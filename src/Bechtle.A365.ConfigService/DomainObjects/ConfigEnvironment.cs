@@ -42,6 +42,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             Id = null;
             IsDefault = false;
+            KeyPaths = new List<EnvironmentLayerKeyPath>();
+            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
             Layers = new List<LayerIdentifier>();
         }
 
@@ -65,6 +67,8 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
             Id = new EnvironmentIdentifier(identifier.Category, identifier.Name);
             IsDefault = false;
+            KeyPaths = new List<EnvironmentLayerKeyPath>();
+            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
             Layers = new List<LayerIdentifier>();
         }
     }
