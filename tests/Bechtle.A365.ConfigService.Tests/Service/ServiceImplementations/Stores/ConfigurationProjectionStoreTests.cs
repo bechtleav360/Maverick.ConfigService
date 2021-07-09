@@ -11,6 +11,7 @@ using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Parsing;
+using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -79,6 +80,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(m => m.GetConfigurations(It.IsAny<QueryRange>(), It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>()))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
@@ -97,6 +102,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(m => m.GetConfigurations(It.IsAny<QueryRange>(), It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   Result.Success<IList<ConfigurationIdentifier>>(
+                                       new List<ConfigurationIdentifier> {CreateConfigurationIdentifier()}))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
@@ -114,6 +125,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAvailableForEnvironmentEmpty()
         {
             var (logger, domainObjectManager) = CreateMocks();
+
+            domainObjectManager.Setup(
+                                   m => m.GetConfigurations(
+                                       It.IsAny<EnvironmentIdentifier>(),
+                                       It.IsAny<QueryRange>(),
+                                       It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   Result.Success<IList<ConfigurationIdentifier>>(
+                                       new List<ConfigurationIdentifier>()))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
 
             var store = new ConfigurationProjectionStore(
                 logger,
@@ -136,6 +157,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(
+                                   m => m.GetConfigurations(
+                                       It.IsAny<EnvironmentIdentifier>(),
+                                       It.IsAny<QueryRange>(),
+                                       It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   Result.Success<IList<ConfigurationIdentifier>>(
+                                       new List<ConfigurationIdentifier> {CreateConfigurationIdentifier()}))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
@@ -156,6 +187,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAvailableForStructureEmpty()
         {
             var (logger, domainObjectManager) = CreateMocks();
+
+            domainObjectManager.Setup(
+                                   m => m.GetConfigurations(
+                                       It.IsAny<StructureIdentifier>(),
+                                       It.IsAny<QueryRange>(),
+                                       It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   Result.Success<IList<ConfigurationIdentifier>>(
+                                       new List<ConfigurationIdentifier>()))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
 
             var store = new ConfigurationProjectionStore(
                 logger,
@@ -178,12 +219,22 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(
+                                   m => m.GetConfigurations(
+                                       It.IsAny<StructureIdentifier>(),
+                                       It.IsAny<QueryRange>(),
+                                       It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   Result.Success<IList<ConfigurationIdentifier>>(
+                                       new List<ConfigurationIdentifier> {CreateConfigurationIdentifier()}))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
 
-            var result = await store.GetAvailableWithEnvironment(
-                             new EnvironmentIdentifier("Foo", "Bar"),
+            var result = await store.GetAvailableWithStructure(
+                             new StructureIdentifier("Foo", 1),
                              DateTime.UtcNow,
                              QueryRange.Make(1, 1));
 
@@ -198,6 +249,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetConfigVersion()
         {
             var (logger, domainObjectManager) = CreateMocks();
+
+            domainObjectManager.Setup(m => m.GetConfiguration(It.IsAny<ConfigurationIdentifier>(), It.IsAny<CancellationToken>()))
+                               .ReturnsAsync((ConfigurationIdentifier id, CancellationToken _) => Result.Success(new PreparedConfiguration(id)))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
 
             var store = new ConfigurationProjectionStore(
                 logger,
@@ -217,6 +272,15 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(m => m.GetConfiguration(It.IsAny<ConfigurationIdentifier>(), It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   (ConfigurationIdentifier id, CancellationToken _) => Result.Success(
+                                       new PreparedConfiguration(id)
+                                       {
+                                           Json = "{\"valid\":true}"
+                                       }))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
@@ -234,6 +298,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetKeys()
         {
             var (logger, domainObjectManager) = CreateMocks();
+
+            domainObjectManager.Setup(m => m.GetConfiguration(It.IsAny<ConfigurationIdentifier>(), It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   (ConfigurationIdentifier id, CancellationToken _) => Result.Success(
+                                       new PreparedConfiguration(id)
+                                       {
+                                           Keys = new Dictionary<string, string>
+                                           {
+                                               {"Foo", "Bar"}
+                                           }
+                                       }))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
 
             var store = new ConfigurationProjectionStore(
                 logger,
@@ -270,6 +346,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetUsedKeys()
         {
             var (logger, domainObjectManager) = CreateMocks();
+
+            domainObjectManager.Setup(m => m.GetConfiguration(It.IsAny<ConfigurationIdentifier>(), It.IsAny<CancellationToken>()))
+                               .ReturnsAsync(
+                                   (ConfigurationIdentifier id, CancellationToken _) =>
+                                       Result.Success(new PreparedConfiguration(id) {UsedKeys = new List<string> {"Foo"}}))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
 
             var store = new ConfigurationProjectionStore(
                 logger,
