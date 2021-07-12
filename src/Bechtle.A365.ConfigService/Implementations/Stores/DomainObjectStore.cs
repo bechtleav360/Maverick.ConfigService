@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -152,11 +153,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 _logger.LogWarning(
                     e,
-                    "unable to update/insert domainObject into collection '{CollectionName}'",
+                    "unable to load domainObject from collection '{CollectionName}'",
                     collectionName);
                 return Task.FromResult(
                     Result.Error<TObject>(
-                        $"unable to update/insert domainObject into collection '{collectionName}'",
+                        $"unable to load domainObject from collection '{collectionName}'",
                         ErrorCode.DbUpdateError));
             }
 
@@ -194,12 +195,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 _logger.LogWarning(
                     e,
-                    "unable to update/insert domainObject into collection '{CollectionName}' with id '{Identifier}'",
+                    "unable to load domainObject from collection '{CollectionName}' with id '{Identifier}'",
                     collectionName,
                     identifier);
                 return Task.FromResult(
                     Result.Error<TObject>(
-                        $"unable to update/insert domainObject into collection '{collectionName}' with id '{identifier}'",
+                        $"unable to load domainObject from collection '{collectionName}' with id '{identifier}'",
                         ErrorCode.DbUpdateError));
             }
 
@@ -211,6 +212,38 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 Result.Error<TObject>(
                     $"no domainObject with id '{identifier}' found in collection '{collectionName}'",
                     ErrorCode.NotFound));
+        }
+
+        /// <inheritdoc />
+        public Task<IResult<IDictionary<string, string>>> LoadMetadata<TObject, TIdentifier>(TIdentifier identifier)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name + ".Metadata";
+            try
+            {
+                ILiteCollection<DomainObjectMetadata<TIdentifier>> collection = _database.GetCollection<DomainObjectMetadata<TIdentifier>>(collectionName);
+                DomainObjectMetadata<TIdentifier> domainObject = collection.Query()
+                                                                           .Where(o => o.Id == identifier)
+                                                                           .FirstOrDefault();
+
+                // metadata should always be available, if not always complete
+                return Task.FromResult(
+                    domainObject is { }
+                        ? Result.Success(domainObject.Metadata as IDictionary<string, string>)
+                        : Result.Success(new Dictionary<string, string>() as IDictionary<string, string>));
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to load metadata for domainObject from collection '{CollectionName}'",
+                    collectionName);
+                return Task.FromResult(
+                    Result.Error<IDictionary<string, string>>(
+                        $"unable to load metadata for domainObject from collection '{collectionName}'",
+                        ErrorCode.DbUpdateError));
+            }
         }
 
         /// <inheritdoc />
@@ -298,6 +331,37 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Task.FromResult(Result.Success());
         }
 
+        /// <inheritdoc />
+        public Task<IResult> StoreMetadata<TObject, TIdentifier>(TObject domainObject, IDictionary<string, string> metadata)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            string collectionName = typeof(TObject).Name + ".Metadata";
+            try
+            {
+                ILiteCollection<DomainObjectMetadata<TIdentifier>> collection = _database.GetCollection<DomainObjectMetadata<TIdentifier>>(collectionName);
+                collection.Upsert(
+                    new DomainObjectMetadata<TIdentifier>
+                    {
+                        Id = domainObject.Id,
+                        Metadata = metadata.ToDictionary(_ => _.Key, _ => _.Value)
+                    });
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(
+                    e,
+                    "unable to update/insert metadata for domainObject into collection '{CollectionName}'",
+                    collectionName);
+                return Task.FromResult(
+                    Result.Error(
+                        $"unable to update/insert metadata for domainObject into collection '{collectionName}'",
+                        ErrorCode.DbUpdateError));
+            }
+
+            return Task.FromResult(Result.Success());
+        }
+
         /// <summary>
         ///     Additional metadata that is stored in a separate collection along the projected DomainObjects.
         ///     These Records aren't meant to be updated, only written.
@@ -328,6 +392,24 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             ///     Type of the last event that was written
             /// </summary>
             public string LastWrittenEventType { get; set; }
+        }
+
+        /// <summary>
+        ///     Additional metadata for a given DomainObject
+        /// </summary>
+        /// <typeparam name="TIdentifier">identifier of the associated DomainObject</typeparam>
+        private class DomainObjectMetadata<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            /// <summary>
+            ///     Identifier of the associated DomainObject
+            /// </summary>
+            public TIdentifier Id { get; set; }
+
+            /// <summary>
+            ///     Generic, untyped metadata for the associated DomainObject
+            /// </summary>
+            public Dictionary<string, string> Metadata { get; set; }
         }
     }
 }

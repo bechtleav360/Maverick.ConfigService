@@ -15,6 +15,7 @@ using Bechtle.A365.ServiceBase.Services.V1;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
@@ -143,6 +144,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             _logger?.LogDebug($"version used during compilation: {config.CurrentVersion}");
 
+            // gather data to compile config with
             IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(config.Id.Environment);
             if (envResult.IsError)
             {
@@ -160,6 +162,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             try
             {
+                // collect all layers and stack them up to create the environment-data
                 IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment);
                 if (environmentDataResult.IsError)
                 {
@@ -168,6 +171,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                 Dictionary<string, EnvironmentLayerKey> environmentData = environmentDataResult.Data;
 
+                // compile the actual config
                 CompilationResult compilationResult = compiler.Compile(
                     new EnvironmentCompilationInfo
                     {
@@ -182,9 +186,25 @@ namespace Bechtle.A365.ConfigService.Implementations
                     },
                     parser);
 
+                // store result in DomainObject
                 config.Keys = compilationResult.CompiledConfiguration;
                 config.Json = translator.ToJson(config.Keys).ToString();
                 config.UsedKeys = compilationResult.GetUsedKeys().ToList();
+
+                // update metadata
+                IResult<IDictionary<string, string>>
+                    metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(config.Id);
+
+                if (metadataResult.IsError)
+                {
+                    _logger.LogWarning("unable to update metadata for Configuration {ConfigurationIdentifier}", config.Id);
+                }
+                else
+                {
+                    IDictionary<string, string> metadata = metadataResult.Data;
+                    metadata["used_layers"] = JsonConvert.SerializeObject(environment.Layers);
+                    metadata["stale"] = JsonConvert.SerializeObject(false);
+                }
 
                 return Result.Success();
             }
@@ -334,7 +354,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            await OnLayerKeysChanged(layer, translator);
+            await OnLayerKeysChanged(layer, domainEvent.Payload.ModifiedKeys, translator);
         }
 
         private async Task HandleEnvironmentLayerKeysModified(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerKeysModified> domainEvent)
@@ -388,7 +408,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            await OnLayerKeysChanged(layer, translator);
+            await OnLayerKeysChanged(layer, domainEvent.Payload.ModifiedKeys, translator);
         }
 
         private async Task HandleStructureCreated(StreamedEventHeader eventHeader, IDomainEvent<StructureCreated> domainEvent)
@@ -436,7 +456,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
         }
 
-        private async Task<IResult> OnLayerKeysChanged(EnvironmentLayer layer, IJsonTranslator translator)
+        private async Task OnLayerKeysChanged(EnvironmentLayer layer, ConfigKeyAction[] modifiedKeys, IJsonTranslator translator)
         {
             // layer.KeyPaths = GenerateKeyPaths(layer.Keys);
             layer.Json = translator.ToJson(layer.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Key))
@@ -447,7 +467,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             IResult<IList<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
             if (envIdResult.IsError)
             {
-                return envIdResult;
+                return;
             }
 
             foreach (EnvironmentIdentifier envId in envIdResult.Data)
@@ -455,7 +475,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
                 if (environmentResult.IsError)
                 {
-                    return environmentResult;
+                    return;
                 }
 
                 ConfigEnvironment environment = environmentResult.Data;
@@ -467,7 +487,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment);
                 if (environmentDataResult.IsError)
                 {
-                    return environmentDataResult;
+                    return;
                 }
 
                 environment.Keys = environmentDataResult.Data;
@@ -477,7 +497,84 @@ namespace Bechtle.A365.ConfigService.Implementations
                 await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
             }
 
-            return Result.Success();
+            await UpdateConfigurationStaleStatus(layer, modifiedKeys);
+
+            Result.Success();
+        }
+
+        // @TODO: un-/assignment of Layers in Environment don't currently mark a Configuration as Stale
+        private async Task UpdateConfigurationStaleStatus(EnvironmentLayer layer, ConfigKeyAction[] modifiedKeys)
+        {
+            IResult<IList<ConfigurationIdentifier>> configIdResult = await _objectStore.ListAll<PreparedConfiguration, ConfigurationIdentifier>(QueryRange.All);
+
+            if (configIdResult.IsError)
+            {
+                _logger.LogWarning("unable to load configs to update their stale-property");
+                return;
+            }
+
+            foreach (ConfigurationIdentifier configId in configIdResult.Data)
+            {
+                IResult<IDictionary<string, string>> metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(configId);
+                if (metadataResult.IsError)
+                {
+                    _logger.LogWarning("unable to load metadata for config with id {Identifier} to update its stale-property", configId);
+                    continue;
+                }
+
+                IDictionary<string, string> metadata = metadataResult.Data;
+
+                // no key? assume it's not stale
+                var isStale = metadata.ContainsKey("stale") && JsonConvert.DeserializeObject<bool>(metadata["stale"]);
+
+                if (isStale)
+                {
+                    _logger.LogDebug("config with id {Identifier} is already marked as stale - skipping re-calculation of staleness", configId);
+                    continue;
+                }
+
+                var usedLayers = metadata.ContainsKey("used_layers")
+                                     ? JsonConvert.DeserializeObject<List<LayerIdentifier>>(metadata["used_layers"])
+                                     : null;
+
+                if (usedLayers is null)
+                {
+                    _logger.LogWarning(
+                        "unable to retrieve list of layers used to build config with id {Identifier} - unable to calculate staleness",
+                        configId);
+                    continue;
+                }
+
+                if (!usedLayers.Contains(layer.Id))
+                {
+                    _logger.LogDebug(
+                        "config with id {ConfigId} did not use {LayerId} - this change will not make it stale",
+                        configId,
+                        layer.Id);
+                    continue;
+                }
+
+                IResult<PreparedConfiguration> configResult = await _objectStore.Load<PreparedConfiguration, ConfigurationIdentifier>(configId);
+                if (configResult.IsError)
+                {
+                    _logger.LogWarning("unable to load config with id {Identifier} to update its stale-property", configId);
+                    continue;
+                }
+
+                PreparedConfiguration config = configResult.Data;
+
+                List<string> usedKeys = config.UsedKeys;
+                List<string> changedKeys = modifiedKeys.Select(k => k.Key).ToList();
+
+                List<string> changedUsedKeys = changedKeys.Where(k => usedKeys.Contains(k)).ToList();
+                if (changedUsedKeys.Any())
+                {
+                    _logger.LogDebug(
+                        "config with id {ConfigId} used these keys which were now modified - marking as stale: {ChangedKeys}",
+                        configId,
+                        changedUsedKeys);
+                }
+            }
         }
 
         private async Task<IResult<Dictionary<string, EnvironmentLayerKey>>> ResolveEnvironmentKeys(ConfigEnvironment environment)

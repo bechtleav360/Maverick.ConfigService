@@ -149,9 +149,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                // @TODO: add GetStaleConfigurations in IDomainObjectManager
                 _logger.LogDebug($"retrieving stale configurations, range={range}");
-                return Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>());
+                return await _domainObjectManager.GetStaleConfigurations(range);
             }
             catch (Exception e)
             {
@@ -239,8 +238,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                // @TODO: implement IDomainObjectManager.IsStale
-                return Result.Success(false);
+                return await _domainObjectManager.IsStale(identifier);
             }
             catch (Exception e)
             {

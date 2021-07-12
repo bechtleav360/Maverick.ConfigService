@@ -181,6 +181,13 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a list of Configurations that were marked as stale by recent changes
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetStaleConfigurations(QueryRange range);
+
+        /// <summary>
         ///     Get a single stored Structure
         /// </summary>
         /// <param name="identifier">valid identifier for the Structure</param>
@@ -215,6 +222,13 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>result of the operation</returns>
         Task<IResult> ImportLayer(LayerIdentifier identifier, IList<EnvironmentLayerKey> keys, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Check if the given Configuration is marked as stale by recent changes
+        /// </summary>
+        /// <param name="identifier">valid identifier for an existing Configuration</param>
+        /// <returns></returns>
+        Task<IResult<bool>> IsStale(ConfigurationIdentifier identifier);
 
         /// <summary>
         ///     Modify the keys of a Layer

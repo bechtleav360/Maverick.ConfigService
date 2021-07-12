@@ -14,6 +14,7 @@ using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Bechtle.A365.ServiceBase.EventStore.DomainEventBase;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
@@ -198,6 +199,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             => ListObjects<EnvironmentLayer, LayerIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
+        public Task<IResult<IList<ConfigurationIdentifier>>> GetStaleConfigurations(QueryRange range) => throw new NotImplementedException();
+
+        /// <inheritdoc />
         public Task<IResult<ConfigStructure>> GetStructure(StructureIdentifier identifier, CancellationToken cancellationToken)
             => LoadObject<ConfigStructure, StructureIdentifier>(identifier, cancellationToken);
 
@@ -258,6 +262,24 @@ namespace Bechtle.A365.ConfigService.Implementations
                 ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
 
             return Result.Success();
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<bool>> IsStale(ConfigurationIdentifier identifier)
+        {
+            IResult<IDictionary<string, string>> metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(identifier);
+
+            if (metadataResult.IsError)
+                return Result.Error<bool>(metadataResult.Message, metadataResult.Code);
+
+            IDictionary<string, string> metadata = metadataResult.Data;
+            if (!metadata.TryGetValue("stale", out string staleProperty))
+            {
+                return Result.Success(false);
+            }
+
+            var stale = JsonConvert.DeserializeObject<bool>(staleProperty);
+            return Result.Success(stale);
         }
 
         /// <inheritdoc />

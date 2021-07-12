@@ -324,6 +324,15 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(m => m.GetStaleConfigurations(It.IsAny<QueryRange>()))
+                               .ReturnsAsync(
+                                   Result.Success<IList<ConfigurationIdentifier>>(
+                                       new List<ConfigurationIdentifier>
+                                       {
+                                           CreateConfigurationIdentifier()
+                                       }))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
@@ -366,6 +375,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(m => m.IsStale(It.IsAny<ConfigurationIdentifier>()))
+                               .ReturnsAsync(Result.Success(false))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
@@ -384,6 +397,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
+            domainObjectManager.Setup(m => m.IsStale(It.IsAny<ConfigurationIdentifier>()))
+                               .ReturnsAsync(Result.Success(true))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
+
             var store = new ConfigurationProjectionStore(
                 logger,
                 domainObjectManager.Object);
@@ -401,6 +418,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task IsStaleUnknown()
         {
             var (logger, domainObjectManager) = CreateMocks();
+
+            domainObjectManager.Setup(m => m.IsStale(It.IsAny<ConfigurationIdentifier>()))
+                               .ReturnsAsync(Result.Success(true))
+                               .Verifiable("DomainObjectManager was not queried for Configs");
 
             var store = new ConfigurationProjectionStore(
                 logger,
