@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using LiteDB;
 using Microsoft.Extensions.Logging;
@@ -21,14 +22,21 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly ILogger<DomainObjectStore> _logger;
 
         /// <inheritdoc cref="DomainObjectStore" />
-        public DomainObjectStore(ILogger<DomainObjectStore> logger)
+        public DomainObjectStore(
+            ILogger<DomainObjectStore> logger,
+            IDomainObjectStoreLocationProvider locationProvider)
         {
+            // as the name suggests liteDb will convert all empty strings to null, because that's such a good idea!
+            // kinda stupid to set this globally (as opposed to per-object for more control),
+            // but i don't want to be responsible for other stuff they might do to new objects that we're unaware of
+            BsonMapper.Global.EmptyStringToNull = false;
+
             _logger = logger;
             _database = new LiteDatabase(
                 new ConnectionString
                 {
                     Connection = ConnectionType.Shared,
-                    Filename = "data/projections.db"
+                    Filename = locationProvider.FileName
                 });
         }
 
@@ -79,6 +87,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
                 IList<TIdentifier> ids = collection.Query()
+                                                   .OrderBy(o => o.Id)
                                                    .Select(o => o.Id)
                                                    .Skip(range.Offset)
                                                    .Limit(range.Length)
@@ -108,7 +117,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
                 IList<TIdentifier> ids = collection.Query()
-                                                   .OrderBy(o => o.CurrentVersion)
+                                                   .OrderBy(o => o.Id)
                                                    .Where(filter)
                                                    .Select(o => o.Id)
                                                    .Skip(range.Offset)
@@ -219,7 +228,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            string collectionName = typeof(TObject).Name + ".Metadata";
+            string collectionName = typeof(TObject).Name + "_Metadata";
             try
             {
                 ILiteCollection<DomainObjectMetadata<TIdentifier>> collection = _database.GetCollection<DomainObjectMetadata<TIdentifier>>(collectionName);
@@ -252,10 +261,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TIdentifier : Identifier
         {
             string collectionName = typeof(TObject).Name;
+            string metadataCollectionName = typeof(TObject).Name + "_Metadata";
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
                 collection.DeleteMany(o => o.Id == identifier);
+
+                ILiteCollection<DomainObjectMetadata<TIdentifier>> metadataCollection =
+                    _database.GetCollection<DomainObjectMetadata<TIdentifier>>(metadataCollectionName);
+                metadataCollection.DeleteMany(e => e.Id == identifier);
+
                 return Task.FromResult(Result.Success());
             }
             catch (Exception e)
@@ -336,10 +351,31 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            string collectionName = typeof(TObject).Name + ".Metadata";
+            string collectionName = typeof(TObject).Name;
+            string metadataCollectionName = typeof(TObject).Name + "_Metadata";
             try
             {
-                ILiteCollection<DomainObjectMetadata<TIdentifier>> collection = _database.GetCollection<DomainObjectMetadata<TIdentifier>>(collectionName);
+                // prevent metadata-entries for objects that are not stored yet
+                ILiteCollection<TObject> objectCollection = _database.GetCollection<TObject>(collectionName);
+                bool domainObjectAvailable = objectCollection.Query()
+                                                             .Where(o => o.Id == domainObject.Id)
+                                                             .OrderByDescending(o => o.MetaVersion)
+                                                             .FirstOrDefault() is { };
+
+                if (!domainObjectAvailable)
+                {
+                    _logger.LogWarning(
+                        "attempted to update/insert metadata for domainObject that was not stored in collection '{CollectionName}'",
+                        collectionName);
+                    return Task.FromResult(
+                        Result.Error(
+                            $"attempted to update/insert metadata for domainObject that was not stored in collection '{collectionName}'",
+                            ErrorCode.NotFound));
+                }
+
+                ILiteCollection<DomainObjectMetadata<TIdentifier>> collection =
+                    _database.GetCollection<DomainObjectMetadata<TIdentifier>>(metadataCollectionName);
+
                 collection.Upsert(
                     new DomainObjectMetadata<TIdentifier>
                     {
@@ -352,10 +388,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 _logger.LogWarning(
                     e,
                     "unable to update/insert metadata for domainObject into collection '{CollectionName}'",
-                    collectionName);
+                    metadataCollectionName);
                 return Task.FromResult(
                     Result.Error(
-                        $"unable to update/insert metadata for domainObject into collection '{collectionName}'",
+                        $"unable to update/insert metadata for domainObject into collection '{metadataCollectionName}'",
                         ErrorCode.DbUpdateError));
             }
 

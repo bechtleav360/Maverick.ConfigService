@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -52,5 +53,22 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             Variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is ConfigStructure other && Equals(other);
+
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Id, Keys, Variables);
+
+        /// <inheritdoc cref="operator ==" />
+        public static bool operator ==(ConfigStructure left, ConfigStructure right) => Equals(left, right);
+
+        /// <inheritdoc cref="operator !=" />
+        public static bool operator !=(ConfigStructure left, ConfigStructure right) => !Equals(left, right);
+
+        private bool Equals(ConfigStructure other) =>
+            Equals(Id, other.Id)
+            && Keys.SequenceEqual(other.Keys)
+            && Variables.SequenceEqual(other.Variables);
     }
 }

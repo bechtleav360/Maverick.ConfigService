@@ -5,7 +5,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     All Metadata used to represent a single Key inside a <see cref="EnvironmentLayer" />
     /// </summary>
-    public class EnvironmentLayerKey : IEquatable<EnvironmentLayerKey>
+    public sealed class EnvironmentLayerKey
     {
         /// <summary>
         ///     Description of the Contents of this Key
@@ -53,61 +53,22 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(EnvironmentLayerKey other)
-        {
-            if (ReferenceEquals(null, other))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
-            return Description == other.Description
-                   && Key == other.Key
-                   && Type == other.Type
-                   && Value == other.Value
-                   && Version == other.Version;
-        }
-
-        /// <inheritdoc />
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            if (obj.GetType() != GetType())
-            {
-                return false;
-            }
-
-            return Equals((EnvironmentLayerKey) obj);
-        }
+        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerKey other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Description, Key, Type, Value, Version);
 
-        /// <summary>
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayerKey left, EnvironmentLayerKey right) => Equals(left, right);
 
-        /// <summary>
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(EnvironmentLayerKey left, EnvironmentLayerKey right) => !Equals(left, right);
+
+        private bool Equals(EnvironmentLayerKey other) =>
+            Description == other.Description
+            && Key == other.Key
+            && Type == other.Type
+            && Value == other.Value
+            && Version == other.Version;
     }
 }

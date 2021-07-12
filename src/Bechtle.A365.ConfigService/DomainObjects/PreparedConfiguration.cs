@@ -80,5 +80,26 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             ValidFrom = null;
             ValidTo = null;
         }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is PreparedConfiguration other && Equals(other);
+
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(ConfigurationVersion, Id, Json, Keys, UsedKeys, ValidFrom, ValidTo);
+
+        /// <inheritdoc cref="operator ==" />
+        public static bool operator ==(PreparedConfiguration left, PreparedConfiguration right) => Equals(left, right);
+
+        /// <inheritdoc cref="operator !=" />
+        public static bool operator !=(PreparedConfiguration left, PreparedConfiguration right) => !Equals(left, right);
+
+        private bool Equals(PreparedConfiguration other) =>
+            ConfigurationVersion == other.ConfigurationVersion
+            && Equals(Id, other.Id)
+            && Json == other.Json
+            && Equals(Keys, other.Keys)
+            && Equals(UsedKeys, other.UsedKeys)
+            && Nullable.Equals(ValidFrom, other.ValidFrom)
+            && Nullable.Equals(ValidTo, other.ValidTo);
     }
 }

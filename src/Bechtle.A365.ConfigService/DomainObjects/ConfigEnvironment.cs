@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -71,5 +72,25 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
             Layers = new List<LayerIdentifier>();
         }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is ConfigEnvironment other && Equals(other);
+
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Id, IsDefault, Json, KeyPaths, Keys, Layers);
+
+        /// <inheritdoc cref="operator ==" />
+        public static bool operator ==(ConfigEnvironment left, ConfigEnvironment right) => Equals(left, right);
+
+        /// <inheritdoc cref="operator !=" />
+        public static bool operator !=(ConfigEnvironment left, ConfigEnvironment right) => !Equals(left, right);
+
+        private bool Equals(ConfigEnvironment other) =>
+            Equals(Id, other.Id)
+            && IsDefault == other.IsDefault
+            && Json == other.Json
+            && KeyPaths.SequenceEqual(other.KeyPaths)
+            && Keys.SequenceEqual(other.Keys)
+            && Layers.SequenceEqual(other.Layers);
     }
 }

@@ -231,6 +231,7 @@ namespace Bechtle.A365.ConfigService
                                 provider.GetService<ILoggerFactory>());
                         })
                     .AddTransient<ICommandValidator, InternalDataCommandValidator>()
+                    .AddTransient<IDomainObjectStoreLocationProvider, DomainObjectStoreLocationProvider>()
                     .AddTransient<IDomainObjectStore, DomainObjectStore>()
                     .AddTransient<IDomainObjectManager, DomainObjectManager>()
                     .AddSingleton<IJsonTranslator, JsonTranslator>()

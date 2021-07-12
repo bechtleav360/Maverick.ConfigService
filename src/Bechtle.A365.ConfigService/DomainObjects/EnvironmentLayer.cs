@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -18,14 +19,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public string Json { get; set; }
 
         /// <summary>
-        ///     Actual Data of this Layer
-        /// </summary>
-        public Dictionary<string, EnvironmentLayerKey> Keys { get; set; }
-
-        /// <summary>
         ///     Keys represented as nested objects
         /// </summary>
         public List<EnvironmentLayerKeyPath> KeyPaths { get; set; }
+
+        /// <summary>
+        ///     Actual Data of this Layer
+        /// </summary>
+        public Dictionary<string, EnvironmentLayerKey> Keys { get; set; }
 
         /// <inheritdoc />
         public EnvironmentLayer()
@@ -54,5 +55,23 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             KeyPaths = new List<EnvironmentLayerKeyPath>();
             Json = "{}";
         }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayer other && Equals(other);
+
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Id, Json, Keys, KeyPaths);
+
+        /// <inheritdoc cref="operator ==" />
+        public static bool operator ==(EnvironmentLayer left, EnvironmentLayer right) => Equals(left, right);
+
+        /// <inheritdoc cref="operator !=" />
+        public static bool operator !=(EnvironmentLayer left, EnvironmentLayer right) => !Equals(left, right);
+
+        private bool Equals(EnvironmentLayer other) =>
+            Equals(Id, other.Id)
+            && Json == other.Json
+            && Keys.SequenceEqual(other.Keys)
+            && KeyPaths.SequenceEqual(other.KeyPaths);
     }
 }

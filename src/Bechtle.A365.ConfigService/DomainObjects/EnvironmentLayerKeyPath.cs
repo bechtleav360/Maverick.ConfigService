@@ -7,7 +7,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     /// <summary>
     ///     Node inside a Tree of Paths to represent Environment-Data
     /// </summary>
-    public class EnvironmentLayerKeyPath : IEquatable<EnvironmentLayerKeyPath>
+    public sealed class EnvironmentLayerKeyPath
     {
         /// <summary>
         ///     List of Children that may come after this
@@ -46,61 +46,20 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(EnvironmentLayerKeyPath other)
-        {
-            if (ReferenceEquals(null, other))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
-            return (Equals(Children, other.Children)
-                    || !Children.Except(other.Children).Any()
-                    && !other.Children.Except(Children).Any())
-                   && Equals(Parent, other.Parent)
-                   && Path == other.Path;
-        }
-
-        /// <inheritdoc />
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            if (obj.GetType() != GetType())
-            {
-                return false;
-            }
-
-            return Equals((EnvironmentLayerKeyPath) obj);
-        }
+        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerKeyPath other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Children, Parent, Path);
 
-        /// <summary>
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayerKeyPath left, EnvironmentLayerKeyPath right) => Equals(left, right);
 
-        /// <summary>
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(EnvironmentLayerKeyPath left, EnvironmentLayerKeyPath right) => !Equals(left, right);
+
+        private bool Equals(EnvironmentLayerKeyPath other) =>
+            Children.SequenceEqual(other.Children)
+            && Equals(Parent, other.Parent)
+            && Path == other.Path;
     }
 }
