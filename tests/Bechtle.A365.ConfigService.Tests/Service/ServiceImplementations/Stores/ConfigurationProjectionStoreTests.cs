@@ -324,7 +324,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var (logger, domainObjectManager) = CreateMocks();
 
-            domainObjectManager.Setup(m => m.GetStaleConfigurations(It.IsAny<QueryRange>()))
+            domainObjectManager.Setup(m => m.GetStaleConfigurations(It.IsAny<QueryRange>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
                                    Result.Success<IList<ConfigurationIdentifier>>(
                                        new List<ConfigurationIdentifier>
@@ -337,7 +337,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 logger,
                 domainObjectManager.Object);
 
-            var result = await store.GetStale(QueryRange.All);
+            IResult<IList<ConfigurationIdentifier>> result = await store.GetStale(QueryRange.All);
 
             VerifySetups(domainObjectManager);
 

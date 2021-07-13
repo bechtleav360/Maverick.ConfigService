@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -11,6 +12,7 @@ using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
+using Bechtle.A365.ServiceBase.EventStore.DomainEventBase;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -109,6 +111,33 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                    new EnvironmentLayer(new LayerIdentifier("Foo")));
 
         [Fact]
+        public async Task GetAllConfigurations()
+        {
+            _objectStore.Setup(m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<QueryRange>()))
+                        .ReturnsAsync(
+                            Result.Success<IList<ConfigurationIdentifier>>(
+                                new List<ConfigurationIdentifier>
+                                {
+                                    new ConfigurationIdentifier(
+                                        new EnvironmentIdentifier("Foo", "Bar"),
+                                        new StructureIdentifier("Foo", 42),
+                                        69),
+                                    new ConfigurationIdentifier(
+                                        new EnvironmentIdentifier("Foo", "Bar"),
+                                        new StructureIdentifier("Foo", 43),
+                                        70)
+                                }))
+                        .Verifiable("object-list not queried from object-store");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<IList<ConfigurationIdentifier>> result = await manager.GetConfigurations(QueryRange.All, CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+            Assert.NotEmpty(result.Data);
+        }
+
+        [Fact]
         public async Task GetConfiguration()
         {
             var identifier = new ConfigurationIdentifier(
@@ -126,29 +155,69 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         }
 
         [Fact]
-        public async Task GetAllConfigurations()
+        public async Task GetConfigurationsWithEnvironment()
         {
-            _objectStore.Setup(m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<QueryRange>()))
+            _objectStore.Setup(
+                            m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(
+                                It.IsAny<Expression<Func<PreparedConfiguration, bool>>>(),
+                                It.IsAny<QueryRange>()))
+                        .ReturnsAsync(
+                            Result.Success<IList<ConfigurationIdentifier>>(
+                                new List<ConfigurationIdentifier>
+                                {
+                                    new ConfigurationIdentifier(
+                                        new EnvironmentIdentifier("Foo", "Bro"),
+                                        new StructureIdentifier("Foo", 42),
+                                        71),
+                                    new ConfigurationIdentifier(
+                                        new EnvironmentIdentifier("Foo", "Bro"),
+                                        new StructureIdentifier("Foo", 43),
+                                        72)
+                                }))
+                        .Verifiable("object-list not queried from object-store");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<IList<ConfigurationIdentifier>> result = await manager.GetConfigurations(
+                                                                 new EnvironmentIdentifier("Foo", "Bro"),
+                                                                 QueryRange.All,
+                                                                 CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+            Assert.NotEmpty(result.Data);
+        }
+
+        [Fact]
+        public async Task GetConfigurationsWithStructure()
+        {
+            _objectStore.Setup(
+                            m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(
+                                It.IsAny<Expression<Func<PreparedConfiguration, bool>>>(),
+                                It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<ConfigurationIdentifier>>(
                                 new List<ConfigurationIdentifier>
                                 {
                                     new ConfigurationIdentifier(
                                         new EnvironmentIdentifier("Foo", "Bar"),
-                                        new StructureIdentifier("Foo", 42),
-                                        69),
-                                    new ConfigurationIdentifier(
-                                        new EnvironmentIdentifier("Foo", "Bar"),
                                         new StructureIdentifier("Foo", 43),
                                         70),
+                                    new ConfigurationIdentifier(
+                                        new EnvironmentIdentifier("Foo", "Bro"),
+                                        new StructureIdentifier("Foo", 43),
+                                        72)
                                 }))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<ConfigurationIdentifier>> result = await manager.GetConfigurations(QueryRange.All, CancellationToken.None);
+            IResult<IList<ConfigurationIdentifier>> result = await manager.GetConfigurations(
+                                                                 new StructureIdentifier("Foo", 43),
+                                                                 QueryRange.All,
+                                                                 CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
+            Assert.NotEmpty(result.Data);
         }
 
         [Fact]
@@ -166,6 +235,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         }
 
         [Fact]
+        public async Task GetEnvironments()
+        {
+            _objectStore.Setup(m => m.ListAll<ConfigEnvironment, EnvironmentIdentifier>(It.IsAny<QueryRange>()))
+                        .ReturnsAsync(
+                            Result.Success<IList<EnvironmentIdentifier>>(
+                                new List<EnvironmentIdentifier>
+                                {
+                                    new EnvironmentIdentifier("Foo", "Bar"),
+                                    new EnvironmentIdentifier("Foo", "Baz")
+                                }))
+                        .Verifiable("object-list not queried from object-store");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<IList<EnvironmentIdentifier>> result = await manager.GetEnvironments(QueryRange.All, CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+            Assert.NotEmpty(result.Data);
+        }
+
+        [Fact]
         public async Task GetLayer()
         {
             var identifier = new LayerIdentifier("Foo");
@@ -177,6 +267,72 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
+        }
+
+        [Fact]
+        public async Task GetLayers()
+        {
+            _objectStore.Setup(m => m.ListAll<EnvironmentLayer, LayerIdentifier>(It.IsAny<QueryRange>()))
+                        .ReturnsAsync(
+                            Result.Success<IList<LayerIdentifier>>(
+                                new List<LayerIdentifier>
+                                {
+                                    new LayerIdentifier("Foo"),
+                                    new LayerIdentifier("Bar")
+                                }))
+                        .Verifiable("object-list not queried from object-store");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<IList<LayerIdentifier>> result = await manager.GetLayers(QueryRange.All, CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+            Assert.NotEmpty(result.Data);
+        }
+
+        [Fact]
+        public async Task GetStale()
+        {
+            var staleConfigId = new ConfigurationIdentifier(
+                new EnvironmentIdentifier("Foo", "Bar"),
+                new StructureIdentifier("Foo", 42),
+                69);
+
+            var freshConfigId = new ConfigurationIdentifier(
+                new EnvironmentIdentifier("Foo", "Bar"),
+                new StructureIdentifier("Foo", 43),
+                70);
+
+            _objectStore.Setup(m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<QueryRange>()))
+                        .ReturnsAsync(
+                            Result.Success<IList<ConfigurationIdentifier>>(
+                                new List<ConfigurationIdentifier>
+                                {
+                                    staleConfigId,
+                                    freshConfigId
+                                }))
+                        .Verifiable("object-list not queried from object-store");
+
+            _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.Is<ConfigurationIdentifier>(id => id == staleConfigId)))
+                        .ReturnsAsync(
+                            Result.Success<IDictionary<string, string>>(
+                                new Dictionary<string, string>
+                                {
+                                    {"stale", "true"}
+                                }))
+                        .Verifiable("metadata for stale config was not checked");
+
+            _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.Is<ConfigurationIdentifier>(id => id == freshConfigId)))
+                        .ReturnsAsync(Result.Success<IDictionary<string, string>>(new Dictionary<string, string>()))
+                        .Verifiable("metadata for fresh config was not checked");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<IList<ConfigurationIdentifier>> result = await manager.GetStaleConfigurations(QueryRange.All, CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+            Assert.Single(result.Data);
+            Assert.Equal(staleConfigId, result.Data.First());
         }
 
         [Fact]
@@ -192,6 +348,227 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             VerifySetups();
             AssertPositiveResult(result);
         }
+
+        [Fact]
+        public async Task GetStructures()
+        {
+            _objectStore.Setup(m => m.ListAll<ConfigStructure, StructureIdentifier>(It.IsAny<QueryRange>()))
+                        .ReturnsAsync(
+                            Result.Success<IList<StructureIdentifier>>(
+                                new List<StructureIdentifier>
+                                {
+                                    new StructureIdentifier("Foo", 69),
+                                    new StructureIdentifier("Bar", 42)
+                                }))
+                        .Verifiable("object-list not queried from object-store");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<IList<StructureIdentifier>> result = await manager.GetStructures(QueryRange.All, CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+            Assert.NotEmpty(result.Data);
+        }
+
+        [Fact]
+        public async Task GetStructuresWithName()
+        {
+            _objectStore.Setup(
+                            m => m.ListAll<ConfigStructure, StructureIdentifier>(
+                                It.IsAny<Expression<Func<ConfigStructure, bool>>>(),
+                                It.IsAny<QueryRange>()))
+                        .ReturnsAsync(Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier> {new StructureIdentifier("Foo", 69)}))
+                        .Verifiable("object-list not queried from object-store");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<IList<StructureIdentifier>> result = await manager.GetStructures("Foo", QueryRange.All, CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+            Assert.Single(result.Data);
+        }
+
+        [Fact]
+        public async Task ImportExistingLayer()
+        {
+            AssertLoadsObjectSuccessfully<EnvironmentLayer, LayerIdentifier>(new EnvironmentLayer(new LayerIdentifier("Foo")));
+            AssertGetsProjectedVersion();
+            _eventStore.Setup(
+                           e => e.WriteEventsAsync(
+                               It.Is<IList<IDomainEvent>>(
+                                   list => list.Count == 1
+                                           && ((DomainEvent<EnvironmentLayerKeysImported>) list[0]).Payload != null),
+                               It.IsAny<string>(),
+                               It.Is<ExpectStreamPosition>(r => ((NumberedPosition) r.StreamPosition).EventNumber == 4711)))
+                       .Returns(Task.CompletedTask)
+                       .Verifiable("events were not written to stream");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult result = await manager.ImportLayer(
+                                 new LayerIdentifier("Foo"),
+                                 new List<EnvironmentLayerKey>
+                                 {
+                                     new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 42),
+                                     new EnvironmentLayerKey("Bar", "Baz", string.Empty, string.Empty, 42)
+                                 },
+                                 CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+        }
+
+        [Fact]
+        public async Task ImportNewLayer()
+        {
+            AssertLoadsObject<EnvironmentLayer, LayerIdentifier>();
+            AssertGetsProjectedVersion();
+            _eventStore.Setup(
+                           e => e.WriteEventsAsync(
+                               It.Is<IList<IDomainEvent>>(
+                                   list => list.Count == 2
+                                           && ((DomainEvent<EnvironmentLayerCreated>) list[0]).Payload != null
+                                           && ((DomainEvent<EnvironmentLayerKeysImported>) list[1]).Payload != null),
+                               It.IsAny<string>(),
+                               It.Is<ExpectStreamPosition>(r => ((NumberedPosition) r.StreamPosition).EventNumber == 4711)))
+                       .Returns(Task.CompletedTask)
+                       .Verifiable("events were not written to stream");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult result = await manager.ImportLayer(
+                                 new LayerIdentifier("Foo"),
+                                 new List<EnvironmentLayerKey>
+                                 {
+                                     new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 42),
+                                     new EnvironmentLayerKey("Bar", "Baz", string.Empty, string.Empty, 42)
+                                 },
+                                 CancellationToken.None);
+
+            VerifySetups();
+            AssertPositiveResult(result);
+        }
+
+        [Fact]
+        public async Task IsNotStale()
+        {
+            var configId = new ConfigurationIdentifier(
+                new EnvironmentIdentifier("Foo", "Bar"),
+                new StructureIdentifier("Foo", 42),
+                69);
+
+            AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
+            AssertGetsProjectedVersion();
+
+            _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
+                        .ReturnsAsync(
+                            Result.Success<IDictionary<string, string>>(
+                                new Dictionary<string, string>
+                                {
+                                    {"stale", "false"}
+                                }))
+                        .Verifiable("metadata for object not loaded");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<bool> result = await manager.IsStale(configId);
+
+            AssertPositiveResult(result);
+            Assert.False(result.Data);
+        }
+
+        [Fact]
+        public async Task IsNotStaleWithoutMetadata()
+        {
+            var configId = new ConfigurationIdentifier(
+                new EnvironmentIdentifier("Foo", "Bar"),
+                new StructureIdentifier("Foo", 42),
+                69);
+
+            AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
+            AssertGetsProjectedVersion();
+
+            _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
+                        .ReturnsAsync(
+                            Result.Success<IDictionary<string, string>>(
+                                new Dictionary<string, string>()))
+                        .Verifiable("metadata for object not loaded");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<bool> result = await manager.IsStale(configId);
+
+            AssertPositiveResult(result);
+            Assert.False(result.Data);
+        }
+
+        [Fact]
+        public async Task IsStale()
+        {
+            var configId = new ConfigurationIdentifier(
+                new EnvironmentIdentifier("Foo", "Bar"),
+                new StructureIdentifier("Foo", 42),
+                69);
+
+            AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
+            AssertGetsProjectedVersion();
+
+            _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
+                        .ReturnsAsync(
+                            Result.Success<IDictionary<string, string>>(
+                                new Dictionary<string, string>
+                                {
+                                    {"stale", "true"}
+                                }))
+                        .Verifiable("metadata for object not loaded");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<bool> result = await manager.IsStale(configId);
+
+            AssertPositiveResult(result);
+            Assert.True(result.Data);
+        }
+
+        [Fact]
+        public async Task ModifyLayerKeys()
+            => await TestObjectModification<EnvironmentLayer, LayerIdentifier, EnvironmentLayerKeysModified>(
+                   async manager => await manager.ModifyLayerKeys(
+                                        new LayerIdentifier("Foo"),
+                                        new List<ConfigKeyAction>
+                                        {
+                                            ConfigKeyAction.Set("Baz", "BazValue"),
+                                            ConfigKeyAction.Delete("Foo"),
+                                        },
+                                        CancellationToken.None),
+                   new EnvironmentLayer(new LayerIdentifier("Foo"))
+                   {
+                       Keys = new Dictionary<string, EnvironmentLayerKey>
+                       {
+                           {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 42)},
+                           {"Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 42)},
+                       }
+                   });
+
+        [Fact]
+        public async Task ModifyStructureVariables()
+            => await TestObjectModification<ConfigStructure, StructureIdentifier, StructureVariablesModified>(
+                   async manager => await manager.ModifyStructureVariables(
+                                        new StructureIdentifier("Foo", 42),
+                                        new List<ConfigKeyAction>
+                                        {
+                                            ConfigKeyAction.Set("Baz", "BazValue"),
+                                            ConfigKeyAction.Delete("Foo"),
+                                        },
+                                        CancellationToken.None),
+                   new ConfigStructure(new StructureIdentifier("Foo", 42))
+                   {
+                       Keys = new Dictionary<string, string>
+                       {
+                           {"Foo", "FooValue"},
+                           {"Bar", "BarValue"},
+                       },
+                       Variables = new Dictionary<string, string>
+                       {
+                           {"Foo", "FooValue"},
+                           {"Bar", "BarValue"},
+                       }
+                   });
 
         private void AssertGetsProjectedVersion(long version = 4711)
             => _objectStore.Setup(m => m.GetProjectedVersion())

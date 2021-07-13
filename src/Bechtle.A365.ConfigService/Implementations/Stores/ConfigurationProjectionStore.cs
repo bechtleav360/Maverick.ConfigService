@@ -150,7 +150,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 _logger.LogDebug($"retrieving stale configurations, range={range}");
-                return await _domainObjectManager.GetStaleConfigurations(range);
+                return await _domainObjectManager.GetStaleConfigurations(range, CancellationToken.None);
             }
             catch (Exception e)
             {

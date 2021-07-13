@@ -125,24 +125,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             => LoadObject<PreparedConfiguration, ConfigurationIdentifier>(identifier, cancellationToken);
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetConfigurationKeys(ConfigurationIdentifier identifier, CancellationToken cancellationToken)
-        {
-            IResult<PreparedConfiguration> result = await LoadObject<PreparedConfiguration, ConfigurationIdentifier>(identifier, cancellationToken);
-            if (!result.IsError)
-            {
-                return Result.Success(result.Data.Keys);
-            }
-
-            _logger.LogWarning(
-                "unable to load configuration with id '{Identifier}': {ErrorCode} {Message}",
-                identifier,
-                result.Code,
-                result.Message);
-
-            return Result.Error<IDictionary<string, string>>(result.Message, result.Code);
-        }
-
-        /// <inheritdoc />
         public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
             EnvironmentIdentifier environment,
             QueryRange range,
@@ -173,33 +155,60 @@ namespace Bechtle.A365.ConfigService.Implementations
             => LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, cancellationToken);
 
         /// <inheritdoc />
-        public async Task<IResult<IList<EnvironmentLayerKey>>> GetLayerKeys(LayerIdentifier identifier, CancellationToken cancellationToken)
-        {
-            IResult<EnvironmentLayer> result = await LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, cancellationToken);
-            if (!result.IsError)
-            {
-                return Result.Success<IList<EnvironmentLayerKey>>(
-                    result.Data
-                          .Keys
-                          .Select(kvp => kvp.Value)
-                          .ToList());
-            }
-
-            _logger.LogWarning(
-                "unable to load layer with id '{Identifier}': {ErrorCode} {Message}",
-                identifier,
-                result.Code,
-                result.Message);
-
-            return Result.Error<IList<EnvironmentLayerKey>>(result.Message, result.Code);
-        }
-
-        /// <inheritdoc />
         public Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<EnvironmentLayer, LayerIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<ConfigurationIdentifier>>> GetStaleConfigurations(QueryRange range) => throw new NotImplementedException();
+        public async Task<IResult<IList<ConfigurationIdentifier>>> GetStaleConfigurations(QueryRange range, CancellationToken cancellationToken)
+        {
+            IResult<IList<ConfigurationIdentifier>> configIdResult =
+                await ListObjects<PreparedConfiguration, ConfigurationIdentifier>(QueryRange.All, CancellationToken.None);
+
+            if (configIdResult.IsError)
+            {
+                _logger.LogWarning(
+                    "unable to query stale configs - unable to list all configurations to check their stale-ness: {Code} {Message}",
+                    configIdResult.Code,
+                    configIdResult.Message);
+                return Result.Error<IList<ConfigurationIdentifier>>(configIdResult.Message, configIdResult.Code);
+            }
+
+            var staleConfigurationIds = new List<ConfigurationIdentifier>();
+            foreach (ConfigurationIdentifier configId in configIdResult.Data)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                IResult<IDictionary<string, string>> metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(configId);
+                if (metadataResult.IsError)
+                {
+                    _logger.LogWarning(
+                        "unable to query stale configs - unable to get metadata for {Identifier}: {Code} {Message}",
+                        configId,
+                        configIdResult.Code,
+                        configIdResult.Message);
+                    return Result.Error<IList<ConfigurationIdentifier>>(configIdResult.Message, configIdResult.Code);
+                }
+
+                IDictionary<string, string> metadata = metadataResult.Data;
+                bool isConfigStale = metadata.ContainsKey("stale") && JsonConvert.DeserializeObject<bool>(metadata["stale"]);
+
+                if (isConfigStale)
+                {
+                    staleConfigurationIds.Add(configId);
+                }
+            }
+
+            // paginate at the end when we have the full list, so the returned ids will be stable across multiple requests
+            IList<ConfigurationIdentifier> pagedList = staleConfigurationIds.OrderBy(id => id.ToString())
+                                                                            .Skip(range.Offset)
+                                                                            .Take(range.Length)
+                                                                            .ToList();
+
+            return Result.Success(pagedList);
+        }
 
         /// <inheritdoc />
         public Task<IResult<ConfigStructure>> GetStructure(StructureIdentifier identifier, CancellationToken cancellationToken)
@@ -250,9 +259,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             ConfigKeyAction[] actions = keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
                                             .ToArray();
             events.Add(
-                new DomainEvent<EnvironmentLayerKeysModified>(
+                new DomainEvent<EnvironmentLayerKeysImported>(
                     "Anonymous",
-                    new EnvironmentLayerKeysModified(
+                    new EnvironmentLayerKeysImported(
                         identifier,
                         actions)));
 
