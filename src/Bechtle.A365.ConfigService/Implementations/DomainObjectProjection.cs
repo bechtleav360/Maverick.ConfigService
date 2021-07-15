@@ -184,7 +184,6 @@ namespace Bechtle.A365.ConfigService.Implementations
                                                          .Subtract(DateTime.UnixEpoch)
                                                          .TotalSeconds,
                 CurrentVersion = (long) eventHeader.EventNumber,
-                MetaVersion = (long) eventHeader.EventNumber,
                 ValidFrom = domainEvent.Payload.ValidFrom,
                 ValidTo = domainEvent.Payload.ValidTo
             };
@@ -245,7 +244,6 @@ namespace Bechtle.A365.ConfigService.Implementations
                 config.Json = translator.ToJson(config.Keys).ToString();
                 config.UsedKeys = compilationResult.GetUsedKeys().ToList();
                 config.CurrentVersion = (long) eventHeader.EventNumber;
-                config.MetaVersion = (long) eventHeader.EventNumber;
 
                 await _objectStore.Store<PreparedConfiguration, ConfigurationIdentifier>(config);
 
@@ -280,7 +278,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
                 CurrentVersion = (long) eventHeader.EventNumber,
-                MetaVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -291,7 +288,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
                 CurrentVersion = (long) eventHeader.EventNumber,
-                MetaVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -307,7 +303,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             var layer = new EnvironmentLayer(domainEvent.Payload.Identifier)
             {
                 CurrentVersion = (long) eventHeader.EventNumber,
-                MetaVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
@@ -353,7 +348,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             layer.CurrentVersion = (long) eventHeader.EventNumber;
-            layer.MetaVersion = (long) eventHeader.EventNumber;
 
             using IServiceScope scope = _serviceProvider.CreateScope();
 
@@ -410,7 +404,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             layer.CurrentVersion = (long) eventHeader.EventNumber;
-            layer.MetaVersion = (long) eventHeader.EventNumber;
 
             using IServiceScope scope = _serviceProvider.CreateScope();
 
@@ -453,7 +446,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
             environment.KeyPaths = GenerateKeyPaths(environment.Keys);
             environment.CurrentVersion = (long) eventHeader.EventNumber;
-            environment.MetaVersion = (long) eventHeader.EventNumber;
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
         }
@@ -465,7 +457,6 @@ namespace Bechtle.A365.ConfigService.Implementations
                 Keys = domainEvent.Payload.Keys,
                 Variables = domainEvent.Payload.Variables,
                 CurrentVersion = (long) eventHeader.EventNumber,
-                MetaVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
@@ -509,7 +500,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             structure.CurrentVersion = (long) eventHeader.EventNumber;
-            structure.MetaVersion = (long) eventHeader.EventNumber;
 
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
         }

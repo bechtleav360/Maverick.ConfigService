@@ -170,7 +170,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 collection.EnsureIndex(o => o.Id);
                 TObject domainObject = collection.Query()
                                                  .Where(o => o.Id == identifier)
-                                                 .OrderByDescending(o => o.MetaVersion)
+                                                 .OrderByDescending(o => o.CurrentVersion)
                                                  .FirstOrDefault();
 
                 if (domainObject is { })
@@ -220,7 +220,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 TObject domainObject = collection.Query()
                                                  .Where(o => o.Id == identifier)
                                                  .Where(o => o.CurrentVersion <= maxVersion)
-                                                 .OrderByDescending(o => o.MetaVersion)
+                                                 .OrderByDescending(o => o.CurrentVersion)
                                                  .FirstOrDefault();
 
                 if (domainObject is { })
@@ -393,7 +393,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 objectCollection.EnsureIndex(o => o.Id);
                 bool domainObjectAvailable = objectCollection.Query()
                                                              .Where(o => o.Id == domainObject.Id)
-                                                             .OrderByDescending(o => o.MetaVersion)
+                                                             .OrderByDescending(o => o.CurrentVersion)
                                                              .Select(o => o.Id)
                                                              .FirstOrDefault() is { };
 

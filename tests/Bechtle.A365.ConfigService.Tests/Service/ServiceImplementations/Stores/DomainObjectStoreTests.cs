@@ -57,8 +57,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
                     new EnvironmentLayerKeyPath("Foo")
-                },
-                MetaVersion = 69
+                }
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
@@ -124,8 +123,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42)}
                     },
                     CurrentVersion = 42,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                    MetaVersion = 69
+                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                 },
                 new EnvironmentLayer(new LayerIdentifier("Foo-2"))
                 {
@@ -135,8 +133,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 43)}
                     },
                     CurrentVersion = 43,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                    MetaVersion = 70
+                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                 },
                 new EnvironmentLayer(new LayerIdentifier("Foo-3"))
                 {
@@ -146,8 +143,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 44)}
                     },
                     CurrentVersion = 44,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                    MetaVersion = 71
+                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                 }
             };
 
@@ -157,7 +153,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             }
 
             IResult<IList<LayerIdentifier>> result = await _objectStore.ListAll<EnvironmentLayer, LayerIdentifier>(
-                                                         layer => layer.MetaVersion == 70,
+                                                         layer => layer.CurrentVersion == 43,
                                                          QueryRange.All);
 
             AssertPositiveResult(result, new List<LayerIdentifier> {new LayerIdentifier("Foo-2")});
@@ -177,8 +173,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                       {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42)}
                                   },
                                   CurrentVersion = 42,
-                                  KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                                  MetaVersion = 69
+                                  KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                               })
                           .ToList();
 
@@ -213,8 +208,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                       {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42)}
                                   },
                                   CurrentVersion = 42,
-                                  KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                                  MetaVersion = 69
+                                  KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                               })
                           .ToList();
 
@@ -248,8 +242,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42)}
                     },
                     CurrentVersion = 42,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                    MetaVersion = 69
+                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                 },
                 new EnvironmentLayer(new LayerIdentifier("Foo-2"))
                 {
@@ -259,8 +252,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 43)}
                     },
                     CurrentVersion = 43,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                    MetaVersion = 70
+                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                 },
                 new EnvironmentLayer(new LayerIdentifier("Foo-3"))
                 {
@@ -270,8 +262,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         {"Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 44)}
                     },
                     CurrentVersion = 44,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")},
-                    MetaVersion = 71
+                    KeyPaths = new List<EnvironmentLayerKeyPath> {new EnvironmentLayerKeyPath("Foo")}
                 }
             };
 
@@ -306,8 +297,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
                     new EnvironmentLayerKeyPath("Foo")
-                },
-                MetaVersion = 69
+                }
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
@@ -331,8 +321,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
                     new EnvironmentLayerKeyPath("Foo")
-                },
-                MetaVersion = 69
+                }
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(domainObject);
@@ -370,8 +359,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
                     new EnvironmentLayerKeyPath("Foo")
-                },
-                MetaVersion = 69
+                }
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
@@ -407,8 +395,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                      KeyPaths = new List<EnvironmentLayerKeyPath>
                                      {
                                          new EnvironmentLayerKeyPath("Foo")
-                                     },
-                                     MetaVersion = 69
+                                     }
                                  });
 
             AssertPositiveResult(result);
@@ -428,8 +415,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
                     new EnvironmentLayerKeyPath("Foo")
-                },
-                MetaVersion = 69
+                }
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(domainObject);
@@ -459,8 +445,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
                     new EnvironmentLayerKeyPath("Foo")
-                },
-                MetaVersion = 69
+                }
             };
 
             IResult result = await _objectStore.StoreMetadata<EnvironmentLayer, LayerIdentifier>(

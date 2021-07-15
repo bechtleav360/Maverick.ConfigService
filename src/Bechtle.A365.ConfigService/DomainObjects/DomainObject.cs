@@ -21,10 +21,5 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     Current Version-Number of this Object
         /// </summary>
         public long CurrentVersion { get; set; } = -1;
-
-        /// <summary>
-        ///     Version of last Event applied to this Object (disregarding if it was meant for this object)
-        /// </summary>
-        public long MetaVersion { get; set; } = -1;
     }
 }

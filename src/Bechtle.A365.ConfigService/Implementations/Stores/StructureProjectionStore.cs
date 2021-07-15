@@ -123,7 +123,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 ConfigStructure structure = structureResult.Data;
 
-                _logger.LogDebug("got structure at version '{CurrentVersion}' / {MetaVersion}", structure.CurrentVersion, structure.MetaVersion);
+                _logger.LogDebug("got structure at version '{CurrentVersion}'", structure.CurrentVersion);
 
                 ImmutableSortedDictionary<string, string> result = structure.Keys
                                                                             .OrderBy(k => k.Key)
@@ -158,7 +158,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 ConfigStructure structure = structureResult.Data;
 
-                _logger.LogDebug("got structure at version '{CurrentVersion}' / {MetaVersion}", structure.CurrentVersion, structure.MetaVersion);
+                _logger.LogDebug("got structure at version '{CurrentVersion}'", structure.CurrentVersion);
 
                 ImmutableSortedDictionary<string, string> result = structure.Variables
                                                                             .OrderBy(k => k.Key)
