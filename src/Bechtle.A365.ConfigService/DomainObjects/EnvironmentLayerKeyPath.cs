@@ -17,12 +17,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Full Path including Parents
         /// </summary>
-        public string FullPath => Parent?.FullPath + Path + (Children?.Any() == true ? "/" : "");
+        public string FullPath => (ParentPath != "" ? ParentPath + "/" : "") + Path + (Children?.Any() == true ? "/" : "");
 
         /// <summary>
-        ///     Reference to Parent-Node
+        ///     Full path to the parent-node.
+        ///     Used instead of parent-reference to make de-/serialisation easier
         /// </summary>
-        public EnvironmentLayerKeyPath Parent { get; set; }
+        public string ParentPath { get; set; }
 
         /// <summary>
         ///     last Path-Component of this Node
@@ -33,7 +34,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public EnvironmentLayerKeyPath()
         {
             Path = string.Empty;
-            Parent = null;
+            ParentPath = string.Empty;
             Children = new List<EnvironmentLayerKeyPath>();
         }
 
@@ -41,7 +42,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public EnvironmentLayerKeyPath(string path, EnvironmentLayerKeyPath parent = null, IEnumerable<EnvironmentLayerKeyPath> children = null)
         {
             Path = path;
-            Parent = parent;
+            ParentPath = parent?.FullPath ?? string.Empty;
             Children = new List<EnvironmentLayerKeyPath>(children ?? new EnvironmentLayerKeyPath[0]);
         }
 
@@ -49,7 +50,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerKeyPath other && Equals(other);
 
         /// <inheritdoc />
-        public override int GetHashCode() => HashCode.Combine(Children, Parent, Path);
+        public override int GetHashCode() => HashCode.Combine(Children, ParentPath, Path);
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayerKeyPath left, EnvironmentLayerKeyPath right) => Equals(left, right);
@@ -59,7 +60,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private bool Equals(EnvironmentLayerKeyPath other) =>
             Children.SequenceEqual(other.Children)
-            && Equals(Parent, other.Parent)
+            && ParentPath == other.ParentPath
             && Path == other.Path;
     }
 }

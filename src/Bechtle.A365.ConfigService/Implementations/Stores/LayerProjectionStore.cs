@@ -293,6 +293,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var current = root;
             var result = new List<EnvironmentLayerKeyPath>();
             var queue = new Queue<string>(parts);
+            var walkedPath = new List<string>{"{START}"};
 
             // try walking the given path to the deepest part, and return all options the user can take from here
             while (queue.TryDequeue(out var part))
@@ -311,6 +312,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (!(match is null))
                 {
                     _logger.LogDebug($"match for '{part}' found, continuing at '{match.FullPath}' with '{match.Children.Count}' children");
+                    walkedPath.Add(current.Path);
                     current = match;
                     result = match.Children;
                     continue;
@@ -327,24 +329,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     break;
                 }
 
-                // take the current ConfigLayerPath object and walk its parents back to the root
-                // to gather info for a more descriptive error-message
-                var walkedPath = new List<string>();
-                var x = current;
-
-                walkedPath.Add($"{{END; '{part}'}}");
-
-                while (!(x is null))
-                {
-                    walkedPath.Add(x.Path);
-                    x = x.Parent;
-                }
-
-                walkedPath.Add("{START}");
-                walkedPath.Reverse();
-
+                walkedPath.Add("{END}");
                 var walkedPathStr = string.Join(" => ", walkedPath);
-
                 var logMsg = $"no matching objects for '{part}' found; " + $"path taken to get to this dead-end: {walkedPathStr}";
 
                 _logger.LogDebug(logMsg);

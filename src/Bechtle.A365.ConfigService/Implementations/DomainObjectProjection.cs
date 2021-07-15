@@ -93,12 +93,19 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             try
             {
+                _logger.LogInformation(
+                    "projecting domainEvent #{EventNumber} with id {EventId} of type {EventType}",
+                    eventHeader.EventNumber,
+                    eventHeader.EventId,
+                    eventHeader.EventType);
+
                 Task task = domainEvent switch
                 {
                     IDomainEvent<ConfigurationBuilt> e => HandleConfigurationBuilt(eventHeader, e),
                     IDomainEvent<DefaultEnvironmentCreated> e => HandleDefaultEnvironmentCreated(eventHeader, e),
                     IDomainEvent<EnvironmentCreated> e => HandleEnvironmentCreated(eventHeader, e),
                     IDomainEvent<EnvironmentDeleted> e => HandleEnvironmentDeleted(eventHeader, e),
+                    IDomainEvent<EnvironmentLayersModified> e => HandleEnvironmentLayersModified(eventHeader, e),
                     IDomainEvent<EnvironmentLayerCreated> e => HandleEnvironmentLayerCreated(eventHeader, e),
                     IDomainEvent<EnvironmentLayerDeleted> e => HandleEnvironmentLayerDeleted(eventHeader, e),
                     IDomainEvent<EnvironmentLayerKeysImported> e => HandleEnvironmentLayerKeysImported(eventHeader, e),
@@ -125,93 +132,6 @@ namespace Bechtle.A365.ConfigService.Implementations
                     eventHeader?.EventNumber,
                     eventHeader?.EventType);
                 throw;
-            }
-        }
-
-        /// <summary>
-        ///     Compile the configuration that this object represents
-        /// </summary>
-        /// <param name="config">config to compile and update</param>
-        /// <param name="compiler">compiler used to compile the actual Configuration</param>
-        /// <param name="parser">parser to parse the configuration - used together with <paramref name="compiler" /></param>
-        /// <param name="translator">translator to convert compiled configuration to JSON for quicker access</param>
-        /// <returns>Result of the operation</returns>
-        private async Task<IResult> Compile(
-            PreparedConfiguration config,
-            IConfigurationCompiler compiler,
-            IConfigurationParser parser,
-            IJsonTranslator translator)
-        {
-            _logger?.LogDebug($"version used during compilation: {config.CurrentVersion}");
-
-            // gather data to compile config with
-            IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(config.Id.Environment);
-            if (envResult.IsError)
-            {
-                return envResult;
-            }
-
-            IResult<ConfigStructure> structResult = await _objectStore.Load<ConfigStructure, StructureIdentifier>(config.Id.Structure);
-            if (structResult.IsError)
-            {
-                return structResult;
-            }
-
-            ConfigEnvironment environment = envResult.Data;
-            ConfigStructure structure = structResult.Data;
-
-            try
-            {
-                // collect all layers and stack them up to create the environment-data
-                IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment);
-                if (environmentDataResult.IsError)
-                {
-                    return environmentDataResult;
-                }
-
-                Dictionary<string, EnvironmentLayerKey> environmentData = environmentDataResult.Data;
-
-                // compile the actual config
-                CompilationResult compilationResult = compiler.Compile(
-                    new EnvironmentCompilationInfo
-                    {
-                        Name = $"{config.Id.Environment.Category}/{config.Id.Environment.Name}",
-                        Keys = environmentData.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)
-                    },
-                    new StructureCompilationInfo
-                    {
-                        Name = $"{config.Id.Structure.Name}/{config.Id.Structure.Version}",
-                        Keys = structure.Keys,
-                        Variables = structure.Variables
-                    },
-                    parser);
-
-                // store result in DomainObject
-                config.Keys = compilationResult.CompiledConfiguration;
-                config.Json = translator.ToJson(config.Keys).ToString();
-                config.UsedKeys = compilationResult.GetUsedKeys().ToList();
-
-                // update metadata
-                IResult<IDictionary<string, string>>
-                    metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(config.Id);
-
-                if (metadataResult.IsError)
-                {
-                    _logger.LogWarning("unable to update metadata for Configuration {ConfigurationIdentifier}", config.Id);
-                }
-                else
-                {
-                    IDictionary<string, string> metadata = metadataResult.Data;
-                    metadata["used_layers"] = JsonConvert.SerializeObject(environment.Layers);
-                    metadata["stale"] = JsonConvert.SerializeObject(false);
-                }
-
-                return Result.Success();
-            }
-            catch (Exception e)
-            {
-                _logger?.LogWarning(e, "failed to compile configuration, see exception for more details");
-                return Result.Error($"failed to compile configuration: {e.Message}", ErrorCode.InvalidData);
             }
         }
 
@@ -275,9 +195,82 @@ namespace Bechtle.A365.ConfigService.Implementations
             var parser = scope.ServiceProvider.GetRequiredService<IConfigurationParser>();
             var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            IResult compilationResult = await Compile(config, compiler, parser, translator);
+            _logger?.LogDebug($"version used during compilation: {config.CurrentVersion}");
 
-            await _objectStore.Store<PreparedConfiguration, ConfigurationIdentifier>(config);
+            // gather data to compile config with
+            IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(config.Id.Environment);
+            if (envResult.IsError)
+            {
+                _logger.LogWarning(
+                    "unable to load environment to compile configuration {ConfigIdentifier}: {Code} {Message}",
+                    config.Id,
+                    envResult.Code,
+                    envResult.Message);
+                return;
+            }
+
+            IResult<ConfigStructure> structResult = await _objectStore.Load<ConfigStructure, StructureIdentifier>(config.Id.Structure);
+            if (structResult.IsError)
+            {
+                _logger.LogWarning(
+                    "unable to load structure to compile configuration {ConfigIdentifier}: {Code} {Message}",
+                    config.Id,
+                    envResult.Code,
+                    envResult.Message);
+                return;
+            }
+
+            ConfigEnvironment environment = envResult.Data;
+            ConfigStructure structure = structResult.Data;
+
+            try
+            {
+                // compile the actual config
+                CompilationResult compilationResult = compiler.Compile(
+                    new EnvironmentCompilationInfo
+                    {
+                        Name = $"{config.Id.Environment.Category}/{config.Id.Environment.Name}",
+                        Keys = environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)
+                    },
+                    new StructureCompilationInfo
+                    {
+                        Name = $"{config.Id.Structure.Name}/{config.Id.Structure.Version}",
+                        Keys = structure.Keys,
+                        Variables = structure.Variables
+                    },
+                    parser);
+
+                // store result in DomainObject
+                config.Keys = compilationResult.CompiledConfiguration;
+                config.Json = translator.ToJson(config.Keys).ToString();
+                config.UsedKeys = compilationResult.GetUsedKeys().ToList();
+
+                await _objectStore.Store<PreparedConfiguration, ConfigurationIdentifier>(config);
+
+                // update metadata
+                IResult<IDictionary<string, string>>
+                    metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(config.Id);
+
+                IDictionary<string, string> metadata;
+                if (metadataResult.IsError)
+                {
+                    _logger.LogWarning("unable to update metadata for Configuration {ConfigurationIdentifier}, creating new one", config.Id);
+                    metadata = new Dictionary<string, string>();
+                }
+                else
+                {
+                    metadata = metadataResult.Data;
+                }
+
+                metadata["used_layers"] = JsonConvert.SerializeObject(environment.Layers);
+                metadata["stale"] = JsonConvert.SerializeObject(false);
+
+                await _objectStore.StoreMetadata<PreparedConfiguration, ConfigurationIdentifier>(config, metadata);
+            }
+            catch (Exception e)
+            {
+                _logger?.LogWarning(e, "failed to compile configuration, see exception for more details");
+            }
         }
 
         private async Task HandleDefaultEnvironmentCreated(StreamedEventHeader eventHeader, IDomainEvent<DefaultEnvironmentCreated> domainEvent)
@@ -335,13 +328,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             layer.Keys.Clear();
             foreach (ConfigKeyAction change in domainEvent.Payload
                                                           .ModifiedKeys
-                                                          .Where(a => a.Type == ConfigKeyActionType.Delete))
+                                                          .Where(a => a.Type == ConfigKeyActionType.Set))
             {
-                if (layer.Keys.ContainsKey(change.Key))
-                {
-                    layer.Keys.Remove(change.Key);
-                }
-
                 layer.Keys[change.Key] = new EnvironmentLayerKey(
                     change.Key,
                     change.Value,
@@ -389,7 +377,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             foreach (ConfigKeyAction change in domainEvent.Payload
                                                           .ModifiedKeys
-                                                          .Where(a => a.Type == ConfigKeyActionType.Delete))
+                                                          .Where(a => a.Type == ConfigKeyActionType.Set))
             {
                 if (layer.Keys.ContainsKey(change.Key))
                 {
@@ -411,9 +399,50 @@ namespace Bechtle.A365.ConfigService.Implementations
             await OnLayerKeysChanged(layer, domainEvent.Payload.ModifiedKeys, translator);
         }
 
+        private async Task HandleEnvironmentLayersModified(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayersModified> domainEvent)
+        {
+            IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(domainEvent.Payload.Identifier);
+            if (envResult.IsError)
+            {
+                _logger.LogWarning(
+                    "event received to modify assigned layers, but environment wasn't found in configured store: {ErrorCode} {Message}",
+                    envResult.Code,
+                    envResult.Message);
+                return;
+            }
+
+            ConfigEnvironment environment = envResult.Data;
+
+            environment.Layers = domainEvent.Payload.Layers;
+
+            var envDataResult = await ResolveEnvironmentKeys(environment);
+            if (envDataResult.IsError)
+            {
+                _logger.LogWarning(
+                    "unable to resolve complete list of keys for environment {Identifier}: {ErrorCode} {Message}",
+                    environment.Id,
+                    envDataResult.Code,
+                    envDataResult.Message);
+                return;
+            }
+
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
+
+            environment.Keys = envDataResult.Data;
+            environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
+            environment.KeyPaths = GenerateKeyPaths(environment.Keys);
+
+            await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
+        }
+
         private async Task HandleStructureCreated(StreamedEventHeader eventHeader, IDomainEvent<StructureCreated> domainEvent)
         {
-            var structure = new ConfigStructure(domainEvent.Payload.Identifier);
+            var structure = new ConfigStructure(domainEvent.Payload.Identifier)
+            {
+                Keys = domainEvent.Payload.Keys,
+                Variables = domainEvent.Payload.Variables,
+            };
 
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
         }
@@ -502,6 +531,27 @@ namespace Bechtle.A365.ConfigService.Implementations
             Result.Success();
         }
 
+        private async Task<IResult<Dictionary<string, EnvironmentLayerKey>>> ResolveEnvironmentKeys(ConfigEnvironment environment)
+        {
+            var environmentData = new Dictionary<string, EnvironmentLayerKey>();
+            foreach (LayerIdentifier layerId in environment.Layers)
+            {
+                IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layerId);
+                if (layerResult.IsError)
+                {
+                    return Result.Error<Dictionary<string, EnvironmentLayerKey>>(layerResult.Message, layerResult.Code);
+                }
+
+                EnvironmentLayer layer = layerResult.Data;
+                foreach ((string _, EnvironmentLayerKey key) in layer.Keys)
+                {
+                    environmentData[key.Key] = key;
+                }
+            }
+
+            return Result.Success(environmentData);
+        }
+
         // @TODO: un-/assignment of Layers in Environment don't currently mark a Configuration as Stale
         private async Task UpdateConfigurationStaleStatus(EnvironmentLayer layer, ConfigKeyAction[] modifiedKeys)
         {
@@ -525,7 +575,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 IDictionary<string, string> metadata = metadataResult.Data;
 
                 // no key? assume it's not stale
-                var isStale = metadata.ContainsKey("stale") && JsonConvert.DeserializeObject<bool>(metadata["stale"]);
+                bool isStale = metadata.ContainsKey("stale") && JsonConvert.DeserializeObject<bool>(metadata["stale"]);
 
                 if (isStale)
                 {
@@ -533,9 +583,9 @@ namespace Bechtle.A365.ConfigService.Implementations
                     continue;
                 }
 
-                var usedLayers = metadata.ContainsKey("used_layers")
-                                     ? JsonConvert.DeserializeObject<List<LayerIdentifier>>(metadata["used_layers"])
-                                     : null;
+                List<LayerIdentifier> usedLayers = metadata.ContainsKey("used_layers")
+                                                       ? JsonConvert.DeserializeObject<List<LayerIdentifier>>(metadata["used_layers"])
+                                                       : null;
 
                 if (usedLayers is null)
                 {
@@ -573,29 +623,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                         "config with id {ConfigId} used these keys which were now modified - marking as stale: {ChangedKeys}",
                         configId,
                         changedUsedKeys);
+
+                    metadata["stale"] = JsonConvert.SerializeObject(true);
+                    await _objectStore.StoreMetadata<PreparedConfiguration, ConfigurationIdentifier>(config, metadata);
                 }
             }
-        }
-
-        private async Task<IResult<Dictionary<string, EnvironmentLayerKey>>> ResolveEnvironmentKeys(ConfigEnvironment environment)
-        {
-            var environmentData = new Dictionary<string, EnvironmentLayerKey>();
-            foreach (LayerIdentifier layerId in environment.Layers)
-            {
-                IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layerId);
-                if (layerResult.IsError)
-                {
-                    return Result.Error<Dictionary<string, EnvironmentLayerKey>>(layerResult.Message, layerResult.Code);
-                }
-
-                EnvironmentLayer layer = layerResult.Data;
-                foreach ((string _, EnvironmentLayerKey key) in layer.Keys)
-                {
-                    environmentData[key.Key] = key;
-                }
-            }
-
-            return Result.Success(environmentData);
         }
     }
 }

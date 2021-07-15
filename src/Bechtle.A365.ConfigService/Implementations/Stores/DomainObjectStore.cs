@@ -31,6 +31,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // but i don't want to be responsible for other stuff they might do to new objects that we're unaware of
             BsonMapper.Global.EmptyStringToNull = false;
 
+            // this is 'necessary' to allow mapping of longer KeyPath-chains
+            // the default of 20 doesn't allow for some path we're creating
+            //
+            // we take responsibility to not insert crap into the local projection-db, so we can set this limit so high
+            BsonMapper.Global.MaxDepth = 1000;
+
             _logger = logger;
             _database = new LiteDatabase(
                 new ConnectionString

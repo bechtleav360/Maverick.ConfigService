@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 
             Assert.Empty(path.Children);
             Assert.Equal("", path.FullPath);
-            Assert.Null(path.Parent);
+            Assert.Equal("", path.ParentPath);
             Assert.Equal("", path.Path);
         }
 

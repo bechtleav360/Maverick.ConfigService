@@ -246,6 +246,7 @@ namespace Bechtle.A365.ConfigService
                             typeof(EnvironmentDeleted),
                             typeof(EnvironmentLayerCreated),
                             typeof(EnvironmentLayerDeleted),
+                            typeof(EnvironmentLayersModified),
                             typeof(EnvironmentLayerKeysImported),
                             typeof(EnvironmentLayerKeysModified),
                             typeof(StructureCreated),
