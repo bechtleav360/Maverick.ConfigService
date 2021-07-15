@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -23,7 +24,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             _objectStore = new DomainObjectStore(
                 new NullLoggerFactory().CreateLogger<DomainObjectStore>(),
-                _locationProvider);
+                _locationProvider,
+                new MemoryCache(new MemoryCacheOptions()));
         }
 
         /// <inheritdoc />

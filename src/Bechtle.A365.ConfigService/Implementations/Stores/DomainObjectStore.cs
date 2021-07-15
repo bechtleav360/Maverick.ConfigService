@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using LiteDB;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
@@ -20,11 +21,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     {
         private readonly ILiteDatabase _database;
         private readonly ILogger<DomainObjectStore> _logger;
+        private readonly IMemoryCache _memoryCache;
 
         /// <inheritdoc cref="DomainObjectStore" />
         public DomainObjectStore(
             ILogger<DomainObjectStore> logger,
-            IDomainObjectStoreLocationProvider locationProvider)
+            IDomainObjectStoreLocationProvider locationProvider,
+            IMemoryCache memoryCache)
         {
             // as the name suggests liteDb will convert all empty strings to null, because that's such a good idea!
             // kinda stupid to set this globally (as opposed to per-object for more control),
@@ -37,7 +40,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // we take responsibility to not insert crap into the local projection-db, so we can set this limit so high
             BsonMapper.Global.MaxDepth = 1000;
 
+            BsonMapper.Global.EnumAsInteger = true;
+
             _logger = logger;
+            _memoryCache = memoryCache;
             _database = new LiteDatabase(
                 new ConnectionString
                 {
@@ -92,6 +98,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.EnsureIndex(o => o.Id);
                 IList<TIdentifier> ids = collection.Query()
                                                    .OrderBy(o => o.Id)
                                                    .Select(o => o.Id)
@@ -122,6 +129,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.EnsureIndex(o => o.Id);
                 IList<TIdentifier> ids = collection.Query()
                                                    .OrderBy(o => o.Id)
                                                    .Where(filter)
@@ -150,10 +158,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
+            if (_memoryCache.TryGetValue(identifier.ToString(), out TObject cachedValue))
+            {
+                return Task.FromResult(Result.Success(cachedValue));
+            }
+
             string collectionName = typeof(TObject).Name;
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.EnsureIndex(o => o.Id);
                 TObject domainObject = collection.Query()
                                                  .Where(o => o.Id == identifier)
                                                  .OrderByDescending(o => o.MetaVersion)
@@ -161,6 +175,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 if (domainObject is { })
                 {
+                    _memoryCache.Set(identifier.ToString(), domainObject, TimeSpan.FromSeconds(30));
                     return Task.FromResult(Result.Success(domainObject));
                 }
             }
@@ -191,10 +206,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
+            if (_memoryCache.TryGetValue(identifier.ToString(), out TObject cachedValue)
+                && cachedValue.CurrentVersion <= maxVersion)
+            {
+                return Task.FromResult(Result.Success(cachedValue));
+            }
+
             string collectionName = typeof(TObject).Name;
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.EnsureIndex(o => o.Id);
                 TObject domainObject = collection.Query()
                                                  .Where(o => o.Id == identifier)
                                                  .Where(o => o.CurrentVersion <= maxVersion)
@@ -238,6 +260,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ILiteCollection<DomainObjectMetadata<TIdentifier>> collection = _database.GetCollection<DomainObjectMetadata<TIdentifier>>(collectionName);
+                collection.EnsureIndex(o => o.Id);
                 DomainObjectMetadata<TIdentifier> domainObject = collection.Query()
                                                                            .Where(o => o.Id == identifier)
                                                                            .FirstOrDefault();
@@ -271,6 +294,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.EnsureIndex(o => o.Id);
                 collection.DeleteMany(o => o.Id == identifier);
 
                 ILiteCollection<DomainObjectMetadata<TIdentifier>> metadataCollection =
@@ -299,6 +323,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ILiteCollection<StorageMetadata> collection = _database.GetCollection<StorageMetadata>();
+                collection.EnsureIndex(o => o.Id);
                 var entry = new StorageMetadata
                 {
                     Id = Guid.NewGuid(),
@@ -335,7 +360,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
+                collection.EnsureIndex(o => o.Id);
                 collection.Upsert(domainObject);
+                _memoryCache.Set(domainObject.Id.ToString(), domainObject, TimeSpan.FromSeconds(30));
             }
             catch (Exception e)
             {
@@ -363,9 +390,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 // prevent metadata-entries for objects that are not stored yet
                 ILiteCollection<TObject> objectCollection = _database.GetCollection<TObject>(collectionName);
+                objectCollection.EnsureIndex(o => o.Id);
                 bool domainObjectAvailable = objectCollection.Query()
                                                              .Where(o => o.Id == domainObject.Id)
                                                              .OrderByDescending(o => o.MetaVersion)
+                                                             .Select(o => o.Id)
                                                              .FirstOrDefault() is { };
 
                 if (!domainObjectAvailable)
@@ -381,6 +410,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 ILiteCollection<DomainObjectMetadata<TIdentifier>> collection =
                     _database.GetCollection<DomainObjectMetadata<TIdentifier>>(metadataCollectionName);
+                collection.EnsureIndex(o => o.Id);
 
                 collection.Upsert(
                     new DomainObjectMetadata<TIdentifier>
