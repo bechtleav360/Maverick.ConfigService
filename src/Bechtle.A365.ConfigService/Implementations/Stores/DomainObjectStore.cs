@@ -293,6 +293,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string metadataCollectionName = typeof(TObject).Name + "_Metadata";
             try
             {
+                _memoryCache.Remove(identifier.ToString());
+
                 ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
                 collection.EnsureIndex(o => o.Id);
                 collection.DeleteMany(o => o.Id == identifier);
