@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -99,6 +100,9 @@ namespace Bechtle.A365.ConfigService.Implementations
                     eventHeader.EventId,
                     eventHeader.EventType);
 
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 Task task = domainEvent switch
                 {
                     IDomainEvent<ConfigurationBuilt> e => HandleConfigurationBuilt(eventHeader, e),
@@ -113,8 +117,18 @@ namespace Bechtle.A365.ConfigService.Implementations
                     IDomainEvent<StructureCreated> e => HandleStructureCreated(eventHeader, e),
                     IDomainEvent<StructureDeleted> e => HandleStructureDeleted(eventHeader, e),
                     IDomainEvent<StructureVariablesModified> e => HandleStructureVariablesModified(eventHeader, e),
-                    _ => Task.CompletedTask
+                    _ => null
                 };
+
+                if (task is null)
+                {
+                    stopwatch.Stop();
+                    _logger.LogError(
+                        "domainEvent #{EventNumber} of type {DomainEvent} was not projected - missing event-handler",
+                        eventHeader.EventNumber,
+                        eventHeader.EventType);
+                    return;
+                }
 
                 await task;
 
@@ -122,6 +136,16 @@ namespace Bechtle.A365.ConfigService.Implementations
                     eventHeader.EventId.ToString("D"),
                     (long) eventHeader.EventNumber,
                     eventHeader.EventType);
+
+                stopwatch.Stop();
+
+                KnownMetrics.ProjectionTime
+                            .WithLabels(eventHeader.EventType)
+                            .Observe(stopwatch.Elapsed.TotalSeconds);
+
+                KnownMetrics.EventsProjected
+                            .WithLabels(eventHeader.EventType)
+                            .Inc();
             }
             catch (Exception e)
             {

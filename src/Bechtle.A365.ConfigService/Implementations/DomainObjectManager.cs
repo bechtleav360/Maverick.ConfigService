@@ -270,6 +270,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                 _eventStoreConfiguration.Stream,
                 ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
 
+            foreach (IDomainEvent e in events)
+            {
+                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
+            }
+
             return Result.Success();
         }
 
@@ -366,6 +371,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                 _eventStoreConfiguration.Stream,
                 ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
 
+            foreach (IDomainEvent e in domainEvents)
+            {
+                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
+            }
+
             return Result.Success();
         }
 
@@ -412,6 +422,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                 domainEvents,
                 _eventStoreConfiguration.Stream,
                 ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+
+            foreach (IDomainEvent e in domainEvents)
+            {
+                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
+            }
 
             return Result.Success();
         }
@@ -533,6 +548,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                 domainEvents,
                 _eventStoreConfiguration.Stream,
                 ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+
+            foreach (IDomainEvent e in domainEvents)
+            {
+                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
+            }
 
             return Result.Success();
         }

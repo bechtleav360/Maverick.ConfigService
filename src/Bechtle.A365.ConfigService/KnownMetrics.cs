@@ -24,52 +24,20 @@ namespace Bechtle.A365.ConfigService
             new CounterConfiguration {LabelNames = new[] {"direction"}});
 
         /// <summary>
-        ///     counts how many DomainEvents have been filtered out before bein deserialized
+        ///     counts how many DomainEvents have been projected to the local database
         /// </summary>
-        internal static readonly Counter EventsFiltered = Metrics.CreateCounter(
-            "domain_events_filtered_before_deserialization",
-            "DomainEvents Filtered before Deserialization",
-            new CounterConfiguration {LabelNames = new[] { "event_type" }});
+        internal static readonly Counter EventsProjected = Metrics.CreateCounter(
+            "domain_events_projected",
+            "DomainEvents Projected",
+            new CounterConfiguration {LabelNames = new[] {"event_type"}});
 
         /// <summary>
-        ///     counts how many DomainEvents have been read from EventStore
+        ///     counts how many DomainEvents have been projected to the local database
         /// </summary>
-        internal static readonly Counter EventsRead = Metrics.CreateCounter(
-            "domain_events_read",
-            "DomainEvents Read",
-            new CounterConfiguration { LabelNames = new[] { "event_type" } });
-
-        /// <summary>
-        ///     counts how many DomainEvents have been streamed from EventStore
-        /// </summary>
-        internal static readonly Counter EventsStreamed = Metrics.CreateCounter(
-            "domain_events_streamed",
-            "DomainEvents Streamed",
-            new CounterConfiguration { LabelNames = new[] { "event_type" } });
-
-        /// <summary>
-        ///     counts how many connections to the EventStore have been opened
-        /// </summary>
-        internal static readonly Counter EventStoreConnected = Metrics.CreateCounter(
-            "eventstore_connection_established",
-            "EventStore Connection established",
-            new CounterConfiguration());
-
-        /// <summary>
-        ///     counts how many connections to the EventStore have been lost
-        /// </summary>
-        internal static readonly Counter EventStoreDisconnected = Metrics.CreateCounter(
-            "eventstore_connection_lost",
-            "EventStore Connection lost",
-            new CounterConfiguration());
-
-        /// <summary>
-        ///     counts how many connections to the EventStore have been re-opened
-        /// </summary>
-        internal static readonly Counter EventStoreReconnected = Metrics.CreateCounter(
-            "eventstore_connection_reestablished",
-            "EventStore Connection Re-Established",
-            new CounterConfiguration());
+        internal static readonly Histogram ProjectionTime = Metrics.CreateHistogram(
+            "domain_events_projected_duration",
+            "DomainEvents Projected",
+            new HistogramConfiguration {LabelNames = new[] {"event_type"}});
 
         /// <summary>
         ///     counts how many DomainEvents have been checked for validity
@@ -77,7 +45,7 @@ namespace Bechtle.A365.ConfigService
         internal static readonly Counter EventsValidated = Metrics.CreateCounter(
             "domain_events_validated",
             "DomainEvents Valildated",
-            new CounterConfiguration { LabelNames = new[] { "validity" } });
+            new CounterConfiguration {LabelNames = new[] {"validity"}});
 
         /// <summary>
         ///     counts how many DomainEvents have been written to the EventStore
@@ -85,7 +53,7 @@ namespace Bechtle.A365.ConfigService
         internal static readonly Counter EventsWritten = Metrics.CreateCounter(
             "domain_events_written",
             "DomainEvents Written",
-            new CounterConfiguration { LabelNames = new[] { "event_type" } });
+            new CounterConfiguration {LabelNames = new[] {"event_type"}});
 
         /// <summary>
         ///     counts how many internal Exceptions have been caught without bubbling up to the User
@@ -93,7 +61,7 @@ namespace Bechtle.A365.ConfigService
         internal static readonly Counter Exception = Metrics.CreateCounter(
             "internal_exceptions",
             "Internal Exceptions",
-            new CounterConfiguration { LabelNames = new[] { "exception_type" } });
+            new CounterConfiguration {LabelNames = new[] {"exception_type"}});
 
         /// <summary>
         ///     counts how many Temporary Keys have been set
