@@ -67,6 +67,37 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
+        ///     create a new Layer with the data of an existing one
+        /// </summary>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="cloneName">Name of the new, cloned Layer</param>
+        /// <returns>redirects to 'GetKeys'-operation</returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [HttpPost("{name}/clone/{cloneName}", Name = "CloneLayer")]
+        public async Task<IActionResult> CloneLayer(string name, string cloneName)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest($"{nameof(name)} is empty");
+
+            try
+            {
+                var result = await _store.Layers.Clone(new LayerIdentifier(name), new LayerIdentifier(cloneName));
+                if (result.IsError)
+                    return ProviderError(result);
+
+                return AcceptedAtAction(nameof(GetKeys),
+                                        RouteUtilities.ControllerName<LayerController>(),
+                                        new {version = ApiVersions.V1, name});
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, $"failed to clone layer ({nameof(name)}: {name}, {nameof(cloneName)}: {cloneName})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to clone layer");
+            }
+        }
+
+        /// <summary>
         ///     delete an existing Layer with the given Name
         /// </summary>
         /// <param name="name">Name of the given Layer</param>

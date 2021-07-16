@@ -62,6 +62,13 @@ namespace Bechtle.A365.ConfigService.Implementations
                 cancellationToken);
 
         /// <inheritdoc />
+        public Task<IResult> CloneLayer(LayerIdentifier sourceIdentifier, LayerIdentifier targetIdentifier, CancellationToken cancellationToken)
+            => ModifyObject<EnvironmentLayer, LayerIdentifier>(
+                sourceIdentifier,
+                new List<DomainEvent> {new EnvironmentLayerCopied(sourceIdentifier, targetIdentifier)},
+                cancellationToken);
+
+        /// <inheritdoc />
         public Task<IResult> CreateConfiguration(
             ConfigurationIdentifier identifier,
             DateTime? validFrom,
@@ -284,7 +291,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             IResult<IDictionary<string, string>> metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(identifier);
 
             if (metadataResult.IsError)
+            {
                 return Result.Error<bool>(metadataResult.Message, metadataResult.Code);
+            }
 
             IDictionary<string, string> metadata = metadataResult.Data;
             if (!metadata.TryGetValue("stale", out string staleProperty))

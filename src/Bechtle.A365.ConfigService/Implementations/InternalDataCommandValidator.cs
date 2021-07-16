@@ -255,6 +255,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 EnvironmentLayersModified @event => ValidateDomainEvent(@event),
                 EnvironmentLayerCreated @event => ValidateDomainEvent(@event),
                 EnvironmentLayerDeleted @event => ValidateDomainEvent(@event),
+                EnvironmentLayerCopied @event => ValidateDomainEvent(@event),
                 EnvironmentLayerKeysImported @event => ValidateDomainEvent(@event),
                 EnvironmentLayerKeysModified @event => ValidateDomainEvent(@event),
                 StructureCreated @event => ValidateDomainEvent(@event),
@@ -282,6 +283,19 @@ namespace Bechtle.A365.ConfigService.Implementations
             var identifierResult = ValidateIdentifier(@event.Identifier);
             if (identifierResult.IsError)
                 return identifierResult;
+
+            return Result.Success();
+        }
+
+        private IResult ValidateDomainEvent(EnvironmentLayerCopied @event)
+        {
+            var sourceIdResult = ValidateIdentifier(@event.SourceIdentifier);
+            if (sourceIdResult.IsError)
+                return sourceIdResult;
+
+            var targetIdResult = ValidateIdentifier(@event.TargetIdentifier);
+            if (targetIdResult.IsError)
+                return targetIdResult;
 
             return Result.Success();
         }

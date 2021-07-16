@@ -26,6 +26,15 @@ namespace Bechtle.A365.ConfigService.Interfaces
             CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Clone a given Layer with all its data, and a new identifier
+        /// </summary>
+        /// <param name="sourceIdentifier">Id of the Source-Layer</param>
+        /// <param name="targetIdentifier">Id of the new Target-Layer</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult> CloneLayer(LayerIdentifier sourceIdentifier, LayerIdentifier targetIdentifier, CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Create a new Configuration with the given identifier
         /// </summary>
         /// <param name="identifier">valid identifier for a Configuration</param>

@@ -16,79 +16,87 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <summary>
         ///     create a new Layer with the given <see cref="LayerIdentifier" />
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
+        /// <param name="identifier">Id of the layer that should be created</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult> Create(LayerIdentifier identifier);
 
         /// <summary>
         ///     delete an existing Layer with the given <see cref="LayerIdentifier" />
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
+        /// <param name="identifier">Id of the layer that should be deleted</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult> Delete(LayerIdentifier identifier);
 
         /// <summary>
         ///     remove a number of keys from the given Layer
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="keysToDelete"></param>
-        /// <returns></returns>
+        /// <param name="identifier">Id of the layer whose keys should be removed</param>
+        /// <param name="keysToDelete">list of keys that should be removed</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult> DeleteKeys(LayerIdentifier identifier, ICollection<string> keysToDelete);
 
         /// <summary>
         ///     get a list of all Layers
         /// </summary>
-        /// <param name="range"></param>
-        /// <returns></returns>
+        /// <param name="range">paging-information for the returned list</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range);
 
         /// <summary>
         ///     get a list of all Layers
         /// </summary>
-        /// <param name="range"></param>
-        /// <param name="version"></param>
-        /// <returns></returns>
+        /// <param name="range">paging-information for the returned list</param>
+        /// <param name="version">Maximum version within the database to consider for the returned objects</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range, long version);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="key"></param>
-        /// <param name="range"></param>
-        /// <returns></returns>
+        /// <param name="identifier">Id of the layer to retrieve autocomplete-info for</param>
+        /// <param name="key">current path to suggest options for</param>
+        /// <param name="range">paging-information for the returned list</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(LayerIdentifier identifier, string key, QueryRange range);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="key"></param>
-        /// <param name="range"></param>
-        /// <param name="version"></param>
-        /// <returns></returns>
+        /// <param name="identifier">Id of the layer to retrieve autocomplete-info for</param>
+        /// <param name="key">current path to suggest options for</param>
+        /// <param name="range">paging-information for the returned list</param>
+        /// <param name="version">Maximum version within the database to consider for the returned list</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(LayerIdentifier identifier, string key, QueryRange range, long version);
 
         /// <summary>
         ///     get the keys of an Layer as Objects
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
+        /// <param name="parameters">structured parameters to retrieve keys for a given Layer</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<LayerIdentifier> parameters);
 
         /// <summary>
         ///     get the keys of an Layer
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
+        /// <param name="parameters">structured parameters to retrieve keys for a given Layer</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters);
 
         /// <summary>
         ///     add or update a number of keys in the given Layer
         /// </summary>
-        /// <param name="identifier"></param>
-        /// <param name="keys"></param>
-        /// <returns></returns>
+        /// <param name="identifier">Id of the layer to update keys for</param>
+        /// <param name="keys">list of Updates to apply to the existing keys</param>
+        /// <returns>Result of the operation</returns>
         Task<IResult> UpdateKeys(LayerIdentifier identifier, ICollection<DtoConfigKey> keys);
+
+        /// <summary>
+        ///     create a new Layer from existing data.
+        /// </summary>
+        /// <param name="sourceId">id of the source-layer</param>
+        /// <param name="targetId">id of the newly created layer</param>
+        /// <returns>Result of the operation</returns>
+        Task<IResult> Clone(LayerIdentifier sourceId, LayerIdentifier targetId);
     }
 }

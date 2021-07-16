@@ -53,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
+        public override bool Equals(DomainEvent other, bool strict) => Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;

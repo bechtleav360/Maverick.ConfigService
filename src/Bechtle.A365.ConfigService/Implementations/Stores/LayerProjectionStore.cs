@@ -255,6 +255,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return await _domainObjectManager.ModifyLayerKeys(identifier, updates, CancellationToken.None);
         }
 
+        /// <inheritdoc />
+        public async Task<IResult> Clone(LayerIdentifier sourceId, LayerIdentifier targetId)
+        {
+            _logger.LogDebug(
+                "cloning layer {SourceLayerId} as {TargetLayerId}",
+                sourceId,
+                targetId);
+
+            return await _domainObjectManager.CloneLayer(sourceId, targetId, CancellationToken.None);
+        }
+
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(
             IList<TItem> items,
             Func<TItem, string> keySelector,

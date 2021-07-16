@@ -112,6 +112,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     IDomainEvent<EnvironmentLayersModified> e => HandleEnvironmentLayersModified(eventHeader, e),
                     IDomainEvent<EnvironmentLayerCreated> e => HandleEnvironmentLayerCreated(eventHeader, e),
                     IDomainEvent<EnvironmentLayerDeleted> e => HandleEnvironmentLayerDeleted(eventHeader, e),
+                    IDomainEvent<EnvironmentLayerCopied> e => HandleEnvironmentLayerCopied(eventHeader, e),
                     IDomainEvent<EnvironmentLayerKeysImported> e => HandleEnvironmentLayerKeysImported(eventHeader, e),
                     IDomainEvent<EnvironmentLayerKeysModified> e => HandleEnvironmentLayerKeysModified(eventHeader, e),
                     IDomainEvent<StructureCreated> e => HandleStructureCreated(eventHeader, e),
@@ -301,7 +302,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -311,7 +312,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -322,11 +323,37 @@ namespace Bechtle.A365.ConfigService.Implementations
             await _objectStore.Remove<ConfigEnvironment, EnvironmentIdentifier>(domainEvent.Payload.Identifier);
         }
 
+        private async Task HandleEnvironmentLayerCopied(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerCopied> domainEvent)
+        {
+            IResult<EnvironmentLayer> sourceEnvironmentResult =
+                await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.SourceIdentifier);
+
+            if (sourceEnvironmentResult.IsError)
+            {
+                _logger.LogWarning(
+                    "event received to copy layer, but source-layer wasn't found in configured store: {ErrorCode} {Message}",
+                    sourceEnvironmentResult.Code,
+                    sourceEnvironmentResult.Message);
+                return;
+            }
+
+            EnvironmentLayer source = sourceEnvironmentResult.Data;
+            var newLayer = new EnvironmentLayer(domainEvent.Payload.TargetIdentifier)
+            {
+                Json = source.Json,
+                Keys = source.Keys,
+                CurrentVersion = (long) eventHeader.EventNumber,
+                KeyPaths = source.KeyPaths
+            };
+
+            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(newLayer);
+        }
+
         private async Task HandleEnvironmentLayerCreated(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerCreated> domainEvent)
         {
             var layer = new EnvironmentLayer(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
@@ -480,7 +507,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Keys = domainEvent.Payload.Keys,
                 Variables = domainEvent.Payload.Variables,
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long) eventHeader.EventNumber
             };
 
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
