@@ -255,6 +255,7 @@ namespace Bechtle.A365.ConfigService
             services.AddSingleton<HttpPipelineCheck>();
             services.AddSingleton<EventStoreClusterCheck>();
             services.AddSingleton<EventStoreConnectionCheck>();
+            services.AddSingleton<DomainEventProjectionCheck>();
             services.AddHealthChecks()
                     .AddCheck<EventStoreClusterCheck>(
                         "EventStore-ConnectionType",
@@ -268,6 +269,11 @@ namespace Bechtle.A365.ConfigService
                         TimeSpan.FromSeconds(1))
                     .AddCheck<EventStoreConnectionCheck>(
                         "EventStore-Connection",
+                        HealthStatus.Unhealthy,
+                        new[] {Readiness},
+                        TimeSpan.FromSeconds(30))
+                    .AddCheck<DomainEventProjectionCheck>(
+                        "DomainEventProjection-Subscription",
                         HealthStatus.Unhealthy,
                         new[] {Readiness},
                         TimeSpan.FromSeconds(30))

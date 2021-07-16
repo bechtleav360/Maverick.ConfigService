@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Implementations.Health;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
@@ -26,6 +27,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     public class DomainObjectProjection : EventSubscriptionBase
     {
         private readonly IOptions<EventStoreConnectionConfiguration> _configuration;
+        private readonly DomainEventProjectionCheck _healthCheck;
         private readonly ILogger<DomainObjectProjection> _logger;
         private readonly IDomainObjectStore _objectStore;
         private readonly IServiceProvider _serviceProvider;
@@ -37,17 +39,20 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <param name="objectStore">store for the projected DomainObjects</param>
         /// <param name="serviceProvider">serviceProvider used to retrieve components for compiling configurations</param>
         /// <param name="configuration">options used to configure the subscription</param>
+        /// <param name="healthCheck">associated Health-Check that reports the current status of this component</param>
         /// <param name="logger">logger to write information to</param>
         public DomainObjectProjection(
             IEventStore eventStore,
             IDomainObjectStore objectStore,
             IServiceProvider serviceProvider,
             IOptions<EventStoreConnectionConfiguration> configuration,
+            DomainEventProjectionCheck healthCheck,
             ILogger<DomainObjectProjection> logger) : base(eventStore)
         {
             _objectStore = objectStore;
             _serviceProvider = serviceProvider;
             _configuration = configuration;
+            _healthCheck = healthCheck;
             _logger = logger;
         }
 
@@ -87,11 +92,15 @@ namespace Bechtle.A365.ConfigService.Implementations
                 // 18.446.744.073.709.551.615 or 9.223.372.036.854.775.807 events, so cutting off half our range seems fine
                 subscriptionBuilder.FromEvent((ulong) lastProjectedEvent);
             }
+
+            _healthCheck.SetReady();
         }
 
         /// <inheritdoc />
         protected override async Task OnDomainEventReceived(StreamedEventHeader eventHeader, IDomainEvent domainEvent)
         {
+            _healthCheck.SetReady();
+
             try
             {
                 _logger.LogInformation(
@@ -158,6 +167,13 @@ namespace Bechtle.A365.ConfigService.Implementations
                     eventHeader?.EventType);
                 throw;
             }
+        }
+
+        /// <inheritdoc />
+        protected override Task OnSubscriptionDropped(string streamId, string streamName, Exception exception)
+        {
+            _healthCheck.SetReady(false);
+            return Task.CompletedTask;
         }
 
         /// <summary>
