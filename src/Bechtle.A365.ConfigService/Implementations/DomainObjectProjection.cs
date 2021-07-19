@@ -377,6 +377,33 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task HandleEnvironmentLayerDeleted(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerDeleted> domainEvent)
         {
+            // remove this layers keys from all assigned environments
+            IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
+
+            if (layerResult.IsError)
+            {
+                _logger.LogWarning(
+                    "event received to modify layer, but layer wasn't found in configured store: {ErrorCode} {Message}",
+                    layerResult.Code,
+                    layerResult.Message);
+                return;
+            }
+
+            EnvironmentLayer layer = layerResult.Data;
+            List<ConfigKeyAction> impliedActions = layer.Keys
+                                                        .Select(k => ConfigKeyAction.Delete(k.Key))
+                                                        .ToList();
+
+            layer.Keys.Clear();
+            layer.KeyPaths.Clear();
+            layer.Json = "{}";
+
+            using IServiceScope scope = _serviceProvider.CreateScope();
+
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
+
+            await OnLayerKeysChanged(layer, impliedActions, translator);
+
             await _objectStore.Remove<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
         }
 
@@ -571,7 +598,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
         }
 
-        private async Task OnLayerKeysChanged(EnvironmentLayer layer, ConfigKeyAction[] modifiedKeys, IJsonTranslator translator)
+        private async Task OnLayerKeysChanged(EnvironmentLayer layer, ICollection<ConfigKeyAction> modifiedKeys, IJsonTranslator translator)
         {
             // layer.KeyPaths = GenerateKeyPaths(layer.Keys);
             layer.Json = translator.ToJson(layer.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Key))
@@ -639,7 +666,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         // @TODO: un-/assignment of Layers in Environment don't currently mark a Configuration as Stale
-        private async Task UpdateConfigurationStaleStatus(EnvironmentLayer layer, ConfigKeyAction[] modifiedKeys)
+        private async Task UpdateConfigurationStaleStatus(EnvironmentLayer layer, ICollection<ConfigKeyAction> modifiedKeys)
         {
             IResult<IList<ConfigurationIdentifier>> configIdResult = await _objectStore.ListAll<PreparedConfiguration, ConfigurationIdentifier>(QueryRange.All);
 
