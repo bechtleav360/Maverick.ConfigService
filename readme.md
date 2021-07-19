@@ -1,12 +1,6 @@
 # Config Service 2.0
 
-- Overview & Lingo
-- Installation
-- Nutzung
-- Anbindung von Services
-- Technische Details
-- Known Issues
-- DB-Migrations
+[[_TOC_]]
 
 ## Overview
 
@@ -16,12 +10,65 @@ Der neue ConfigService basiert auf der Idee, dass eine Konfiguration aus Umgebun
 - Environment / Umgebungsvariablen
 - Konfiguration
 
+### DomainModell
+
+Das Domänenmodell des ConfigService besteht aus folgenden Objekten:
+- Umgebung (`Environment`)
+    - Name
+    - Kategorie
+    - Liste von zugewiesenen Ebenen
+- Ebene (`Layer`)
+    - Name
+    - Menge von Key/Value-Paaren mit Metadaten
+- Struktur (`Structure`)
+    - Name
+    - Version
+    - Menge von Key/Value-Paaren
+- Konfiguration (`Configuration`)
+    - Erstellt aus Umgebung+Struktur
+    - Identifiziert durch Umgebung+Struktur
+    - Menge von Key/Value-Paarent mit Metadaten
+
+Genauere Informationen zu diesen Objekten stehen unten zur Verfügung.
+
+```mermaid
+graph TD;
+
+Environment
+Layer
+Structure
+Configuration
+
+SimpleEntry[Key/Value-Paar]
+SimpleEntry -->|1-1| SimpleEntryKey[Key]
+SimpleEntry -->|1-1| SimpleEntryValue[Value]
+
+ExtendedEntry[Key/Value-Paar mit Metadata]
+ExtendedEntry -->|1-1| ExtendedEntryKey[Key]
+ExtendedEntry -->|1-1| ExtendedEntryValue[Value]
+ExtendedEntry -->|1-1| ExtendedEntryType[Type]
+ExtendedEntry -->|1-1| ExtendedEntryDescription[Description]
+
+Environment -->|1-n| Layer
+
+Layer -->|1-0..n| ExtendedEntry
+
+Structure -->|1-1..n| SimpleEntry
+
+Environment --> |1-n| Configuration
+Structure --> |1-n| Configuration
+Configuration --> |1-n| ExtendedEntry
+```
+
 ### Struktur
 
-Eine Struktur im kontext des ConfigServices beschreibt wie Umgebungsvariablen zusammengesetzt werden um eine Funktionierende Konfiguration zu erstellen.
-Eine Struktur kann komplett aus festen Werten bestehen, oder aus Referenzen auf die Umgebungsvariablen, oder aus einer Mischung dieser.
+Eine Struktur im kontext des ConfigServices beschreibt wie Umgebungsvariablen zusammengesetzt werden um eine Funktionierende Konfiguration zu erstellen.  
+Im Kontext einer Anwendung die seine Konfiguration über den ConfigService bezieht, beschreibt eine Struktur wie diese Anwendung seine Konfiguration erwartet.  
+Die Struktur sollte mit in das Code-Repository der Anwendung eingecheckt werden.
+Sollte sich das Layout der erwarteten Konfiguration ändern, muss die Struktur-Version erhöht werden.
 
-Eine Struktur wird dem ConfigService als `JSON` bekannt gemacht und sieht in etwa so aus:
+Eine Struktur kann komplett aus festen Werten bestehen, oder aus Referenzen auf die Umgebungsvariablen, oder aus einer Mischung beider.
+Eine Struktur wird dem ConfigService als `JSON`-Dokument bekannt gemacht und sieht in etwa so aus:
 
 ``` json
 {
@@ -53,85 +100,130 @@ Eine Struktur wird dem ConfigService als `JSON` bekannt gemacht und sieht in etw
 - `variables` sind (optionale) Struktur-Lokale variablen auf die die Umgebungsvariablen zugreifen können
 
 Eine Struktur kann mittels `{{Command: Value; Command2: Value2}}` auf bestimmte Werte oder ganze Regionen der Umgebungsvariablen zugreifen.
-Mehr dazu unter [Technische Details](#technische_details)
+Mehr dazu unter [Referenzen & Parsing](#referenzen--parsing)
+
+> WICHTIG  
+> Eine einmal hochgeladene Struktur-Version kann nicht wieder gelöscht werden.  
+> Die Struktur-Version sollte nur dann verändert werden, wenn sich der Aufbau der Konfiguration für die Anwendung verändert hat.  
+> Aus diesem Grund sollten so wenig Feste Werte wie möglich in eine Struktur eingetragen werden
+
+### Layer
+
+Ein Layer besteht aus einem Namen und einer Menge von Key->Value Paaren.  
+Diese Key/Value Paare können zur Ansicht in verschiedene Formate projiziert (Json), aber nur über ihre Key/Value Ansicht verändert werden.
+
+Key/Value Einträge können auf andere Einträge verlinken ([Referenzen & Parsing](#referenzen--parsing)).  
+Diese Referenzen werden erst zur Bau-Zeit einer Konfiguration aufgelöst, und können dadurch dynamisch ihren Wert verändern abhängig davon welche Layer in dem Environment geladen wurden (mehr Informationen zu Layer-Overloading unter [Environment](#environment))
 
 ### Environment
 
-Ein Environment wird unter einer Kategorie -> Name Hierarchie gespeichert und besteht aus einem beliebig großen `JSON-Object`.
+Ein Environment wird unter einer Kategorie -> Name Hierarchie gespeichert und besteht aus einer numerierten Liste von Layer-Ids.  
+Die Reihenfolge in der diese Layer-Ids eingetragen werden bestimmt, welche Daten in diesem Environment verfügbar sind.
+
+Für jedes Layer, angefangen von Position 1 (Index 0), werden alle Key/Value-Einträge in das aktuelle Environment geladen.  
+Sollte eine `Key` mit dem selben Namen bereits in das Environment geladen worden sein, wird dieser mit dem neuen `Value` überschrieben.
+
+Szenario:  
+Layer A und B haben unterschiedliche Werte für den selben Key.  
+Je nachdem welches Layer (A/B) geladen wird, ist der Wert des Keys der von A oder B.
+
+Layer A
+```json
+{
+  "Foo": "42"
+}
+```
+
+Layer B
+```json
+{
+  "Foo": "4711"
+}
+```
+
+Layer C
+```json
+{
+  "Bar": "Something"
+}
+```
+
+Environment A
+1. Layer A
+2. Layer C
+```json
+{
+  "Foo": "42",
+  "Bar": "Something"
+}
+```
+
+Environment B
+1. Layer B
+2. Layer C
+```json
+{
+  "Foo": "4711",
+  "Bar": "Something"
+}
+```
+
+Environment C
+1. Layer A
+2. Layer B
+   - überschreibt die Werte von `Layer A`
+3. Layer C
+```json
+{
+  "Foo": "4711",
+  "Bar": "Something"
+}
+```
+
+> WICHTIG:  
+> Das Ergebnis dieser Aktion beeinflusst die Ergebnisse aller Referenzen.
 
 ### Konfiguration
 
-Eine Konfiguration wird aus einer Struktur und einem Environment erstellt, und ist optional zeitlich begrenzt.
-
-## Installation
-
-Durch die Zertifikat-basierte Authentifizierung ist die installation nicht so Straight-Forward wie bei vielen anderen Services.
-
-Der ConfigService benötigt:
-
-1. Ein gültiges Zertifikat
-2. Erreichbar unter HTTPS
-3. Host (Kestrel / IIS / Azure) und ggf. andere Reverse Proxies müssen korrekt eingestellt sein
-
-Erklärung zu `3.`:  
-
-### Kestrel
-
-In der `Program.cs` muss `UseKestrel()` wie folgt konfiguriert werden.
-
-```c#
-public static IWebHost BuildWebHost(string[] args) =>
-    WebHost.CreateDefaultBuilder(args)
-           .UseStartup<Startup>()
-           .UseKestrel(options =>
-           {
-               options.Listen(IPAddress.Loopback, 5001, listenOptions =>
-               {
-                   listenOptions.UseHttps(new HttpsConnectionAdapterOptions
-                   {
-                       ServerCertificate = /* HTTPS Zertifikat */,
-                       ClientCertificateMode = ClientCertificateMode.RequireCertificate,
-                       ClientCertificateValidation = CertificateValidator.DisableChannelValidation
-                   });
-               });
-           })
-           .Build();
-```
-`ClientCertificateValidation` muss auf `CertificateValidator.DisableChannelValidation` gestellt werden, um Kestrel daran zu hindern die OS-Zertifikat-Validierung zu nutzen - und stattdessen unsere Custom-Validierung durchzuführen.
-
-### IIS
-
-Im IIS Manager
-
-1. Wähle deine `Site` im `Connections`-Tab aus.
-2. Öffne `SSL Settings` in der Feature Ansicht.
-3. Aktiviere `Require SSL` und wähle `Require` unter `Client Certificates`.
-
-### Azure and Random custom web proxies
-
-Wenn der ConfigService mit Azure oder anderen Proxies genutzt werden soll, lies die original Doku [hier](https://github.com/blowdart/idunno.Authentication/tree/master/src/idunno.Authentication.Certificate)
-
-## Nutzung
-
-> Die Nutzung durch Swagger ist wesentlich leichter als im ConfigService1.0.
-
-Eine ConfigUI ist in Entwicklung, und ist [hier](http://url-zum-repo.com) in Zukunft verfügbar. (Update folgt)
-
-Bevor ein Environment bearbeitet werden kann muss es erstellt werden, die entsprechenden Endpunkte befinden sich unter `/environments/`.
-Vorbereitete Environments können als `JSON` oder als `Key=>Value` map deployed werden.
-Änderungen müssen mit `Key=>Value` Angaben gemacht werden.
-
-Strukturen können unter `/structures` hinzugefügt werden.
-Services die die [Client-Library](https://shdebonvtfs1.bechtle.net/DefaultCollection/A365/_git/a365.RestClient.ConfigService) laden ihre aktuelle Struktur selbst hoch und bauen sich ihre Konfiguration falls notwendig.
-Wenn dies vorbereitet werden soll, kann eine neue Struktur mit `POST /structures` hochgeladen werden.
-
-> - Strukturen können nicht gelöscht oder bearbeitet werden
-> - Um Änderungen durchzuführen, muss eine neue Struktur hochgeladen werden
-> - Um einen fest eingestellten Wert in einer Strukture zu verändern, muss ein neuer Key mit dem absoluten Pfad im Environment erstellt werden.
+Eine Konfiguration wird aus einer Struktur und einem Environment erstellt, und ist optional zeitlich begrenzt.  
+Eine Konfiguration wird immer mit der aktuellen / letzten Version eines Environments und der angegebenen Version einer Struktur erstellt.  
+Eine Konfiguration wird aus sicht der Struktur erstellt. Alle Keys, die in der Struktur eingetragen wurden, werden mit dem angegeben Environment aufgelöst.
 
 ### Anbindung von Services
 
-Um einen Service an den neuen ConfigService2.0 anzubinden muss folgende liste befolgt werden:
+Alle Services, die mit dem ConfigService interagieren sollen, sollten/müssen diese Liste befolgen:
+
+1. Die Anwendung prüft ob die gewünschte Konfiguration abrufbar ist.
+    - Hierfür braucht die Anwendung folgende Informationen
+        - Environment-Kategorie
+        - Environment-Name
+        - Struktur-Name
+        - Struktur-Version
+2. Abhängig davon, ob die Konfiguration verfügbar ist, wird 2.1 oder 2.2 ausgeführt
+    1. (Konfiguration verfügbar) Applikation lädt Konfiguration und startet - gehe zu 3.
+    2. (Konfiguration nicht verfügbar) 
+        1. Applikation lädt Struktur hoch
+        2. Applikation versucht Konfiguration mit ursprünglichen Informationen zu bauen
+        3. Applikation versucht für eine bestimmte Zeit die Konfiguration zu laden
+        4. Falls Konfiguration geladen werden kann, gehe zu 2.1
+        5. Falls Konfiguration nicht geladen werden kann, starte Anwendung ohne Konfiguration - gehe zu 3.
+3. (Optional) Eine Anwendung kann auf bestimmte Events hören und ggf. Daten neu laden und sich re-konfigurieren
+    1. Für mehr Informationen siehe [Hören auf Config-Events](#reagieren-auf-config-events)
+
+#### Reagieren auf Config-Events
+
+Der ConfigService hat einen Endpunkt `/v1/connections/events`, über den eine Anwendung den vom ConfigService genutzten SignalR-Server abfragen kann.  
+Über diesen SignalR-Server werden foglende Events herausgegeben:
+- `Bechtle.A365.ConfigService.Common.Events.TemporaryKeysAdded`
+    - Gesendet wenn Temporäre Keys über `Post /v1/temporary/{structure}/{structureVersion}` gesetzt werden
+- `Bechtle.A365.ConfigService.Common.Events.TemporaryKeysExpired`
+    - Gesendet wenn Temporäre Keys ablaufen oder entfernt werden
+- `Bechtle.A365.Core.EventBus.Events.Events.OnConfigurationPublished`
+    - Gesendet wenn eine neue Konfiguration erstellt wird
+
+#### Anbindung von .Net Services
+
+Um einen .Net Service an den ConfigService anzubinden müssen folgende schritte befolgt werden:
 
 1. Der Service muss die [Client-Library](https://shdebonvtfs1.bechtle.net/DefaultCollection/A365/_git/a365.RestClient.ConfigService) referenzieren und beim Programm-Start zu seinem `IConfigurationBuilder` hinzufügen
 
@@ -175,7 +267,7 @@ private static void ConfigureApp(WebHostBuilderContext builderContext,
 }
 ```
 
-2. In einer der Sources die für die `preConfig` genutzt werden, müssen folgende Informationen vorhanden sein:
+2. In einer der Sources, die für die `preConfig` genutzt werden, müssen folgende Informationen vorhanden sein:
 
 ``` json
 {
@@ -184,9 +276,11 @@ private static void ConfigureApp(WebHostBuilderContext builderContext,
         "EnvironmentCategory": "av360",
         "EnvironmentName": "dev",
         // one of the following must be set
-        // optional
-        "StructureLocation": "./configStructure.json",
-        // optional
+        // Option 1.
+        // Allows for Request + Upload + Building
+        "StructureLocation": "configStructure.json",
+        // Option 2.
+        // Only allows Request + Building
         "StructureName": "Bechtle.A365.AdminService",
         "StructureVersion": 1
     }
@@ -202,14 +296,90 @@ private static void ConfigureApp(WebHostBuilderContext builderContext,
 
 ### Technischer Overview
 
-Der ConfigService2.0 besteht aus zwei Teilen.
+Der ConfigService besteht aus einem Read- und einem Write-Teil.  
 
-1. Service / HTTP-Rest API
-2. Projektion
+Der Read-Teil des ConfigService greift auf vorbereitete Daten zu, und mach generell keine eigenen berechnungen.  
+Der Write-Teil des ConfigService erwartet, dass der aktuell Projizierte Lese-Topf auf dem neuesten Stand ist, und schreibt neue Events basierend darauf in den Event-Stream.  
 
-Der Service nimmt Anfragen entgegen, validiert diese wenn möglich und schickt sie als DomainEvents an den darunterliegenden [EventStore](https://eventstore.org/).
+Beide Komponenten werden über den `IDomainObjectManager` koordiniert. Dieser übersetzt `GetConfiguration` in `Lade DomainObjct vom Typ PreparedConfiguration aus dem Store`, und `UpdateKeys` in `Lade DomainObject vom Typ EnvironmentLayer, aktualisiere Keys, schreibe Änderungen in Stream`.
 
-Die Projektion bearbeitet diese DomainEvents und schreibt / löscht / ändert Daten in einem öffentlichen Store - aktuell im MS SQLServer.
+Die wichtigsten Komponenten sind in diesem Diagram abgebildet:
+
+```mermaid
+graph TD;
+
+%% Controllers
+subgraph "Sanitation & HTTP-Translation"
+    EnvironmentController
+    LayerController
+    ConfigurationController
+    StructureController
+end
+
+%% *ProjectionStore
+subgraph "High-Level Commands"
+    EnvironmentProjectionStore
+    LayerProjectionStore
+    ConfigurationProjectionStore
+    StructureProjectionStore
+end
+
+%% DomainObject-Handling
+subgraph "Low-Level Commands"
+    DomainObjectManager
+end
+subgraph "Datastore / Db-Handling"
+    DomainObjectStore
+    LiteDb
+end
+subgraph "Event-Projection & Read-Preparation"
+    EventStore
+    DomainObjectProjection
+end
+
+%% Relations
+EnvironmentController --> EnvironmentProjectionStore
+LayerController --> LayerProjectionStore
+ConfigurationController --> ConfigurationProjectionStore
+StructureController --> StructureProjectionStore
+
+EventStore --> DomainObjectProjection
+DomainObjectProjection --> DomainObjectStore
+DomainObjectStore --> LiteDb
+
+DomainObjectManager --> DomainObjectStore
+
+EnvironmentProjectionStore --> DomainObjectManager
+LayerProjectionStore --> DomainObjectManager
+ConfigurationProjectionStore --> DomainObjectManager
+StructureProjectionStore --> DomainObjectManager
+```
+
+### Event-Projektion
+
+`DomainEventProjection` ist ein Hintergrundservice, der alle DomainEvents im Config-Stream in eine lokale Datenbank projiziert.  
+Das bedeutet, dass die Änderungen die ein Event repräsentiert auf alle relevanten Objekte in der Datenbank angewandt werden, und alle anhängigen Daten aktualisiert werden.
+
+Beispiel:
+
+```mermaid
+graph TD;
+subgraph "EventStore-Stream"
+    LayerCreated
+    LayerKeysModified
+    LayerDeleted
+end
+
+LayerCreated --> CreateLayer
+LayerKeysModified --> UpdateLayer
+LayerDeleted --> DeleteLayer --> UpdateEnvironment
+
+UpdateLayer --> UpdateLayerKeys --> UpdateLayerJson --> UpdateLayerAutocomplete --> UpdateEnvironment
+UpdateEnvironment --> UpdateEnvironmentKeys --> UpdateEnvironmentJson --> UpdateEnvironmentAutocomplete --> UpdateConfigStaleInfo
+
+```
+
+Diese Projektion wird auf allen Service-Instanzen ausgeführt und in eine Instanz-Lokale DB gespeichert.
 
 ### Referenzen / Parsing
 
@@ -336,19 +506,3 @@ Der ConfigService2.0 wandelt JSON automatisch in das korrekte Format wenn der En
 Alternativ steht noch der Endpunkt `/environments/{category}/{name}/keys` zur Verfügung - dort wird allerdings davon ausgegangen dass die übertragenen Werte korrekt sind.  
 Über die Endpunkte `/convert/json/map` und `/convert/map/json` können JSON und `Dictionary<string, string>` beliebig umgewandelt werden, falls der Client diese Aufgabe nicht übernehmen will.
 
-## DB-Migrations
-
-Änderungen an dem DB-Schema werden über Migrations versioniert und durchgeführt.
-Das Ausführen von Migrations ist näher in der ConfigService.Cli-Readme dokumentiert.
-
-Um mit Migrations zu arbeiten, müssen folgende Schritte befolgt werden:
-
-- Ins Verzeichnis Bechtle.A365.ConfigSerivce/src/Bechtle.A365.ConfigService.Cli springen
-- Konsole öffnen
-- dotnet 'ef' Befehle mit diesen Parametern ausführen '--context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations'
-
-z.B. so, um alle Migrations anzuzeigen: 
-
-```
-dotnet ef migrations list --context ProjectionStoreContext --project ../Bechtle.A365.ConfigService.Migrations
-```
