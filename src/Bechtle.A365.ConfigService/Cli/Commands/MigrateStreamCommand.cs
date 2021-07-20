@@ -47,7 +47,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     Version the data inside the Stream is currently at
         /// </summary>
-        [Option("-f|--from", "current version of the targeted EventStore-Stream", CommandOptionType.SingleValue)]
+        [Option(
+            "-f|--from",
+            "current version of the targeted EventStore-Stream\r\n"
+            + "'Initial': First rewritten version of ConfigService where Environments contained Data\r\n"
+            + "'LayeredEnvironments': Version of ConfigService where Environments were split into composable Layers that contained Data\r\n"
+            + "'ServiceBased': Rewrite of ConfigService that wrapped DomainEvents in another abstraction-layer",
+            CommandOptionType.SingleValue)]
         public StreamVersion From { get; set; } = StreamVersion.Undefined;
 
         /// <summary>
@@ -63,7 +69,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     Version the data inside the Stream should be migrated to
         /// </summary>
-        [Option("-t|--to", "target version of the targeted EventStore-Stream", CommandOptionType.SingleValue)]
+        [Option(
+            "-t|--to",
+            "target version of the targeted EventStore-Stream\r\n"
+            + "'Initial': First rewritten version of ConfigService where Environments contained Data\r\n"
+            + "'LayeredEnvironments': Version of ConfigService where Environments were split into composable Layers that contained Data\r\n"
+            + "'ServiceBased': Rewrite of ConfigService that wrapped DomainEvents in another abstraction-layer",
+            CommandOptionType.SingleValue)]
         public StreamVersion To { get; set; } = StreamVersion.Undefined;
 
         /// <summary>
