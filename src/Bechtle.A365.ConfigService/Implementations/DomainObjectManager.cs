@@ -444,6 +444,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(range);
 
             if (!result.IsError)
@@ -467,6 +469,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(filter, range);
 
             if (!result.IsError)
@@ -487,6 +491,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (identifier is null)
             {
                 throw new ArgumentNullException(nameof(identifier));
