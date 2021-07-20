@@ -137,9 +137,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         private class UnknownDomainEvent : DomainEvent
         {
             /// <inheritdoc />
-            public override bool Equals(DomainEvent other, bool strict) => throw new NotImplementedException();
-
-            /// <inheritdoc />
             public override DomainEventMetadata GetMetadata() => throw new NotImplementedException();
         }
 

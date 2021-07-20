@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation
 {
+    /// <summary>
+    ///     Component that resolves references pointing to the Variables of a Structure
+    /// </summary>
     public class StructureVariableValueProvider : DictionaryValueProvider
     {
         /// <inheritdoc />

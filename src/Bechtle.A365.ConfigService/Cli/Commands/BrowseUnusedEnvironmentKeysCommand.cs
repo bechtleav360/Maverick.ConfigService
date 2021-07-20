@@ -14,6 +14,9 @@ using Newtonsoft.Json;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Browse potentially unused keys in a given Environment from a remote ConfigService
+    /// </summary>
     [Command("unused-keys", Description = "browse environment-keys that are not used in by structures")]
     public class BrowseUnusedEnvironmentKeysCommand : SubCommand<BrowseCommand>
     {
@@ -25,15 +28,25 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             _httpClient = httpClientFactory.CreateClient(nameof(BrowseUnusedEnvironmentKeysCommand));
         }
 
+        /// <summary>
+        ///     Identifier for the Environment in question
+        /// </summary>
         [Option("-e|--environment", "use the given environment for comparison, given in \"{Category}/{Name}\" form", CommandOptionType.SingleValue)]
         public string Environment { get; set; }
 
+        /// <summary>
+        ///     Flag indicating if used keys should be shown along unused ones or not
+        /// </summary>
         [Option("-u|--hide-used", "hide all keys that are used by at least one Structure", CommandOptionType.NoValue)]
         public bool HideUsedKeys { get; set; } = false;
 
+        /// <summary>
+        ///     Switches display-mode between a Human-Readable Table and Computer-Readable Json
+        /// </summary>
         [Option("-d|--display", "set the display-mode to either Table or Json", CommandOptionType.SingleValue)]
         public DisplayType Display { get; set; } = DisplayType.Table;
 
+        /// <inheritdoc />
         protected override bool CheckParameters()
         {
             // check Base-Parameters
@@ -166,9 +179,19 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             public string Value { get; set; } = string.Empty;
         }
 
+        /// <summary>
+        ///     Ways to display Content to the User
+        /// </summary>
         public enum DisplayType
         {
+            /// <summary>
+            ///     Show content in a human readable table
+            /// </summary>
             Table,
+
+            /// <summary>
+            ///     Show content in computer-readable json
+            /// </summary>
             Json
         }
     }

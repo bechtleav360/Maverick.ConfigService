@@ -7,12 +7,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation
 {
+    /// <summary>
+    ///     Base-Implementation of <see cref="IConfigurationCompiler"/>
+    /// </summary>
     public class ConfigurationCompiler : IConfigurationCompiler
     {
         private readonly ISecretConfigValueProvider _secretProvider;
         private readonly ILogger<ConfigurationCompiler> _logger;
         private readonly ILogger<IValueResolver> _resolverLogger;
 
+        /// <summary>
+        ///     Creates a new instance of <see cref="ConfigurationCompiler"/>
+        /// </summary>
+        /// <param name="secretProvider">instance of <see cref="ISecretConfigValueProvider"/> that provides values for "$secret/"-references</param>
+        /// <param name="logger">logger-instance to write diagnostic-messages to</param>
+        /// <param name="resolverLogger">logger-instance passed to a private instance of <see cref="IValueResolver"/></param>
         public ConfigurationCompiler(ISecretConfigValueProvider secretProvider,
                                      ILogger<ConfigurationCompiler> logger,
                                      ILogger<IValueResolver> resolverLogger)

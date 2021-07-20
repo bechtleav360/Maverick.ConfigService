@@ -3,6 +3,9 @@ using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
 {
+    /// <summary>
+    ///     Tracer that keeps track of the resolution of a value with N sub-tracers
+    /// </summary>
     public class MultiTracer : TracerBase, IMultiTracer
     {
         /// <inheritdoc />
@@ -12,6 +15,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
             Path = path;
         }
 
+        /// <summary>
+        ///     Full Path to the Key being Traced
+        /// </summary>
         public string Path { get; }
 
         /// <inheritdoc />

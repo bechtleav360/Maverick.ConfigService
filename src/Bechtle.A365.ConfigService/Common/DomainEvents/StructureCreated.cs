@@ -33,8 +33,25 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Variables = new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase);
         }
 
-        public virtual bool Equals(StructureCreated other) => Equals(other, false);
+        /// <inheritdoc />
+        public virtual bool Equals(StructureCreated other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
 
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return Equals(Identifier, other.Identifier)
+                   && CompareDictionaries(Keys, other.Keys)
+                   && CompareDictionaries(Variables, other.Variables);
+        }
+
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -55,39 +72,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((StructureCreated) obj);
         }
 
-        public virtual bool Equals(StructureCreated other, bool strict)
-        {
-            if (ReferenceEquals(null, other))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
-            return strict
-                       ? Equals(Identifier, other.Identifier)
-                         && CompareDictionaries(Keys, other.Keys)
-                         && CompareDictionaries(Variables, other.Variables)
-                       : Equals(Identifier, other.Identifier);
-        }
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Identifier, Keys, Variables);
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hashCode = Identifier != null ? Identifier.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ (Keys != null ? Keys.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (Variables != null ? Variables.GetHashCode() : 0);
-                return hashCode;
-            }
-        }
-
         public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
         {
             Filters =
@@ -96,8 +84,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(StructureCreated left, StructureCreated right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(StructureCreated left, StructureCreated right) => !Equals(left, right);
 
         private bool CompareDictionaries(IDictionary<string, string> left, IDictionary<string, string> right)

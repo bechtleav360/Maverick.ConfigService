@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -22,6 +23,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             ModifiedKeys = modifiedKeys;
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(StructureVariablesModified other)
         {
             if (ReferenceEquals(null, other))
@@ -34,9 +36,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return true;
             }
 
-            return Equals(Identifier, other.Identifier) && Equals(ModifiedKeys, other.ModifiedKeys);
+            return Equals(Identifier, other.Identifier) 
+                   && ModifiedKeys.SequenceEqual(other.ModifiedKeys);
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -58,8 +62,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
         public override int GetHashCode()
         {
             unchecked
@@ -68,6 +70,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         }
 
+        /// <inheritdoc />
         public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
         {
             Filters =
@@ -76,8 +79,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(StructureVariablesModified left, StructureVariablesModified right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(StructureVariablesModified left, StructureVariablesModified right) => !Equals(left, right);
     }
 }

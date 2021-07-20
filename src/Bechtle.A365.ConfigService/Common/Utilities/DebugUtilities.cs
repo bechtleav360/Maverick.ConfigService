@@ -4,8 +4,16 @@ using Microsoft.Extensions.Configuration;
 
 namespace Bechtle.A365.ConfigService.Common.Utilities
 {
+    /// <summary>
+    ///     Utility-Functions to make debugging easier
+    /// </summary>
     public static class DebugUtilities
     {
+        /// <summary>
+        ///     Format the given Configuration to be human-readable
+        /// </summary>
+        /// <param name="config"></param>
+        /// <returns></returns>
         public static string FormatConfiguration(IConfiguration config)
             => $"Raw Config-Keys:{Environment.NewLine}" +
                $"{FormatConfigurationRecursive(config)}";

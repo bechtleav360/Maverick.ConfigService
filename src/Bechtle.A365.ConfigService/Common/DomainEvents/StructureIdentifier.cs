@@ -29,10 +29,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public int Version { get; set; }
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(StructureIdentifier left, StructureIdentifier right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(StructureIdentifier left, StructureIdentifier right) => !Equals(left, right);
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
@@ -41,6 +44,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((StructureIdentifier) obj);
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(StructureIdentifier other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -48,14 +52,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Version == other.Version;
         }
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ Version;
-            }
-        }
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Name, Version);
 
+        /// <inheritdoc />
         public override string ToString() => $"[{nameof(StructureIdentifier)}; {nameof(Name)}: '{Name}'; {nameof(Version)}: '{Version}']";
     }
 }

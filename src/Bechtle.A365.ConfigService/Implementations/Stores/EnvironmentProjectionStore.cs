@@ -5,7 +5,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Bechtle.A365.Common.Utilities.Extensions;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
@@ -61,9 +60,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async ValueTask DisposeAsync()
-        {
-        }
+        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
 
         /// <inheritdoc />
         public Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier) => GetAssignedLayers(identifier, int.MaxValue);

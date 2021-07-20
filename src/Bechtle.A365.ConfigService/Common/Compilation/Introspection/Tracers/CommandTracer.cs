@@ -4,6 +4,9 @@ using Bechtle.A365.ConfigService.Parsing;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
 {
+    /// <summary>
+    ///     Traces Commands and their resolved Values
+    /// </summary>
     public class CommandTracer : TracerBase
     {
         /// <inheritdoc />
@@ -16,8 +19,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
             Value = value;
         }
 
+        /// <summary>
+        ///     Command whose value is being resolved
+        /// </summary>
         public ReferenceCommand Command { get; }
 
+        /// <summary>
+        ///     Value resolved for <see cref="Command"/>
+        /// </summary>
         public string Value { get; }
 
         /// <inheritdoc />

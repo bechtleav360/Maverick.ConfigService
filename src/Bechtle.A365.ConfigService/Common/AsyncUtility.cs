@@ -9,10 +9,11 @@ namespace Bechtle.A365.ConfigService.Common
     /// </summary>
     public static class AsyncUtility
     {
-        private static readonly TaskFactory TaskFactory = new TaskFactory(CancellationToken.None,
-                                                                          TaskCreationOptions.None,
-                                                                          TaskContinuationOptions.None,
-                                                                          TaskScheduler.Default);
+        private static readonly TaskFactory _taskFactory = new TaskFactory(
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
 
         /// <summary>
         ///     run the given task synchronously
@@ -21,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Common
         /// <typeparam name="TResult"></typeparam>
         /// <returns></returns>
         public static TResult RunSync<TResult>(this Func<Task<TResult>> func)
-            => TaskFactory
+            => _taskFactory
                .StartNew(func)
                .Unwrap()
                .GetAwaiter()
@@ -32,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Common
         /// </summary>
         /// <param name="func"></param>
         public static void RunSync(this Func<Task> func)
-            => TaskFactory
+            => _taskFactory
                .StartNew(func)
                .Unwrap()
                .GetAwaiter()
@@ -45,7 +46,7 @@ namespace Bechtle.A365.ConfigService.Common
         /// <typeparam name="TResult"></typeparam>
         /// <returns></returns>
         public static TResult RunSync<TResult>(this Task<TResult> task)
-            => TaskFactory
+            => _taskFactory
                .StartNew(() => task)
                .Unwrap()
                .GetAwaiter()
@@ -56,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Common
         /// </summary>
         /// <param name="task"></param>
         public static void RunSync(this Task task)
-            => TaskFactory
+            => _taskFactory
                .StartNew(() => task)
                .Unwrap()
                .GetAwaiter()

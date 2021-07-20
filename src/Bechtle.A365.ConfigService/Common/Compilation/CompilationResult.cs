@@ -4,6 +4,9 @@ using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation
 {
+    /// <summary>
+    ///     Result of the Compilation of a Config-Structure and a repository of Keys
+    /// </summary>
     public class CompilationResult
     {
         /// <inheritdoc cref="CompilationResult" />
@@ -13,10 +16,20 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             CompilationTrace = traceResults.ToArray();
         }
 
+        /// <summary>
+        ///     Traces for each Key that was compiled, starting from the Structure
+        /// </summary>
         public TraceResult[] CompilationTrace { get; }
 
+        /// <summary>
+        ///     Result of the Compilation
+        /// </summary>
         public IDictionary<string, string> CompiledConfiguration { get; }
 
+        /// <summary>
+        ///     Compute and return the List of Keys that were used during this Compilation
+        /// </summary>
+        /// <returns>List of Keys that were recorded in <see cref="CompilationTrace"/></returns>
         public string[] GetUsedKeys()
         {
             var traceResults = new List<KeyTraceResult>();

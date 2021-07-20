@@ -3,6 +3,9 @@ using System.Text.Json;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
+    /// <summary>
+    ///     Component that can translate a Map of Key/Values to JSON, and back
+    /// </summary>
     public interface IJsonTranslator
     {
         /// <summary>

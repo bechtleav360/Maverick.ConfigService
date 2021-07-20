@@ -14,7 +14,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     public interface IDomainObjectStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
-        ///     Check the store for the highest projected version (using <see cref="DomainObject{T}.MetaVersion" />)
+        ///     Check the store for the highest projected version (using <see cref="DomainObject{T}.CurrentVersion" />)
         /// </summary>
         /// <returns>the last event-number that was projected, or a failed result</returns>
         Task<IResult<long>> GetProjectedVersion();

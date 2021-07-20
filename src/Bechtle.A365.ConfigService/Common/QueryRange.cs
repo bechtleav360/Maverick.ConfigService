@@ -41,10 +41,13 @@ namespace Bechtle.A365.ConfigService.Common
         public static QueryRange Make(int offset, int length) => new QueryRange(offset < 0 ? 0 : offset,
                                                                                 length <= 0 ? int.MaxValue : length);
 
+        /// <inheritdoc />
         public bool Equals(QueryRange other) => Offset == other.Offset && Length == other.Length;
 
+        /// <inheritdoc />
         public override bool Equals(object obj) => obj is QueryRange other && Equals(other);
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked
@@ -53,10 +56,13 @@ namespace Bechtle.A365.ConfigService.Common
             }
         }
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(QueryRange left, QueryRange right) => left.Equals(right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(QueryRange left, QueryRange right) => !left.Equals(right);
 
+        /// <inheritdoc />
         public override string ToString() => $"[{nameof(QueryRange)}; {nameof(Offset)}: {Offset}; {nameof(Length)}: {Length}]";
     }
 }

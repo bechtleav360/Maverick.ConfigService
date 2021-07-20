@@ -7,8 +7,17 @@ using System.Text.Json;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
+    /// <summary>
+    ///     Component that converts a Map of Paths/Values to their equivalent Json-Representation
+    /// </summary>
     public class DictToJsonConverter
     {
+        /// <summary>
+        ///     Converts a <see cref="Dictionary{String, String}"/> to its Json-Representation, using the Keys as Paths
+        /// </summary>
+        /// <param name="dict">Dictionary containing paths ("Foo/Bar/Baz") to values ("42")</param>
+        /// <param name="separator">separator used to split parts in the Path</param>
+        /// <returns>the equivalent Json-Representation of the data in <paramref name="dict"/></returns>
         public static JsonElement ToJson(IDictionary<string, string> dict, string separator)
         {
             if (!dict.Any())

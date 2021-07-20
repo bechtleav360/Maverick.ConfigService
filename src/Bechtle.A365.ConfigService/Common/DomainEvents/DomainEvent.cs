@@ -13,15 +13,20 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public virtual string EventType => GetEventType(GetType());
 
         /// <summary>
-        ///     Check if DomainEvent strictly equals another event
+        ///     Get the DomainEvent-Type for the given Type
         /// </summary>
-        /// <param name="other">other instance of DomainEvent to test for equality</param>
-        /// <param name="strict">perform test in the strictest manner possible - settings this to false will skip some tests</param>
-        /// <returns>true if both DomainEvents represent the same event</returns>
-        public abstract bool Equals(DomainEvent other, bool strict);
-
+        /// <typeparam name="T">Sub-Type of <see cref="DomainEvent"/></typeparam>
+        /// <returns>type-identifier for the given Type</returns>
         public static string GetEventType<T>() where T : DomainEvent => typeof(T).Name;
 
+        /// <summary>
+        ///     Get the DomainEvent-Type for the given Type
+        /// </summary>
+        /// <param name="domainEventType">Sub-Type of <see cref="DomainEvent"/></param>
+        /// <returns>type-identifier for the given Type</returns>
+        /// <exception cref="NotSupportedException">
+        ///     thrown when <paramref name="domainEventType"/> is not assignable to <see cref="DomainEvent"/>
+        /// </exception>
         public static string GetEventType(Type domainEventType)
         {
             if (typeof(DomainEvent).IsAssignableFrom(domainEventType))

@@ -2,6 +2,9 @@
 
 namespace Bechtle.A365.ConfigService.Common.Compilation
 {
+    /// <summary>
+    ///     Component that compiles a Config-Structure with data from an Environment
+    /// </summary>
     public interface IConfigurationCompiler
     {
         /// <summary>

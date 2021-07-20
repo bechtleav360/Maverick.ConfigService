@@ -25,15 +25,22 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
+        /// <summary>
+        ///     File containing the layer-dump to compare against
+        /// </summary>
         [Option("-i|--input", Description = "location of layer-dump")]
         public string InputFile { get; set; }
 
+        /// <summary>
+        ///     current Diff-Mode, decides which data is written to output
+        /// </summary>
         [Option("-m|--mode", Description = "which operations should be executed to match the target-environment. " +
                                            "\n\t\t- 'Add'   : add keys which are new in source. " +
                                            "\n\t\t- 'Delete': remove keys that have been deleted in source. " +
                                            "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
         public ComparisonMode Mode { get; set; } = ComparisonMode.Match;
 
+        /// <inheritdoc />
         protected override bool CheckParameters()
         {
             if (!base.CheckParameters())
@@ -65,6 +72,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return true;
         }
 
+        /// <inheritdoc />
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
             if (!CheckParameters())

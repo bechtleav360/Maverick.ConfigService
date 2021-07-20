@@ -5,8 +5,14 @@
     /// </summary>
     public struct InitialEnvIdRepr
     {
+        /// <summary>
+        ///     Environment-Category
+        /// </summary>
         public string Category;
 
+        /// <summary>
+        ///     Environment-Name
+        /// </summary>
         public string Name;
     }
 }

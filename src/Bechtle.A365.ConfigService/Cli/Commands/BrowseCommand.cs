@@ -4,6 +4,9 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Groups all commands that query data together
+    /// </summary>
     [Command("browse", Description = "browse data contained in the ConfigService")]
     [Subcommand(
         typeof(BrowseConfigsCommand),

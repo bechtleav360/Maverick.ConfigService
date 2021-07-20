@@ -4,6 +4,9 @@ using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
 {
+    /// <summary>
+    ///     base-implementation of <see cref="ICompilationTracer"/>
+    /// </summary>
     public class CompilationTracer : ICompilationTracer
     {
         /// <inheritdoc cref="CompilationTracer" />
@@ -12,6 +15,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
             Tracers = new List<ITracer>();
         }
 
+        /// <summary>
+        ///     Root-Tracers registered for this Compilation
+        /// </summary>
         public List<ITracer> Tracers { get; }
 
         /// <inheritdoc />

@@ -5,8 +5,18 @@ using System.Text.Json;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
+    /// <summary>
+    ///     Component that converts Json to its equivalent representation as a Map of Paths/Values 
+    /// </summary>
     public static class JsonToDictConverter
     {
+        /// <summary>
+        ///     converts a JSON-Object to its equivalent Map-Representation
+        /// </summary>
+        /// <param name="json">value JSON-Object</param>
+        /// <param name="separator">separator to use for the Paths in the Result</param>
+        /// <param name="encodePath">flag indicating if the Paths should be string-encoded, or left as-is</param>
+        /// <returns>Dictionary containing Paths to all Values found the Json-Object, and their Values</returns>
         public static IDictionary<string, string> ToDict(JsonElement json, string separator, bool encodePath)
         {
             var dict = new Dictionary<string, string>();
@@ -21,7 +31,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         }
 
         /// <summary>
-        ///     escape the given path according to <see cref="encodePath" />
+        ///     escape the given path according to <paramref name="encodePath"/>
         /// </summary>
         /// <param name="p"></param>
         /// <param name="encodePath">if true, the whole path will be fully encoded. if false, only "/" will be replaced with %2F</param>

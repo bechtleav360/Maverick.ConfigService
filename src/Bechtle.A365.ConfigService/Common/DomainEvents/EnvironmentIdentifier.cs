@@ -29,10 +29,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public string Name { get; set; }
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentIdentifier left, EnvironmentIdentifier right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(EnvironmentIdentifier left, EnvironmentIdentifier right) => !Equals(left, right);
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
@@ -41,6 +44,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((EnvironmentIdentifier) obj);
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(EnvironmentIdentifier other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -49,13 +53,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                    && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
         }
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return ((Category != null ? Category.GetHashCode() : 0) * 397) ^ (Name != null ? Name.GetHashCode() : 0);
-            }
-        }
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Category, Name);
 
         /// <inheritdoc />
         public override string ToString() => $"[{nameof(EnvironmentIdentifier)}; {nameof(Category)}: '{Category}'; {nameof(Name)}: '{Name}']";

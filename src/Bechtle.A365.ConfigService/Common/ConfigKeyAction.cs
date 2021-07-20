@@ -56,8 +56,10 @@ namespace Bechtle.A365.ConfigService.Common
         /// <returns></returns>
         public static ConfigKeyAction Delete(string key) => new ConfigKeyAction(ConfigKeyActionType.Delete, key, null, null, null);
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(ConfigKeyAction left, ConfigKeyAction right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(ConfigKeyAction left, ConfigKeyAction right) => !Equals(left, right);
 
         /// <summary>
@@ -77,6 +79,7 @@ namespace Bechtle.A365.ConfigService.Common
         public static ConfigKeyAction Set(string key, string value, string description, string valueType)
             => new ConfigKeyAction(ConfigKeyActionType.Set, key, value, description, valueType);
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
@@ -85,6 +88,7 @@ namespace Bechtle.A365.ConfigService.Common
             return Equals((ConfigKeyAction) obj);
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(ConfigKeyAction other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -96,6 +100,7 @@ namespace Bechtle.A365.ConfigService.Common
                    && string.Equals(ValueType, other.ValueType, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked

@@ -16,33 +16,55 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
-    [Command("compare", Description = "compare an exported-environment with one or more local environments")]
+    /// <summary>
+    ///     Compare an exported Layers with one or more local Environments, and generate diff-files
+    /// </summary>
+    [Command("compare", Description = "compare an exported layers with one or more local layers")]
     [Subcommand(typeof(ImportComparisonCommand))]
     public class CompareCommand : SubCommand<CliBase>
     {
+        /// <inheritdoc />
         public CompareCommand(IOutput output) : base(output)
         {
         }
 
+        /// <summary>
+        ///     remote layer to compare against
+        /// </summary>
         [Option("-l|--layer", Description = "Layer to compare against the Input-Layer")]
         public string[] Layers { get; set; } = new string[0];
 
+        /// <summary>
+        ///     local layer-export to compare with
+        /// </summary>
         [Option("-i|--input", Description = "location of layer-dump")]
         public string InputFile { get; set; } = string.Empty;
 
+        /// <summary>
+        ///     flag indicating if properties with null-value should be kept or pruned
+        /// </summary>
         [Option("--keep-null-properties", CommandOptionType.NoValue,
                 Description = "set this flag to retain null-values if present. otherwise they are replaced with \"\"")]
         public bool KeepNullProperties { get; set; } = false;
 
+        /// <summary>
+        ///     current Diff-Mode, decides which data is written to output
+        /// </summary>
         [Option("-m|--mode", Description = "which operations should be executed to match the target-layer. " +
                                            "\n\t\t- 'Add'   : add keys which are new in source. " +
                                            "\n\t\t- 'Delete': remove keys that have been deleted in source. " +
                                            "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
         public ComparisonMode Mode { get; set; } = ComparisonMode.Match;
 
+        /// <summary>
+        ///     output-file to write data to
+        /// </summary>
         [Option("-o|--output", Description = "location to export data to")]
         public string OutputFile { get; set; } = string.Empty;
 
+        /// <summary>
+        ///     layer-id to compare against
+        /// </summary>
         [Option("-u|--use-layer", Description = "Layer to use from the ones available in <InputFile> or <stdin> if multiple defined. " +
                                                 "Can be left out if only one is defined.")]
         public string UseInputLayer { get; set; } = string.Empty;

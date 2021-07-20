@@ -21,6 +21,13 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         private readonly StructureCompilationInfo _structureInfo;
         private readonly IDictionary<ConfigValueProviderType, IConfigValueProvider> _valueProviders;
 
+        /// <summary>
+        ///     Creates a new instance of <see cref="DefaultValueResolver"/>
+        /// </summary>
+        /// <param name="environmentInfo">Environment-Data used as lookup to resolve values</param>
+        /// <param name="structureInfo">Structure-Data used as lookup to resolve values</param>
+        /// <param name="valueProviders">list of value-providers usable while resolving values</param>
+        /// <param name="logger">logger to write diagnostic messages to</param>
         public DefaultValueResolver(EnvironmentCompilationInfo environmentInfo,
                                     StructureCompilationInfo structureInfo,
                                     IDictionary<ConfigValueProviderType, IConfigValueProvider> valueProviders,

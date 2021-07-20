@@ -4,6 +4,9 @@ using Bechtle.A365.ConfigService.Parsing;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection
 {
+    /// <summary>
+    ///     Component that traces the resolution of a Value
+    /// </summary>
     public interface ITracer
     {
         /// <summary>

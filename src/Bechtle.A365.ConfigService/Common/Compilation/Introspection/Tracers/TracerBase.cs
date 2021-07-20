@@ -4,6 +4,9 @@ using Bechtle.A365.ConfigService.Parsing;
 
 namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
 {
+    /// <summary>
+    ///     Base-Functionality for all instances of <see cref="ITracer"/>
+    /// </summary>
     public abstract class TracerBase : ITracer
     {
         /// <inheritdoc cref="TracerBase" />

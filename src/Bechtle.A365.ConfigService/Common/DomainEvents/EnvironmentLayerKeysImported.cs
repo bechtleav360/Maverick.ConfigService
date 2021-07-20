@@ -24,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             ModifiedKeys = modifiedKeys;
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(EnvironmentLayerKeysImported other)
         {
             if (ReferenceEquals(null, other))
@@ -37,9 +38,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
 
             return Equals(Identifier, other.Identifier)
-                   && Equals(ModifiedKeys, other.ModifiedKeys);
+                   && ModifiedKeys.SequenceEqual(other.ModifiedKeys);
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -61,8 +63,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
         public override int GetHashCode()
         {
             unchecked
@@ -71,6 +71,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         }
 
+        /// <inheritdoc />
         public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
         {
             Filters =
@@ -79,8 +80,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(EnvironmentLayerKeysImported left, EnvironmentLayerKeysImported right) => !Equals(left, right);
 
         /// <inheritdoc />

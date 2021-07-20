@@ -16,6 +16,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Identifier = identifier;
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(EnvironmentLayerDeleted other)
         {
             if (ReferenceEquals(null, other))
@@ -53,9 +54,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
-        /// <inheritdoc />
         public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;
 
         /// <inheritdoc />
@@ -67,8 +65,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayerDeleted left, EnvironmentLayerDeleted right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(EnvironmentLayerDeleted left, EnvironmentLayerDeleted right) => !Equals(left, right);
     }
 }

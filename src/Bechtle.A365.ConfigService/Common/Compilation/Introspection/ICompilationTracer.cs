@@ -2,6 +2,9 @@
 
 namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection
 {
+    /// <summary>
+    ///     Component that traces the Keys and references used to compile a Configuration
+    /// </summary>
     public interface ICompilationTracer
     {
         /// <summary>

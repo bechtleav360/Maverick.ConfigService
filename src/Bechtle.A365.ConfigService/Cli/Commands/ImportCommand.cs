@@ -14,6 +14,9 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Import a previously generated export to a remote ConfigService
+    /// </summary>
     [Command("import", Description = "import data to the targeted ConfigService")]
     public class ImportCommand : SubCommand<CliBase>
     {
@@ -22,6 +25,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
+        /// <summary>
+        ///     File containing the previously generated Export
+        /// </summary>
         [Option("-f|--file", Description = "Config-Exports created with the 'export' command, or directly from ConfigService. \r\n" +
                                            "Multiple files each with a single Environment can be given, " +
                                            "they will overwrite their data in the order they're given.\r\n" +

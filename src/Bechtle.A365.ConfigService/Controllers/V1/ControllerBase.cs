@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using Bechtle.A365.ConfigService.Common;
-using Bechtle.A365.ConfigService.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Controllers.V1

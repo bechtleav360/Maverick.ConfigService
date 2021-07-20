@@ -9,6 +9,9 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Browse available Environments from a remote ConfigService
+    /// </summary>
     [Command("environments", Description = "browse available environments in the ConfigService")]
     public class BrowseEnvironmentsCommand : SubCommand<BrowseCommand>
     {
@@ -17,6 +20,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
+        /// <inheritdoc />
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
             var request = await RestRequest.Make(Output)

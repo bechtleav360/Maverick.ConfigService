@@ -16,13 +16,30 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Export data from a remote ConfigService
+    /// </summary>
     [Command("export", Description = "export data from the targeted ConfigService")]
     public class ExportCommand : SubCommand<CliBase>
     {
+        /// <summary>
+        ///     Flag indicating how output-data should be stored
+        /// </summary>
         public enum ReformatKind
         {
+            /// <summary>
+            ///     don't modify output from ConfigService
+            /// </summary>
             None,
+
+            /// <summary>
+            ///     compress output from ConfigService
+            /// </summary>
             Compress,
+
+            /// <summary>
+            ///     properly format &amp; indent output from ConfigService
+            /// </summary>
             Indent
         }
 
@@ -31,15 +48,27 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
+        /// <summary>
+        ///     Environments to export from remote ConfigService
+        /// </summary>
         [Option("-e|--environment", Description = "Environment to export, given in \"{Category}/{Name}\" form")]
         public string[] Environments { get; set; }
 
+        /// <summary>
+        ///     how to modify output from ConfigService, if at all
+        /// </summary>
         [Option("--format", Description = "interpret export and format it")]
         public ReformatKind Format { get; set; } = ReformatKind.None;
 
+        /// <summary>
+        ///     Layers to export from remote ConfigService
+        /// </summary>
         [Option("-l|--layer", Description = "Layer to export")]
         public string[] Layers { get; set; }
 
+        /// <summary>
+        ///     output-file to save export to
+        /// </summary>
         [Option("-o|--output", Description = "location to export data to")]
         public string OutputFile { get; set; }
 

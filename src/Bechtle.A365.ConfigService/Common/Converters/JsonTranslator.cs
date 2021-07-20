@@ -3,6 +3,9 @@ using System.Text.Json;
 
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
+    /// <summary>
+    ///     Implementation of <see cref="IJsonTranslator"/> that forwards calls to <see cref="DictToJsonConverter"/> and <see cref="JsonToDictConverter"/>
+    /// </summary>
     public class JsonTranslator : IJsonTranslator
     {
         /// <inheritdoc />

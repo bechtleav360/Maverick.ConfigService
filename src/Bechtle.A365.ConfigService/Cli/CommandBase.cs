@@ -5,6 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Cli
 {
+    /// <summary>
+    ///     Base-Functionality for all Commands in this Application
+    /// </summary>
     [HelpOption("--help")]
     public abstract class CommandBase : ServiceBase.Commands.CommandBase
     {
@@ -13,9 +16,15 @@ namespace Bechtle.A365.ConfigService.Cli
         {
         }
 
+        /// <summary>
+        ///     Service-Endpoint to use when querying data or issuing commands
+        /// </summary>
         [Option("-s|--service")]
         public string ConfigServiceEndpoint { get; set; }
 
+        /// <summary>
+        ///     Computed Property that increases the logging-verbosity of <see cref="Output"/> everytime it's set
+        /// </summary>
         [Option("-v|--verbose", Description = "Increase verbosity of logging each time it's supplied")]
         [SuppressMessage("Major Code Smell", "S2376:Write-only properties should not be used", Justification = "used to set LogLevel via Arguments")]
         public bool[] Verbose
@@ -31,6 +40,9 @@ namespace Bechtle.A365.ConfigService.Cli
             }
         }
 
+        /// <summary>
+        ///     Computed Property that decreases the logging-verbosity of <see cref="Output"/> everytime it's set
+        /// </summary>
         [Option("-q|--quiet", Description = "Decrease verbosity of logging each time it's supplied")]
         [SuppressMessage("Major Code Smell", "S2376:Write-only properties should not be used", Justification = "used to set LogLevel via Arguments")]
         public bool[] Quiet

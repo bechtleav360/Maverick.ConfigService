@@ -7,10 +7,17 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     /// </summary>
     public class LayerIdentifier : Identifier, IEquatable<LayerIdentifier>
     {
+        /// <summary>
+        ///     Creates a new, empty Layer-Identifier
+        /// </summary>
         public LayerIdentifier() : this(string.Empty)
         {
         }
 
+        /// <summary>
+        ///     Creates a new LayerIdentifier
+        /// </summary>
+        /// <param name="name"></param>
         public LayerIdentifier(string name)
         {
             Name = name;
@@ -21,8 +28,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public string Name { get; set; }
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(LayerIdentifier left, LayerIdentifier right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(LayerIdentifier left, LayerIdentifier right) => !Equals(left, right);
 
         /// <inheritdoc />
@@ -43,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override int GetHashCode() => Name != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(Name) : 0;
+        public override int GetHashCode() => HashCode.Combine(Name);
 
         /// <inheritdoc />
         public override string ToString() => $"[{nameof(LayerIdentifier)}; {nameof(Name)}: '{Name}']";

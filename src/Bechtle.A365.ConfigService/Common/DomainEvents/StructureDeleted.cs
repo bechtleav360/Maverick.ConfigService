@@ -16,6 +16,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Identifier = identifier;
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(StructureDeleted other)
         {
             if (ReferenceEquals(null, other))
@@ -31,6 +32,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals(Identifier, other.Identifier);
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -52,10 +54,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
         public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;
 
+        /// <inheritdoc />
         public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
         {
             Filters =
@@ -64,8 +65,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(StructureDeleted left, StructureDeleted right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(StructureDeleted left, StructureDeleted right) => !Equals(left, right);
     }
 }

@@ -4,6 +4,9 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Migrate data from one Version to another
+    /// </summary>
     [Command("migrate", Description = "browse data contained in the ConfigService")]
     [Subcommand(typeof(MigrateStreamCommand))]
     public class MigrateCommand : SubCommand<CliBase>

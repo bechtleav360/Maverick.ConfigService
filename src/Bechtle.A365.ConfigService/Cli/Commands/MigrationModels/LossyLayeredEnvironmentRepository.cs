@@ -145,7 +145,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
             var events = new List<DomainEvent> {@event};
 
             // split into smaller parts as long as anything gets split
-            int countBeforeSplit = 0;
+            int countBeforeSplit;
             do
             {
                 countBeforeSplit = events.Count;

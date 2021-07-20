@@ -7,8 +7,17 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bechtle.A365.ConfigService.Common.Utilities
 {
+    /// <summary>
+    ///     Extensions for dealing with <see cref="IConfiguration"/>
+    /// </summary>
     public static class ConfigurationExtensions
     {
+        /// <summary>
+        ///     Use this Configuration and configure the global NLog-instance with it
+        /// </summary>
+        /// <param name="configuration">Configuration-Section that is being bound to NLog</param>
+        /// <param name="logger">optional logger to write diagnostics to</param>
+        /// <returns>given Configuration without changes</returns>
         public static IConfiguration ConfigureNLog(this IConfiguration configuration, ILogger logger = null)
         {
             try

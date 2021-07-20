@@ -1,5 +1,8 @@
 ﻿namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection
 {
+    /// <summary>
+    ///     specialized instance of <see cref="ITracer"/> that spans multiple sub-tracers
+    /// </summary>
     public interface IMultiTracer : ITracer
     {
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -28,6 +29,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Layers = new List<LayerIdentifier>(layers);
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(EnvironmentLayersModified other)
         {
             if (ReferenceEquals(null, other))
@@ -41,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
 
             return Equals(Identifier, other.Identifier)
-                   && Equals(Layers, other.Layers);
+                   && Layers.SequenceEqual(other.Layers);
         }
 
         /// <inheritdoc />
@@ -66,9 +68,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
-        /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Identifier, Layers);
 
         /// <inheritdoc />
@@ -80,8 +79,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayersModified left, EnvironmentLayersModified right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(EnvironmentLayersModified left, EnvironmentLayersModified right) => !Equals(left, right);
     }
 }

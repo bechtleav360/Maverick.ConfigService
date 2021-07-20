@@ -31,8 +31,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             ValidTo = validTo;
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(ConfigurationBuilt other) => Equals(other, false);
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -53,7 +55,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((ConfigurationBuilt) obj);
         }
 
-        public virtual bool Equals(ConfigurationBuilt other, bool strict)
+        /// <summary>
+        ///     Compare two instances of this DomainEvent for Property-Level equality
+        /// </summary>
+        /// <param name="other">other instance of this DomainEvent</param>
+        /// <param name="strict">compare two instances using strict rules</param>
+        /// <returns>true if both objects contain the same data, otherwise false</returns>
+        protected virtual bool Equals(ConfigurationBuilt other, bool strict)
         {
             if (ReferenceEquals(null, other))
             {
@@ -73,8 +81,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
         public override int GetHashCode()
         {
             unchecked
@@ -86,6 +92,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         }
 
+        /// <inheritdoc />
         public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
         {
             Filters =
@@ -94,8 +101,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
     }
 }

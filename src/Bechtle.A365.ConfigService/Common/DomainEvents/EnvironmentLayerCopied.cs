@@ -41,9 +41,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerCopied other && Equals(other);
 
         /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other);
-
-        /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(SourceIdentifier, TargetIdentifier);
 
         /// <inheritdoc />

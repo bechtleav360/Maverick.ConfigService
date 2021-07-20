@@ -4,10 +4,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Cli
 {
+    /// <summary>
+    ///     Implementation of <see cref="ILogger{TCategoryName}"/> that writes to <see cref="Console"/>
+    /// </summary>
     public class ConsoleLogger : ILogger<ConsoleLogger>
     {
         private readonly IConsole _console;
 
+        /// <summary>
+        ///     LogLevel used to decide which messages to write or withhold
+        /// </summary>
         public LogLevel LogLevel { get; set; }
 
         /// <inheritdoc cref="ConsoleLogger" />

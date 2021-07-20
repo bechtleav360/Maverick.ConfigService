@@ -29,9 +29,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async ValueTask DisposeAsync()
-        {
-        }
+        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
 
         /// <inheritdoc />
         public void Dispose()

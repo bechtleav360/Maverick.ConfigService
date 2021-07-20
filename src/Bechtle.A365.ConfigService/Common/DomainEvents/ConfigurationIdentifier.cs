@@ -31,10 +31,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// </summary>
         public long Version { get; set; }
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(ConfigurationIdentifier left, ConfigurationIdentifier right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(ConfigurationIdentifier left, ConfigurationIdentifier right) => !Equals(left, right);
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
@@ -43,6 +46,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((ConfigurationIdentifier) obj);
         }
 
+        /// <inheritdoc />
         public virtual bool Equals(ConfigurationIdentifier other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -50,16 +54,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals(Environment, other.Environment) && Equals(Structure, other.Structure) && Version == other.Version;
         }
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = Environment != null ? Environment.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ (Structure != null ? Structure.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ Version.GetHashCode();
-                return hashCode;
-            }
-        }
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Environment, Structure, Version);
 
         /// <inheritdoc />
         public override string ToString() => $"[{nameof(Environment)}: {Environment}; {nameof(Structure)}: {Structure}]";

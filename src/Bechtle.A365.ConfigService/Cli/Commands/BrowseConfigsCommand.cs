@@ -10,6 +10,9 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace Bechtle.A365.ConfigService.Cli.Commands
 {
+    /// <summary>
+    ///     Browse available Configurations from a remote ConfigService
+    /// </summary>
     [Command("configs", Description = "browse available configurations in the ConfigService")]
     public class BrowseConfigsCommand : SubCommand<BrowseCommand>
     {
@@ -18,6 +21,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         {
         }
 
+        /// <inheritdoc />
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
             var request = await RestRequest.Make(Output)
@@ -81,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             public string Name { get; set; } = string.Empty;
         }
 
-        public class ConfigStruct
+        private class ConfigStruct
         {
             public string Name { get; set; } = string.Empty;
 

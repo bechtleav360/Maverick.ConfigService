@@ -24,7 +24,22 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             ModifiedKeys = modifiedKeys;
         }
 
-        public virtual bool Equals(EnvironmentLayerKeysModified other) => Equals(other, false);
+        /// <inheritdoc />
+        public virtual bool Equals(EnvironmentLayerKeysModified other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return Equals(Identifier, other.Identifier)
+                   && ModifiedKeys.SequenceEqual(other.ModifiedKeys);
+        }
 
         /// <inheritdoc />
         public override bool Equals(object obj)
@@ -47,25 +62,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals((EnvironmentLayerKeysModified) obj);
         }
 
-        public virtual bool Equals(EnvironmentLayerKeysModified other, bool _)
-        {
-            if (ReferenceEquals(null, other))
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
-            return Equals(Identifier, other.Identifier)
-                   && Equals(ModifiedKeys, other.ModifiedKeys);
-        }
-
-        /// <inheritdoc />
-        public override bool Equals(DomainEvent other, bool strict) => Equals(other, false);
-
         /// <inheritdoc />
         public override int GetHashCode()
         {
@@ -84,8 +80,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
         };
 
+        /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayerKeysModified left, EnvironmentLayerKeysModified right) => Equals(left, right);
 
+        /// <inheritdoc cref="operator !=" />
         public static bool operator !=(EnvironmentLayerKeysModified left, EnvironmentLayerKeysModified right) => !Equals(left, right);
 
         /// <inheritdoc />
