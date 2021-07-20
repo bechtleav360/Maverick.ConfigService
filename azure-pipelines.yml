@@ -27,13 +27,6 @@ variables:
     value: Bechtle.A365.ConfigService.csproj
   - name: containerName
     value: configservice
-  # Cli
-  - name: projectLocationCli
-    value: src/Bechtle.A365.ConfigService.Cli
-  - name: projectFileCli
-    value: Bechtle.A365.ConfigService.Cli.csproj
-  - name: containerNameCli
-    value: configservice-cli
 
 trigger:
   branches:
@@ -63,15 +56,6 @@ stages:
             packageType: 'sdk'
             version: '$(netcoreSdkVersion)'
 
-        # build CLI
-        - template: build-project.yaml@templates
-          parameters:
-            projectLocation: $(projectLocationCli)
-            projectFile: $(projectFileCli)
-            projectName: 'Cli'
-            buildArguments: '-r $(buildRuntime)'
-            executeTests: false
-
         # build Service
         - template: build-project.yaml@templates
           parameters:
@@ -97,17 +81,6 @@ stages:
             projectLocation: '$(Build.SourcesDirectory)/$(projectLocation)'
             projectFile: $(projectFile)
             containerName: '$(containerRepo)/$(containerName)'
-            pat: '$(System.AccessToken)'
-            publicRegistry: $(publicRegistry)
-            privateRegistry: $(privateRegistry)
-
-        # build Cli
-        - template: build-project-container.yaml@templates
-          parameters:
-            projectName: 'Cli'
-            projectLocation: '$(Build.SourcesDirectory)/$(projectLocationCli)'
-            projectFile: $(projectFileCli)
-            containerName: '$(containerRepo)/$(containerNameCli)'
             pat: '$(System.AccessToken)'
             publicRegistry: $(publicRegistry)
             privateRegistry: $(privateRegistry)
