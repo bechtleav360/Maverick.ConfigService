@@ -317,9 +317,7 @@ namespace Bechtle.A365.ConfigService
         private void RegisterOptions(IServiceCollection services)
         {
             // misc stuff
-            services.Configure<KestrelAuthenticationConfiguration>(Configuration.GetSection("Authentication:Kestrel"));
             services.Configure<EventBusConnectionConfiguration>(Configuration.GetSection("EventBusConnection"));
-            services.Configure<ProtectedConfiguration>(Configuration.GetSection("Protection"));
             services.Configure<EventStoreConnectionConfiguration>(Configuration.GetSection("EventStoreConnection"));
 
             // secret-stores

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Bechtle.A365.ConfigService.Configuration;
+﻿using Bechtle.A365.ConfigService.Configuration;
 using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests.Configuration
@@ -45,37 +44,11 @@ namespace Bechtle.A365.ConfigService.Tests.Configuration
             Assert.Equal(uri, config.Uri);
         }
 
-        [Theory]
-        [InlineData("", false, "", "", 0)]
-        public void ReadKestrelAuthenticationConfig(string certificate, bool enabled, string address, string password, int port)
-        {
-            var config = new KestrelAuthenticationConfiguration
-            {
-                Certificate = certificate,
-                Enabled = enabled,
-                IpAddress = address,
-                Password = password,
-                Port = port
-            };
-
-            Assert.Equal(certificate, config.Certificate);
-            Assert.Equal(enabled, config.Enabled);
-            Assert.Equal(address, config.IpAddress);
-            Assert.Equal(password, config.Password);
-            Assert.Equal(port, config.Port);
-        }
-
         [Fact]
         public void CreateEventBusConnectionConfig() => Assert.NotNull(new EventBusConnectionConfiguration());
 
         [Fact]
         public void CreateEventStoreConnectionConfig() => Assert.NotNull(new EventStoreConnectionConfiguration());
-
-        [Fact]
-        public void CreateKestrelAuthenticationConfig() => Assert.NotNull(new KestrelAuthenticationConfiguration());
-
-        [Fact]
-        public void CreateProtectedConfig() => Assert.NotNull(new ProtectedConfiguration());
 
         [Fact]
         public void FillEventBusConnectionConfig() => Assert.NotNull(new EventBusConnectionConfiguration
@@ -93,51 +66,5 @@ namespace Bechtle.A365.ConfigService.Tests.Configuration
             Stream = string.Empty,
             Uri = string.Empty
         });
-
-        [Fact]
-        public void FillKestrelAuthenticationConfig() => Assert.NotNull(new KestrelAuthenticationConfiguration
-        {
-            Certificate = string.Empty,
-            Enabled = false,
-            IpAddress = string.Empty,
-            Password = string.Empty,
-            Port = 42
-        });
-
-        [Fact]
-        public void FillProtectedConfig() => Assert.NotNull(new ProtectedConfiguration
-        {
-            Regions = new Dictionary<string, string>()
-        });
-
-        [Fact]
-        public void ProtectedConfigCopiesValues()
-        {
-            var originalDict = new Dictionary<string, string>
-            {
-                {"Foo", "FooValue"},
-                {"Bar", "BarValue"},
-                {"Baz", null}
-            };
-
-            var protectedConfig = new ProtectedConfiguration {Regions = originalDict};
-
-            Assert.NotSame(originalDict, protectedConfig.Regions);
-        }
-
-        [Fact]
-        public void ProtectedConfigStoresValues()
-        {
-            var originalDict = new Dictionary<string, string>
-            {
-                {"Foo", "FooValue"},
-                {"Bar", "BarValue"},
-                {"Baz", null}
-            };
-
-            var protectedConfig = new ProtectedConfiguration {Regions = originalDict};
-
-            Assert.Equal(originalDict, protectedConfig.Regions);
-        }
     }
 }
