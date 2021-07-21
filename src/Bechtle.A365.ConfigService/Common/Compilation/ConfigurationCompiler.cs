@@ -60,6 +60,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     configuration[rk] = rv;
             }
 
+            KnownMetrics.ConfigurationsCompiled.Inc();
+
             return new CompilationResult(configuration, compilationTracer.GetResults());
         }
     }

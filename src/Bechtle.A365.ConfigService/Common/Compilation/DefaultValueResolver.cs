@@ -129,6 +129,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             {
                 errorMessage = "recursion too deep, aborting compilation";
                 context.Tracer.AddError("recursion too deep, aborting compilation");
+                KnownMetrics.CompilationErrors.Inc();
                 return true;
             }
 
@@ -146,6 +147,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                 errorMessage = $"recursion-loop detected at {beforeLoop} -> {loop}";
                 context.RecursionPath.First().Tracer.AddError(errorMessage);
+                KnownMetrics.CompilationErrors.Inc();
 
                 return true;
             }
@@ -272,6 +274,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 {
                     context.Tracer.AddError($"found static value '{v.Text}', dismissing due to previously found range-query");
                     _logger.LogInformation(WithContext(context, $"found static value '{v.Text}', dismissing due to previously found range-query"));
+                    KnownMetrics.CompilationErrors.Inc();
                 }
                 else if (part is ReferencePart reference)
                 {
@@ -282,6 +285,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         var path = reference.Commands[ReferenceCommand.Path];
                         context.Tracer.AddError($"ref '{path}'; expected range-query, got direct-ref, discarding invalid value");
                         _logger.LogWarning(WithContext(context, $"ref '{path}'; expected range-query, got direct-ref, discarding invalid value"));
+                        KnownMetrics.CompilationErrors.Inc();
                         continue;
                     }
 
@@ -307,6 +311,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
                 context.Tracer.AddWarning($"using fallback '{fallbackValue}' after failing to resolve '{context.BasePath}'");
                 _logger.LogInformation($"using fallback '{fallbackValue}' after failing to resolve '{context.BasePath}'");
+                KnownMetrics.CompilationWarnings.Inc();
                 return true;
             }
 
@@ -342,17 +347,21 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         intermediateResult[compositePath] = value;
                         rangeTracer.AddPathResult($"{referenceBase}/{trimmedKey}", value);
                     }
+
+                    KnownMetrics.CompilationRangeReferenceResolved.Inc();
                 }
                 else
                 {
                     context.Tracer.AddError(result.Message);
                     _logger.LogWarning(WithContext(context, $"could not resolve values: ({result.Code:G}) {result.Message}"));
+                    KnownMetrics.CompilationErrors.Inc();
 
                     if (FallbackAction())
                     {
                         var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
                         intermediateResult[context.BasePath] = fallbackValue;
                         rangeTracer.AddPathResult(fallbackValue);
+                        KnownMetrics.CompilationFallbackValuesResolved.Inc();
                     }
                 }
 
@@ -365,6 +374,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 {
                     intermediateResult[context.BasePath] = result.Data;
                     rangeTracer.AddPathResult(result.Data);
+                    KnownMetrics.CompilationScalarReferenceResolved.Inc();
                 }
                 else
                 {
@@ -389,6 +399,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                                 intermediateResult[context.BasePath] = resolvedIndirection;
                                 rangeTracer.AddPathResult(resolvedIndirection);
                                 indirectionResolved = true;
+                                KnownMetrics.CompilationIndirectionsResolved.Inc();
+                                KnownMetrics.CompilationScalarReferenceResolved.Inc();
                             }
                         }
                     }
@@ -397,12 +409,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     {
                         context.Tracer.AddError(result.Message);
                         _logger.LogWarning(WithContext(context, $"could not resolve values: ({result.Code:G}) {result.Message}"));
+                        KnownMetrics.CompilationErrors.Inc();
 
                         if (FallbackAction())
                         {
                             var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
                             intermediateResult[context.BasePath] = fallbackValue;
                             rangeTracer.AddPathResult(fallbackValue);
+                            KnownMetrics.CompilationFallbackValuesResolved.Inc();
                         }
                     }
                 }
@@ -463,6 +477,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             _logger.LogDebug(WithContext(context, "'$this' alias used in key without parent paths"));
             context.Tracer.AddWarning("'$this' alias used in key without parent paths");
+            KnownMetrics.CompilationWarnings.Inc();
 
             // in case of paths like "$this/Foo" which would end up as "/Foo"
             return value.Replace("$this/", "", StringComparison.OrdinalIgnoreCase)
@@ -486,6 +501,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         _logger.LogTrace(WithContext(context, $"appending static value '{v.Text}'"));
                         context.Tracer.AddStaticValue(v.Text);
                         builder.Append(v.Text);
+                        KnownMetrics.CompilationValuesResolved.Inc();
                         continue;
 
                     case ReferencePart reference:
@@ -494,6 +510,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         {
                             context.Tracer.AddError("key has been extended using range-query, discarding invalid results");
                             _logger.LogWarning(WithContext(context, "key has been extended using range-query, discarding invalid results"));
+                            KnownMetrics.CompilationErrors.Inc();
                             continue;
                         }
 
