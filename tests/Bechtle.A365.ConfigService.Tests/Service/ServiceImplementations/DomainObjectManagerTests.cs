@@ -475,7 +475,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         }
 
         [Fact]
-        public async Task IsNotStaleWithoutMetadata()
+        public async Task IsStaleWithoutMetadata()
         {
             var configId = new ConfigurationIdentifier(
                 new EnvironmentIdentifier("Foo", "Bar"),
@@ -495,7 +495,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             IResult<bool> result = await manager.IsStale(configId);
 
             AssertPositiveResult(result);
-            Assert.False(result.Data);
+            Assert.True(result.Data);
         }
 
         [Fact]

@@ -298,7 +298,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             IDictionary<string, string> metadata = metadataResult.Data;
             if (!metadata.TryGetValue("stale", out string staleProperty))
             {
-                return Result.Success(false);
+                return Result.Success(true);
             }
 
             var stale = JsonConvert.DeserializeObject<bool>(staleProperty);
