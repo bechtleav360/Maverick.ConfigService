@@ -266,6 +266,32 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return await _domainObjectManager.CloneLayer(sourceId, targetId, CancellationToken.None);
         }
 
+        /// <inheritdoc />
+        public async Task<IResult<EnvironmentLayerMetadata>> GetMetadata(LayerIdentifier identifier)
+        {
+            _logger.LogDebug("retrieving metadata for {Identifier}", identifier);
+
+            IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
+
+            if (layerResult.IsError)
+                return Result.Error<EnvironmentLayerMetadata>(layerResult.Message, layerResult.Code);
+
+            EnvironmentLayer layer = layerResult.Data;
+
+            var metadata = new EnvironmentLayerMetadata
+            {
+                Id = layer.Id,
+                Tags = new List<string>(),
+                ChangedAt = layer.ChangedAt,
+                ChangedBy = layer.ChangedBy,
+                CreatedAt = layer.CreatedAt,
+                CreatedBy = layer.CreatedBy,
+                KeyCount = layer.Keys.Count
+            };
+
+            return Result.Success(metadata);
+        }
+
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(
             IList<TItem> items,
             Func<TItem, string> keySelector,
@@ -304,7 +330,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var current = root;
             var result = new List<EnvironmentLayerKeyPath>();
             var queue = new Queue<string>(parts);
-            var walkedPath = new List<string>{"{START}"};
+            var walkedPath = new List<string> {"{START}"};
 
             // try walking the given path to the deepest part, and return all options the user can take from here
             while (queue.TryDequeue(out var part))

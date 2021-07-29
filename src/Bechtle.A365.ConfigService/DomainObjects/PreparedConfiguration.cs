@@ -46,8 +46,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public PreparedConfiguration()
         {
             Id = null;
-            ConfigurationVersion = -1;
-            Json = string.Empty;
+            Json = "{}";
             Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             UsedKeys = new List<string>();
             ValidFrom = null;
@@ -73,8 +72,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             }
 
             Id = identifier;
-            ConfigurationVersion = -1;
-            Json = string.Empty;
+            Json = "{}";
             Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             UsedKeys = new List<string>();
             ValidFrom = null;
@@ -85,7 +83,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is PreparedConfiguration other && Equals(other);
 
         /// <inheritdoc />
-        public override int GetHashCode() => HashCode.Combine(ConfigurationVersion, Id, Json, Keys, UsedKeys, ValidFrom, ValidTo);
+        public override int GetHashCode() => HashCode.Combine(ConfigurationVersion, Id, ValidFrom, ValidTo, ChangedAt, ChangedBy, CreatedAt, CreatedBy);
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(PreparedConfiguration left, PreparedConfiguration right) => Equals(left, right);
@@ -96,6 +94,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private bool Equals(PreparedConfiguration other) =>
             ConfigurationVersion == other.ConfigurationVersion
             && Equals(Id, other.Id)
+            && ChangedAt == other.ChangedAt
+            && ChangedBy == other.ChangedBy
+            && CreatedAt == other.CreatedAt
+            && CreatedBy == other.CreatedBy
             && Json == other.Json
             && Equals(Keys, other.Keys)
             && Equals(UsedKeys, other.UsedKeys)

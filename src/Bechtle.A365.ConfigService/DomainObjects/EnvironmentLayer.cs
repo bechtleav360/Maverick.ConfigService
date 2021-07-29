@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayer other && Equals(other);
 
         /// <inheritdoc />
-        public override int GetHashCode() => HashCode.Combine(Id, Json, Keys, KeyPaths);
+        public override int GetHashCode() => HashCode.Combine(Id, Json, Keys, KeyPaths, ChangedAt, ChangedBy, CreatedAt, CreatedBy);
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayer left, EnvironmentLayer right) => Equals(left, right);
@@ -70,6 +70,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private bool Equals(EnvironmentLayer other) =>
             Equals(Id, other.Id)
+            && ChangedAt == other.ChangedAt
+            && ChangedBy == other.ChangedBy
+            && CreatedAt == other.CreatedAt
+            && CreatedBy == other.CreatedBy
             && Json == other.Json
             && Keys.SequenceEqual(other.Keys)
             && KeyPaths.SequenceEqual(other.KeyPaths);

@@ -438,6 +438,44 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
+        ///     get all metadata for a Configuration
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <returns>Metadata for the configuration</returns>
+        [ProducesResponseType(typeof(PreparedConfigurationMetadata), (int) HttpStatusCode.OK)]
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/info", Name = "GetConfigurationMetadata")]
+        public async Task<IActionResult> GetMetadata([FromRoute] string environmentCategory,
+                                                     [FromRoute] string environmentName,
+                                                     [FromRoute] string structureName,
+                                                     [FromRoute] int structureVersion)
+        {
+            var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+            var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+
+            var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
+
+            try
+            {
+                IResult<PreparedConfigurationMetadata> result = await _store.Configurations.GetMetadata(configId);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to read metadata for configuration(" +
+                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
+                                   $"{nameof(environmentName)}: {environmentName}; " +
+                                   $"{nameof(structureName)}: {structureName}; " +
+                                   $"{nameof(structureVersion)}: {structureVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration-metadata");
+            }
+        }
+
+        /// <summary>
         ///     validate each build-option and return the appropriate error, or null if everything is valid
         /// </summary>
         /// <param name="buildOptions"></param>

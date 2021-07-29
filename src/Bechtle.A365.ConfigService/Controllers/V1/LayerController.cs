@@ -405,5 +405,29 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
             }
         }
+
+        /// <summary>
+        ///     get all metadata for a Layer
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>Metadata for the layer</returns>
+        [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int) HttpStatusCode.OK)]
+        [HttpGet("{name}/info", Name = "GetLayerMetadata")]
+        public async Task<IActionResult> GetMetadata([FromRoute] string name)
+        {
+            try
+            {
+                var identifier = new LayerIdentifier(name);
+                IResult<EnvironmentLayerMetadata> result = await _store.Layers.GetMetadata(identifier);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to read metadata for layer({Name})", name);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-metadata");
+            }
+        }
     }
 }

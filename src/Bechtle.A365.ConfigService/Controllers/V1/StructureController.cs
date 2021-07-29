@@ -375,5 +375,31 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                                   $"failed to update structure-variables for ({nameof(name)}: {name}, {nameof(structureVersion)}: {structureVersion})");
             }
         }
+
+        /// <summary>
+        ///     get all metadata for a Structure
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="structureVersion"></param>
+        /// <returns>Metadata for the Structure</returns>
+        [ProducesResponseType(typeof(ConfigStructureMetadata), (int) HttpStatusCode.OK)]
+        [HttpGet("{name}/{structureVersion}/info", Name = "GetStructureMetadata")]
+        public async Task<IActionResult> GetMetadata([FromRoute] string name,
+                                                     [FromRoute] int structureVersion)
+        {
+            try
+            {
+                var identifier = new StructureIdentifier(name, structureVersion);
+                IResult<ConfigStructureMetadata> result = await _store.Structures.GetMetadata(identifier);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to read metadata for structure({Name}, {Version})", name, structureVersion);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve structure-metadata");
+            }
+        }
     }
 }

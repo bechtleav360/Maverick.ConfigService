@@ -176,6 +176,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
+        protected override Task OnSubscriptionOpened()
+        {
+            _healthCheck.SetReady();
+            return Task.CompletedTask;
+        }
+
         /// <summary>
         ///     Generate the autocomplete-paths for this layer
         /// </summary>
@@ -226,7 +233,9 @@ namespace Bechtle.A365.ConfigService.Implementations
                                                          .TotalSeconds,
                 CurrentVersion = (long) eventHeader.EventNumber,
                 ValidFrom = domainEvent.Payload.ValidFrom,
-                ValidTo = domainEvent.Payload.ValidTo
+                ValidTo = domainEvent.Payload.ValidTo,
+                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
 
             using IServiceScope scope = _serviceProvider.CreateScope();
@@ -318,7 +327,9 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber
+                CurrentVersion = (long) eventHeader.EventNumber,
+                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -328,7 +339,9 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber
+                CurrentVersion = (long) eventHeader.EventNumber,
+                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -359,7 +372,9 @@ namespace Bechtle.A365.ConfigService.Implementations
                 Json = source.Json,
                 Keys = source.Keys,
                 CurrentVersion = (long) eventHeader.EventNumber,
-                KeyPaths = source.KeyPaths
+                KeyPaths = source.KeyPaths,
+                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(newLayer);
@@ -369,7 +384,9 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var layer = new EnvironmentLayer(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber
+                CurrentVersion = (long) eventHeader.EventNumber,
+                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
@@ -442,6 +459,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             layer.CurrentVersion = (long) eventHeader.EventNumber;
+            layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             using IServiceScope scope = _serviceProvider.CreateScope();
 
@@ -498,6 +516,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             layer.CurrentVersion = (long) eventHeader.EventNumber;
+            layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             using IServiceScope scope = _serviceProvider.CreateScope();
 
@@ -540,6 +559,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
             environment.KeyPaths = GenerateKeyPaths(environment.Keys);
             environment.CurrentVersion = (long) eventHeader.EventNumber;
+            environment.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
         }
@@ -550,7 +570,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Keys = domainEvent.Payload.Keys,
                 Variables = domainEvent.Payload.Variables,
-                CurrentVersion = (long) eventHeader.EventNumber
+                CurrentVersion = (long) eventHeader.EventNumber,
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                CreatedAt = domainEvent.Timestamp.ToUniversalTime()
             };
 
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
@@ -594,6 +616,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             structure.CurrentVersion = (long) eventHeader.EventNumber;
+            structure.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
         }

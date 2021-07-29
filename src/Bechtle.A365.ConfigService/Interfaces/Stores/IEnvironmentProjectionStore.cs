@@ -14,6 +14,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     public interface IEnvironmentProjectionStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
+        ///     assign the given list of layers in the given order to an Environment
+        /// </summary>
+        /// <param name="identifier">Id pointing to the Environment to operate on</param>
+        /// <param name="layers">list of layers to assign to this Environment</param>
+        /// <returns></returns>
+        Task<IResult> AssignLayers(EnvironmentIdentifier identifier, IList<LayerIdentifier> layers);
+
+        /// <summary>
         ///     create a new Environment with the given <see cref="EnvironmentIdentifier" />
         /// </summary>
         /// <param name="identifier">Id pointing to the Environment to operate on</param>
@@ -27,6 +35,21 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier">Id pointing to the Environment to operate on</param>
         /// <returns></returns>
         Task<IResult> Delete(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     get the ordered list of assigned layers for the given <see cref="EnvironmentIdentifier" />
+        /// </summary>
+        /// <param name="identifier">Id pointing to the Environment to operate on</param>
+        /// <returns></returns>
+        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     get the ordered list of assigned layers for the given <see cref="EnvironmentIdentifier" /> at the given Version
+        /// </summary>
+        /// <param name="identifier">Id pointing to the Environment to operate on</param>
+        /// <param name="version">Event-Version to use when streaming Objects</param>
+        /// <returns></returns>
+        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version);
 
         /// <summary>
         ///     get a list of all Environments
@@ -77,26 +100,10 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<EnvironmentIdentifier> parameters);
 
         /// <summary>
-        ///     get the ordered list of assigned layers for the given <see cref="EnvironmentIdentifier"/>
+        ///     get all available Metadata for an Environment
         /// </summary>
         /// <param name="identifier">Id pointing to the Environment to operate on</param>
-        /// <returns></returns>
-        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier);
-
-        /// <summary>
-        ///     get the ordered list of assigned layers for the given <see cref="EnvironmentIdentifier"/> at the given Version
-        /// </summary>
-        /// <param name="identifier">Id pointing to the Environment to operate on</param>
-        /// <param name="version">Event-Version to use when streaming Objects</param>
-        /// <returns></returns>
-        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version);
-
-        /// <summary>
-        ///     assign the given list of layers in the given order to an Environment
-        /// </summary>
-        /// <param name="identifier">Id pointing to the Environment to operate on</param>
-        /// <param name="layers">list of layers to assign to this Environment</param>
-        /// <returns></returns>
-        Task<IResult> AssignLayers(EnvironmentIdentifier identifier, IList<LayerIdentifier> layers);
+        /// <returns>result of the operation the desired Metadata</returns>
+        Task<IResult<ConfigEnvironmentMetadata>> GetMetadata(EnvironmentIdentifier identifier);
     }
 }

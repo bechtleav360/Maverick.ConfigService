@@ -98,5 +98,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="targetId">id of the newly created layer</param>
         /// <returns>Result of the operation</returns>
         Task<IResult> Clone(LayerIdentifier sourceId, LayerIdentifier targetId);
+
+        /// <summary>
+        ///     get metadata for a Layer
+        /// </summary>
+        /// <param name="identifier">Id of the layer to retrieve metadata for</param>
+        /// <returns>Result of the operation</returns>
+        Task<IResult<EnvironmentLayerMetadata>> GetMetadata(LayerIdentifier identifier);
     }
 }

@@ -17,6 +17,7 @@ using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.ServiceBase;
 using Bechtle.A365.ServiceBase.EventStore.Extensions;
+using Bechtle.A365.ServiceBase.Extensions;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -33,6 +34,7 @@ using Microsoft.Extensions.Primitives;
 using NLog.Web;
 using Prometheus;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using ApplicationBuilderExtensions = Bechtle.A365.ConfigService.Common.Utilities.ApplicationBuilderExtensions;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -52,18 +54,9 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <inheritdoc />
-        protected override void AddEarlyConfiguration(
-            IApplicationBuilder app,
-            IWebHostEnvironment env,
-            IApiVersionDescriptionProvider provider)
-        {
-            _logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
-        }
-
-        /// <inheritdoc />
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
         {
-            var appConfiguration = app.StartTweakingWith(_logger, Configuration);
+            ApplicationBuilderExtensions.AppConfigContainer appConfiguration = app.StartTweakingWith(_logger, Configuration);
 
             // basic Asp.NetCore 3.X stuff 
             appConfiguration.Tweak(a => a.UseRouting(), "adding routing")
@@ -107,10 +100,12 @@ namespace Bechtle.A365.ConfigService
                               options.EnableFilter();
                               options.ShowExtensions();
 
-                              foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
+                              foreach (ApiVersionDescription description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
+                              {
                                   options.SwaggerEndpoint(
                                       $"/swagger/{description.GroupName}/swagger.json",
                                       $"ConfigService {description.GroupName.ToUpperInvariant()}");
+                              }
                           }),
                 "adding Swagger/-UI");
 
@@ -162,6 +157,15 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <inheritdoc />
+        protected override void AddEarlyConfiguration(
+            IApplicationBuilder app,
+            IWebHostEnvironment env,
+            IApiVersionDescriptionProvider provider)
+        {
+            _logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
+        }
+
+        /// <inheritdoc />
         protected override void AddServiceConfiguration(IServiceCollection services)
         {
             RegisterOptions(services);
@@ -189,7 +193,9 @@ namespace Bechtle.A365.ConfigService
                             var connectionString = Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>();
 
                             if (string.IsNullOrWhiteSpace(connectionString))
+                            {
                                 throw new ArgumentException("configuration MemoryCache:Redis:ConnectionString is null or empty", nameof(options));
+                            }
 
                             options.Configuration = connectionString;
                         })
@@ -207,13 +213,18 @@ namespace Bechtle.A365.ConfigService
                     .AddTransient<IEventBus, WebSocketEventBusClient>(
                         provider =>
                         {
-                            var config = provider.GetRequiredService<IOptionsMonitor<EventBusConnectionConfiguration>>().CurrentValue;
+                            EventBusConnectionConfiguration config = provider.GetRequiredService<IOptionsMonitor<EventBusConnectionConfiguration>>()
+                                                                             .CurrentValue;
 
                             if (string.IsNullOrWhiteSpace(config.Server))
+                            {
                                 throw new ArgumentException("EventBusConfiguration.Server is null or empty");
+                            }
 
                             if (string.IsNullOrWhiteSpace(config.Hub))
+                            {
                                 throw new ArgumentException("EventBusConfiguration.Hub is null or empty");
+                            }
 
                             return new WebSocketEventBusClient(
                                 new Uri(new Uri(config.Server), config.Hub).ToString(),
@@ -241,7 +252,7 @@ namespace Bechtle.A365.ConfigService
                             typeof(EnvironmentLayerKeysModified),
                             typeof(StructureCreated),
                             typeof(StructureDeleted),
-                            typeof(StructureVariablesModified),
+                            typeof(StructureVariablesModified)
                         })
                     .AddHostedService<GracefulShutdownService>()
                     .AddHostedService<TemporaryKeyCleanupService>();
@@ -325,6 +336,11 @@ namespace Bechtle.A365.ConfigService
             services.Configure<AzureSecretStoreConfiguration>(Configuration.GetSection("SecretConfiguration:Stores:Azure"));
         }
 
+        private void RegisterProjections(IServiceCollection services)
+        {
+            services.AddHostedService<DomainObjectProjection>();
+        }
+
         private void RegisterSecretStores(IServiceCollection services)
         {
             var storeBaseSection = "SecretConfiguration:Stores";
@@ -337,12 +353,13 @@ namespace Bechtle.A365.ConfigService
             };
 
             // look for all enabled stores, and collect some metadata
-            var selectedStores = storeRegistrations.Select(
+            List<(string SectionName, Action<IConfigurationSection, IServiceCollection> RegistryFunc, IConfigurationSection Section, bool Enabled)>
+                selectedStores = storeRegistrations.Select(
                                                        t =>
                                                        {
-                                                           var (section, registryFunc) = t;
+                                                           (string section, Action<IConfigurationSection, IServiceCollection> registryFunc) = t;
 
-                                                           var storeSection = Configuration.GetSection($"{storeBaseSection}:{section}");
+                                                           IConfigurationSection storeSection = Configuration.GetSection($"{storeBaseSection}:{section}");
                                                            return (SectionName: section,
                                                                       RegistryFunc: registryFunc,
                                                                       Section: storeSection,
@@ -379,11 +396,6 @@ namespace Bechtle.A365.ConfigService
                             options.GroupNameFormat = "'v'VVV";
                             options.SubstituteApiVersionInUrl = true;
                         });
-        }
-
-        private void RegisterProjections(IServiceCollection services)
-        {
-            services.AddHostedService<DomainObjectProjection>();
         }
     }
 }

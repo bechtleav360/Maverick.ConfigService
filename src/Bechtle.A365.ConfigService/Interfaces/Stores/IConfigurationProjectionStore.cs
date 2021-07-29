@@ -94,5 +94,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier"></param>
         /// <returns></returns>
         Task<IResult<bool>> IsStale(ConfigurationIdentifier identifier);
+
+        /// <summary>
+        ///     get metadata for a given Configuration
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<IResult<PreparedConfigurationMetadata>> GetMetadata(ConfigurationIdentifier identifier);
     }
 }

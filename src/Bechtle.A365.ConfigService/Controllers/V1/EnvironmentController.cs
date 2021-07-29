@@ -383,5 +383,33 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
             }
         }
+
+        /// <summary>
+        ///     get all metadata for an Environment
+        /// </summary>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <returns>Metadata for the environment</returns>
+        [ProducesResponseType(typeof(ConfigEnvironmentMetadata), (int) HttpStatusCode.OK)]
+        [HttpGet("{category}/{name}/info", Name = "GetEnvironmentMetadata")]
+        public async Task<IActionResult> GetMetadata([FromRoute] string category, 
+                                                     [FromRoute] string name)
+        {
+            var identifier = new EnvironmentIdentifier(category, name);
+            try
+            {
+                IResult<ConfigEnvironmentMetadata> result = await _store.Environments.GetMetadata(identifier);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to retrieve Environment-Metadata (" +
+                                   $"{nameof(category)}: {category}; " +
+                                   $"{nameof(name)}: {name})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-metadata");
+            }
+        }
     }
 }

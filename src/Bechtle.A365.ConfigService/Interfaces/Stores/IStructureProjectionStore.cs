@@ -68,5 +68,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="variables"></param>
         /// <returns></returns>
         Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables);
+
+        /// <summary>
+        ///     get metadata for a Structure
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<IResult<ConfigStructureMetadata>> GetMetadata(StructureIdentifier identifier);
     }
 }

@@ -43,6 +43,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             Id = null;
             IsDefault = false;
+            Json = "{}";
             KeyPaths = new List<EnvironmentLayerKeyPath>();
             Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
             Layers = new List<LayerIdentifier>();
@@ -68,6 +69,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
             Id = new EnvironmentIdentifier(identifier.Category, identifier.Name);
             IsDefault = false;
+            Json = "{}";
             KeyPaths = new List<EnvironmentLayerKeyPath>();
             Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
             Layers = new List<LayerIdentifier>();
@@ -77,7 +79,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is ConfigEnvironment other && Equals(other);
 
         /// <inheritdoc />
-        public override int GetHashCode() => HashCode.Combine(Id, IsDefault, Json, KeyPaths, Keys, Layers);
+        public override int GetHashCode() => HashCode.Combine(Id, IsDefault, Layers, ChangedAt, ChangedBy, CreatedAt, CreatedBy);
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(ConfigEnvironment left, ConfigEnvironment right) => Equals(left, right);
@@ -87,6 +89,10 @@ namespace Bechtle.A365.ConfigService.DomainObjects
 
         private bool Equals(ConfigEnvironment other) =>
             Equals(Id, other.Id)
+            && ChangedAt == other.ChangedAt
+            && ChangedBy == other.ChangedBy
+            && CreatedAt == other.CreatedAt
+            && CreatedBy == other.CreatedBy
             && IsDefault == other.IsDefault
             && Json == other.Json
             && KeyPaths.SequenceEqual(other.KeyPaths)

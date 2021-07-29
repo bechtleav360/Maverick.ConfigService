@@ -285,6 +285,35 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return result;
         }
 
+        /// <inheritdoc />
+        public async Task<IResult<ConfigEnvironmentMetadata>> GetMetadata(EnvironmentIdentifier identifier)
+        {
+            _logger.LogDebug("retrieving metadata of environment: {Identifier}", identifier);
+
+            IResult<ConfigEnvironment> environmentResult = await _domainObjectManager.GetEnvironment(
+                                                               identifier,
+                                                               CancellationToken.None);
+
+            if (environmentResult.IsError)
+                return Result.Error<ConfigEnvironmentMetadata>(environmentResult.Message, environmentResult.Code);
+
+            ConfigEnvironment environment = environmentResult.Data;
+
+            var metadata = new ConfigEnvironmentMetadata
+            {
+                Id = environment.Id,
+                Layers = environment.Layers,
+                ChangedAt = environment.ChangedAt,
+                ChangedBy = environment.ChangedBy,
+                CreatedAt = environment.CreatedAt,
+                CreatedBy = environment.CreatedBy,
+                KeyCount = environment.Keys.Count,
+                LayerCount = environment.Layers.Count
+            };
+
+            return Result.Success(metadata);
+        }
+
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(
             IList<TItem> items,
             Func<TItem, string> keySelector,
@@ -323,7 +352,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var current = root;
             var result = new List<EnvironmentLayerKeyPath>();
             var queue = new Queue<string>(parts);
-            var walkedPath = new List<string>{"{START}"};
+            var walkedPath = new List<string> {"{START}"};
 
             // try walking the given path to the deepest part, and return all options the user can take from here
             while (queue.TryDequeue(out var part))

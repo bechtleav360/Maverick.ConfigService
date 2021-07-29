@@ -187,5 +187,31 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                 .ToList(),
                        CancellationToken.None);
         }
+
+        /// <inheritdoc />
+        public async Task<IResult<ConfigStructureMetadata>> GetMetadata(StructureIdentifier identifier)
+        {
+            _logger.LogDebug("retrieving metadata for structure {Identifier}", identifier);
+
+            IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
+
+            if (structureResult.IsError)
+                return Result.Error<ConfigStructureMetadata>(structureResult.Message, structureResult.Code);
+
+            ConfigStructure structure = structureResult.Data;
+
+            var metadata = new ConfigStructureMetadata
+            {
+                Id = structure.Id,
+                ChangedAt = structure.ChangedAt,
+                ChangedBy = structure.ChangedBy,
+                CreatedAt = structure.CreatedAt,
+                CreatedBy = structure.CreatedBy,
+                KeyCount = structure.Keys.Count,
+                VariablesCount = structure.Variables.Count
+            };
+
+            return Result.Success(metadata);
+        }
     }
 }
