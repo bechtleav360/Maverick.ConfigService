@@ -28,6 +28,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         public Dictionary<string, EnvironmentLayerKey> Keys { get; set; }
 
+        /// <summary>
+        ///     List of Tags assigned to this Layer
+        /// </summary>
+        public List<string> Tags { get; set; }
+
         /// <inheritdoc />
         public EnvironmentLayer()
         {
@@ -35,6 +40,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
             KeyPaths = new List<EnvironmentLayerKeyPath>();
             Json = "{}";
+            Tags = new List<string>();
         }
 
         /// <inheritdoc />
@@ -54,6 +60,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
             KeyPaths = new List<EnvironmentLayerKeyPath>();
             Json = "{}";
+            Tags = new List<string>();
         }
 
         /// <inheritdoc />

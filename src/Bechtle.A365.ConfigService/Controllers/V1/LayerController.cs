@@ -429,5 +429,99 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-metadata");
             }
         }
+
+        /// <summary>
+        ///     get all tags for a Layer
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns>Metadata for the layer</returns>
+        [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int) HttpStatusCode.OK)]
+        [HttpGet("{name}/tags", Name = "GetLayerTags")]
+        public async Task<IActionResult> GetTags([FromRoute] string name)
+        {
+            try
+            {
+                var identifier = new LayerIdentifier(name);
+                IResult<IList<string>> result = await _store.Layers.GetTags(identifier);
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to read metadata for layer({Name})", name);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-metadata");
+            }
+        }
+
+        /// <summary>
+        ///     add a single Tag to a Layer
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [HttpPut("{name}/tags/{tag}", Name = "AddLayerTag")]
+        public async Task<IActionResult> AddTag([FromRoute] string name,
+                                                [FromRoute] string tag)
+        {
+            try
+            {
+                var identifier = new LayerIdentifier(name);
+
+                var result = await _store.Layers.UpdateTags(
+                                 identifier,
+                                 new List<string> {tag},
+                                 new List<string>());
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                return AcceptedAtAction(nameof(GetTags),
+                                        RouteUtilities.ControllerName<LayerController>(),
+                                        new {version = ApiVersions.V1, name});
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to add tag to layer({Name})", name);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to add tag to layer");
+            }
+        }
+
+        /// <summary>
+        ///     remove a single Tag from a Layer
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [HttpDelete("{name}/tags/{tag}", Name = "RemoveLayerTag")]
+        public async Task<IActionResult> RemoveTag([FromRoute] string name,
+                                                   [FromRoute] string tag)
+        {
+            try
+            {
+                var identifier = new LayerIdentifier(name);
+
+                var result = await _store.Layers.UpdateTags(
+                                 identifier,
+                                 new List<string>(),
+                                 new List<string> {tag});
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                return AcceptedAtAction(nameof(GetTags),
+                                        RouteUtilities.ControllerName<LayerController>(),
+                                        new {version = ApiVersions.V1, name});
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to remove tag from layer({Name})", name);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to remove tag from layer");
+            }
+        }
     }
 }

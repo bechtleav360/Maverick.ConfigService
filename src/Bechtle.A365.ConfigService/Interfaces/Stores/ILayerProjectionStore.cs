@@ -14,6 +14,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     public interface ILayerProjectionStore : IDisposable, IAsyncDisposable
     {
         /// <summary>
+        ///     create a new Layer from existing data.
+        /// </summary>
+        /// <param name="sourceId">id of the source-layer</param>
+        /// <param name="targetId">id of the newly created layer</param>
+        /// <returns>Result of the operation</returns>
+        Task<IResult> Clone(LayerIdentifier sourceId, LayerIdentifier targetId);
+
+        /// <summary>
         ///     create a new Layer with the given <see cref="LayerIdentifier" />
         /// </summary>
         /// <param name="identifier">Id of the layer that should be created</param>
@@ -84,6 +92,20 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters);
 
         /// <summary>
+        ///     get metadata for a Layer
+        /// </summary>
+        /// <param name="identifier">Id of the layer to retrieve metadata for</param>
+        /// <returns>Result of the operation</returns>
+        Task<IResult<EnvironmentLayerMetadata>> GetMetadata(LayerIdentifier identifier);
+
+        /// <summary>
+        ///     Get a list of Tags assigned to the given Layer
+        /// </summary>
+        /// <param name="identifier">Id of the layer to update the tags of</param>
+        /// <returns>Result of the operation</returns>
+        Task<IResult<IList<string>>> GetTags(LayerIdentifier identifier);
+
+        /// <summary>
         ///     add or update a number of keys in the given Layer
         /// </summary>
         /// <param name="identifier">Id of the layer to update keys for</param>
@@ -92,18 +114,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult> UpdateKeys(LayerIdentifier identifier, ICollection<DtoConfigKey> keys);
 
         /// <summary>
-        ///     create a new Layer from existing data.
+        ///     Update the assigned Tags for a Layer
         /// </summary>
-        /// <param name="sourceId">id of the source-layer</param>
-        /// <param name="targetId">id of the newly created layer</param>
+        /// <param name="identifier">Id of the layer to update the tags of</param>
+        /// <param name="addedTags">list of tags to be added to the Layer</param>
+        /// <param name="removedTags">list of tags to be removed from the Layer</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult> Clone(LayerIdentifier sourceId, LayerIdentifier targetId);
-
-        /// <summary>
-        ///     get metadata for a Layer
-        /// </summary>
-        /// <param name="identifier">Id of the layer to retrieve metadata for</param>
-        /// <returns>Result of the operation</returns>
-        Task<IResult<EnvironmentLayerMetadata>> GetMetadata(LayerIdentifier identifier);
+        public Task<IResult> UpdateTags(LayerIdentifier identifier, ICollection<string> addedTags, ICollection<string> removedTags);
     }
 }

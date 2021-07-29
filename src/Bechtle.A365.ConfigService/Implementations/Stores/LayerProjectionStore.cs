@@ -245,6 +245,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
+        public async Task<IResult<IList<string>>> GetTags(LayerIdentifier identifier)
+        {
+            _logger.LogDebug("retrieving tags of layer '{Identifier}'", identifier);
+
+            IResult<EnvironmentLayer> result = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
+
+            if (result.IsError)
+                return Result.Error<IList<string>>(result.Message, result.Code);
+
+            return Result.Success<IList<string>>(result.Data.Tags);
+        }
+
+        /// <inheritdoc />
         public async Task<IResult> UpdateKeys(LayerIdentifier identifier, ICollection<DtoConfigKey> keys)
         {
             _logger.LogDebug("attempting to update {UpdatedKeys} keys in '{Identifier}'", keys.Count, identifier);
@@ -290,6 +303,30 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             };
 
             return Result.Success(metadata);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> UpdateTags(LayerIdentifier identifier, ICollection<string> addedTags, ICollection<string> removedTags)
+        {
+            _logger.LogDebug(
+                "updating tags for layer '{Identifier}', {Additions} new tags, {Deletions} removed tags",
+                identifier,
+                addedTags.Count,
+                removedTags.Count);
+
+            IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
+            if (layerResult.IsError)
+                return layerResult;
+
+            var additions = new List<string>();
+            var deletions = new List<string>();
+
+            EnvironmentLayer layer = layerResult.Data;
+
+            additions.AddRange(addedTags.Where(t => !layer.Tags.Contains(t, StringComparer.OrdinalIgnoreCase)));
+            deletions.AddRange(removedTags.Where(t => layer.Tags.Contains(t, StringComparer.OrdinalIgnoreCase)));
+
+            return await _domainObjectManager.UpdateTags(identifier, additions, deletions, CancellationToken.None);
         }
 
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(

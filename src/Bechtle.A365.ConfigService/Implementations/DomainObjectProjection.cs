@@ -122,6 +122,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     IDomainEvent<EnvironmentLayerCreated> e => HandleEnvironmentLayerCreated(eventHeader, e),
                     IDomainEvent<EnvironmentLayerDeleted> e => HandleEnvironmentLayerDeleted(eventHeader, e),
                     IDomainEvent<EnvironmentLayerCopied> e => HandleEnvironmentLayerCopied(eventHeader, e),
+                    IDomainEvent<EnvironmentLayerTagsChanged> e => HandleEnvironmentLayerTagsChanged(eventHeader, e),
                     IDomainEvent<EnvironmentLayerKeysImported> e => HandleEnvironmentLayerKeysImported(eventHeader, e),
                     IDomainEvent<EnvironmentLayerKeysModified> e => HandleEnvironmentLayerKeysModified(eventHeader, e),
                     IDomainEvent<StructureCreated> e => HandleStructureCreated(eventHeader, e),
@@ -562,6 +563,40 @@ namespace Bechtle.A365.ConfigService.Implementations
             environment.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
+        }
+
+        private async Task HandleEnvironmentLayerTagsChanged(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerTagsChanged> domainEvent)
+        {
+            IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
+
+            if (layerResult.IsError)
+            {
+                _logger.LogWarning(
+                    "event received to modify layer, but layer wasn't found in configured store: {ErrorCode} {Message}",
+                    layerResult.Code,
+                    layerResult.Message);
+                return;
+            }
+
+            EnvironmentLayer layer = layerResult.Data;
+
+            foreach (string tag in domainEvent.Payload.AddedTags.Where(tag => !layer.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase)))
+            {
+                layer.Tags.Add(tag);
+            }
+
+            foreach (string tag in domainEvent.Payload.RemovedTags)
+            {
+                string existingTag = layer.Tags.FirstOrDefault(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
+                if (existingTag is null)
+                    continue;
+                layer.Tags.Remove(existingTag);
+            }
+
+            layer.CurrentVersion = (long) eventHeader.EventNumber;
+            layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
+
+            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
         }
 
         private async Task HandleStructureCreated(StreamedEventHeader eventHeader, IDomainEvent<StructureCreated> domainEvent)

@@ -48,6 +48,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return StatusCode(HttpStatusCode.InternalServerError, result.Message);
 
                 case ErrorCode.InvalidData:
+                case ErrorCode.ValidationFailed:
                 case ErrorCode.StructureAlreadyExists:
                 case ErrorCode.EnvironmentAlreadyExists:
                 case ErrorCode.DefaultEnvironmentAlreadyExists:

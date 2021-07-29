@@ -319,6 +319,17 @@ namespace Bechtle.A365.ConfigService.Implementations
                 new List<DomainEvent> {new StructureVariablesModified(identifier, actions.ToArray())},
                 cancellationToken);
 
+        /// <inheritdoc />
+        public Task<IResult> UpdateTags(
+            LayerIdentifier identifier,
+            IEnumerable<string> addedTags,
+            IEnumerable<string> removedTags,
+            CancellationToken cancellationToken)
+            => ModifyObject<EnvironmentLayer, LayerIdentifier>(
+                identifier,
+                new List<DomainEvent> {new EnvironmentLayerTagsChanged(identifier, addedTags.ToList(), removedTags.ToList())},
+                cancellationToken);
+
         private async Task<IResult> CreateObject<TObject, TIdentifier>(
             TIdentifier identifier,
             IList<DomainEvent> createEvents,

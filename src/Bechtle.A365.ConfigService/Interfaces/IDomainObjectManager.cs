@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
-using Bechtle.A365.ConfigService.Interfaces.Stores;
 
 namespace Bechtle.A365.ConfigService.Interfaces
 {
@@ -221,7 +220,7 @@ namespace Bechtle.A365.ConfigService.Interfaces
         ///     Check if the given Configuration is marked as stale by recent changes
         /// </summary>
         /// <param name="identifier">valid identifier for an existing Configuration</param>
-        /// <returns></returns>
+        /// <returns>Result of the Operation</returns>
         Task<IResult<bool>> IsStale(ConfigurationIdentifier identifier);
 
         /// <summary>
@@ -231,7 +230,6 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="actions">list of actions to apply to the layers' keys</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
-        /// <returns></returns>
         Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken);
 
         /// <summary>
@@ -242,5 +240,19 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
         Task<IResult> ModifyStructureVariables(StructureIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Modify the assigned Tags of a Layer
+        /// </summary>
+        /// <param name="identifier">valid identifier for an existing Layer</param>
+        /// <param name="addedTags">tags to be added to the Layer</param>
+        /// <param name="removedTags">tags to be removed from the Layer</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        public Task<IResult> UpdateTags(
+            LayerIdentifier identifier,
+            IEnumerable<string> addedTags,
+            IEnumerable<string> removedTags,
+            CancellationToken cancellationToken);
     }
 }
