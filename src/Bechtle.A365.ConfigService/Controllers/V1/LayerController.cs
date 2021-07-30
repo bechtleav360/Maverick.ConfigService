@@ -455,6 +455,46 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
+        ///     set all tags for a Layer
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="tags">list of tags to set for layer, adding missing ones and removing superfluous ones</param>
+        /// <returns>Metadata for the layer</returns>
+        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [HttpPost("{name}/tags", Name = "SetLayerTags")]
+        public async Task<IActionResult> SetTags([FromRoute] string name,
+                                                 [FromBody] string[] tags)
+        {
+            try
+            {
+                var identifier = new LayerIdentifier(name);
+                IResult<IList<string>> layerResult = await _store.Layers.GetTags(identifier);
+
+                if (layerResult.IsError)
+                    return ProviderError(layerResult);
+
+                IList<string> existingTags = layerResult.Data;
+                List<string> deletions = existingTags.Where(t => !tags.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
+                List<string> additions = tags.Where(t => !existingTags.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
+
+                IResult result = await _store.Layers.UpdateTags(identifier, additions, deletions);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                return AcceptedAtAction(nameof(GetTags),
+                                        RouteUtilities.ControllerName<LayerController>(),
+                                        new {version = ApiVersions.V1, name});
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to read metadata for layer({Name})", name);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-metadata");
+            }
+        }
+
+        /// <summary>
         ///     add a single Tag to a Layer
         /// </summary>
         /// <param name="name"></param>
