@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Bechtle.A365.ConfigService.Common.DomainEvents
 {
@@ -52,8 +53,8 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             }
 
             return Equals(Identifier, other.Identifier)
-                   && Equals(AddedTags, other.AddedTags)
-                   && Equals(RemovedTags, other.RemovedTags);
+                   && AddedTags.SequenceEqual(other.AddedTags)
+                   && RemovedTags.SequenceEqual(other.RemovedTags);
         }
 
         /// <inheritdoc />
