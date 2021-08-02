@@ -17,7 +17,6 @@ using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.ServiceBase;
 using Bechtle.A365.ServiceBase.EventStore.Extensions;
-using Bechtle.A365.ServiceBase.Extensions;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;

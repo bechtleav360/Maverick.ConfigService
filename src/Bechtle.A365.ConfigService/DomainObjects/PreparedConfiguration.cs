@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.DomainObjects
@@ -13,6 +14,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     Data-Version from which this Configuration was built
         /// </summary>
         public long ConfigurationVersion { get; set; }
+
+        /// <summary>
+        ///     Map of Keys and their associated Errors
+        /// </summary>
+        public Dictionary<string, List<string>> Errors { get; set; }
 
         /// <inheritdoc cref="ConfigurationIdentifier" />
         public override ConfigurationIdentifier Id { get; set; }
@@ -42,15 +48,22 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         public DateTime? ValidTo { get; set; }
 
+        /// <summary>
+        ///     Map of Keys and their associated Warnings
+        /// </summary>
+        public Dictionary<string, List<string>> Warnings { get; set; }
+
         /// <inheritdoc />
         public PreparedConfiguration()
         {
+            Errors = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             Id = null;
             Json = "{}";
             Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             UsedKeys = new List<string>();
             ValidFrom = null;
             ValidTo = null;
+            Warnings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />
@@ -71,12 +84,14 @@ namespace Bechtle.A365.ConfigService.DomainObjects
                 throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Structure)} is null");
             }
 
+            Errors = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             Id = identifier;
             Json = "{}";
             Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             UsedKeys = new List<string>();
             ValidFrom = null;
             ValidTo = null;
+            Warnings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />
@@ -94,6 +109,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         private bool Equals(PreparedConfiguration other) =>
             ConfigurationVersion == other.ConfigurationVersion
             && Equals(Id, other.Id)
+            && Errors.SequenceEqual(other.Errors)
             && ChangedAt == other.ChangedAt
             && ChangedBy == other.ChangedBy
             && CreatedAt == other.CreatedAt
@@ -102,6 +118,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             && Equals(Keys, other.Keys)
             && Equals(UsedKeys, other.UsedKeys)
             && Nullable.Equals(ValidFrom, other.ValidFrom)
-            && Nullable.Equals(ValidTo, other.ValidTo);
+            && Nullable.Equals(ValidTo, other.ValidTo)
+            && Warnings.SequenceEqual(other.Warnings);
     }
 }

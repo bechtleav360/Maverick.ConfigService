@@ -1,5 +1,4 @@
 ﻿using System;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {

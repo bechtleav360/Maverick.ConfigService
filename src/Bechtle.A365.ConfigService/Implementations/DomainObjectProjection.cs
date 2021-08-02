@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
+using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
@@ -295,6 +296,38 @@ namespace Bechtle.A365.ConfigService.Implementations
                 config.Json = translator.ToJson(config.Keys).ToString();
                 config.UsedKeys = compilationResult.GetUsedKeys().ToList();
                 config.CurrentVersion = (long) eventHeader.EventNumber;
+
+                var tracerStack = new Stack<TraceResult>(compilationResult.CompilationTrace);
+                while (tracerStack.TryPop(out TraceResult result))
+                {
+                    // most if not all traces will be returned as KeyTraceResult
+                    if (!(result is KeyTraceResult keyResult))
+                    {
+                        continue;
+                    }
+
+                    if (keyResult.Errors.Any())
+                    {
+                        if (!config.Errors.TryGetValue(keyResult.Key, out List<string> errorList))
+                        {
+                            errorList = new List<string>();
+                            config.Errors[keyResult.Key] = errorList;
+                        }
+
+                        errorList.AddRange(keyResult.Errors);
+                    }
+
+                    if (keyResult.Warnings.Any())
+                    {
+                        if (!config.Warnings.TryGetValue(keyResult.Key, out List<string> warningList))
+                        {
+                            warningList = new List<string>();
+                            config.Errors[keyResult.Key] = warningList;
+                        }
+
+                        warningList.AddRange(keyResult.Warnings);
+                    }
+                }
 
                 await _objectStore.Store<PreparedConfiguration, ConfigurationIdentifier>(config);
 

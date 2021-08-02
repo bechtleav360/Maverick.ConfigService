@@ -267,6 +267,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     CreatedAt = configuration.CreatedAt,
                     CreatedBy = configuration.CreatedBy,
                     KeyCount = configuration.Keys.Count,
+                    Warnings = configuration.Warnings,
+                    WarningCount = configuration.Warnings.Count,
+                    Errors = configuration.Errors,
+                    ErrorCount = configuration.Errors.Count,
                 };
 
                 return Result.Success(metadata);
