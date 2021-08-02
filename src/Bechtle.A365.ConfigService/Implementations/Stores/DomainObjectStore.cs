@@ -97,8 +97,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                collection.EnsureIndex(o => o.Id);
+                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
                 IList<TIdentifier> ids = collection.Query()
                                                    .OrderBy(o => o.Id)
                                                    .Select(o => o.Id)
@@ -128,8 +127,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                collection.EnsureIndex(o => o.Id);
+                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
                 IList<TIdentifier> ids = collection.Query()
                                                    .OrderBy(o => o.Id)
                                                    .Where(filter)
@@ -166,8 +164,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                collection.EnsureIndex(o => o.Id);
+                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
                 TObject domainObject = collection.Query()
                                                  .Where(o => o.Id == identifier)
                                                  .OrderByDescending(o => o.CurrentVersion)
@@ -215,8 +212,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                collection.EnsureIndex(o => o.Id);
+                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
                 TObject domainObject = collection.Query()
                                                  .Where(o => o.Id == identifier)
                                                  .Where(o => o.CurrentVersion <= maxVersion)
@@ -295,8 +291,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 _memoryCache.Remove(identifier.ToString());
 
-                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                collection.EnsureIndex(o => o.Id);
+                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
                 collection.DeleteMany(o => o.Id == identifier);
 
                 ILiteCollection<DomainObjectMetadata<TIdentifier>> metadataCollection =
@@ -361,8 +356,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = _database.GetCollection<TObject>(collectionName);
-                collection.EnsureIndex(o => o.Id);
+                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
                 collection.Upsert(domainObject);
                 _memoryCache.Set(domainObject.Id.ToString(), domainObject, TimeSpan.FromSeconds(30));
             }
@@ -434,6 +428,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
 
             return Task.FromResult(Result.Success());
+        }
+
+        private ILiteCollection<TDomainObject> GetCollection<TDomainObject, TIdentifier>(string collectionName)
+            where TDomainObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            ILiteCollection<TDomainObject> collection = _database.GetCollection<TDomainObject>(collectionName);
+            collection.EnsureIndex(o => o.Id);
+
+            return collection;
         }
 
         /// <summary>

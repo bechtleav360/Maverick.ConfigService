@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// </summary>
     public class DomainObjectStoreLocationProvider : IDomainObjectStoreLocationProvider
     {
-        private readonly FileInfo _localDbLocation = new FileInfo(Path.Combine(Environment.CurrentDirectory, "data/projections.db"));
+        private readonly FileInfo _localDbLocation = new FileInfo(Path.Combine(Environment.CurrentDirectory, "data/projections.current.db"));
 
         /// <inheritdoc />
         public string FileName => _localDbLocation.FullName;

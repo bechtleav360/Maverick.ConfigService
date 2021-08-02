@@ -448,6 +448,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             layer.Keys.Clear();
             layer.KeyPaths.Clear();
             layer.Json = "{}";
+            layer.CurrentVersion = (long) eventHeader.EventNumber;
 
             using IServiceScope scope = _serviceProvider.CreateScope();
 
@@ -726,6 +727,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 environment.Keys = environmentDataResult.Data;
                 environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
                 environment.KeyPaths = GenerateKeyPaths(environment.Keys);
+                environment.CurrentVersion = layer.CurrentVersion;
 
                 await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
             }
