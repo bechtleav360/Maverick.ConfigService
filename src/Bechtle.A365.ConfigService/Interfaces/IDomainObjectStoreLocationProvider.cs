@@ -6,7 +6,12 @@
     public interface IDomainObjectStoreLocationProvider
     {
         /// <summary>
-        ///     Filename of where the local DomainObject-Database should be stored 
+        ///     Directory-Name of where the local DomainObject-Database should be stored
+        /// </summary>
+        public string Directory { get; }
+
+        /// <summary>
+        ///     Filename of where the local DomainObject-Database should be stored
         /// </summary>
         public string FileName { get; }
     }

@@ -231,6 +231,7 @@ namespace Bechtle.A365.ConfigService
                         })
                     .AddTransient<ICommandValidator, InternalDataCommandValidator>()
                     .AddTransient<IDomainObjectStoreLocationProvider, DomainObjectStoreLocationProvider>()
+                    .AddTransient<IDomainObjectFileStore, DomainObjectFileStore>()
                     .AddTransient<IDomainObjectStore, DomainObjectStore>()
                     .AddTransient<IDomainObjectManager, DomainObjectManager>()
                     .AddSingleton<IJsonTranslator, JsonTranslator>()
@@ -255,7 +256,8 @@ namespace Bechtle.A365.ConfigService
                             typeof(StructureVariablesModified)
                         })
                     .AddHostedService<GracefulShutdownService>()
-                    .AddHostedService<TemporaryKeyCleanupService>();
+                    .AddHostedService<TemporaryKeyCleanupService>()
+                    .AddHostedService<LiteDbMapperInitializer>();
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)

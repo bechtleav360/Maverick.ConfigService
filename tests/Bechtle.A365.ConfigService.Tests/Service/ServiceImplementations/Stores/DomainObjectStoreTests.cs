@@ -8,9 +8,11 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
+using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
@@ -18,21 +20,19 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
     public class DomainObjectStoreTests : IDisposable
     {
         private readonly IDomainObjectStoreLocationProvider _locationProvider = new TestDomainObjectStoreLocationProvider();
-        private readonly DomainObjectStore _objectStore;
+        private readonly Mock<IDomainObjectFileStore> _domainObjectFileStore = new Mock<IDomainObjectFileStore>();
 
-        public DomainObjectStoreTests()
-        {
-            _objectStore = new DomainObjectStore(
-                new NullLoggerFactory().CreateLogger<DomainObjectStore>(),
-                _locationProvider,
-                new MemoryCache(new MemoryCacheOptions()));
-        }
+        private DomainObjectStore _objectStoreInstance;
+
+        private DomainObjectStore ObjectStore => _objectStoreInstance ??= new DomainObjectStore(
+                                                     new NullLoggerFactory().CreateLogger<DomainObjectStore>(),
+                                                     _locationProvider,
+                                                     new MemoryCache(new MemoryCacheOptions()),
+                                                     _domainObjectFileStore.Object);
 
         /// <inheritdoc />
         public void Dispose()
         {
-            _objectStore?.Dispose();
-
             try
             {
                 File.Delete(_locationProvider.FileName);
@@ -60,11 +60,15 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
+            _domainObjectFileStore.Setup(m => m.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
+                                  .ReturnsAsync(Result.Success)
+                                  .Verifiable("object was not stored in local file");
 
-            await _objectStore.Remove<EnvironmentLayer, LayerIdentifier>(layer.Id);
+            await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
 
-            IResult<EnvironmentLayer> result = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layer.Id);
+            await ObjectStore.Remove<EnvironmentLayer, LayerIdentifier>(layer.Id);
+
+            IResult<EnvironmentLayer> result = await ObjectStore.Load<EnvironmentLayer, LayerIdentifier>(layer.Id);
 
             Assert.Equal(ErrorCode.NotFound, result.Code);
             Assert.NotEmpty(result.Message);
@@ -74,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         [Fact]
         public async Task GetProjectedVersion_NoEventsProjected()
         {
-            IResult<long> result = await _objectStore.GetProjectedVersion();
+            IResult<long> result = await ObjectStore.GetProjectedVersion();
 
             AssertPositiveResult(result, -1);
         }
@@ -82,12 +86,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         [Fact]
         public async Task GetProjectedVersion_VersionSetOnce()
         {
-            await _objectStore.SetProjectedVersion(
+            await ObjectStore.SetProjectedVersion(
                 Guid.NewGuid().ToString("D"),
                 42,
                 "Fake-Event");
 
-            IResult<long> result = await _objectStore.GetProjectedVersion();
+            IResult<long> result = await ObjectStore.GetProjectedVersion();
 
             AssertPositiveResult(result, 42);
         }
@@ -95,17 +99,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         [Fact]
         public async Task GetProjectedVersion_VersionSetTwice()
         {
-            await _objectStore.SetProjectedVersion(
+            await ObjectStore.SetProjectedVersion(
                 Guid.NewGuid().ToString("D"),
                 42,
                 "Fake-Event");
 
-            await _objectStore.SetProjectedVersion(
+            await ObjectStore.SetProjectedVersion(
                 Guid.NewGuid().ToString("D"),
                 43,
                 "Fake-Event");
 
-            IResult<long> result = await _objectStore.GetProjectedVersion();
+            IResult<long> result = await ObjectStore.GetProjectedVersion();
 
             AssertPositiveResult(result, 43);
         }
@@ -149,11 +153,11 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             foreach (EnvironmentLayer item in items)
             {
-                await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
+                await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
             }
 
-            IResult<IList<LayerIdentifier>> result = await _objectStore.ListAll<EnvironmentLayer, LayerIdentifier>(
-                                                         layer => layer.CurrentVersion == 43,
+            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(
+                                                         layer => layer.Name == "Foo-2",
                                                          QueryRange.All);
 
             AssertPositiveResult(result, new List<LayerIdentifier> {new LayerIdentifier("Foo-2")});
@@ -179,10 +183,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             foreach (EnvironmentLayer item in items)
             {
-                await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
+                await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
             }
 
-            IResult<IList<LayerIdentifier>> result = await _objectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
+            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
 
             // DomainObjectStore uses LiteDb as underlying store which stores the Ids in their .ToString() representation
             // this means the result will be ordered in a way that is unaware of the numbers in the Layer-Name
@@ -214,11 +218,11 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             foreach (EnvironmentLayer item in items)
             {
-                await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
+                await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
             }
 
             // take items 26-50
-            IResult<IList<LayerIdentifier>> result = await _objectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.Make(25, 25));
+            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.Make(25, 25));
 
             List<LayerIdentifier> expectedIds = items.Select(i => i.Id)
                                                      .OrderBy(id => id.ToString())
@@ -268,10 +272,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             foreach (EnvironmentLayer item in items)
             {
-                await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
+                await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
             }
 
-            IResult<IList<LayerIdentifier>> result = await _objectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
+            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
 
             AssertPositiveResult(
                 result,
@@ -300,9 +304,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
+            await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
 
-            IResult<EnvironmentLayer> result = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layer.Id);
+            IResult<EnvironmentLayer> result = await ObjectStore.Load<EnvironmentLayer, LayerIdentifier>(layer.Id);
 
             AssertPositiveResult(result, layer);
         }
@@ -324,9 +328,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(domainObject);
+            await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(domainObject);
 
-            await _objectStore.StoreMetadata<EnvironmentLayer, LayerIdentifier>(
+            await ObjectStore.StoreMetadata<EnvironmentLayer, LayerIdentifier>(
                 domainObject,
                 new Dictionary<string, string>
                 {
@@ -334,7 +338,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                     {"Baz", "true"}
                 });
 
-            IResult<IDictionary<string, string>> result = await _objectStore.LoadMetadata<EnvironmentLayer, LayerIdentifier>(domainObject.Id);
+            IResult<IDictionary<string, string>> result = await ObjectStore.LoadMetadata<EnvironmentLayer, LayerIdentifier>(domainObject.Id);
 
             AssertPositiveResult(
                 result,
@@ -362,9 +366,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
+            await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
 
-            IResult result = await _objectStore.Remove<EnvironmentLayer, LayerIdentifier>(layer.Id);
+            IResult result = await ObjectStore.Remove<EnvironmentLayer, LayerIdentifier>(layer.Id);
 
             AssertPositiveResult(result);
         }
@@ -372,7 +376,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         [Fact]
         public async Task SetProjectedVersion()
         {
-            IResult result = await _objectStore.SetProjectedVersion(
+            IResult result = await ObjectStore.SetProjectedVersion(
                                  Guid.NewGuid().ToString("D"),
                                  42,
                                  "Fake-Event");
@@ -383,7 +387,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         [Fact]
         public async Task StoreDomainObject()
         {
-            IResult result = await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(
+            IResult result = await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(
                                  new EnvironmentLayer(new LayerIdentifier("Foo"))
                                  {
                                      Json = "{ \"Foo\": true }",
@@ -418,9 +422,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(domainObject);
+            _domainObjectFileStore.Setup(s => s.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
+                                  .ReturnsAsync(Result.Success)
+                                  .Verifiable("object was not stored in local file");
 
-            IResult result = await _objectStore.StoreMetadata<EnvironmentLayer, LayerIdentifier>(
+            await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(domainObject);
+
+            IResult result = await ObjectStore.StoreMetadata<EnvironmentLayer, LayerIdentifier>(
                                  domainObject,
                                  new Dictionary<string, string>
                                  {
@@ -448,7 +456,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
-            IResult result = await _objectStore.StoreMetadata<EnvironmentLayer, LayerIdentifier>(
+            IResult result = await ObjectStore.StoreMetadata<EnvironmentLayer, LayerIdentifier>(
                                  domainObject,
                                  new Dictionary<string, string>
                                  {
@@ -481,7 +489,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             private readonly Guid _fileId = Guid.NewGuid();
 
             /// <inheritdoc />
-            public string FileName => Path.Combine(Environment.CurrentDirectory, $"data/{_fileId:N}.db");
+            public string FileName => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/{_fileId:N}.db")).FullName;
+
+            /// <inheritdoc />
+            public string Directory => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/{_fileId:N}.db")).DirectoryName;
         }
     }
 }

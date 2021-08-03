@@ -159,7 +159,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             _objectStore.Setup(
                             m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(
-                                It.IsAny<Expression<Func<PreparedConfiguration, bool>>>(),
+                                It.IsAny<Func<ConfigurationIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<ConfigurationIdentifier>>(
@@ -192,7 +192,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             _objectStore.Setup(
                             m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(
-                                It.IsAny<Expression<Func<PreparedConfiguration, bool>>>(),
+                                It.IsAny<Func<ConfigurationIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<ConfigurationIdentifier>>(
@@ -375,7 +375,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             _objectStore.Setup(
                             m => m.ListAll<ConfigStructure, StructureIdentifier>(
-                                It.IsAny<Expression<Func<ConfigStructure, bool>>>(),
+                                It.IsAny<Func<StructureIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier> {new StructureIdentifier("Foo", 69)}))
                         .Verifiable("object-list not queried from object-store");

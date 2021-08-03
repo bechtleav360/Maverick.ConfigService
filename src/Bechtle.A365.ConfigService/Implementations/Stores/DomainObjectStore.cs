@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ServiceBase.Extensions;
 using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public sealed class DomainObjectStore : IDomainObjectStore
     {
         private readonly ILiteDatabase _database;
+        private readonly IDomainObjectFileStore _fileStore;
         private readonly ILogger<DomainObjectStore> _logger;
         private readonly IMemoryCache _memoryCache;
 
@@ -27,7 +29,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         public DomainObjectStore(
             ILogger<DomainObjectStore> logger,
             IDomainObjectStoreLocationProvider locationProvider,
-            IMemoryCache memoryCache)
+            IMemoryCache memoryCache,
+            IDomainObjectFileStore fileStore)
         {
             // as the name suggests liteDb will convert all empty strings to null, because that's such a good idea!
             // kinda stupid to set this globally (as opposed to per-object for more control),
@@ -44,6 +47,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             _logger = logger;
             _memoryCache = memoryCache;
+            _fileStore = fileStore;
             _database = new LiteDatabase(
                 new ConnectionString
                 {
@@ -91,160 +95,139 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(QueryRange range)
-            where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
+        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(QueryRange range)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
         {
-            string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
-                IList<TIdentifier> ids = collection.Query()
-                                                   .OrderBy(o => o.Id)
-                                                   .Select(o => o.Id)
-                                                   .Skip(range.Offset)
-                                                   .Limit(range.Length)
-                                                   .ToList();
+                List<ObjectLookupInformation<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
-                return Task.FromResult(Result.Success(ids));
+                IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
+                                                    .Select(o => o.Id)
+                                                    .Skip(range.Offset)
+                                                    .Take(range.Length)
+                                                    .ToList();
+
+                return Result.Success(ids);
             }
             catch (Exception e)
             {
                 _logger.LogWarning(
                     e,
-                    "unable to list objects in collection '{CollectionName}'",
-                    collectionName);
-                return Task.FromResult(
-                    Result.Error<IList<TIdentifier>>(
-                        $"unable to list objects in collection '{collectionName}'",
-                        ErrorCode.DbUpdateError));
+                    "unable to list objects of type {DomainObjectType}",
+                    typeof(TObject).GetFriendlyName());
+                return Result.Error<IList<TIdentifier>>(
+                    $"unable to list objects in collection '{typeof(TObject).GetFriendlyName()}'",
+                    ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
-        public Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(Expression<Func<TObject, bool>> filter, QueryRange range)
+        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(Func<TIdentifier, bool> filter, QueryRange range)
             where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
         {
-            string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
-                IList<TIdentifier> ids = collection.Query()
-                                                   .OrderBy(o => o.Id)
-                                                   .Where(filter)
-                                                   .Select(o => o.Id)
-                                                   .Skip(range.Offset)
-                                                   .Limit(range.Length)
-                                                   .ToList();
+                List<ObjectLookupInformation<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
-                return Task.FromResult(Result.Success(ids));
+                IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
+                                                    .Select(o => o.Id)
+                                                    .Where(filter)
+                                                    .Skip(range.Offset)
+                                                    .Take(range.Length)
+                                                    .ToList();
+
+                return Result.Success(ids);
             }
             catch (Exception e)
             {
                 _logger.LogWarning(
                     e,
-                    "unable to list objects in collection '{CollectionName}'",
-                    collectionName);
-                return Task.FromResult(
-                    Result.Error<IList<TIdentifier>>(
-                        $"unable to list objects in collection '{collectionName}'",
-                        ErrorCode.DbUpdateError));
+                    "unable to list objects of type {DomainObjectType}",
+                    typeof(TObject).GetFriendlyName());
+                return Result.Error<IList<TIdentifier>>(
+                    $"unable to list objects in collection '{typeof(TObject).GetFriendlyName()}'",
+                    ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
-        public Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier)
+        public async Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
             if (_memoryCache.TryGetValue(identifier.ToString(), out TObject cachedValue))
             {
-                return Task.FromResult(Result.Success(cachedValue));
+                return Result.Success(cachedValue);
             }
 
-            string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
-                TObject domainObject = collection.Query()
-                                                 .Where(o => o.Id == identifier)
-                                                 .OrderByDescending(o => o.CurrentVersion)
-                                                 .FirstOrDefault();
+                ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(identifier);
+                long maxExistingVersion = objectInformation.Versions.Any()
+                                              ? objectInformation.Versions
+                                                                 .Where(kvp => kvp.Value)
+                                                                 .Select(kvp => kvp.Key)
+                                                                 .Max()
+                                              : -1;
 
-                if (domainObject is { })
+                if (maxExistingVersion >= 0)
                 {
-                    _memoryCache.Set(identifier.ToString(), domainObject, TimeSpan.FromSeconds(30));
-                    return Task.FromResult(Result.Success(domainObject));
+                    IResult<TObject> result = await _fileStore.LoadObject<TObject, TIdentifier>(identifier, maxExistingVersion);
+                    if (result.IsError)
+                    {
+                        return result;
+                    }
+
+                    _memoryCache.Set(identifier.ToString(), result.Data, TimeSpan.FromSeconds(30));
+                    return result;
                 }
             }
             catch (Exception e)
             {
-                _logger.LogWarning(
-                    e,
-                    "unable to load domainObject from collection '{CollectionName}'",
-                    collectionName);
-                return Task.FromResult(
-                    Result.Error<TObject>(
-                        $"unable to load domainObject from collection '{collectionName}'",
-                        ErrorCode.DbUpdateError));
+                _logger.LogWarning(e, "unable to load domainObject");
+                return Result.Error<TObject>("unable to load domainObject", ErrorCode.DbQueryError);
             }
 
             _logger.LogWarning(
-                "no domainObject with id '{Identifier}' found in collection '{CollectionName}'",
-                identifier.ToString(),
-                collectionName);
-            return Task.FromResult(
-                Result.Error<TObject>(
-                    $"no domainObject with id '{identifier}' found in collection '{collectionName}'",
-                    ErrorCode.NotFound));
+                "no domainObject with id '{Identifier}' found",
+                identifier.ToString());
+            return Result.Error<TObject>("unable to load latest version of domainObject", ErrorCode.NotFound);
         }
 
         /// <inheritdoc />
-        public Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier, long maxVersion)
+        public async Task<IResult<TObject>> Load<TObject, TIdentifier>(TIdentifier identifier, long maxVersion)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            if (_memoryCache.TryGetValue(identifier.ToString(), out TObject cachedValue)
-                && cachedValue.CurrentVersion <= maxVersion)
-            {
-                return Task.FromResult(Result.Success(cachedValue));
-            }
-
-            string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
-                TObject domainObject = collection.Query()
-                                                 .Where(o => o.Id == identifier)
-                                                 .Where(o => o.CurrentVersion <= maxVersion)
-                                                 .OrderByDescending(o => o.CurrentVersion)
-                                                 .FirstOrDefault();
+                ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(identifier);
+                long maxExistingVersion = objectInformation.Versions.Any()
+                                              ? objectInformation.Versions
+                                                                 .Where(kvp => kvp.Value)
+                                                                 .Select(kvp => kvp.Key)
+                                                                 .Where(v => v <= maxVersion)
+                                                                 .Max()
+                                              : -1;
 
-                if (domainObject is { })
+                if (maxExistingVersion >= 0)
                 {
-                    return Task.FromResult(Result.Success(domainObject));
+                    return await _fileStore.LoadObject<TObject, TIdentifier>(identifier, maxExistingVersion);
                 }
             }
             catch (Exception e)
             {
-                _logger.LogWarning(
-                    e,
-                    "unable to load domainObject from collection '{CollectionName}' with id '{Identifier}'",
-                    collectionName,
-                    identifier);
-                return Task.FromResult(
-                    Result.Error<TObject>(
-                        $"unable to load domainObject from collection '{collectionName}' with id '{identifier}'",
-                        ErrorCode.DbUpdateError));
+                _logger.LogWarning(e, "unable to load domainObject at version {Version}", maxVersion);
+                return Result.Error<TObject>($"unable to load domainObject at version {maxVersion}", ErrorCode.DbQueryError);
             }
 
             _logger.LogWarning(
-                "no domainObject with id '{Identifier}' found in collection '{CollectionName}'",
+                "no domainObject with id '{Identifier}' at or below version {Version} found",
                 identifier.ToString(),
-                collectionName);
-            return Task.FromResult(
-                Result.Error<TObject>(
-                    $"no domainObject with id '{identifier}' found in collection '{collectionName}'",
-                    ErrorCode.NotFound));
+                maxVersion);
+            return Result.Error<TObject>($"unable to load domainObject at or below version {maxVersion}", ErrorCode.NotFound);
         }
 
         /// <inheritdoc />
@@ -281,36 +264,26 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult> Remove<TObject, TIdentifier>(TIdentifier identifier)
+        public async Task<IResult> Remove<TObject, TIdentifier>(TIdentifier identifier)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            string collectionName = typeof(TObject).Name;
-            string metadataCollectionName = typeof(TObject).Name + "_Metadata";
             try
             {
                 _memoryCache.Remove(identifier.ToString());
+                await RemoveObjectVersion<TObject, TIdentifier>(identifier);
 
-                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
-                collection.DeleteMany(o => o.Id == identifier);
-
-                ILiteCollection<DomainObjectMetadata<TIdentifier>> metadataCollection =
-                    _database.GetCollection<DomainObjectMetadata<TIdentifier>>(metadataCollectionName);
-                metadataCollection.DeleteMany(e => e.Id == identifier);
-
-                return Task.FromResult(Result.Success());
+                return Result.Success();
             }
             catch (Exception e)
             {
                 _logger.LogWarning(
                     e,
-                    "unable to remove domainObject from collection '{CollectionName}' with id '{Identifier}'",
-                    collectionName,
+                    "unable to mark domainObject with id '{Identifier}' as deleted",
                     identifier);
-                return Task.FromResult(
-                    Result.Error(
-                        $"unable to remove domainObject from collection '{collectionName}' with id '{identifier}'",
-                        ErrorCode.DbUpdateError));
+                return Result.Error(
+                    $"unable to mark domainObject with id '{identifier}' as deleted",
+                    ErrorCode.DbUpdateError);
             }
         }
 
@@ -349,15 +322,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult> Store<TObject, TIdentifier>(TObject domainObject)
+        public async Task<IResult> Store<TObject, TIdentifier>(TObject domainObject)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
             string collectionName = typeof(TObject).Name;
             try
             {
-                ILiteCollection<TObject> collection = GetCollection<TObject, TIdentifier>(collectionName);
-                collection.Upsert(domainObject);
+                await RecordObjectVersion<TObject, TIdentifier>(domainObject);
+                await _fileStore.StoreObject<TObject, TIdentifier>(domainObject);
                 _memoryCache.Set(domainObject.Id.ToString(), domainObject, TimeSpan.FromSeconds(30));
             }
             catch (Exception e)
@@ -366,17 +339,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     e,
                     "unable to update/insert domainObject into collection '{CollectionName}'",
                     collectionName);
-                return Task.FromResult(
-                    Result.Error(
-                        $"unable to update/insert domainObject into collection '{collectionName}'",
-                        ErrorCode.DbUpdateError));
+                return Result.Error(
+                    $"unable to update/insert domainObject into collection '{collectionName}'",
+                    ErrorCode.DbUpdateError);
             }
 
-            return Task.FromResult(Result.Success());
+            return Result.Success();
         }
 
         /// <inheritdoc />
-        public Task<IResult> StoreMetadata<TObject, TIdentifier>(TObject domainObject, IDictionary<string, string> metadata)
+        public async Task<IResult> StoreMetadata<TObject, TIdentifier>(TObject domainObject, IDictionary<string, string> metadata)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
@@ -385,23 +357,22 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 // prevent metadata-entries for objects that are not stored yet
-                ILiteCollection<TObject> objectCollection = _database.GetCollection<TObject>(collectionName);
-                objectCollection.EnsureIndex(o => o.Id);
-                bool domainObjectAvailable = objectCollection.Query()
-                                                             .Where(o => o.Id == domainObject.Id)
-                                                             .OrderByDescending(o => o.CurrentVersion)
-                                                             .Select(o => o.Id)
-                                                             .FirstOrDefault() is { };
+                IResult<IList<TIdentifier>> versionResult = await ListAll<TObject, TIdentifier>(QueryRange.All);
+
+                if (versionResult.IsError)
+                    return versionResult;
+
+                IList<TIdentifier> versions = versionResult.Data;
+                bool domainObjectAvailable = versions.Any();
 
                 if (!domainObjectAvailable)
                 {
                     _logger.LogWarning(
-                        "attempted to update/insert metadata for domainObject that was not stored in collection '{CollectionName}'",
+                        "attempted to update/insert metadata for domainObject for which no version is stored",
                         collectionName);
-                    return Task.FromResult(
-                        Result.Error(
-                            $"attempted to update/insert metadata for domainObject that was not stored in collection '{collectionName}'",
-                            ErrorCode.NotFound));
+                    return Result.Error(
+                        "attempted to update/insert metadata for domainObject for which no version is stored",
+                        ErrorCode.NotFound);
                 }
 
                 ILiteCollection<DomainObjectMetadata<TIdentifier>> collection =
@@ -421,24 +392,86 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     e,
                     "unable to update/insert metadata for domainObject into collection '{CollectionName}'",
                     metadataCollectionName);
-                return Task.FromResult(
-                    Result.Error(
-                        $"unable to update/insert metadata for domainObject into collection '{metadataCollectionName}'",
-                        ErrorCode.DbUpdateError));
+                return Result.Error(
+                    $"unable to update/insert metadata for domainObject into collection '{metadataCollectionName}'",
+                    ErrorCode.DbUpdateError);
             }
 
-            return Task.FromResult(Result.Success());
+            return Result.Success();
         }
 
-        private ILiteCollection<TDomainObject> GetCollection<TDomainObject, TIdentifier>(string collectionName)
-            where TDomainObject : DomainObject<TIdentifier>
+        private Task<ObjectLookupInformation<TIdentifier>> GetObjectInfo<TObject, TIdentifier>(TIdentifier identifier)
+            where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            ILiteCollection<TDomainObject> collection = _database.GetCollection<TDomainObject>(collectionName);
-            collection.EnsureIndex(o => o.Id);
+            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            return collection;
+            ObjectLookupInformation<TIdentifier> objectInformation =
+                collection.Query()
+                          .Where(x => x.Id == identifier)
+                          .FirstOrDefault()
+                ?? new ObjectLookupInformation<TIdentifier>
+                {
+                    Id = identifier,
+                    Versions = new Dictionary<long, bool>()
+                };
+
+            return Task.FromResult(objectInformation);
         }
+
+        private Task<List<ObjectLookupInformation<TIdentifier>>> GetObjectInfo<TObject, TIdentifier>(
+            Expression<Func<ObjectLookupInformation<TIdentifier>, bool>> filter = null)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+
+            List<ObjectLookupInformation<TIdentifier>> objectInfo = filter is null
+                                                                        ? collection.Query().ToList()
+                                                                        : collection.Query().Where(filter).ToList();
+
+            return Task.FromResult(objectInfo);
+        }
+
+        private async Task RecordObjectVersion<TObject, TIdentifier>(TObject domainObject)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+
+            ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(domainObject.Id);
+
+            objectInformation.Versions[domainObject.CurrentVersion] = true;
+
+            collection.Upsert(objectInformation);
+        }
+
+        private async Task RemoveObjectVersion<TObject, TIdentifier>(TIdentifier identifier)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+
+            ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(identifier);
+
+            if (!objectInformation.Versions.Any())
+            {
+                return;
+            }
+
+            long maxVersion = objectInformation.Versions.Keys.Max();
+
+            objectInformation.Versions[maxVersion] = false;
+
+            collection.Upsert(objectInformation);
+        }
+
+        private ILiteCollection<ObjectLookupInformation<TIdentifier>> GetLookupInfo<TIdentifier>()
+            where TIdentifier : Identifier
+            => _database.GetCollection<ObjectLookupInformation<TIdentifier>>(
+                typeof(ObjectLookupInformation<TIdentifier>).GetFriendlyName()
+                                                            .Replace('<', '_')
+                                                            .Replace(">", string.Empty));
 
         /// <summary>
         ///     Additional metadata that is stored in a separate collection along the projected DomainObjects.
@@ -470,6 +503,24 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             ///     Type of the last event that was written
             /// </summary>
             public string LastWrittenEventType { get; set; }
+        }
+
+        /// <summary>
+        ///     Entry for a DomainObject that has been stored
+        /// </summary>
+        private class ObjectLookupInformation<TIdentifier>
+            where TIdentifier : Identifier
+
+        {
+            /// <summary>
+            ///     Identifier of the stored DomainObject
+            /// </summary>
+            public TIdentifier Id { get; set; }
+
+            /// <summary>
+            ///     Map of Versions and their current Status. True = Object exists, False = Object was deleted
+            /// </summary>
+            public Dictionary<long, bool> Versions { get; set; }
         }
 
         /// <summary>

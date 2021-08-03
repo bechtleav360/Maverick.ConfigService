@@ -68,6 +68,16 @@
         /// <summary>
         ///     Resource could not be found, but might be available after evaluating some indirection. Additional data may be give as context.
         /// </summary>
-        NotFoundPossibleIndirection = 12
+        NotFoundPossibleIndirection = 12,
+
+        /// <summary>
+        ///     Data could not be de-/serialized
+        /// </summary>
+        SerializationFailed = 13,
+        
+        /// <summary>
+        ///     IO-Operation failed
+        /// </summary>
+        IOError = 14,
     }
 }

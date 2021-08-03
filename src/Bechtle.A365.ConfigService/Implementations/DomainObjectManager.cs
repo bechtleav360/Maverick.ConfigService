@@ -136,7 +136,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             EnvironmentIdentifier environment,
             QueryRange range,
             CancellationToken cancellationToken)
-            => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(c => c.Id.Environment == environment, range, cancellationToken);
+            => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(c => c.Environment == environment, range, cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, CancellationToken cancellationToken)
@@ -147,7 +147,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             StructureIdentifier structure,
             QueryRange range,
             CancellationToken cancellationToken)
-            => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(c => c.Id.Structure == structure, range, cancellationToken);
+            => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(c => c.Structure == structure, range, cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult<ConfigEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken)
@@ -227,7 +227,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         /// <inheritdoc />
         public Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, CancellationToken cancellationToken)
-            => ListObjects<ConfigStructure, StructureIdentifier>(s => s.Id.Name == name, range, cancellationToken);
+            => ListObjects<ConfigStructure, StructureIdentifier>(s => s.Name == name, range, cancellationToken);
 
         /// <inheritdoc />
         public async Task<IResult> ImportLayer(LayerIdentifier identifier, IList<EnvironmentLayerKey> keys, CancellationToken cancellationToken)
@@ -474,7 +474,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(
-            Expression<Func<TObject, bool>> filter,
+            Func<TIdentifier, bool> filter,
             QueryRange range,
             CancellationToken cancellationToken)
             where TObject : DomainObject<TIdentifier>
