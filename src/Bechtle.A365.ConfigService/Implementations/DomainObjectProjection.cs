@@ -695,6 +695,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             // layer.KeyPaths = GenerateKeyPaths(layer.Keys);
             layer.Json = translator.ToJson(layer.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Key))
                                    .ToString();
+            layer.KeyPaths = GenerateKeyPaths(layer.Keys);
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
 
