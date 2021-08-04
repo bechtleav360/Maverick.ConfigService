@@ -38,26 +38,16 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            // this is only to store files in a deterministic folder-structure
-            // everytime we update our assembly, the projections need to start from 0
-            string typeName = typeof(TObject).AssemblyQualifiedName
-                              ?? throw new ArgumentNullException(
-                                  nameof(TObject),
-                                  "AssemblyQualifiedName of object could not be determined");
-
-            string encodedType = Base64Encode(typeName);
-            string encodedId = Base64Encode(
-                identifier?.ToString()
-                ?? throw new ArgumentNullException(
-                    nameof(identifier),
-                    "identifier or identifier.ToString is null"));
-
             var location = new FileInfo(
                 Path.Combine(
                     _locationProvider.Directory,
-                    encodedType,
-                    encodedId,
-                    version.ToString("x8")));
+                    Base64Encode(typeof(TObject).Name),
+                    Base64Encode(
+                        identifier?.ToString()
+                        ?? throw new ArgumentNullException(
+                            nameof(identifier),
+                            "identifier or identifier.ToString is null")),
+                    version.ToString("x16")));
 
             try
             {
@@ -83,22 +73,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            // this is only to store files in a deterministic folder-structure
-            // everytime we update our assembly, the projections need to start from 0
-            string typeName = typeof(TObject).AssemblyQualifiedName
-                              ?? throw new ArgumentNullException(
-                                  nameof(obj),
-                                  "AssemblyQualifiedName of object could not be determined");
-
-            string encodedType = Base64Encode(typeName);
-            string encodedId = Base64Encode(obj.Id.ToString());
-
             var location = new FileInfo(
                 Path.Combine(
                     _locationProvider.Directory,
-                    encodedType,
-                    encodedId,
-                    obj.CurrentVersion.ToString("x8")));
+                    Base64Encode(typeof(TObject).Name),
+                    Base64Encode(obj.Id.ToString()),
+                    obj.CurrentVersion.ToString("x16")));
 
             try
             {

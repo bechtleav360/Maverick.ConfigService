@@ -74,7 +74,7 @@
         ///     Data could not be de-/serialized
         /// </summary>
         SerializationFailed = 13,
-        
+
         /// <summary>
         ///     IO-Operation failed
         /// </summary>
