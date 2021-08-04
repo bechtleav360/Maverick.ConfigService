@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
@@ -12,6 +13,7 @@ using Bechtle.A365.ServiceBase.Extensions;
 using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
 {
@@ -23,11 +25,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private readonly ILiteDatabase _database;
         private readonly IDomainObjectFileStore _fileStore;
         private readonly ILogger<DomainObjectStore> _logger;
+        private readonly IOptions<HistoryConfiguration> _historyConfiguration;
         private readonly IMemoryCache _memoryCache;
 
         /// <inheritdoc cref="DomainObjectStore" />
         public DomainObjectStore(
             ILogger<DomainObjectStore> logger,
+            IOptions<HistoryConfiguration> historyConfiguration,
             IDomainObjectStoreLocationProvider locationProvider,
             IMemoryCache memoryCache,
             IDomainObjectFileStore fileStore)
@@ -46,6 +50,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             BsonMapper.Global.EnumAsInteger = true;
 
             _logger = logger;
+            _historyConfiguration = historyConfiguration;
             _memoryCache = memoryCache;
             _fileStore = fileStore;
             _database = new LiteDatabase(
@@ -101,7 +106,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                List<ObjectLookupInformation<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
+                List<ObjectLookup<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
                 IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
                                                     .Select(o => o.Id)
@@ -129,7 +134,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                List<ObjectLookupInformation<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
+                List<ObjectLookup<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
                 IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
                                                     .Select(o => o.Id)
@@ -164,12 +169,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
-                ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(identifier);
-                long maxExistingVersion = objectInformation.Versions.Any()
-                                              ? objectInformation.Versions
-                                                                 .Where(kvp => kvp.Value)
-                                                                 .Select(kvp => kvp.Key)
-                                                                 .Max()
+                ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(identifier);
+                long maxExistingVersion = @object.Versions.Any()
+                                              ? @object.Versions
+                                                       .Where(kvp => !kvp.Value.IsMarkedDeleted)
+                                                       .Select(kvp => kvp.Key)
+                                                       .Max()
                                               : -1;
 
                 if (maxExistingVersion >= 0)
@@ -203,13 +208,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(identifier);
-                long maxExistingVersion = objectInformation.Versions.Any()
-                                              ? objectInformation.Versions
-                                                                 .Where(kvp => kvp.Value)
-                                                                 .Select(kvp => kvp.Key)
-                                                                 .Where(v => v <= maxVersion)
-                                                                 .Max()
+                ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(identifier);
+                long maxExistingVersion = @object.Versions.Any()
+                                              ? @object.Versions
+                                                       .Where(kvp => !kvp.Value.IsMarkedDeleted)
+                                                       .Select(kvp => kvp.Key)
+                                                       .Where(v => v <= maxVersion)
+                                                       .Max()
                                               : -1;
 
                 if (maxExistingVersion >= 0)
@@ -271,7 +276,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 _memoryCache.Remove(identifier.ToString());
-                await RemoveObjectVersion<TObject, TIdentifier>(identifier);
+                ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(identifier);
+                long maxExistingVersion = @object.Versions.Any()
+                                              ? @object.Versions
+                                                       .Where(kvp => !kvp.Value.IsMarkedDeleted)
+                                                       .Select(kvp => kvp.Key)
+                                                       .Max()
+                                              : -1;
+                await RemoveObjectVersion<TObject, TIdentifier>(identifier, maxExistingVersion);
 
                 return Result.Success();
             }
@@ -344,6 +356,32 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     ErrorCode.DbUpdateError);
             }
 
+            if (_historyConfiguration.Value.RemoveOldVersions)
+            {
+                try
+                {
+                    ObjectLookup<TIdentifier> info = await GetObjectInfo<TObject, TIdentifier>(domainObject.Id);
+                    List<long> versionsToRemove = info.Versions
+                                                      .OrderByDescending(kvp => kvp.Key)
+                                                      // skip the items that we want to remain
+                                                      .Skip(_historyConfiguration.Value.RetainVersions)
+                                                      // select all items that are not already deleted
+                                                      .Where(kvp => kvp.Value.IsDataAvailable)
+                                                      .Select(kvp => kvp.Key)
+                                                      .ToList();
+
+                    foreach (long version in versionsToRemove)
+                    {
+                        await _fileStore.DeleteObject<TObject, TIdentifier>(domainObject.Id, version);
+                        await RemoveObjectVersionData<TObject, TIdentifier>(domainObject.Id, version);
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(e, "unable to trim versions of '{Identifier}'", domainObject.Id);
+                }
+            }
+
             return Result.Success();
         }
 
@@ -400,35 +438,35 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Result.Success();
         }
 
-        private Task<ObjectLookupInformation<TIdentifier>> GetObjectInfo<TObject, TIdentifier>(TIdentifier identifier)
+        private Task<ObjectLookup<TIdentifier>> GetObjectInfo<TObject, TIdentifier>(TIdentifier identifier)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+            ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            ObjectLookupInformation<TIdentifier> objectInformation =
+            ObjectLookup<TIdentifier> @object =
                 collection.Query()
                           .Where(x => x.Id == identifier)
                           .FirstOrDefault()
-                ?? new ObjectLookupInformation<TIdentifier>
+                ?? new ObjectLookup<TIdentifier>
                 {
                     Id = identifier,
-                    Versions = new Dictionary<long, bool>()
+                    Versions = new Dictionary<long, ObjectLookupInfo>()
                 };
 
-            return Task.FromResult(objectInformation);
+            return Task.FromResult(@object);
         }
 
-        private Task<List<ObjectLookupInformation<TIdentifier>>> GetObjectInfo<TObject, TIdentifier>(
-            Expression<Func<ObjectLookupInformation<TIdentifier>, bool>> filter = null)
+        private Task<List<ObjectLookup<TIdentifier>>> GetObjectInfo<TObject, TIdentifier>(
+            Expression<Func<ObjectLookup<TIdentifier>, bool>> filter = null)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+            ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            List<ObjectLookupInformation<TIdentifier>> objectInfo = filter is null
-                                                                        ? collection.Query().ToList()
-                                                                        : collection.Query().Where(filter).ToList();
+            List<ObjectLookup<TIdentifier>> objectInfo = filter is null
+                                                             ? collection.Query().ToList()
+                                                             : collection.Query().Where(filter).ToList();
 
             return Task.FromResult(objectInfo);
         }
@@ -437,41 +475,63 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+            ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(domainObject.Id);
+            ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(domainObject.Id);
 
-            objectInformation.Versions[domainObject.CurrentVersion] = true;
+            @object.Versions[domainObject.CurrentVersion] = new ObjectLookupInfo
+            {
+                IsDataAvailable = true,
+                IsMarkedDeleted = false
+            };
 
-            collection.Upsert(objectInformation);
+            collection.Upsert(@object);
         }
 
-        private async Task RemoveObjectVersion<TObject, TIdentifier>(TIdentifier identifier)
+        private async Task RemoveObjectVersion<TObject, TIdentifier>(TIdentifier identifier, long version)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            ILiteCollection<ObjectLookupInformation<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+            ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            ObjectLookupInformation<TIdentifier> objectInformation = await GetObjectInfo<TObject, TIdentifier>(identifier);
+            ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(identifier);
 
-            if (!objectInformation.Versions.Any())
+            if (!@object.Versions.Any())
             {
                 return;
             }
 
-            long maxVersion = objectInformation.Versions.Keys.Max();
+            ObjectLookupInfo info = @object.Versions[version];
+            info.IsMarkedDeleted = true;
 
-            objectInformation.Versions[maxVersion] = false;
-
-            collection.Upsert(objectInformation);
+            collection.Upsert(@object);
         }
 
-        private ILiteCollection<ObjectLookupInformation<TIdentifier>> GetLookupInfo<TIdentifier>()
+        private async Task RemoveObjectVersionData<TObject, TIdentifier>(TIdentifier identifier, long version)
+            where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
-            => _database.GetCollection<ObjectLookupInformation<TIdentifier>>(
-                typeof(ObjectLookupInformation<TIdentifier>).GetFriendlyName()
-                                                            .Replace('<', '_')
-                                                            .Replace(">", string.Empty));
+        {
+            ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
+
+            ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(identifier);
+
+            if (!@object.Versions.Any())
+            {
+                return;
+            }
+
+            ObjectLookupInfo info = @object.Versions[version];
+            info.IsDataAvailable = false;
+
+            collection.Upsert(@object);
+        }
+
+        private ILiteCollection<ObjectLookup<TIdentifier>> GetLookupInfo<TIdentifier>()
+            where TIdentifier : Identifier
+            => _database.GetCollection<ObjectLookup<TIdentifier>>(
+                typeof(ObjectLookup<TIdentifier>).GetFriendlyName()
+                                                 .Replace('<', '_')
+                                                 .Replace(">", string.Empty));
 
         /// <summary>
         ///     Additional metadata that is stored in a separate collection along the projected DomainObjects.
@@ -508,7 +568,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     Entry for a DomainObject that has been stored
         /// </summary>
-        private class ObjectLookupInformation<TIdentifier>
+        private class ObjectLookup<TIdentifier>
             where TIdentifier : Identifier
 
         {
@@ -520,7 +580,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             /// <summary>
             ///     Map of Versions and their current Status. True = Object exists, False = Object was deleted
             /// </summary>
-            public Dictionary<long, bool> Versions { get; set; }
+            public Dictionary<long, ObjectLookupInfo> Versions { get; set; }
+        }
+
+        /// <summary>
+        ///     Information for a DomainObject
+        /// </summary>
+        private class ObjectLookupInfo
+        {
+            /// <summary>
+            ///     Flag to show if DomainObject is currently marked as deleted
+            /// </summary>
+            public bool IsMarkedDeleted { get; set; } = false;
+
+            /// <summary>
+            ///     Flag to show if actual Data for this DomainObject is available 
+            /// </summary>
+            public bool IsDataAvailable { get; set; } = false;
         }
 
         /// <summary>

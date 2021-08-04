@@ -55,6 +55,7 @@ namespace Bechtle.A365.ConfigService
         /// <inheritdoc />
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
         {
+            _logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
             ApplicationBuilderExtensions.AppConfigContainer appConfiguration = app.StartTweakingWith(_logger, Configuration);
 
             // basic Asp.NetCore 3.X stuff 
@@ -156,15 +157,6 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <inheritdoc />
-        protected override void AddEarlyConfiguration(
-            IApplicationBuilder app,
-            IWebHostEnvironment env,
-            IApiVersionDescriptionProvider provider)
-        {
-            _logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
-        }
-
-        /// <inheritdoc />
         protected override void AddServiceConfiguration(IServiceCollection services)
         {
             RegisterOptions(services);
@@ -256,8 +248,7 @@ namespace Bechtle.A365.ConfigService
                             typeof(StructureVariablesModified)
                         })
                     .AddHostedService<GracefulShutdownService>()
-                    .AddHostedService<TemporaryKeyCleanupService>()
-                    .AddHostedService<LiteDbMapperInitializer>();
+                    .AddHostedService<TemporaryKeyCleanupService>();
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)
@@ -332,6 +323,9 @@ namespace Bechtle.A365.ConfigService
             // misc stuff
             services.Configure<EventBusConnectionConfiguration>(Configuration.GetSection("EventBusConnection"));
             services.Configure<EventStoreConnectionConfiguration>(Configuration.GetSection("EventStoreConnection"));
+
+            // object-stores
+            services.Configure<HistoryConfiguration>(Configuration.GetSection("History"));
 
             // secret-stores
             services.Configure<ConfiguredSecretStoreConfiguration>(Configuration.GetSection("SecretConfiguration:Stores:Configuration"));

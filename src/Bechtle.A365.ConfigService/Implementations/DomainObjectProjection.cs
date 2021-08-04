@@ -692,7 +692,6 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task OnLayerKeysChanged(EnvironmentLayer layer, ICollection<ConfigKeyAction> modifiedKeys, IJsonTranslator translator)
         {
-            // layer.KeyPaths = GenerateKeyPaths(layer.Keys);
             layer.Json = translator.ToJson(layer.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Key))
                                    .ToString();
             layer.KeyPaths = GenerateKeyPaths(layer.Keys);
