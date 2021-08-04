@@ -63,10 +63,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
 
         /// <inheritdoc />
-        public Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier) => GetAssignedLayers(identifier, int.MaxValue);
-
-        /// <inheritdoc />
-        public async Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version)
+        public async Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier)
         {
             _logger.LogDebug("retrieving layers of environment {Identifier}", identifier);
 
@@ -89,14 +86,40 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range)
-            => GetAvailable(range, long.MaxValue);
+        public async Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version)
+        {
+            _logger.LogDebug("retrieving layers of environment {Identifier}", identifier);
+
+            IResult<ConfigEnvironment> environmentResult = await _domainObjectManager.GetEnvironment(identifier, version, CancellationToken.None);
+            if (environmentResult.IsError)
+            {
+                _logger.LogWarning(
+                    "unable to load environment {Identifier}: {ErrorCode} {Message}",
+                    identifier,
+                    environmentResult.Code,
+                    environmentResult.Message);
+
+                return Result.Error<IList<LayerIdentifier>>(environmentResult.Message, environmentResult.Code);
+            }
+
+            ConfigEnvironment environment = environmentResult.Data;
+            IList<LayerIdentifier> layers = environment.Layers.OrderBy(l => l.Name).ToList();
+
+            return Result.Success(layers);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range)
+        {
+            _logger.LogDebug("collecting available environments, range={Range}", range);
+            return await _domainObjectManager.GetEnvironments(range, CancellationToken.None);
+        }
 
         /// <inheritdoc />
         public async Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range, long version)
         {
             _logger.LogDebug("collecting available environments, range={Range}", range);
-            return await _domainObjectManager.GetEnvironments(range, CancellationToken.None);
+            return await _domainObjectManager.GetEnvironments(range, version, CancellationToken.None);
         }
 
         /// <inheritdoc />

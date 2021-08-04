@@ -57,14 +57,14 @@ namespace Bechtle.A365.ConfigService.Implementations
             CancellationToken cancellationToken)
             => ModifyObject<ConfigEnvironment, EnvironmentIdentifier>(
                 environmentIdentifier,
-                new List<DomainEvent> {new EnvironmentLayersModified(environmentIdentifier, layerIdentifiers.ToList())},
+                new List<DomainEvent> { new EnvironmentLayersModified(environmentIdentifier, layerIdentifiers.ToList()) },
                 cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult> CloneLayer(LayerIdentifier sourceIdentifier, LayerIdentifier targetIdentifier, CancellationToken cancellationToken)
             => ModifyObject<EnvironmentLayer, LayerIdentifier>(
                 sourceIdentifier,
-                new List<DomainEvent> {new EnvironmentLayerCopied(sourceIdentifier, targetIdentifier)},
+                new List<DomainEvent> { new EnvironmentLayerCopied(sourceIdentifier, targetIdentifier) },
                 cancellationToken);
 
         /// <inheritdoc />
@@ -75,7 +75,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             CancellationToken cancellationToken)
             => CreateObject<PreparedConfiguration, ConfigurationIdentifier>(
                 identifier,
-                new List<DomainEvent> {new ConfigurationBuilt(identifier, validFrom, validTo)},
+                new List<DomainEvent> { new ConfigurationBuilt(identifier, validFrom, validTo) },
                 cancellationToken);
 
         /// <inheritdoc />
@@ -90,7 +90,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 {
                     isDefault
                         ? new DefaultEnvironmentCreated(identifier)
-                        : (DomainEvent) new EnvironmentCreated(identifier)
+                        : (DomainEvent)new EnvironmentCreated(identifier)
                 },
                 cancellationToken);
 
@@ -98,7 +98,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         public Task<IResult> CreateLayer(LayerIdentifier identifier, CancellationToken cancellationToken)
             => CreateObject<EnvironmentLayer, LayerIdentifier>(
                 identifier,
-                new List<DomainEvent> {new EnvironmentLayerCreated(identifier)},
+                new List<DomainEvent> { new EnvironmentLayerCreated(identifier) },
                 cancellationToken);
 
         /// <inheritdoc />
@@ -109,26 +109,30 @@ namespace Bechtle.A365.ConfigService.Implementations
             CancellationToken cancellationToken)
             => CreateObject<ConfigStructure, StructureIdentifier>(
                 identifier,
-                new List<DomainEvent> {new StructureCreated(identifier, keys, variables)},
+                new List<DomainEvent> { new StructureCreated(identifier, keys, variables) },
                 cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult> DeleteEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken)
             => DeleteObject<ConfigEnvironment, EnvironmentIdentifier>(
                 identifier,
-                new List<DomainEvent> {new EnvironmentDeleted(identifier)},
+                new List<DomainEvent> { new EnvironmentDeleted(identifier) },
                 cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult> DeleteLayer(LayerIdentifier identifier, CancellationToken cancellationToken)
             => DeleteObject<EnvironmentLayer, LayerIdentifier>(
                 identifier,
-                new List<DomainEvent> {new EnvironmentLayerDeleted(identifier)},
+                new List<DomainEvent> { new EnvironmentLayerDeleted(identifier) },
                 cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult<PreparedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, CancellationToken cancellationToken)
             => LoadObject<PreparedConfiguration, ConfigurationIdentifier>(identifier, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IResult<PreparedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, long version, CancellationToken cancellationToken)
+            => LoadObject<PreparedConfiguration, ConfigurationIdentifier>(identifier, version, cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
@@ -149,20 +153,56 @@ namespace Bechtle.A365.ConfigService.Implementations
             => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(c => c.Structure == structure, range, cancellationToken);
 
         /// <inheritdoc />
+        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+            EnvironmentIdentifier environment,
+            QueryRange range,
+            long version,
+            CancellationToken cancellationToken)
+            => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(version, c => c.Environment == environment, range, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, long version, CancellationToken cancellationToken)
+            => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(version, range, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+            StructureIdentifier structure,
+            QueryRange range,
+            long version,
+            CancellationToken cancellationToken)
+            => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(version, c => c.Structure == structure, range, cancellationToken);
+
+        /// <inheritdoc />
         public Task<IResult<ConfigEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken)
             => LoadObject<ConfigEnvironment, EnvironmentIdentifier>(identifier, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IResult<ConfigEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, long version, CancellationToken cancellationToken)
+            => LoadObject<ConfigEnvironment, EnvironmentIdentifier>(identifier, version, cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult<IList<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<ConfigEnvironment, EnvironmentIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
+        public Task<IResult<IList<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, long version, CancellationToken cancellationToken)
+            => ListObjects<ConfigEnvironment, EnvironmentIdentifier>(version, range, cancellationToken);
+
+        /// <inheritdoc />
         public Task<IResult<EnvironmentLayer>> GetLayer(LayerIdentifier identifier, CancellationToken cancellationToken)
             => LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, cancellationToken);
 
         /// <inheritdoc />
+        public Task<IResult<EnvironmentLayer>> GetLayer(LayerIdentifier identifier, long version, CancellationToken cancellationToken)
+            => LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, version, cancellationToken);
+
+        /// <inheritdoc />
         public Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<EnvironmentLayer, LayerIdentifier>(range, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, long version, CancellationToken cancellationToken)
+            => ListObjects<EnvironmentLayer, LayerIdentifier>(version, range, cancellationToken);
 
         /// <inheritdoc />
         public async Task<IResult<IList<ConfigurationIdentifier>>> GetStaleConfigurations(QueryRange range, CancellationToken cancellationToken)
@@ -221,12 +261,24 @@ namespace Bechtle.A365.ConfigService.Implementations
             => LoadObject<ConfigStructure, StructureIdentifier>(identifier, cancellationToken);
 
         /// <inheritdoc />
+        public Task<IResult<ConfigStructure>> GetStructure(StructureIdentifier identifier, long version, CancellationToken cancellationToken)
+            => LoadObject<ConfigStructure, StructureIdentifier>(identifier, version, cancellationToken);
+
+        /// <inheritdoc />
         public Task<IResult<IList<StructureIdentifier>>> GetStructures(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<ConfigStructure, StructureIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, CancellationToken cancellationToken)
             => ListObjects<ConfigStructure, StructureIdentifier>(s => s.Name == name, range, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IResult<IList<StructureIdentifier>>> GetStructures(QueryRange range, long version, CancellationToken cancellationToken)
+            => ListObjects<ConfigStructure, StructureIdentifier>(version, range, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, long version, CancellationToken cancellationToken)
+            => ListObjects<ConfigStructure, StructureIdentifier>(version, s => s.Name == name, range, cancellationToken);
 
         /// <inheritdoc />
         public async Task<IResult> ImportLayer(LayerIdentifier identifier, IList<EnvironmentLayerKey> keys, CancellationToken cancellationToken)
@@ -274,7 +326,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             await _eventStore.WriteEventsAsync(
                 events,
                 _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
 
             foreach (IDomainEvent e in events)
             {
@@ -308,14 +360,14 @@ namespace Bechtle.A365.ConfigService.Implementations
         public Task<IResult> ModifyLayerKeys(LayerIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken)
             => ModifyObject<EnvironmentLayer, LayerIdentifier>(
                 identifier,
-                new List<DomainEvent> {new EnvironmentLayerKeysModified(identifier, actions.ToArray())},
+                new List<DomainEvent> { new EnvironmentLayerKeysModified(identifier, actions.ToArray()) },
                 cancellationToken);
 
         /// <inheritdoc />
         public Task<IResult> ModifyStructureVariables(StructureIdentifier identifier, IList<ConfigKeyAction> actions, CancellationToken cancellationToken)
             => ModifyObject<ConfigStructure, StructureIdentifier>(
                 identifier,
-                new List<DomainEvent> {new StructureVariablesModified(identifier, actions.ToArray())},
+                new List<DomainEvent> { new StructureVariablesModified(identifier, actions.ToArray()) },
                 cancellationToken);
 
         /// <inheritdoc />
@@ -326,7 +378,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             CancellationToken cancellationToken)
             => ModifyObject<EnvironmentLayer, LayerIdentifier>(
                 identifier,
-                new List<DomainEvent> {new EnvironmentLayerTagsChanged(identifier, addedTags.ToList(), removedTags.ToList())},
+                new List<DomainEvent> { new EnvironmentLayerTagsChanged(identifier, addedTags.ToList(), removedTags.ToList()) },
                 cancellationToken);
 
         private async Task<IResult> CreateObject<TObject, TIdentifier>(
@@ -382,13 +434,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             long lastProjectedEvent = lastProjectedEventResult.Data;
 
             // convert *our*-type of DomainEvent to the generic late-binding one
-            IList<IDomainEvent> domainEvents = createEvents.Select(e => (IDomainEvent) new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
+            IList<IDomainEvent> domainEvents = createEvents.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
                                                            .ToList();
 
             await _eventStore.WriteEventsAsync(
                 domainEvents,
                 _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
 
             foreach (IDomainEvent e in domainEvents)
             {
@@ -434,13 +486,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             long lastProjectedEvent = lastProjectedEventResult.Data;
 
             // convert *our*-type of DomainEvent to the generic late-binding one
-            IList<IDomainEvent> domainEvents = deleteEvents.Select(e => (IDomainEvent) new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
+            IList<IDomainEvent> domainEvents = deleteEvents.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
                                                            .ToList();
 
             await _eventStore.WriteEventsAsync(
                 domainEvents,
                 _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
 
             foreach (IDomainEvent e in domainEvents)
             {
@@ -453,10 +505,18 @@ namespace Bechtle.A365.ConfigService.Implementations
         private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(QueryRange range, CancellationToken cancellationToken)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
+            => await ListObjects<TObject, TIdentifier>(_ => true, range, cancellationToken);
+
+        private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(
+            Func<TIdentifier, bool> filter,
+            QueryRange range,
+            CancellationToken cancellationToken)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(range);
+            IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(filter, range);
 
             if (!result.IsError)
             {
@@ -472,7 +532,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             return result;
         }
 
+        private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(long version, QueryRange range, CancellationToken cancellationToken)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+            => await ListObjects<TObject, TIdentifier>(version, _ => true, range, cancellationToken);
+
         private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(
+            long version,
             Func<TIdentifier, bool> filter,
             QueryRange range,
             CancellationToken cancellationToken)
@@ -481,7 +547,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(filter, range);
+            IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(version, filter, range);
 
             if (!result.IsError)
             {
@@ -519,6 +585,35 @@ namespace Bechtle.A365.ConfigService.Implementations
                 "unable to load domain-object '{DomainObject}' with id '{Identifier}': {ErrorCode} {Message}",
                 typeof(TObject).Name,
                 identifier,
+                result.Code,
+                result.Message);
+
+            return result;
+        }
+
+        private async Task<IResult<TObject>> LoadObject<TObject, TIdentifier>(TIdentifier identifier, long version, CancellationToken cancellationToken)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (identifier is null)
+            {
+                throw new ArgumentNullException(nameof(identifier));
+            }
+
+            IResult<TObject> result = await _objectStore.Load<TObject, TIdentifier>(identifier, version);
+
+            if (!result.IsError)
+            {
+                return Result.Success(result.Data);
+            }
+
+            _logger.LogWarning(
+                "unable to load domain-object '{DomainObject}' with id '{Identifier}' at version {Version}: {ErrorCode} {Message}",
+                typeof(TObject).Name,
+                identifier,
+                version,
                 result.Code,
                 result.Message);
 
@@ -566,13 +661,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             long lastProjectedEvent = lastProjectedEventResult.Data;
 
             // convert *our*-type of DomainEvent to the generic late-binding one
-            IList<IDomainEvent> domainEvents = modificationEvents.Select(e => (IDomainEvent) new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
+            IList<IDomainEvent> domainEvents = modificationEvents.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
                                                                  .ToList();
 
             await _eventStore.WriteEventsAsync(
                 domainEvents,
                 _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong) lastProjectedEvent)));
+                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
 
             foreach (IDomainEvent e in domainEvents)
             {
@@ -591,8 +686,8 @@ namespace Bechtle.A365.ConfigService.Implementations
         private static IDictionary<DomainEvent, IList<IResult>> Validate(IList<ICommandValidator> validators, IList<DomainEvent> domainEvents)
             => domainEvents.ToDictionary(
                                @event => @event,
-                               @event => (IList<IResult>) validators.Select(v => v.ValidateDomainEvent(@event))
-                                                                    .ToList())
+                               @event => (IList<IResult>)validators.Select(v => v.ValidateDomainEvent(@event))
+                                                                   .ToList())
                            .Where(kvp => kvp.Value.Any(r => r.IsError))
                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }

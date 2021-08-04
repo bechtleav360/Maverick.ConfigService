@@ -42,6 +42,31 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
             where TIdentifier : Identifier;
 
         /// <summary>
+        ///     List all objects of type <typeparamref name="TObject" />
+        /// </summary>
+        /// <param name="version">max version to search through</param>
+        /// <param name="range">range of items to retrieve</param>
+        /// <typeparam name="TObject">type of object to list</typeparam>
+        /// <typeparam name="TIdentifier">identifier used by <typeparamref name="TObject" /></typeparam>
+        /// <returns>result of the operation</returns>
+        Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, QueryRange range)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
+
+        /// <summary>
+        ///     List all objects of type <typeparamref name="TObject" />
+        /// </summary>
+        /// <param name="version">max version to search through</param>
+        /// <param name="filter">expression used to filter the result-set</param>
+        /// <param name="range">range of items to retrieve</param>
+        /// <typeparam name="TObject">type of object to list</typeparam>
+        /// <typeparam name="TIdentifier">identifier used by <typeparamref name="TObject" /></typeparam>
+        /// <returns>result of the operation</returns>
+        Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, Func<TIdentifier, bool> filter, QueryRange range)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier;
+
+        /// <summary>
         ///     Load a previously stored instance of a DomainObject from the underlying store
         /// </summary>
         /// <param name="identifier">public identifier for the desired DomainObject</param>

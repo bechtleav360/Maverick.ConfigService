@@ -103,13 +103,26 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(QueryRange range)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
+            => await ListAll<TObject, TIdentifier>(_ => true, range);
+
+        /// <inheritdoc />
+        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(Func<TIdentifier, bool> filter, QueryRange range)
+            where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
         {
             try
             {
                 List<ObjectLookup<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
                 IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
+                                                    // only list items whose newest version wasn't deleted
+                                                    .Where(
+                                                        o => !o.Versions
+                                                               .OrderByDescending(i => i.Key)
+                                                               .First()
+                                                               .Value
+                                                               .IsMarkedDeleted)
                                                     .Select(o => o.Id)
+                                                    .Where(filter)
                                                     .Skip(range.Offset)
                                                     .Take(range.Length)
                                                     .ToList();
@@ -129,7 +142,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(Func<TIdentifier, bool> filter, QueryRange range)
+        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, QueryRange range)
+            where TObject : DomainObject<TIdentifier>
+            where TIdentifier : Identifier
+            => await ListAll<TObject, TIdentifier>(version, _ => true, range);
+
+        /// <inheritdoc />
+        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, Func<TIdentifier, bool> filter, QueryRange range)
             where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
         {
             try
@@ -137,6 +156,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 List<ObjectLookup<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
                 IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
+                                                    // only list items whose newest version wasn't deleted
+                                                    .Where(
+                                                        o => !o.Versions
+                                                               .Where(v => v.Key < version)
+                                                               .OrderByDescending(i => i.Key)
+                                                               .First()
+                                                               .Value
+                                                               .IsMarkedDeleted)
                                                     .Select(o => o.Id)
                                                     .Where(filter)
                                                     .Skip(range.Offset)
@@ -209,17 +236,26 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(identifier);
-                long maxExistingVersion = @object.Versions.Any()
-                                              ? @object.Versions
-                                                       .Where(kvp => !kvp.Value.IsMarkedDeleted)
-                                                       .Select(kvp => kvp.Key)
-                                                       .Where(v => v <= maxVersion)
-                                                       .Max()
-                                              : -1;
 
-                if (maxExistingVersion >= 0)
+                KeyValuePair<long, ObjectLookupInfo> matchingVersion = @object.Versions
+                                                                              .OrderByDescending(kvp => kvp.Key)
+                                                                              .FirstOrDefault(
+                                                                                  kvp => kvp.Key <= maxVersion
+                                                                                         && !kvp.Value.IsMarkedDeleted);
+
+                if (matchingVersion.Value is null)
                 {
-                    return await _fileStore.LoadObject<TObject, TIdentifier>(identifier, maxExistingVersion);
+                    return Result.Error<TObject>("no matching version found", ErrorCode.NotFound);
+                }
+
+                if (!matchingVersion.Value.IsDataAvailable)
+                {
+                    return Result.Error<TObject>("data for this version not retained", ErrorCode.NotFound);
+                }
+
+                if (matchingVersion.Key >= 0)
+                {
+                    return await _fileStore.LoadObject<TObject, TIdentifier>(identifier, matchingVersion.Key);
                 }
             }
             catch (Exception e)

@@ -112,6 +112,15 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<PreparedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a single stored Configuration
+        /// </summary>
+        /// <param name="identifier">valid identifier for the Configuration</param>
+        /// <param name="version">version of the Object to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<PreparedConfiguration>> GetConfiguration(ConfigurationIdentifier identifier, long version, CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Get a list of all stored Configuration-ids
         /// </summary>
         /// <param name="range">range of ids to retrieve</param>
@@ -141,12 +150,58 @@ namespace Bechtle.A365.ConfigService.Interfaces
             CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a list of all stored Configuration-ids
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="version">version from which to list objects</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, long version, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Configuration-ids
+        /// </summary>
+        /// <param name="version">version from which to list objects</param>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="structure">constrain results to those that have this structure</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+            StructureIdentifier structure,
+            QueryRange range,
+            long version,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Configuration-ids
+        /// </summary>
+        /// <param name="environment">constrain results to those that have this environment</param>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="version">version from which to list objects</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+            EnvironmentIdentifier environment,
+            QueryRange range,
+            long version,
+            CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Get a single stored Environment
         /// </summary>
         /// <param name="identifier">valid identifier for the Environment</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
         Task<IResult<ConfigEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a single stored Environment
+        /// </summary>
+        /// <param name="identifier">valid identifier for the Environment</param>
+        /// <param name="version">version of the Object to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<ConfigEnvironment>> GetEnvironment(EnvironmentIdentifier identifier, long version, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Get a list of all stored Environment-ids
@@ -157,6 +212,15 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<IList<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a list of all stored Environment-ids
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="version">version from which to list objects</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, long version, CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Get a single stored Layer
         /// </summary>
         /// <param name="identifier">valid identifier for the Layer</param>
@@ -165,12 +229,30 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<EnvironmentLayer>> GetLayer(LayerIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a single stored Layer
+        /// </summary>
+        /// <param name="identifier">valid identifier for the Layer</param>
+        /// <param name="version">version of the Object to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<EnvironmentLayer>> GetLayer(LayerIdentifier identifier, long version, CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Get a all stored Layer-ids
         /// </summary>
         /// <param name="range">range of ids to retrieve</param>
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
         Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a all stored Layer-ids
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="version">version at which to list objects</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, long version, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Get a list of Configurations that were marked as stale by recent changes
@@ -189,6 +271,15 @@ namespace Bechtle.A365.ConfigService.Interfaces
         Task<IResult<ConfigStructure>> GetStructure(StructureIdentifier identifier, CancellationToken cancellationToken);
 
         /// <summary>
+        ///     Get a single stored Structure
+        /// </summary>
+        /// <param name="identifier">valid identifier for the Structure</param>
+        /// <param name="version">version of the Object to retrieve</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<ConfigStructure>> GetStructure(StructureIdentifier identifier, long version, CancellationToken cancellationToken);
+
+        /// <summary>
         ///     Get a list of all stored Structure-ids
         /// </summary>
         /// <param name="range">range of ids to retrieve</param>
@@ -204,6 +295,25 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <param name="cancellationToken">token to cancel the operation with</param>
         /// <returns>Result of the Operation</returns>
         Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Structure-ids
+        /// </summary>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="version">version at which to list objects</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<StructureIdentifier>>> GetStructures(QueryRange range, long version, CancellationToken cancellationToken);
+
+        /// <summary>
+        ///     Get a list of all stored Structure-ids
+        /// </summary>
+        /// <param name="name">name of the structure to list</param>
+        /// <param name="range">range of ids to retrieve</param>
+        /// <param name="version">version at which to list objects</param>
+        /// <param name="cancellationToken">token to cancel the operation with</param>
+        /// <returns>Result of the Operation</returns>
+        Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, long version, CancellationToken cancellationToken);
 
         /// <summary>
         ///     Import a Layer with the given Keys.

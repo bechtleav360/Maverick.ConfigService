@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> Delete(LayerIdentifier identifier)
         {
-            _logger.LogDebug("attempting to delete layer {Identifier}");
+            _logger.LogDebug("attempting to delete layer {Identifier}", identifier);
 
             return await _domainObjectManager.DeleteLayer(identifier, CancellationToken.None);
         }
@@ -57,14 +57,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range)
-            => GetAvailable(range, long.MaxValue);
+        public async Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range)
+        {
+            _logger.LogDebug("collecting available layers, range={Range}", range);
+            return await _domainObjectManager.GetLayers(range, CancellationToken.None);
+        }
 
         /// <inheritdoc />
         public async Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range, long version)
         {
             _logger.LogDebug("collecting available layers, range={Range}", range);
-            return await _domainObjectManager.GetLayers(range, CancellationToken.None);
+            return await _domainObjectManager.GetLayers(range, version, CancellationToken.None);
         }
 
         /// <inheritdoc />
@@ -93,7 +96,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 key = Uri.UnescapeDataString(key ?? string.Empty);
                 _logger.LogDebug("using new key='{Key}'", key);
 
-                IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
+                IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, version, CancellationToken.None);
 
                 if (layerResult.IsError)
                 {
@@ -452,7 +455,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     + $"{nameof(parameters.RemoveRoot)}: {parameters.RemoveRoot}");
 
                 // if TargetVersion is above 0, we try to find the specified version of ConfigLayer
-                IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(parameters.Identifier, CancellationToken.None);
+                IResult<EnvironmentLayer> layerResult =
+                    parameters.TargetVersion >= 0
+                        ? await _domainObjectManager.GetLayer(parameters.Identifier, parameters.TargetVersion, CancellationToken.None)
+                        : await _domainObjectManager.GetLayer(parameters.Identifier, CancellationToken.None);
                 if (layerResult.IsError)
                 {
                     return Result.Error<TResult>(layerResult.Message, layerResult.Code);
