@@ -11,6 +11,7 @@ using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
@@ -57,28 +58,28 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range)
+        public async Task<IResult<Page<LayerIdentifier>>> GetAvailable(QueryRange range)
         {
             _logger.LogDebug("collecting available layers, range={Range}", range);
             return await _domainObjectManager.GetLayers(range, CancellationToken.None);
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range, long version)
+        public async Task<IResult<Page<LayerIdentifier>>> GetAvailable(QueryRange range, long version)
         {
             _logger.LogDebug("collecting available layers, range={Range}", range);
             return await _domainObjectManager.GetLayers(range, version, CancellationToken.None);
         }
 
         /// <inheritdoc />
-        public Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
+        public Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
             LayerIdentifier identifier,
             string key,
             QueryRange range)
             => GetKeyAutoComplete(identifier, key, range, long.MaxValue);
 
         /// <inheritdoc />
-        public async Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
+        public async Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
             LayerIdentifier identifier,
             string key,
             QueryRange range,
@@ -87,20 +88,25 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 _logger.LogDebug(
-                    "attempting to retrieve next paths in '{Identifier}' for path '{Path}', range={Range}",
+                    "attempting to retrieve next paths in {Identifier} for path '{Path}', range={Range}",
                     identifier,
                     key,
                     range);
 
                 _logger.LogDebug("removing escape-sequences from key");
                 key = Uri.UnescapeDataString(key ?? string.Empty);
-                _logger.LogDebug("using new key='{Key}'", key);
+                _logger.LogDebug($"using new key='{key}'");
 
-                IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, version, CancellationToken.None);
-
+                var layerResult = await _domainObjectManager.GetLayer(identifier, version, CancellationToken.None);
                 if (layerResult.IsError)
                 {
-                    return Result.Error<IList<DtoConfigKeyCompletion>>(layerResult.Message, ErrorCode.NotFound);
+                    _logger.LogWarning(
+                        "unable to retrieve layer {Identifier}: {ErrorCode}, {Message}",
+                        identifier,
+                        layerResult.Code,
+                        layerResult.Message);
+
+                    return Result.Error<Page<DtoConfigKeyCompletion>>(layerResult.Message, layerResult.Code);
                 }
 
                 EnvironmentLayer layer = layerResult.Data;
@@ -110,26 +116,34 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (string.IsNullOrWhiteSpace(key))
                 {
                     _logger.LogDebug("early-exit, sending root-paths because key was empty");
-                    return Result.Success<IList<DtoConfigKeyCompletion>>(
-                        paths.Select(
-                                 p => new DtoConfigKeyCompletion
-                                 {
-                                     HasChildren = p.Children.Any(),
-                                     FullPath = p.FullPath,
-                                     Completion = p.Path
-                                 })
-                             .OrderBy(p => p.Completion)
-                             .ToList());
+                    List<DtoConfigKeyCompletion> rootItems = paths.Select(
+                                                                      p => new DtoConfigKeyCompletion
+                                                                      {
+                                                                          HasChildren = p.Children.Any(),
+                                                                          FullPath = p.FullPath,
+                                                                          Completion = p.Path
+                                                                      })
+                                                                  .OrderBy(p => p.Completion)
+                                                                  .ToList();
+
+                    return Result.Success(
+                        new Page<DtoConfigKeyCompletion>
+                        {
+                            Items = rootItems,
+                            Length = rootItems.Count,
+                            Offset = 0,
+                            TotalLength = rootItems.Count
+                        });
                 }
 
                 var parts = new Queue<string>(
                     key.Contains('/')
                         ? key.Split('/')
-                        : new[] {key});
+                        : new[] { key });
 
                 string rootPart = parts.Dequeue();
 
-                _logger.LogDebug("starting with path '{Root}'", rootPart);
+                _logger.LogDebug($"starting with path '{rootPart}'");
 
                 // if the user is searching within the roots
                 if (!parts.Any())
@@ -156,7 +170,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         selectedRoots = paths;
                     }
 
-                    return Result.Success<IList<DtoConfigKeyCompletion>>(
+                    List<DtoConfigKeyCompletion> totalItems =
                         selectedRoots.Select(
                                          p => new DtoConfigKeyCompletion
                                          {
@@ -165,7 +179,20 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                              Completion = p.Path
                                          })
                                      .OrderBy(p => p.Completion)
-                                     .ToList());
+                                     .ToList();
+
+                    List<DtoConfigKeyCompletion> selectedItems = totalItems.Skip(range.Offset)
+                                                                           .Take(range.Length)
+                                                                           .ToList();
+
+                    return Result.Success(
+                        new Page<DtoConfigKeyCompletion>
+                        {
+                            Items = selectedItems,
+                            Length = selectedItems.Count,
+                            Offset = range.Offset,
+                            TotalLength = totalItems.Count
+                        });
                 }
 
                 EnvironmentLayerKeyPath root = paths.FirstOrDefault(p => p.Path == rootPart);
@@ -173,27 +200,31 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (root is null)
                 {
                     _logger.LogDebug($"no path found that matches '{rootPart}'");
-                    return Result.Error<IList<DtoConfigKeyCompletion>>(
+                    return Result.Error<Page<DtoConfigKeyCompletion>>(
                         $"key '{key}' is ambiguous, root does not match anything",
                         ErrorCode.NotFound);
                 }
 
-                IResult<IList<DtoConfigKeyCompletion>> result = GetKeyAutoCompleteInternal(root, parts.ToList(), range);
+                IResult<Page<DtoConfigKeyCompletion>> result = GetKeyAutoCompleteInternal(root, parts.ToList(), range);
 
                 return result;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "failed to get autocomplete data for '{Key}' in {Identifier}", key, identifier);
+                _logger.LogError(
+                    e,
+                    "failed to get autocomplete data for '{Path}' in {Identifier}",
+                    key,
+                    identifier);
 
-                return Result.Error<IList<DtoConfigKeyCompletion>>(
+                return Result.Error<Page<DtoConfigKeyCompletion>>(
                     $"failed to get autocomplete data for '{key}' in {identifier}: {e}",
                     ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<LayerIdentifier> parameters)
+        public async Task<IResult<Page<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<LayerIdentifier> parameters)
         {
             _logger.LogDebug($"retrieving keys for {parameters.Identifier} to return as objects");
 
@@ -212,34 +243,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (result.IsError)
                 return result;
 
-            var list = result.Data.ToList();
-
-            _logger.LogDebug($"got {list.Count} keys as objects");
-
-            if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
-                return RemoveRoot(list, parameters.RemoveRoot);
-
-            return result;
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters)
-        {
-            _logger.LogDebug($"retrieving keys of layer '{parameters.Identifier}'");
-
-            var result = await GetKeysInternal(
-                             parameters,
-                             item => item,
-                             item => item.Key,
-                             keys => (IDictionary<string, string>) keys.ToImmutableDictionary(
-                                 item => item.Key,
-                                 item => item.Value,
-                                 StringComparer.OrdinalIgnoreCase));
-
-            if (result.IsError)
-                return result;
-
-            _logger.LogDebug($"got {result.Data.Count} keys for '{parameters.Identifier}'");
+            _logger.LogDebug($"got {result.Data.Length} keys as objects");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
@@ -248,16 +252,45 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<string>>> GetTags(LayerIdentifier identifier)
+        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters)
+        {
+            _logger.LogDebug($"retrieving keys of environment '{parameters.Identifier}'");
+
+            var result = await GetKeysInternal(
+                             parameters,
+                             item => item,
+                             item => item.Key,
+                             key => new KeyValuePair<string, string>(key.Key, key.Value));
+
+            if (result.IsError)
+                return result;
+
+            _logger.LogDebug($"got {result.Data.Length} keys for '{parameters.Identifier}'");
+
+            if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
+                return RemoveRoot(result.Data, parameters.RemoveRoot);
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<Page<string>>> GetTags(LayerIdentifier identifier)
         {
             _logger.LogDebug("retrieving tags of layer '{Identifier}'", identifier);
 
             IResult<EnvironmentLayer> result = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
 
             if (result.IsError)
-                return Result.Error<IList<string>>(result.Message, result.Code);
+                return Result.Error<Page<string>>(result.Message, result.Code);
 
-            return Result.Success<IList<string>>(result.Data.Tags);
+            return Result.Success(
+                new Page<string>
+                {
+                    Items = result.Data.Tags,
+                    Length = result.Data.Tags.Count,
+                    Offset = 0,
+                    TotalLength = result.Data.Tags.Count
+                });
         }
 
         /// <inheritdoc />
@@ -350,17 +383,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             return exactMatch is null
                        ? items
-                       : new[] {exactMatch};
+                       : new[] { exactMatch };
         }
 
         /// <summary>
         ///     walk the path given in <paramref name="parts" />, from <paramref name="root" /> and return the next possible values
         /// </summary>
-        /// <param name="root">node to start off of</param>
-        /// <param name="parts">array of path-segments to the current position</param>
-        /// <param name="range">pagination-information for the return-values</param>
+        /// <param name="root"></param>
+        /// <param name="parts"></param>
+        /// <param name="range"></param>
         /// <returns></returns>
-        private IResult<IList<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(
+        private IResult<Page<DtoConfigKeyCompletion>> GetKeyAutoCompleteInternal(
             EnvironmentLayerKeyPath root,
             ICollection<string> parts,
             QueryRange range)
@@ -370,7 +403,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var current = root;
             var result = new List<EnvironmentLayerKeyPath>();
             var queue = new Queue<string>(parts);
-            var walkedPath = new List<string> {"{START}"};
+            var walkedPath = new List<string> { "{START}" };
 
             // try walking the given path to the deepest part, and return all options the user can take from here
             while (queue.TryDequeue(out var part))
@@ -395,7 +428,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     continue;
                 }
 
-                _logger.LogDebug($"no matches found, suggesting ");
+                _logger.LogDebug("no matches found, suggesting ");
                 var suggested = current.Children
                                        .Where(c => c.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
                                        .ToList();
@@ -408,40 +441,51 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 walkedPath.Add("{END}");
                 var walkedPathStr = string.Join(" => ", walkedPath);
+
                 var logMsg = $"no matching objects for '{part}' found; " + $"path taken to get to this dead-end: {walkedPathStr}";
 
                 _logger.LogDebug(logMsg);
 
-                return Result.Error<IList<DtoConfigKeyCompletion>>(logMsg, ErrorCode.NotFound);
+                return Result.Error<Page<DtoConfigKeyCompletion>>(logMsg, ErrorCode.NotFound);
             }
 
-            return Result.Success<IList<DtoConfigKeyCompletion>>(
-                result.Select(
-                          p => new DtoConfigKeyCompletion
-                          {
-                              FullPath = p.FullPath,
-                              HasChildren = p.Children.Any(),
-                              Completion = p.Path
-                          })
-                      .OrderBy(p => p.Completion)
-                      .Skip(range.Offset)
-                      .Take(range.Length)
-                      .ToList());
+            List<DtoConfigKeyCompletion> totalItems = result.Select(
+                                                                p => new DtoConfigKeyCompletion
+                                                                {
+                                                                    FullPath = p.FullPath,
+                                                                    HasChildren = p.Children.Any(),
+                                                                    Completion = p.Path
+                                                                })
+                                                            .OrderBy(p => p.Completion)
+                                                            .ToList();
+
+            List<DtoConfigKeyCompletion> selectedItems = totalItems.Skip(range.Offset)
+                                                                   .Take(range.Length)
+                                                                   .ToList();
+
+            return Result.Success(
+                new Page<DtoConfigKeyCompletion>
+                {
+                    Items = selectedItems,
+                    Length = selectedItems.Count,
+                    Offset = range.Offset,
+                    TotalLength = totalItems.Count
+                });
         }
 
         /// <summary>
         ///     retrieve keys from the database as dictionary, allows for filtering and range-limiting
         /// </summary>
-        /// <param name="parameters">see <see cref="KeyQueryParameters{LayerIdentifier}" /> for more information on each parameter</param>
+        /// <param name="parameters">see <see cref="KeyQueryParameters{EnvironmentIdentifier}" /> for more information on each parameter</param>
         /// <param name="selector">internal selector transforming the filtered items to an intermediate representation</param>
         /// <param name="keySelector">selector pointing to the 'Key' property of the intermediate representation</param>
         /// <param name="transform">final transformation applied to the result-set</param>
         /// <returns></returns>
-        private async Task<IResult<TResult>> GetKeysInternal<TItem, TResult>(
+        private async Task<IResult<Page<TResult>>> GetKeysInternal<TItem, TResult>(
             KeyQueryParameters<LayerIdentifier> parameters,
             Expression<Func<EnvironmentLayerKey, TItem>> selector,
             Func<TItem, string> keySelector,
-            Func<IEnumerable<TItem>, TResult> transform)
+            Func<TItem, TResult> transform)
             where TItem : class
         {
             try
@@ -454,15 +498,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     + $"{nameof(parameters.Range)}: {parameters.Range}, "
                     + $"{nameof(parameters.RemoveRoot)}: {parameters.RemoveRoot}");
 
-                // if TargetVersion is above 0, we try to find the specified version of ConfigLayer
-                IResult<EnvironmentLayer> layerResult =
-                    parameters.TargetVersion >= 0
-                        ? await _domainObjectManager.GetLayer(parameters.Identifier, parameters.TargetVersion, CancellationToken.None)
-                        : await _domainObjectManager.GetLayer(parameters.Identifier, CancellationToken.None);
+                IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(parameters.Identifier, CancellationToken.None);
                 if (layerResult.IsError)
-                {
-                    return Result.Error<TResult>(layerResult.Message, layerResult.Code);
-                }
+                    return Result.Error<Page<TResult>>(layerResult.Message, layerResult.Code);
 
                 EnvironmentLayer layer = layerResult.Data;
 
@@ -476,8 +514,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 _logger.LogDebug("ordering, and paging data");
                 List<TItem> keys = query.OrderBy(k => k.Key)
-                                        .Skip(parameters.Range.Offset)
-                                        .Take(parameters.Range.Length)
                                         .Select(selector)
                                         .ToList();
 
@@ -488,28 +524,37 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }
 
                 _logger.LogDebug("transforming result using closure");
-                TResult result = transform(keys);
+                List<TResult> result = keys.Skip(parameters.Range.Offset)
+                                           .Take(parameters.Range.Length)
+                                           .Select(transform)
+                                           .ToList();
 
-                return Result.Success(result);
+                var page = new Page<TResult>
+                {
+                    Items = result,
+                    Length = result.Count,
+                    Offset = parameters.Range.Offset,
+                    TotalLength = keys.Count
+                };
+
+                return Result.Success(page);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve keys for layer {Identifier}", parameters.Identifier);
-                return Result.Error<TResult>($"failed to retrieve keys for layer ({parameters.Identifier})", ErrorCode.DbQueryError);
+                return Result.Error<Page<TResult>>($"failed to retrieve keys for layer ({parameters.Identifier})", ErrorCode.DbQueryError);
             }
         }
 
         /// <summary>
         ///     remove the 'root' portion of each given key
         /// </summary>
-        /// <param name="keys">map of keys to remove the given root-part off of</param>
-        /// <param name="root">root to remove off of each key</param>
         /// <returns></returns>
-        private IResult<IDictionary<string, string>> RemoveRoot(IDictionary<string, string> keys, string root)
+        private IResult<Page<KeyValuePair<string, string>>> RemoveRoot(Page<KeyValuePair<string, string>> page, string root)
         {
             try
             {
-                _logger.LogDebug($"attempting to remove root '{root}' from '{keys.Count}' items");
+                _logger.LogDebug($"attempting to remove root '{root}' from '{page.Items.Count}' items");
 
                 if (!root.EndsWith('/'))
                 {
@@ -519,35 +564,32 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 // if every item passes the check for the same root
                 // project each item into a new dict with the modified Key
-                if (keys.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
+                if (page.Items.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
                     _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
-                    return Result.Success(
-                        (IDictionary<string, string>) keys.ToDictionary(
-                            kvp => kvp.Key.Substring(root.Length),
-                            kvp => kvp.Value,
-                            StringComparer.OrdinalIgnoreCase));
+                    page.Items = page.Items
+                                     .Select(kvp => new KeyValuePair<string, string>(kvp.Key[root.Length..], kvp.Value))
+                                     .ToList();
+                    return Result.Success(page);
                 }
 
                 _logger.LogDebug($"could not remove root '{root}' from all entries - not all items share same root");
-                return Result.Error<IDictionary<string, string>>(
+                return Result.Error<Page<KeyValuePair<string, string>>>(
                     $"could not remove root '{root}' from all entries - not all items share same root",
                     ErrorCode.InvalidData);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, $"could not remove root '{root}' from all entries");
-                return Result.Error<IDictionary<string, string>>($"could not remove root '{root}' from all entries", ErrorCode.Undefined);
+                return Result.Error<Page<KeyValuePair<string, string>>>($"could not remove root '{root}' from all entries", ErrorCode.Undefined);
             }
         }
 
         /// <summary>
         ///     remove the 'root' portion of each given key
         /// </summary>
-        /// <param name="keys">list of keys to remove the given root-part off of</param>
-        /// <param name="root">root to remove off of each key</param>
         /// <returns></returns>
-        private IResult<IEnumerable<DtoConfigKey>> RemoveRoot(IEnumerable<DtoConfigKey> keys, string root)
+        private IResult<Page<DtoConfigKey>> RemoveRoot(Page<DtoConfigKey> page, string root)
         {
             try
             {
@@ -557,33 +599,30 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     root += '/';
                 }
 
-                var keyList = keys.ToList();
-
                 // if every item passes the check for the same root
                 // modify the .Key property and put the entries into a new list that we return
-                if (keyList.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
+                if (page.Items.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
                     _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
-                    return Result.Success(
-                        keyList.Select(
-                                   entry =>
-                                   {
-                                       entry.Key = entry.Key.Substring(root.Length);
-                                       return entry;
-                                   })
-                               .ToList()
-                               .AsEnumerable());
+                    page.Items = page.Items.Select(
+                                         entry =>
+                                         {
+                                             entry.Key = entry.Key[root.Length..];
+                                             return entry;
+                                         })
+                                     .ToList();
+                    return Result.Success(page);
                 }
 
                 _logger.LogDebug($"could not remove root '{root}' from all ConfigKeys - not all items share same root");
-                return Result.Error<IEnumerable<DtoConfigKey>>(
+                return Result.Error<Page<DtoConfigKey>>(
                     $"could not remove root '{root}' from all ConfigKeys - not all items share same root",
                     ErrorCode.InvalidData);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, $"could not remove root '{root}' from all ConfigKeys");
-                return Result.Error<IEnumerable<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys", ErrorCode.Undefined);
+                return Result.Error<Page<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys", ErrorCode.Undefined);
             }
         }
 

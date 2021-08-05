@@ -30,11 +30,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public PreviewController(ILogger<PreviewController> logger,
-                                 IConfigurationCompiler compiler,
-                                 IProjectionStore store,
-                                 IConfigurationParser parser,
-                                 IJsonTranslator translator)
+        public PreviewController(
+            ILogger<PreviewController> logger,
+            IConfigurationCompiler compiler,
+            IProjectionStore store,
+            IConfigurationParser parser,
+            IJsonTranslator translator)
             : base(logger)
         {
             _compiler = compiler;
@@ -51,12 +52,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureName">Structure-Name to use for this Preview</param>
         /// <param name="structureVersion">Structure-Version to use for this Preview</param>
         /// <returns>built configuration rendered as JSON</returns>
-        [ProducesResponseType(typeof(object), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(object), (int)HttpStatusCode.OK)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "PreviewConfigurationWithStoredValues")]
-        public async Task<IActionResult> PreviewConfiguration([FromRoute] string environmentCategory,
-                                                              [FromRoute] string environmentName,
-                                                              [FromRoute] string structureName,
-                                                              [FromRoute] int structureVersion)
+        public async Task<IActionResult> PreviewConfiguration(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion)
         {
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structId = new StructureIdentifier(structureName, structureVersion);
@@ -69,18 +71,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (structureVariableResult.IsError)
                 return ProviderError(structureVariableResult);
 
-            var environmentResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-            {
-                Identifier = envId,
-                Range = QueryRange.All
-            });
+            var environmentResult = await _store.Environments.GetKeys(
+                                        new KeyQueryParameters<EnvironmentIdentifier>
+                                        {
+                                            Identifier = envId,
+                                            Range = QueryRange.All
+                                        });
 
             if (environmentResult.IsError)
                 return ProviderError(environmentResult);
 
-            var structureSnapshot = structureKeyResult.Data;
-            var variableSnapshot = structureVariableResult.Data;
-            var environmentSnapshot = environmentResult.Data;
+            var structureSnapshot = new Dictionary<string, string>(structureKeyResult.Data.Items);
+            var variableSnapshot = new Dictionary<string, string>(structureVariableResult.Data.Items);
+            var environmentSnapshot = new Dictionary<string, string>(environmentResult.Data.Items);
 
             var environmentInfo = new EnvironmentCompilationInfo
             {
@@ -96,9 +99,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             try
             {
-                var compiled = _compiler.Compile(environmentInfo,
-                                                 structureInfo,
-                                                 _parser);
+                var compiled = _compiler.Compile(
+                    environmentInfo,
+                    structureInfo,
+                    _parser);
 
                 var json = _translator.ToJson(compiled.CompiledConfiguration);
 
@@ -107,11 +111,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" +
-                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
-                                   $"{nameof(environmentName)}: {environmentName}; " +
-                                   $"{nameof(structureName)}: {structureName}; " +
-                                   $"{nameof(structureVersion)}: {structureVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at ("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
+                    + $"{nameof(environmentName)}: {environmentName}; "
+                    + $"{nameof(structureName)}: {structureName}; "
+                    + $"{nameof(structureVersion)}: {structureVersion})");
                 return Ok(JsonDocument.Parse("{}").RootElement);
             }
         }
@@ -121,7 +127,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="previewOptions">set of options telling the service which existing Env/Structure to use, or to use inline-data for preview</param>
         /// <returns>Result of the Compilation with associated Metadata and both Key/Value and JSON representation of the Config</returns>
-        [ProducesResponseType(typeof(PreviewResult), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(PreviewResult), (int)HttpStatusCode.OK)]
         [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
         public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {
@@ -148,16 +154,18 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Variables = varKeys
             };
 
-            var compiled = _compiler.Compile(environmentInfo,
-                                             structureInfo,
-                                             _parser);
+            var compiled = _compiler.Compile(
+                environmentInfo,
+                structureInfo,
+                _parser);
 
-            return Ok(new PreviewResult
-            {
-                Map = compiled.CompiledConfiguration.ToDictionary(_ => _.Key, _ => _.Value),
-                Json = _translator.ToJson(compiled.CompiledConfiguration),
-                UsedKeys = compiled.GetUsedKeys().Where(key => environmentInfo.Keys.ContainsKey(key))
-            });
+            return Ok(
+                new PreviewResult
+                {
+                    Map = compiled.CompiledConfiguration.ToDictionary(_ => _.Key, _ => _.Value),
+                    Json = _translator.ToJson(compiled.CompiledConfiguration),
+                    UsedKeys = compiled.GetUsedKeys().Where(key => environmentInfo.Keys.ContainsKey(key))
+                });
         }
 
         private async Task<IDictionary<string, string>> ResolveEnvironmentPreview(EnvironmentPreview environment)
@@ -166,14 +174,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (!string.IsNullOrWhiteSpace(environment.Category) && !string.IsNullOrWhiteSpace(environment.Name))
             {
                 var id = new EnvironmentIdentifier(environment.Category, environment.Name);
-                var result = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-                {
-                    Identifier = id,
-                    Range = QueryRange.All
-                });
+                var result = await _store.Environments.GetKeys(
+                                 new KeyQueryParameters<EnvironmentIdentifier>
+                                 {
+                                     Identifier = id,
+                                     Range = QueryRange.All
+                                 });
 
                 if (!result.IsError)
-                    return result.Data;
+                    return new Dictionary<string, string>(result.Data.Items);
 
                 Logger.LogWarning($"could not retrieve referenced environment '{id}' for preview: {result.Message}");
             }
@@ -193,17 +202,21 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 var variableResult = await _store.Structures.GetVariables(id, QueryRange.All);
 
                 if (!structResult.IsError && !variableResult.IsError)
-                    return (Structure: structResult.Data, Variables: variableResult.Data);
+                    return (Structure: new Dictionary<string, string>(structResult.Data.Items),
+                               Variables: new Dictionary<string, string>(variableResult.Data.Items));
 
-                Logger.LogWarning($"could not retrieve referenced structure / variables '{id}' for preview: " +
-                                  $"{(structResult.IsError ? structResult.Message : variableResult.Message)}");
+                Logger.LogWarning(
+                    $"could not retrieve referenced structure / variables '{id}' for preview: "
+                    + $"{(structResult.IsError ? structResult.Message : variableResult.Message)}");
             }
 
-            return (Structure: structure.Keys?.ToDictionary(pair => pair.Key,
-                                                            pair => pair.Value?.ToString())
+            return (Structure: structure.Keys?.ToDictionary(
+                                   pair => pair.Key,
+                                   pair => pair.Value?.ToString())
                                ?? new Dictionary<string, string>(),
-                       Variables: structure.Variables?.ToDictionary(pair => pair.Key,
-                                                                    pair => pair.Value?.ToString())
+                       Variables: structure.Variables?.ToDictionary(
+                                      pair => pair.Key,
+                                      pair => pair.Value?.ToString())
                                   ?? new Dictionary<string, string>());
         }
     }

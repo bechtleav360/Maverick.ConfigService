@@ -65,6 +65,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return ProviderError(availableEnvironments);
 
             var environment = availableEnvironments.Data
+                                                   .Items
                                                    .FirstOrDefault(e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase) &&
                                                                         e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
 
@@ -72,6 +73,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
 
             var structure = availableStructures.Data
+                                               .Items
                                                .FirstOrDefault(s => s.Name.Equals(structureName) &&
                                                                     s.Version == structureVersion);
 

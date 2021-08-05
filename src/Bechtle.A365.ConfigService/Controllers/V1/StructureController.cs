@@ -139,7 +139,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data);
+                var json = _translator.ToJson(result.Data.Items);
 
                 if (json.ValueKind == JsonValueKind.Null)
                     return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
@@ -209,6 +209,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return ProviderError(result);
 
                 var sortedData = result.Data
+                                       .Items
                                        .GroupBy(s => s.Name)
                                        .ToDictionary(g => g.Key, g => g.Select(s => s.Version)
                                                                        .ToArray());
@@ -283,7 +284,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data);
+                var json = _translator.ToJson(result.Data.Items);
 
                 return Ok(json);
             }

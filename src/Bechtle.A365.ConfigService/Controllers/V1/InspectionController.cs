@@ -31,11 +31,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public InspectionController(ILogger<InspectionController> logger,
-                                    IConfigurationCompiler compiler,
-                                    IConfigurationParser parser,
-                                    IJsonTranslator translator,
-                                    IProjectionStore store)
+        public InspectionController(
+            ILogger<InspectionController> logger,
+            IConfigurationCompiler compiler,
+            IConfigurationParser parser,
+            IJsonTranslator translator,
+            IProjectionStore store)
             : base(logger)
         {
             _compiler = compiler;
@@ -50,8 +51,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpPost("environment/{environmentCategory}/{environmentName}/structures/all")]
-        public async Task<IActionResult> GetUsedKeysPerStructureAll([FromRoute] string environmentCategory,
-                                                                    [FromRoute] string environmentName)
+        public async Task<IActionResult> GetUsedKeysPerStructureAll(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName)
         {
             if (string.IsNullOrWhiteSpace(environmentCategory))
                 return BadRequest("no environment-category given");
@@ -61,23 +63,22 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeyResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-            {
-                Identifier = envId,
-                Range = QueryRange.All
-            });
+            var envKeyResult = await _store.Environments.GetKeys(
+                                   new KeyQueryParameters<EnvironmentIdentifier>
+                                   {
+                                       Identifier = envId,
+                                       Range = QueryRange.All
+                                   });
 
             if (envKeyResult.IsError)
                 return ProviderError(envKeyResult);
-
-            var envKeys = envKeyResult.Data;
 
             var configResult = await _store.Configurations.GetAvailableWithEnvironment(envId, DateTime.MinValue, QueryRange.All);
 
             if (configResult.IsError)
                 return ProviderError(configResult);
 
-            return Result(await AnnotateEnvironmentKeys(envKeys, configResult.Data));
+            return Result(await AnnotateEnvironmentKeys(envKeyResult.Data.Items, configResult.Data.Items));
         }
 
         /// <summary>
@@ -87,8 +88,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="environmentName"></param>
         /// <returns></returns>
         [HttpPost("environment/{environmentCategory}/{environmentName}/structures/latest")]
-        public async Task<IActionResult> GetUsedKeysPerStructureLatest([FromRoute] string environmentCategory,
-                                                                       [FromRoute] string environmentName)
+        public async Task<IActionResult> GetUsedKeysPerStructureLatest(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName)
         {
             if (string.IsNullOrWhiteSpace(environmentCategory))
                 return BadRequest("no environment-category given");
@@ -98,16 +100,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeyResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-            {
-                Identifier = envId,
-                Range = QueryRange.All
-            });
+            var envKeyResult = await _store.Environments.GetKeys(
+                                   new KeyQueryParameters<EnvironmentIdentifier>
+                                   {
+                                       Identifier = envId,
+                                       Range = QueryRange.All
+                                   });
 
             if (envKeyResult.IsError)
                 return ProviderError(envKeyResult);
-
-            var envKeys = envKeyResult.Data;
 
             var configResult = await _store.Configurations.GetAvailableWithEnvironment(envId, DateTime.MinValue, QueryRange.All);
 
@@ -115,11 +116,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return ProviderError(configResult);
 
             var selectedConfigs = configResult.Data
+                                              .Items
                                               .GroupBy(configId => configId.Structure.Name)
-                                              .Select(group => group.OrderByDescending(c => c.Structure.Version)
-                                                                    .First());
+                                              .Select(
+                                                  group => group.OrderByDescending(c => c.Structure.Version)
+                                                                .First());
 
-            var annotatedEnvKeys = await AnnotateEnvironmentKeys(envKeys, selectedConfigs);
+            var annotatedEnvKeys = await AnnotateEnvironmentKeys(envKeyResult.Data.Items, selectedConfigs);
 
             if (annotatedEnvKeys.IsError)
                 return ProviderError(annotatedEnvKeys);
@@ -136,10 +139,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureVersion"></param>
         /// <returns></returns>
         [HttpPost("structure/compile/{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
-        public async Task<IActionResult> InspectStructure([FromRoute] string environmentCategory,
-                                                          [FromRoute] string environmentName,
-                                                          [FromRoute] string structureName,
-                                                          [FromRoute] int structureVersion)
+        public async Task<IActionResult> InspectStructure(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion)
         {
             if (string.IsNullOrWhiteSpace(environmentCategory))
                 return BadRequest("no environment-category given");
@@ -156,16 +160,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structId = new StructureIdentifier(structureName, structureVersion);
 
-            var envKeysResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-            {
-                Identifier = envId,
-                Range = QueryRange.All
-            });
+            var envKeysResult = await _store.Environments.GetKeys(
+                                    new KeyQueryParameters<EnvironmentIdentifier>
+                                    {
+                                        Identifier = envId,
+                                        Range = QueryRange.All
+                                    });
 
             if (envKeysResult.IsError)
                 return ProviderError(envKeysResult);
 
-            var envKeys = envKeysResult.Data;
+            var envKeys = new Dictionary<string, string>(envKeysResult.Data.Items);
 
             IDictionary<string, string> structKeys;
             IDictionary<string, string> structVars;
@@ -180,8 +185,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (varResult.IsError)
                     return ProviderError(varResult);
 
-                structKeys = keyResult.Data;
-                structVars = varResult.Data;
+                structKeys = new Dictionary<string, string>(keyResult.Data.Items);
+                structVars = new Dictionary<string, string>(varResult.Data.Items);
             }
             catch (Exception e)
             {
@@ -210,10 +215,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 Logger.LogWarning(e, $"structure could not be inspected in context of '{envId}'; compilation failed");
-                return Ok(new StructureInspectionResult
-                {
-                    CompilationSuccessful = false
-                });
+                return Ok(
+                    new StructureInspectionResult
+                    {
+                        CompilationSuccessful = false
+                    });
             }
 
             var result = AnalyzeCompilation(compilationResult);
@@ -229,9 +235,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="environmentName"></param>
         /// <returns></returns>
         [HttpPost("structure/compile/{environmentCategory}/{environmentName}")]
-        public async Task<IActionResult> InspectUploadedStructure([FromRoute] string environmentCategory,
-                                                                  [FromRoute] string environmentName,
-                                                                  [FromBody] DtoStructure structure)
+        public async Task<IActionResult> InspectUploadedStructure(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromBody] DtoStructure structure)
         {
             if (string.IsNullOrWhiteSpace(environmentCategory))
                 return BadRequest("no environment-category given");
@@ -272,16 +279,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
 
-            var envKeysResult = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-            {
-                Identifier = envId,
-                Range = QueryRange.All
-            });
+            var envKeysResult = await _store.Environments.GetKeys(
+                                    new KeyQueryParameters<EnvironmentIdentifier>
+                                    {
+                                        Identifier = envId,
+                                        Range = QueryRange.All
+                                    });
 
             if (envKeysResult.IsError)
                 return ProviderError(envKeysResult);
 
-            var envKeys = envKeysResult.Data;
+            var envKeys = new Dictionary<string, string>(envKeysResult.Data.Items);
 
             CompilationResult compilationResult;
 
@@ -292,23 +300,26 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     {
                         Keys = envKeys,
                         Name = envId.ToString()
-                    }, new StructureCompilationInfo
+                    },
+                    new StructureCompilationInfo
                     {
                         Name = structure.Name ?? "Inspected Structure",
                         Keys = structKeys,
                         Variables = (structure.Variables
-                                     ?? new Dictionary<string, object>()).ToDictionary(kvp => kvp.Key,
-                                                                                       kvp => kvp.Value?.ToString())
+                                     ?? new Dictionary<string, object>()).ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value?.ToString())
                     },
                     _parser);
             }
             catch (Exception e)
             {
                 Logger.LogWarning(e, $"structure could not be inspected in context of '{envId}'; compilation failed");
-                return Ok(new StructureInspectionResult
-                {
-                    CompilationSuccessful = false
-                });
+                return Ok(
+                    new StructureInspectionResult
+                    {
+                        CompilationSuccessful = false
+                    });
             }
 
             var result = AnalyzeCompilation(compilationResult);
@@ -369,14 +380,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             return result;
         }
 
-        private async Task<IResult<List<AnnotatedEnvironmentKey>>> AnnotateEnvironmentKeys(IDictionary<string, string> environment,
-                                                                                           IEnumerable<ConfigurationIdentifier> structures)
+        private async Task<IResult<List<AnnotatedEnvironmentKey>>> AnnotateEnvironmentKeys(
+            ICollection<KeyValuePair<string, string>> environment,
+            IEnumerable<ConfigurationIdentifier> structures)
         {
             var tasks = structures.AsParallel()
-                                  .Select(cid => (ConfigId: cid, Task: _store.Configurations
-                                                                             .GetUsedConfigurationKeys(cid,
-                                                                                                       DateTime.MinValue,
-                                                                                                       QueryRange.All)))
+                                  .Select(
+                                      cid => (ConfigId: cid, Task: _store.Configurations
+                                                                         .GetUsedConfigurationKeys(
+                                                                             cid,
+                                                                             DateTime.MinValue,
+                                                                             QueryRange.All)))
                                   .ToList();
 
             await Task.WhenAll(tasks.Select(t => t.Task));
@@ -387,32 +401,38 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             if (errors.Any())
             {
-                Response.OnStarting(_ =>
-                {
-                    var joinedFailedConfigs = string.Join(";", errors.Select(e => $"{e.ConfigId.Structure.Name}/{e.ConfigId.Structure.Version}"));
-                    Response.Headers.Add("x-omitted-configs", joinedFailedConfigs);
-                    return Task.CompletedTask;
-                }, null);
+                Response.OnStarting(
+                    _ =>
+                    {
+                        var joinedFailedConfigs = string.Join(";", errors.Select(e => $"{e.ConfigId.Structure.Name}/{e.ConfigId.Structure.Version}"));
+                        Response.Headers.Add("x-omitted-configs", joinedFailedConfigs);
+                        return Task.CompletedTask;
+                    },
+                    null);
 
                 foreach (var (_, error) in errors)
                     Logger.LogError($"{error.Code} - {error.Message}");
             }
 
-            var annotatedEnv = new List<AnnotatedEnvironmentKey>(environment.Select(kvp => new AnnotatedEnvironmentKey
-            {
-                Key = kvp.Key,
-                Value = kvp.Value
-            }));
+            var annotatedEnv = new List<AnnotatedEnvironmentKey>(
+                environment.Select(
+                    kvp => new AnnotatedEnvironmentKey
+                    {
+                        Key = kvp.Key,
+                        Value = kvp.Value
+                    }));
 
             // go through each built configuration, and annotate the used Environment-Keys with their Structure-Id
             // at the end we have a list of Keys and Values, each with a list of structures that used this key
             successes.AsParallel()
-                     .ForAll(t => t.Result
-                                   .Data
-                                   .AsParallel()
-                                   .ForAll(key => annotatedEnv.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
-                                                              ?.Structures
-                                                              .Add(t.ConfigId.Structure)));
+                     .ForAll(
+                         t => t.Result
+                               .Data
+                               .AsParallel()
+                               .ForAll(
+                                   key => annotatedEnv.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
+                                                      ?.Structures
+                                                      .Add(t.ConfigId.Structure)));
 
             return Common.Result.Success(annotatedEnv);
         }

@@ -11,6 +11,7 @@ using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -195,7 +196,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.ToImmutableSortedDictionary());
+                           : Ok(result.Data.Items.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {
@@ -246,7 +247,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data);
+                var json = _translator.ToJson(result.Data.Items);
 
                 return Ok(json);
             }
@@ -303,7 +304,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                foreach (var item in result.Data)
+                foreach (var item in result.Data.Items)
                 {
                     if (item.Description is null)
                         item.Description = string.Empty;
@@ -442,7 +443,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             try
             {
                 var identifier = new LayerIdentifier(name);
-                IResult<IList<string>> result = await _store.Layers.GetTags(identifier);
+                IResult<Page<string>> result = await _store.Layers.GetTags(identifier);
 
                 return Result(result);
             }
@@ -468,12 +469,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             try
             {
                 var identifier = new LayerIdentifier(name);
-                IResult<IList<string>> layerResult = await _store.Layers.GetTags(identifier);
+                IResult<Page<string>> layerResult = await _store.Layers.GetTags(identifier);
 
                 if (layerResult.IsError)
                     return ProviderError(layerResult);
 
-                IList<string> existingTags = layerResult.Data;
+                IList<string> existingTags = layerResult.Data.Items;
                 List<string> deletions = existingTags.Where(t => !tags.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
                 List<string> additions = tags.Where(t => !existingTags.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
 

@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ServiceBase.Extensions;
 using LiteDB;
 using Microsoft.Extensions.Caching.Memory;
@@ -100,34 +101,43 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(QueryRange range)
+        public async Task<IResult<Page<TIdentifier>>> ListAll<TObject, TIdentifier>(QueryRange range)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
             => await ListAll<TObject, TIdentifier>(_ => true, range);
 
         /// <inheritdoc />
-        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(Func<TIdentifier, bool> filter, QueryRange range)
+        public async Task<IResult<Page<TIdentifier>>> ListAll<TObject, TIdentifier>(Func<TIdentifier, bool> filter, QueryRange range)
             where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
         {
             try
             {
                 List<ObjectLookup<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
-                IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
-                                                    // only list items whose newest version wasn't deleted
-                                                    .Where(
-                                                        o => !o.Versions
-                                                               .OrderByDescending(i => i.Key)
-                                                               .First()
-                                                               .Value
-                                                               .IsMarkedDeleted)
-                                                    .Select(o => o.Id)
-                                                    .Where(filter)
-                                                    .Skip(range.Offset)
-                                                    .Take(range.Length)
-                                                    .ToList();
+                IList<TIdentifier> totalItems = objectInfos.OrderBy(o => o.Id.ToString())
+                                                           // only list items whose newest version wasn't deleted
+                                                           .Where(
+                                                               o => !o.Versions
+                                                                      .OrderByDescending(i => i.Key)
+                                                                      .First()
+                                                                      .Value
+                                                                      .IsMarkedDeleted)
+                                                           .Select(o => o.Id)
+                                                           .ToList();
+                IList<TIdentifier> ids = totalItems.Where(filter)
+                                                   .Skip(range.Offset)
+                                                   .Take(range.Length)
+                                                   .ToList();
 
-                return Result.Success(ids);
+                var page = new Page<TIdentifier>
+                {
+                    Items = ids,
+                    Length = ids.Count,
+                    Offset = range.Offset,
+                    TotalLength = totalItems.Count
+                };
+
+                return Result.Success(page);
             }
             catch (Exception e)
             {
@@ -135,42 +145,49 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     e,
                     "unable to list objects of type {DomainObjectType}",
                     typeof(TObject).GetFriendlyName());
-                return Result.Error<IList<TIdentifier>>(
+                return Result.Error<Page<TIdentifier>>(
                     $"unable to list objects in collection '{typeof(TObject).GetFriendlyName()}'",
                     ErrorCode.DbUpdateError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, QueryRange range)
+        public async Task<IResult<Page<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, QueryRange range)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
             => await ListAll<TObject, TIdentifier>(version, _ => true, range);
 
         /// <inheritdoc />
-        public async Task<IResult<IList<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, Func<TIdentifier, bool> filter, QueryRange range)
+        public async Task<IResult<Page<TIdentifier>>> ListAll<TObject, TIdentifier>(long version, Func<TIdentifier, bool> filter, QueryRange range)
             where TObject : DomainObject<TIdentifier> where TIdentifier : Identifier
         {
             try
             {
                 List<ObjectLookup<TIdentifier>> objectInfos = await GetObjectInfo<TObject, TIdentifier>();
 
-                IList<TIdentifier> ids = objectInfos.OrderBy(o => o.Id.ToString())
-                                                    // only list items whose newest version wasn't deleted
-                                                    .Where(
-                                                        o => !o.Versions
-                                                               .Where(v => v.Key < version)
-                                                               .OrderByDescending(i => i.Key)
-                                                               .First()
-                                                               .Value
-                                                               .IsMarkedDeleted)
-                                                    .Select(o => o.Id)
-                                                    .Where(filter)
-                                                    .Skip(range.Offset)
-                                                    .Take(range.Length)
-                                                    .ToList();
+                IList<TIdentifier> totalItems = objectInfos.OrderBy(o => o.Id.ToString())
+                                                           // only list items whose newest version wasn't deleted
+                                                           .Where(
+                                                               o => !o.Versions
+                                                                      .OrderByDescending(i => i.Key)
+                                                                      .First()
+                                                                      .Value
+                                                                      .IsMarkedDeleted)
+                                                           .Select(o => o.Id)
+                                                           .ToList();
+                IList<TIdentifier> ids = totalItems.Skip(range.Offset)
+                                                   .Take(range.Length)
+                                                   .ToList();
 
-                return Result.Success(ids);
+                var page = new Page<TIdentifier>
+                {
+                    Items = ids,
+                    Length = ids.Count,
+                    Offset = range.Offset,
+                    TotalLength = totalItems.Count
+                };
+
+                return Result.Success(page);
             }
             catch (Exception e)
             {
@@ -178,7 +195,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     e,
                     "unable to list objects of type {DomainObjectType}",
                     typeof(TObject).GetFriendlyName());
-                return Result.Error<IList<TIdentifier>>(
+                return Result.Error<Page<TIdentifier>>(
                     $"unable to list objects in collection '{typeof(TObject).GetFriendlyName()}'",
                     ErrorCode.DbUpdateError);
             }
@@ -433,12 +450,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 // prevent metadata-entries for objects that are not stored yet
-                IResult<IList<TIdentifier>> versionResult = await ListAll<TObject, TIdentifier>(QueryRange.All);
+                IResult<Page<TIdentifier>> versionResult = await ListAll<TObject, TIdentifier>(QueryRange.All);
 
                 if (versionResult.IsError)
                     return versionResult;
 
-                IList<TIdentifier> versions = versionResult.Data;
+                Page<TIdentifier> page = versionResult.Data;
+                IList<TIdentifier> versions = page.Items;
                 bool domainObjectAvailable = versions.Any();
 
                 if (!domainObjectAvailable)

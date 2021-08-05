@@ -29,5 +29,11 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
         /// <inheritdoc />
         public JsonElement ToJson(IDictionary<string, string> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
+
+        /// <inheritdoc />
+        public JsonElement ToJson(ICollection<KeyValuePair<string, string>> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
+
+        /// <inheritdoc />
+        public JsonElement ToJson(ICollection<KeyValuePair<string, string>> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
     }
 }

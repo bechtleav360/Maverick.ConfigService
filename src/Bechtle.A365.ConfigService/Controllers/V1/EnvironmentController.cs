@@ -244,7 +244,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.ToImmutableSortedDictionary());
+                           : Ok(result.Data.Items.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {
@@ -298,7 +298,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data);
+                var json = _translator.ToJson(result.Data.Items);
 
                 return Ok(json);
             }
@@ -358,7 +358,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                foreach (var item in result.Data)
+                foreach (var item in result.Data.Items)
                 {
                     if (item.Description is null)
                         item.Description = string.Empty;

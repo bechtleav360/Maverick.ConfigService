@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Models.V1;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
@@ -27,7 +28,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range);
+        Task<IResult<Page<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range);
 
         /// <summary>
         ///     get a list of available projected Configurations constrained to the specified Environment
@@ -36,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when, QueryRange range);
+        Task<IResult<Page<ConfigurationIdentifier>>> GetAvailableWithEnvironment(EnvironmentIdentifier environment, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get a list of available projected Configurations constrained to the specified Structure
@@ -45,7 +46,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
+        Task<IResult<Page<ConfigurationIdentifier>>> GetAvailableWithStructure(StructureIdentifier structure, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get the json of a Configuration
@@ -62,14 +63,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
+        Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get configurations, that have stale configurations
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range);
+        Task<IResult<Page<ConfigurationIdentifier>>> GetStale(QueryRange range);
 
         /// <summary>
         ///     get the used environment-keys for a configuration

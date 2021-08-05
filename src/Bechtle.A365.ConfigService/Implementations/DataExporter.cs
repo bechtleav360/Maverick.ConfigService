@@ -73,7 +73,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             return new LayerExport
             {
                 Name = layer.Name,
-                Keys = dataResult.Data.Select(k => new EnvironmentKeyExport
+                Keys = dataResult.Data.Items.Select(k => new EnvironmentKeyExport
                 {
                     Key = k.Key,
                     Value = k.Value,
@@ -111,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Category = id.Category,
                 Name = id.Name,
-                Layers = env.Data.ToArray()
+                Layers = env.Data.Items.ToArray()
             };
         }
     }

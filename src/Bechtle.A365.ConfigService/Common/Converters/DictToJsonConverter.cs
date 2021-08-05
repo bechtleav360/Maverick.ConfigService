@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             var root = ConvertToTree(dict, separator);
 
             using var memoryStream = new MemoryStream();
-            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions {Indented = true}))
+            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions { Indented = true }))
             {
                 CreateTokenNative(root, writer);
             }
@@ -35,7 +35,30 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             return JsonDocument.Parse(memoryStream).RootElement;
         }
 
-        private static Node ConvertToTree(IDictionary<string, string> dict, string separator)
+        /// <summary>
+        ///     Converts a <see cref="Dictionary{String, String}"/> to its Json-Representation, using the Keys as Paths
+        /// </summary>
+        /// <param name="dict">Dictionary containing paths ("Foo/Bar/Baz") to values ("42")</param>
+        /// <param name="separator">separator used to split parts in the Path</param>
+        /// <returns>the equivalent Json-Representation of the data in <paramref name="dict"/></returns>
+        public static JsonElement ToJson(ICollection<KeyValuePair<string, string>> dict, string separator)
+        {
+            if (!dict.Any())
+                return JsonDocument.Parse("{}").RootElement;
+
+            var root = ConvertToTree(dict, separator);
+
+            using var memoryStream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(memoryStream, new JsonWriterOptions { Indented = true }))
+            {
+                CreateTokenNative(root, writer);
+            }
+
+            memoryStream.Position = 0;
+            return JsonDocument.Parse(memoryStream).RootElement;
+        }
+
+        private static Node ConvertToTree(IEnumerable<KeyValuePair<string, string>> dict, string separator)
         {
             var root = new Node();
 

@@ -5,6 +5,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Implementations;
+using Bechtle.A365.ConfigService.Models.V1;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
@@ -48,7 +49,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// </summary>
         /// <param name="range">paging-information for the returned list</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range);
+        Task<IResult<Page<LayerIdentifier>>> GetAvailable(QueryRange range);
 
         /// <summary>
         ///     get a list of all Layers
@@ -56,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="range">paging-information for the returned list</param>
         /// <param name="version">Maximum version within the database to consider for the returned objects</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult<IList<LayerIdentifier>>> GetAvailable(QueryRange range, long version);
+        Task<IResult<Page<LayerIdentifier>>> GetAvailable(QueryRange range, long version);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
@@ -65,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="key">current path to suggest options for</param>
         /// <param name="range">paging-information for the returned list</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(LayerIdentifier identifier, string key, QueryRange range);
+        Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(LayerIdentifier identifier, string key, QueryRange range);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
@@ -75,21 +76,21 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="range">paging-information for the returned list</param>
         /// <param name="version">Maximum version within the database to consider for the returned list</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(LayerIdentifier identifier, string key, QueryRange range, long version);
+        Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(LayerIdentifier identifier, string key, QueryRange range, long version);
 
         /// <summary>
         ///     get the keys of an Layer as Objects
         /// </summary>
         /// <param name="parameters">structured parameters to retrieve keys for a given Layer</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<LayerIdentifier> parameters);
+        Task<IResult<Page<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<LayerIdentifier> parameters);
 
         /// <summary>
         ///     get the keys of an Layer
         /// </summary>
         /// <param name="parameters">structured parameters to retrieve keys for a given Layer</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters);
+        Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters);
 
         /// <summary>
         ///     get metadata for a Layer
@@ -103,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// </summary>
         /// <param name="identifier">Id of the layer to update the tags of</param>
         /// <returns>Result of the operation</returns>
-        Task<IResult<IList<string>>> GetTags(LayerIdentifier identifier);
+        Task<IResult<Page<string>>> GetTags(LayerIdentifier identifier);
 
         /// <summary>
         ///     add or update a number of keys in the given Layer

@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
@@ -65,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<StructureIdentifier>>> GetAvailable(QueryRange range)
+        public async Task<IResult<Page<StructureIdentifier>>> GetAvailable(QueryRange range)
         {
             try
             {
@@ -76,38 +77,46 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve structures");
-                return Result.Error<IList<StructureIdentifier>>("failed to retrieve structures", ErrorCode.DbQueryError);
+                return Result.Error<Page<StructureIdentifier>>("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<int>>> GetAvailableVersions(string name, QueryRange range)
+        public async Task<IResult<Page<int>>> GetAvailableVersions(string name, QueryRange range)
         {
             try
             {
                 _logger.LogDebug("collecting available versions of structure '{StructureName}'", name);
 
-                IResult<IList<StructureIdentifier>> listResult = await _domainObjectManager.GetStructures(name, range, CancellationToken.None);
+                IResult<Page<StructureIdentifier>> listResult = await _domainObjectManager.GetStructures(name, range, CancellationToken.None);
                 if (listResult.IsError)
                 {
-                    return Result.Error<IList<int>>(listResult.Message, listResult.Code);
+                    return Result.Error<Page<int>>(listResult.Message, listResult.Code);
                 }
 
                 IList<int> versions = listResult.Data
+                                                .Items
                                                 .Select(id => id.Version)
                                                 .ToList();
 
-                return Result.Success(versions);
+                return Result.Success(
+                    new Page<int>
+                    {
+                        Items = versions,
+                        Length = listResult.Data.Length,
+                        Offset = listResult.Data.Offset,
+                        TotalLength = listResult.Data.TotalLength
+                    });
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve structures");
-                return Result.Error<IList<int>>("failed to retrieve structures", ErrorCode.DbQueryError);
+                return Result.Error<Page<int>>("failed to retrieve structures", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetKeys(StructureIdentifier identifier, QueryRange range)
+        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -116,33 +125,39 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
                 if (structureResult.IsError)
                 {
-                    return Result.Error<IDictionary<string, string>>(structureResult.Message, structureResult.Code);
+                    return Result.Error<Page<KeyValuePair<string, string>>>(structureResult.Message, structureResult.Code);
                 }
 
                 ConfigStructure structure = structureResult.Data;
 
                 _logger.LogDebug("got structure at version '{CurrentVersion}'", structure.CurrentVersion);
 
-                ImmutableSortedDictionary<string, string> result = structure.Keys
-                                                                            .OrderBy(k => k.Key)
-                                                                            .Skip(range.Offset)
-                                                                            .Take(range.Length)
-                                                                            .ToImmutableSortedDictionary(
-                                                                                k => k.Key,
-                                                                                k => k.Value,
-                                                                                StringComparer.OrdinalIgnoreCase);
+                List<KeyValuePair<string, string>> result = structure.Keys
+                                                                     .OrderBy(k => k.Key)
+                                                                     .Skip(range.Offset)
+                                                                     .Take(range.Length)
+                                                                     .Select(k => new KeyValuePair<string, string>(k.Key, k.Value))
+                                                                     .ToList();
 
-                return Result.Success<IDictionary<string, string>>(result);
+                var page = new Page<KeyValuePair<string, string>>
+                {
+                    Items = result,
+                    Length = result.Count,
+                    Offset = range.Offset,
+                    TotalLength = structure.Keys.Count
+                };
+
+                return Result.Success(page);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve keys for structure {Identifier}", identifier);
-                return Result.Error<IDictionary<string, string>>($"failed to retrieve keys for structure {identifier}", ErrorCode.DbQueryError);
+                return Result.Error<Page<KeyValuePair<string, string>>>($"failed to retrieve keys for structure {identifier}", ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier, QueryRange range)
+        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetVariables(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -151,28 +166,34 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
                 if (structureResult.IsError)
                 {
-                    return Result.Error<IDictionary<string, string>>(structureResult.Message, structureResult.Code);
+                    return Result.Error<Page<KeyValuePair<string, string>>>(structureResult.Message, structureResult.Code);
                 }
 
                 ConfigStructure structure = structureResult.Data;
 
                 _logger.LogDebug("got structure at version '{CurrentVersion}'", structure.CurrentVersion);
 
-                ImmutableSortedDictionary<string, string> result = structure.Variables
-                                                                            .OrderBy(k => k.Key)
-                                                                            .Skip(range.Offset)
-                                                                            .Take(range.Length)
-                                                                            .ToImmutableSortedDictionary(
-                                                                                k => k.Key,
-                                                                                k => k.Value,
-                                                                                StringComparer.OrdinalIgnoreCase);
+                List<KeyValuePair<string, string>> result = structure.Variables
+                                                                     .OrderBy(k => k.Key)
+                                                                     .Skip(range.Offset)
+                                                                     .Take(range.Length)
+                                                                     .Select(k => new KeyValuePair<string, string>(k.Key, k.Value))
+                                                                     .ToList();
 
-                return Result.Success<IDictionary<string, string>>(result);
+                var page = new Page<KeyValuePair<string, string>>
+                {
+                    Items = result,
+                    Length = result.Count,
+                    Offset = range.Offset,
+                    TotalLength = structure.Variables.Count
+                };
+
+                return Result.Success(page);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve variables for structure {Identifier}", identifier);
-                return Result.Error<IDictionary<string, string>>($"failed to retrieve variables for structure {identifier}", ErrorCode.DbQueryError);
+                return Result.Error<Page<KeyValuePair<string, string>>>($"failed to retrieve variables for structure {identifier}", ErrorCode.DbQueryError);
             }
         }
 

@@ -12,6 +12,7 @@ using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Health;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ConfigService.Parsing;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Bechtle.A365.ServiceBase.Services.V1;
@@ -698,13 +699,13 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
 
-            IResult<IList<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
+            IResult<Page<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
             if (envIdResult.IsError)
             {
                 return;
             }
 
-            foreach (EnvironmentIdentifier envId in envIdResult.Data)
+            foreach (EnvironmentIdentifier envId in envIdResult.Data.Items)
             {
                 IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
                 if (environmentResult.IsError)
@@ -761,7 +762,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         // @TODO: un-/assignment of Layers in Environment don't currently mark a Configuration as Stale
         private async Task UpdateConfigurationStaleStatus(EnvironmentLayer layer, ICollection<ConfigKeyAction> modifiedKeys)
         {
-            IResult<IList<ConfigurationIdentifier>> configIdResult = await _objectStore.ListAll<PreparedConfiguration, ConfigurationIdentifier>(QueryRange.All);
+            IResult<Page<ConfigurationIdentifier>> configIdResult = await _objectStore.ListAll<PreparedConfiguration, ConfigurationIdentifier>(QueryRange.All);
 
             if (configIdResult.IsError)
             {
@@ -769,7 +770,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            foreach (ConfigurationIdentifier configId in configIdResult.Data)
+            foreach (ConfigurationIdentifier configId in configIdResult.Data.Items)
             {
                 IResult<IDictionary<string, string>> metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(configId);
                 if (metadataResult.IsError)

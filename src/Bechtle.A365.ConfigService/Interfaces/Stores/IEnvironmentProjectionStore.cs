@@ -5,6 +5,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Implementations;
+using Bechtle.A365.ConfigService.Models.V1;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
@@ -41,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// </summary>
         /// <param name="identifier">Id pointing to the Environment to operate on</param>
         /// <returns></returns>
-        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier);
+        Task<IResult<Page<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier);
 
         /// <summary>
         ///     get the ordered list of assigned layers for the given <see cref="EnvironmentIdentifier" /> at the given Version
@@ -49,14 +50,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier">Id pointing to the Environment to operate on</param>
         /// <param name="version">Event-Version to use when streaming Objects</param>
         /// <returns></returns>
-        Task<IResult<IList<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version);
+        Task<IResult<Page<LayerIdentifier>>> GetAssignedLayers(EnvironmentIdentifier identifier, long version);
 
         /// <summary>
         ///     get a list of all Environments
         /// </summary>
         /// <param name="range">Pagination-Information</param>
         /// <returns></returns>
-        Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range);
+        Task<IResult<Page<EnvironmentIdentifier>>> GetAvailable(QueryRange range);
 
         /// <summary>
         ///     get a list of all Environments
@@ -64,7 +65,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="range">Pagination-Information</param>
         /// <param name="version">Event-Version to use when streaming Objects</param>
         /// <returns></returns>
-        Task<IResult<IList<EnvironmentIdentifier>>> GetAvailable(QueryRange range, long version);
+        Task<IResult<Page<EnvironmentIdentifier>>> GetAvailable(QueryRange range, long version);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
@@ -73,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="key">current key used to see which keys sibling / children are available</param>
         /// <param name="range">Pagination-Information</param>
         /// <returns></returns>
-        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
+        Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range);
 
         /// <summary>
         ///     get a list of possible next terms for the given key
@@ -83,21 +84,21 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="range">Pagination-Information</param>
         /// <param name="version">Event-Version to use when streaming Objects</param>
         /// <returns></returns>
-        Task<IResult<IList<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range, long version);
+        Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(EnvironmentIdentifier identifier, string key, QueryRange range, long version);
 
         /// <summary>
         ///     get the keys of an Environment as Objects
         /// </summary>
         /// <param name="parameters">query-parameters to use when reading keys</param>
         /// <returns></returns>
-        Task<IResult<IEnumerable<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<EnvironmentIdentifier> parameters);
+        Task<IResult<Page<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<EnvironmentIdentifier> parameters);
 
         /// <summary>
         ///     get the keys of an Environment
         /// </summary>
         /// <param name="parameters">query-parameters to use when reading keys</param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetKeys(KeyQueryParameters<EnvironmentIdentifier> parameters);
+        Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(KeyQueryParameters<EnvironmentIdentifier> parameters);
 
         /// <summary>
         ///     get all available Metadata for an Environment

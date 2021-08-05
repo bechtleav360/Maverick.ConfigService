@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Models.V1;
 
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
@@ -18,9 +19,10 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="keys"></param>
         /// <param name="variables"></param>
         /// <returns></returns>
-        Task<IResult> Create(StructureIdentifier identifier,
-                             IDictionary<string, string> keys,
-                             IDictionary<string, string> variables);
+        Task<IResult> Create(
+            StructureIdentifier identifier,
+            IDictionary<string, string> keys,
+            IDictionary<string, string> variables);
 
         /// <summary>
         ///     delete a set of variables from the current Structure
@@ -35,7 +37,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IList<StructureIdentifier>>> GetAvailable(QueryRange range);
+        Task<IResult<Page<StructureIdentifier>>> GetAvailable(QueryRange range);
 
         /// <summary>
         ///     get a list of versions available for the given Structure
@@ -43,7 +45,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="name"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IList<int>>> GetAvailableVersions(string name, QueryRange range);
+        Task<IResult<Page<int>>> GetAvailableVersions(string name, QueryRange range);
 
         /// <summary>
         ///     get the keys of a Structure
@@ -51,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetKeys(StructureIdentifier identifier, QueryRange range);
+        Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(StructureIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     get the variables of a Structure
@@ -59,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetVariables(StructureIdentifier identifier, QueryRange range);
+        Task<IResult<Page<KeyValuePair<string, string>>>> GetVariables(StructureIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     Update / Set a set of Variables to the given values for the given Structure

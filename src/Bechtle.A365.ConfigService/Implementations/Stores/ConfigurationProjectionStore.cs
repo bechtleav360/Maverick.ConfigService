@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations.Stores
@@ -49,7 +50,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
 
         /// <inheritdoc />
-        public async Task<IResult<IList<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range)
+        public async Task<IResult<Page<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range)
         {
             _logger.LogDebug(
                 "collecting available configurations at '{When:O}', range={Range}",
@@ -60,7 +61,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithEnvironment(
+        public async Task<IResult<Page<ConfigurationIdentifier>>> GetAvailableWithEnvironment(
             EnvironmentIdentifier environment,
             DateTime when,
             QueryRange range)
@@ -71,7 +72,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<ConfigurationIdentifier>>> GetAvailableWithStructure(
+        public async Task<IResult<Page<ConfigurationIdentifier>>> GetAvailableWithStructure(
             StructureIdentifier structure,
             DateTime when,
             QueryRange range)
@@ -111,7 +112,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetKeys(
+        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(
             ConfigurationIdentifier identifier,
             DateTime when,
             QueryRange range)
@@ -129,21 +130,36 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 IResult<PreparedConfiguration> configuration = await _domainObjectManager.GetConfiguration(identifier, CancellationToken.None);
                 if (configuration.IsError)
-                    return Result.Error<IDictionary<string, string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                    return Result.Error<Page<KeyValuePair<string, string>>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
-                return Result.Success(configuration.Data.Keys);
+                var items = configuration.Data
+                                         .Keys
+                                         .OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
+                                         .Skip(range.Offset)
+                                         .Take(range.Length)
+                                         .ToList();
+
+                var page = new Page<KeyValuePair<string, string>>
+                {
+                    Items = items,
+                    Length = items.Count,
+                    Offset = range.Offset,
+                    TotalLength = configuration.Data.Keys.Count,
+                };
+
+                return Result.Success(page);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve projected configuration keys for id: {Identifier}", identifier);
-                return Result.Error<IDictionary<string, string>>(
+                return Result.Error<Page<KeyValuePair<string, string>>>(
                     $"failed to retrieve projected configuration keys for id: {formattedParams}",
                     ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IList<ConfigurationIdentifier>>> GetStale(QueryRange range)
+        public async Task<IResult<Page<ConfigurationIdentifier>>> GetStale(QueryRange range)
         {
             try
             {
@@ -153,7 +169,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve projected configurations");
-                return Result.Error<IList<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
+                return Result.Error<Page<ConfigurationIdentifier>>("failed to retrieve projected configurations", ErrorCode.DbQueryError);
             }
         }
 

@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Bechtle.A365.ServiceBase.EventStore.DomainEventBase;
 using Microsoft.Extensions.Logging;
@@ -135,25 +136,25 @@ namespace Bechtle.A365.ConfigService.Implementations
             => LoadObject<PreparedConfiguration, ConfigurationIdentifier>(identifier, version, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+        public Task<IResult<Page<ConfigurationIdentifier>>> GetConfigurations(
             EnvironmentIdentifier environment,
             QueryRange range,
             CancellationToken cancellationToken)
             => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(c => c.Environment == environment, range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, CancellationToken cancellationToken)
+        public Task<IResult<Page<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+        public Task<IResult<Page<ConfigurationIdentifier>>> GetConfigurations(
             StructureIdentifier structure,
             QueryRange range,
             CancellationToken cancellationToken)
             => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(c => c.Structure == structure, range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+        public Task<IResult<Page<ConfigurationIdentifier>>> GetConfigurations(
             EnvironmentIdentifier environment,
             QueryRange range,
             long version,
@@ -161,11 +162,11 @@ namespace Bechtle.A365.ConfigService.Implementations
             => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(version, c => c.Environment == environment, range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, long version, CancellationToken cancellationToken)
+        public Task<IResult<Page<ConfigurationIdentifier>>> GetConfigurations(QueryRange range, long version, CancellationToken cancellationToken)
             => ListObjects<PreparedConfiguration, ConfigurationIdentifier>(version, range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<ConfigurationIdentifier>>> GetConfigurations(
+        public Task<IResult<Page<ConfigurationIdentifier>>> GetConfigurations(
             StructureIdentifier structure,
             QueryRange range,
             long version,
@@ -181,11 +182,11 @@ namespace Bechtle.A365.ConfigService.Implementations
             => LoadObject<ConfigEnvironment, EnvironmentIdentifier>(identifier, version, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, CancellationToken cancellationToken)
+        public Task<IResult<Page<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<ConfigEnvironment, EnvironmentIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, long version, CancellationToken cancellationToken)
+        public Task<IResult<Page<EnvironmentIdentifier>>> GetEnvironments(QueryRange range, long version, CancellationToken cancellationToken)
             => ListObjects<ConfigEnvironment, EnvironmentIdentifier>(version, range, cancellationToken);
 
         /// <inheritdoc />
@@ -197,18 +198,19 @@ namespace Bechtle.A365.ConfigService.Implementations
             => LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, version, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken)
+        public Task<IResult<Page<LayerIdentifier>>> GetLayers(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<EnvironmentLayer, LayerIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<LayerIdentifier>>> GetLayers(QueryRange range, long version, CancellationToken cancellationToken)
+        public Task<IResult<Page<LayerIdentifier>>> GetLayers(QueryRange range, long version, CancellationToken cancellationToken)
             => ListObjects<EnvironmentLayer, LayerIdentifier>(version, range, cancellationToken);
 
         /// <inheritdoc />
-        public async Task<IResult<IList<ConfigurationIdentifier>>> GetStaleConfigurations(QueryRange range, CancellationToken cancellationToken)
+        public async Task<IResult<Page<ConfigurationIdentifier>>> GetStaleConfigurations(QueryRange range, CancellationToken cancellationToken)
         {
-            IResult<IList<ConfigurationIdentifier>> configIdResult =
-                await ListObjects<PreparedConfiguration, ConfigurationIdentifier>(QueryRange.All, CancellationToken.None);
+            IResult<Page<ConfigurationIdentifier>> configIdResult = await ListObjects<PreparedConfiguration, ConfigurationIdentifier>(
+                                                                        QueryRange.All,
+                                                                        CancellationToken.None);
 
             if (configIdResult.IsError)
             {
@@ -216,11 +218,11 @@ namespace Bechtle.A365.ConfigService.Implementations
                     "unable to query stale configs - unable to list all configurations to check their stale-ness: {Code} {Message}",
                     configIdResult.Code,
                     configIdResult.Message);
-                return Result.Error<IList<ConfigurationIdentifier>>(configIdResult.Message, configIdResult.Code);
+                return Result.Error<Page<ConfigurationIdentifier>>(configIdResult.Message, configIdResult.Code);
             }
 
             var staleConfigurationIds = new List<ConfigurationIdentifier>();
-            foreach (ConfigurationIdentifier configId in configIdResult.Data)
+            foreach (ConfigurationIdentifier configId in configIdResult.Data.Items)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -235,7 +237,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                         configId,
                         configIdResult.Code,
                         configIdResult.Message);
-                    return Result.Error<IList<ConfigurationIdentifier>>(configIdResult.Message, configIdResult.Code);
+                    return Result.Error<Page<ConfigurationIdentifier>>(configIdResult.Message, configIdResult.Code);
                 }
 
                 IDictionary<string, string> metadata = metadataResult.Data;
@@ -248,12 +250,22 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             // paginate at the end when we have the full list, so the returned ids will be stable across multiple requests
-            IList<ConfigurationIdentifier> pagedList = staleConfigurationIds.OrderBy(id => id.ToString())
-                                                                            .Skip(range.Offset)
-                                                                            .Take(range.Length)
+            IList<ConfigurationIdentifier> totalList = staleConfigurationIds.OrderBy(id => id.ToString())
                                                                             .ToList();
 
-            return Result.Success(pagedList);
+            IList<ConfigurationIdentifier> pagedList = totalList.Skip(range.Offset)
+                                                                .Take(range.Length)
+                                                                .ToList();
+
+            var page = new Page<ConfigurationIdentifier>
+            {
+                Items = pagedList,
+                Length = pagedList.Count,
+                Offset = range.Offset,
+                TotalLength = totalList.Count
+            };
+
+            return Result.Success(page);
         }
 
         /// <inheritdoc />
@@ -265,19 +277,19 @@ namespace Bechtle.A365.ConfigService.Implementations
             => LoadObject<ConfigStructure, StructureIdentifier>(identifier, version, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<StructureIdentifier>>> GetStructures(QueryRange range, CancellationToken cancellationToken)
+        public Task<IResult<Page<StructureIdentifier>>> GetStructures(QueryRange range, CancellationToken cancellationToken)
             => ListObjects<ConfigStructure, StructureIdentifier>(range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, CancellationToken cancellationToken)
+        public Task<IResult<Page<StructureIdentifier>>> GetStructures(string name, QueryRange range, CancellationToken cancellationToken)
             => ListObjects<ConfigStructure, StructureIdentifier>(s => s.Name == name, range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<StructureIdentifier>>> GetStructures(QueryRange range, long version, CancellationToken cancellationToken)
+        public Task<IResult<Page<StructureIdentifier>>> GetStructures(QueryRange range, long version, CancellationToken cancellationToken)
             => ListObjects<ConfigStructure, StructureIdentifier>(version, range, cancellationToken);
 
         /// <inheritdoc />
-        public Task<IResult<IList<StructureIdentifier>>> GetStructures(string name, QueryRange range, long version, CancellationToken cancellationToken)
+        public Task<IResult<Page<StructureIdentifier>>> GetStructures(string name, QueryRange range, long version, CancellationToken cancellationToken)
             => ListObjects<ConfigStructure, StructureIdentifier>(version, s => s.Name == name, range, cancellationToken);
 
         /// <inheritdoc />
@@ -502,12 +514,12 @@ namespace Bechtle.A365.ConfigService.Implementations
             return Result.Success();
         }
 
-        private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(QueryRange range, CancellationToken cancellationToken)
+        private async Task<IResult<Page<TIdentifier>>> ListObjects<TObject, TIdentifier>(QueryRange range, CancellationToken cancellationToken)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
             => await ListObjects<TObject, TIdentifier>(_ => true, range, cancellationToken);
 
-        private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(
+        private async Task<IResult<Page<TIdentifier>>> ListObjects<TObject, TIdentifier>(
             Func<TIdentifier, bool> filter,
             QueryRange range,
             CancellationToken cancellationToken)
@@ -516,7 +528,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(filter, range);
+            IResult<Page<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(filter, range);
 
             if (!result.IsError)
             {
@@ -532,12 +544,12 @@ namespace Bechtle.A365.ConfigService.Implementations
             return result;
         }
 
-        private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(long version, QueryRange range, CancellationToken cancellationToken)
+        private async Task<IResult<Page<TIdentifier>>> ListObjects<TObject, TIdentifier>(long version, QueryRange range, CancellationToken cancellationToken)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
             => await ListObjects<TObject, TIdentifier>(version, _ => true, range, cancellationToken);
 
-        private async Task<IResult<IList<TIdentifier>>> ListObjects<TObject, TIdentifier>(
+        private async Task<IResult<Page<TIdentifier>>> ListObjects<TObject, TIdentifier>(
             long version,
             Func<TIdentifier, bool> filter,
             QueryRange range,
@@ -547,7 +559,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            IResult<IList<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(version, filter, range);
+            IResult<Page<TIdentifier>> result = await _objectStore.ListAll<TObject, TIdentifier>(version, filter, range);
 
             if (!result.IsError)
             {
