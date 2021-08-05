@@ -67,6 +67,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
+            _historyConfiguration.Setup(c => c.Value)
+                                 .Returns(new HistoryConfiguration())
+                                 .Verifiable("History-Configuration not retrieved");
+
             _domainObjectFileStore.Setup(m => m.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
                                   .ReturnsAsync(Result.Success)
                                   .Verifiable("object was not stored in local file");
@@ -311,6 +315,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
+            _domainObjectFileStore.Setup(s => s.LoadObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<LayerIdentifier>(), It.IsAny<long>()))
+                                  .ReturnsAsync(Result.Success(layer))
+                                  .Verifiable("object not loaded from local file");
+
             await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
 
             IResult<EnvironmentLayer> result = await ObjectStore.Load<EnvironmentLayer, LayerIdentifier>(layer.Id);
@@ -394,6 +402,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         [Fact]
         public async Task StoreDomainObject()
         {
+            _historyConfiguration.Setup(c => c.Value)
+                                 .Returns(new HistoryConfiguration())
+                                 .Verifiable("History-Configuration not retrieved");
+
+            _domainObjectFileStore.Setup(s => s.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
+                                  .ReturnsAsync(Result.Success())
+                                  .Verifiable("object not stored in local file");
+
             IResult result = await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(
                                  new EnvironmentLayer(new LayerIdentifier("Foo"))
                                  {
@@ -428,6 +444,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                     new EnvironmentLayerKeyPath("Foo")
                 }
             };
+
+            _historyConfiguration.Setup(c => c.Value)
+                                 .Returns(new HistoryConfiguration())
+                                 .Verifiable("History-Configuration not retrieved");
 
             _domainObjectFileStore.Setup(s => s.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
                                   .ReturnsAsync(Result.Success)

@@ -81,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new LayerProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.DeleteKeys(new LayerIdentifier("Foo"), new[] {"Bar", "Baz"});
+            var result = await store.DeleteKeys(new LayerIdentifier("Foo"), new[] { "Bar", "Baz" });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
@@ -93,9 +93,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteChild()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (LayerIdentifier id, CancellationToken _) =>
+                                   (LayerIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);
@@ -106,7 +106,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new EnvironmentLayer(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -126,9 +126,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteChildSuggestion()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (LayerIdentifier id, CancellationToken _) =>
+                                   (LayerIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);
@@ -139,7 +139,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new EnvironmentLayer(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -159,9 +159,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteRoot()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (LayerIdentifier id, CancellationToken _) =>
+                                   (LayerIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);
@@ -172,7 +172,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new EnvironmentLayer(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -192,9 +192,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteRootPart()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (LayerIdentifier id, CancellationToken _) =>
+                                   (LayerIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);
@@ -205,7 +205,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new EnvironmentLayer(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -272,7 +272,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             domainObjectManager.Setup(m => m.GetLayers(It.IsAny<QueryRange>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
                                    Result.Success<IList<LayerIdentifier>>(
-                                       new List<LayerIdentifier> {new LayerIdentifier("Bar")}))
+                                       new List<LayerIdentifier> { new LayerIdentifier("Bar") }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
 
             var store = new LayerProjectionStore(_logger, domainObjectManager.Object);
@@ -297,7 +297,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 1)}
+                                               { "Foo", new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -308,7 +308,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              new KeyQueryParameters<LayerIdentifier>
                              {
                                  Identifier = new LayerIdentifier("Foo"),
-                                 Range = QueryRange.All
+                                 Range = QueryRange.All,
+                                 TargetVersion = -1
                              });
 
             Assert.Empty(result.Message);
@@ -329,7 +330,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "Baz", string.Empty, string.Empty, 1)}
+                                               { "Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "Baz", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -342,7 +343,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  Identifier = new LayerIdentifier("Foo"),
                                  Filter = "Foo/",
                                  RemoveRoot = "Foo",
-                                 Range = QueryRange.All
+                                 Range = QueryRange.All,
+                                 TargetVersion = -1
                              });
 
             Assert.Empty(result.Message);
@@ -363,7 +365,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 1)}
+                                               { "Foo", new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -374,7 +376,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              new KeyQueryParameters<LayerIdentifier>
                              {
                                  Identifier = new LayerIdentifier("Foo"),
-                                 Range = QueryRange.All
+                                 Range = QueryRange.All,
+                                 TargetVersion = -1
                              });
 
             Assert.Empty(result.Message);
@@ -395,9 +398,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 1)},
-                                               {"Baz", new EnvironmentLayerKey("Baz", "BazValue", string.Empty, string.Empty, 1)}
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 1) },
+                                               { "Baz", new EnvironmentLayerKey("Baz", "BazValue", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -408,7 +411,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              new KeyQueryParameters<LayerIdentifier>
                              {
                                  Identifier = new LayerIdentifier("Foo"),
-                                 Range = QueryRange.Make(1, 1)
+                                 Range = QueryRange.Make(1, 1),
+                                 TargetVersion = -1
                              });
 
             Assert.Empty(result.Message);
@@ -430,9 +434,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Ba", new EnvironmentLayerKey("Foo/Ba", "FooBaValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "FooBarValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Ba", new EnvironmentLayerKey("Foo/Ba", "FooBaValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "FooBarValue", string.Empty, string.Empty, 1) },
                                            }
                                        }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -445,7 +449,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  Identifier = new LayerIdentifier("Foo"),
                                  Filter = "Foo/Ba",
                                  PreferExactMatch = "Foo/Ba",
-                                 Range = QueryRange.All
+                                 Range = QueryRange.All,
+                                 TargetVersion = -1
                              });
 
             Assert.Empty(result.Message);
@@ -466,9 +471,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Ba", new EnvironmentLayerKey("Foo/Ba", "FooBaValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "FooBarValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Ba", new EnvironmentLayerKey("Foo/Ba", "FooBaValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "FooBarValue", string.Empty, string.Empty, 1) },
                                            }
                                        }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -481,7 +486,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  Identifier = new LayerIdentifier("Foo"),
                                  Filter = "Foo/",
                                  RemoveRoot = "Foo",
-                                 Range = QueryRange.All
+                                 Range = QueryRange.All,
+                                 TargetVersion = -1
                              });
 
             Assert.Empty(result.Message);
@@ -536,8 +542,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"fOO", new EnvironmentLayerKey("fOO", "FooValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "fOO", new EnvironmentLayerKey("fOO", "FooValue", string.Empty, string.Empty, 1) },
                                            }
                                        }))
                                .Verifiable("Layer was not queried from DomainObjectManager");
@@ -548,7 +554,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                              new KeyQueryParameters<LayerIdentifier>
                              {
                                  Identifier = new LayerIdentifier("Foo"),
-                                 Range = QueryRange.All
+                                 Range = QueryRange.All,
+                                 TargetVersion = -1
                              });
 
             Assert.Empty(result.Message);

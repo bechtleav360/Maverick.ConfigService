@@ -197,11 +197,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ObjectLookup<TIdentifier> @object = await GetObjectInfo<TObject, TIdentifier>(identifier);
-                long maxExistingVersion = @object.Versions.Any()
-                                              ? @object.Versions
-                                                       .Where(kvp => !kvp.Value.IsMarkedDeleted)
-                                                       .Select(kvp => kvp.Key)
-                                                       .Max()
+                List<long> possibleVersions = @object.Versions
+                                                     .Where(kvp => !kvp.Value.IsMarkedDeleted)
+                                                     .OrderByDescending(kvp => kvp.Key)
+                                                     .Select(kvp => kvp.Key)
+                                                     .ToList();
+                long maxExistingVersion = possibleVersions.Any()
+                                              ? possibleVersions.FirstOrDefault()
                                               : -1;
 
                 if (maxExistingVersion >= 0)

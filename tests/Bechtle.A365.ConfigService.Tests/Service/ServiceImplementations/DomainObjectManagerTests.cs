@@ -93,8 +93,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             => await TestObjectCreation<ConfigStructure, StructureIdentifier, StructureCreated>(
                    async manager => await manager.CreateStructure(
                                         new StructureIdentifier("Foo", 42),
-                                        new Dictionary<string, string> {{"Foo", "Bar"}},
-                                        new Dictionary<string, string> {{"Bar", "Baz"}},
+                                        new Dictionary<string, string> { { "Foo", "Bar" } },
+                                        new Dictionary<string, string> { { "Bar", "Baz" } },
                                         CancellationToken.None));
 
         [Fact]
@@ -112,7 +112,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         [Fact]
         public async Task GetAllConfigurations()
         {
-            _objectStore.Setup(m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<QueryRange>()))
+            _objectStore.Setup(
+                            m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(
+                                It.IsAny<Func<ConfigurationIdentifier, bool>>(),
+                                It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<ConfigurationIdentifier>>(
                                 new List<ConfigurationIdentifier>
@@ -236,7 +239,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         [Fact]
         public async Task GetEnvironments()
         {
-            _objectStore.Setup(m => m.ListAll<ConfigEnvironment, EnvironmentIdentifier>(It.IsAny<QueryRange>()))
+            _objectStore.Setup(
+                            m => m.ListAll<ConfigEnvironment, EnvironmentIdentifier>(
+                                It.IsAny<Func<EnvironmentIdentifier, bool>>(),
+                                It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<EnvironmentIdentifier>>(
                                 new List<EnvironmentIdentifier>
@@ -271,7 +277,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         [Fact]
         public async Task GetLayers()
         {
-            _objectStore.Setup(m => m.ListAll<EnvironmentLayer, LayerIdentifier>(It.IsAny<QueryRange>()))
+            _objectStore.Setup(
+                            m => m.ListAll<EnvironmentLayer, LayerIdentifier>(
+                                It.IsAny<Func<LayerIdentifier, bool>>(),
+                                It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<LayerIdentifier>>(
                                 new List<LayerIdentifier>
@@ -302,7 +311,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                 new StructureIdentifier("Foo", 43),
                 70);
 
-            _objectStore.Setup(m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<QueryRange>()))
+            _objectStore.Setup(
+                            m => m.ListAll<PreparedConfiguration, ConfigurationIdentifier>(
+                                It.IsAny<Func<ConfigurationIdentifier, bool>>(),
+                                It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<ConfigurationIdentifier>>(
                                 new List<ConfigurationIdentifier>
@@ -317,7 +329,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                             Result.Success<IDictionary<string, string>>(
                                 new Dictionary<string, string>
                                 {
-                                    {"stale", "true"}
+                                    { "stale", "true" }
                                 }))
                         .Verifiable("metadata for stale config was not checked");
 
@@ -351,7 +363,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         [Fact]
         public async Task GetStructures()
         {
-            _objectStore.Setup(m => m.ListAll<ConfigStructure, StructureIdentifier>(It.IsAny<QueryRange>()))
+            _objectStore.Setup(
+                            m => m.ListAll<ConfigStructure, StructureIdentifier>(
+                                It.IsAny<Func<StructureIdentifier, bool>>(),
+                                It.IsAny<QueryRange>()))
                         .ReturnsAsync(
                             Result.Success<IList<StructureIdentifier>>(
                                 new List<StructureIdentifier>
@@ -376,7 +391,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                             m => m.ListAll<ConfigStructure, StructureIdentifier>(
                                 It.IsAny<Func<StructureIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
-                        .ReturnsAsync(Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier> {new StructureIdentifier("Foo", 69)}))
+                        .ReturnsAsync(Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier> { new StructureIdentifier("Foo", 69) }))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
@@ -396,9 +411,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                            e => e.WriteEventsAsync(
                                It.Is<IList<IDomainEvent>>(
                                    list => list.Count == 1
-                                           && ((DomainEvent<EnvironmentLayerKeysImported>) list[0]).Payload != null),
+                                           && ((DomainEvent<EnvironmentLayerKeysImported>)list[0]).Payload != null),
                                It.IsAny<string>(),
-                               It.Is<ExpectStreamPosition>(r => ((NumberedPosition) r.StreamPosition).EventNumber == 4711)))
+                               It.Is<ExpectStreamPosition>(r => ((NumberedPosition)r.StreamPosition).EventNumber == 4711)))
                        .Returns(Task.CompletedTask)
                        .Verifiable("events were not written to stream");
 
@@ -425,10 +440,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                            e => e.WriteEventsAsync(
                                It.Is<IList<IDomainEvent>>(
                                    list => list.Count == 2
-                                           && ((DomainEvent<EnvironmentLayerCreated>) list[0]).Payload != null
-                                           && ((DomainEvent<EnvironmentLayerKeysImported>) list[1]).Payload != null),
+                                           && ((DomainEvent<EnvironmentLayerCreated>)list[0]).Payload != null
+                                           && ((DomainEvent<EnvironmentLayerKeysImported>)list[1]).Payload != null),
                                It.IsAny<string>(),
-                               It.Is<ExpectStreamPosition>(r => ((NumberedPosition) r.StreamPosition).EventNumber == 4711)))
+                               It.Is<ExpectStreamPosition>(r => ((NumberedPosition)r.StreamPosition).EventNumber == 4711)))
                        .Returns(Task.CompletedTask)
                        .Verifiable("events were not written to stream");
 
@@ -462,7 +477,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                             Result.Success<IDictionary<string, string>>(
                                 new Dictionary<string, string>
                                 {
-                                    {"stale", "false"}
+                                    { "stale", "false" }
                                 }))
                         .Verifiable("metadata for object not loaded");
 
@@ -513,7 +528,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                             Result.Success<IDictionary<string, string>>(
                                 new Dictionary<string, string>
                                 {
-                                    {"stale", "true"}
+                                    { "stale", "true" }
                                 }))
                         .Verifiable("metadata for object not loaded");
 
@@ -539,8 +554,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                    {
                        Keys = new Dictionary<string, EnvironmentLayerKey>
                        {
-                           {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 42)},
-                           {"Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 42)},
+                           { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 42) },
+                           { "Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 42) },
                        }
                    });
 
@@ -559,13 +574,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                    {
                        Keys = new Dictionary<string, string>
                        {
-                           {"Foo", "FooValue"},
-                           {"Bar", "BarValue"},
+                           { "Foo", "FooValue" },
+                           { "Bar", "BarValue" },
                        },
                        Variables = new Dictionary<string, string>
                        {
-                           {"Foo", "FooValue"},
-                           {"Bar", "BarValue"},
+                           { "Foo", "FooValue" },
+                           { "Bar", "BarValue" },
                        }
                    });
 
@@ -598,12 +613,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             => _eventStore.Setup(
                               e => e.WriteEventsAsync(
                                   It.Is<IList<IDomainEvent>>(
-                                      domainEvents => domainEvents.Any(de => ((LateBindingDomainEvent<DomainEvent>) de).Payload is TEvent)),
+                                      domainEvents => domainEvents.Any(de => ((LateBindingDomainEvent<DomainEvent>)de).Payload is TEvent)),
                                   It.IsAny<string>(),
                                   It.Is<ExpectStreamPosition>(
                                       // check if we're writing with the EXACT position that we saved at the last projection
                                       // if this does not hold, writes could result in invalid state
-                                      r => ((NumberedPosition) r.StreamPosition).EventNumber == expectedVersion)))
+                                      r => ((NumberedPosition)r.StreamPosition).EventNumber == expectedVersion)))
                           .Returns(Task.CompletedTask)
                           .Verifiable("events were not written to stream");
 
