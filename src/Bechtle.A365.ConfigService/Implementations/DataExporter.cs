@@ -66,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return new LayerExport
                 {
                     Name = layer.Name,
-                    Keys = new EnvironmentKeyExport[0]
+                    Keys = Array.Empty<EnvironmentKeyExport>()
                 };
             }
 

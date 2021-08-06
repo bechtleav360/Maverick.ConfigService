@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         ///     remote layer to compare against
         /// </summary>
         [Option("-l|--layer", Description = "Layer to compare against the Input-Layer")]
-        public string[] Layers { get; set; } = new string[0];
+        public string[] Layers { get; set; } = Array.Empty<string>();
 
         /// <summary>
         ///     local layer-export to compare with

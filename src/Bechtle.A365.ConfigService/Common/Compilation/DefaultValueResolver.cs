@@ -669,7 +669,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             public readonly ITracer Tracer;
 
             public KeyResolveContext(string basePath, string originalValue, ITracer tracer, IConfigurationParser parser)
-                : this(basePath, originalValue, tracer, parser, 0, new (string, ITracer)[0])
+                : this(basePath, originalValue, tracer, parser, 0, Array.Empty<(string, ITracer)>())
             {
             }
 

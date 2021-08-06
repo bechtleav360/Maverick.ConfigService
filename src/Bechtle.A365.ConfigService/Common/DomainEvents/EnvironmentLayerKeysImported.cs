@@ -91,7 +91,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
             // to split the import, we import without keys (deleting everything)
             // and then we "import" the keys by adding several *Modified events
-            var list = new List<DomainEvent> {new EnvironmentLayerKeysImported(Identifier, new ConfigKeyAction[0])};
+            var list = new List<DomainEvent> {new EnvironmentLayerKeysImported(Identifier, Array.Empty<ConfigKeyAction>())};
 
             // double to force floating-point division, so we can round up and not miss any keys during partitioning
             double totalKeys = ModifiedKeys.Length;

@@ -104,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
 
         /// <inheritdoc />
         public List<(string Type, byte[] Data, byte[] Metadata)> GenerateEventData()
-            => RecordedDomainEvents.Select(e => (e.Type, Data: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(e)), new byte[0]))
+            => RecordedDomainEvents.Select(e => (e.Type, Data: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(e)), Array.Empty<byte>()))
                                    .ToList();
 
         private void WrapDomainEvent<T>(ResolvedEvent recordedEvent, bool ignoreReplayErrors)

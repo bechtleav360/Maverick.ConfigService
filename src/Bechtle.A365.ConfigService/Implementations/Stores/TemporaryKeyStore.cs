@@ -92,7 +92,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 await Task.WhenAll(tasks.Select(t => t.Task));
 
-                IDictionary<string, string> result = tasks.ToDictionary(t => t.Key, t => Encoding.UTF8.GetString(t.Task?.Result ?? new byte[0]));
+                IDictionary<string, string> result = tasks.ToDictionary(t => t.Key, t => Encoding.UTF8.GetString(t.Task?.Result ?? Array.Empty<byte>()));
 
                 return Result.Success(result);
             }

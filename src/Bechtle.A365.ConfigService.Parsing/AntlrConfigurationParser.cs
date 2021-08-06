@@ -98,7 +98,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to add ValuePart");
-                return new ConfigValuePart[0];
+                return Array.Empty<ConfigValuePart>();
             }
         }
 
@@ -141,7 +141,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to parse reference");
-                return new ConfigValuePart[0];
+                return Array.Empty<ConfigValuePart>();
             }
         }
 
@@ -199,7 +199,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             catch (Exception e)
             {
                 _logger.LogError(e, "could not parse to ReferencePart");
-                return new ConfigValuePart[0];
+                return Array.Empty<ConfigValuePart>();
             }
         }
 
@@ -219,7 +219,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             catch (Exception e)
             {
                 _logger.LogError(e, "could not parse to ReferencePart");
-                return new ConfigValuePart[0];
+                return Array.Empty<ConfigValuePart>();
             }
         }
 
@@ -238,7 +238,7 @@ namespace Bechtle.A365.ConfigService.Parsing
             catch (Exception e)
             {
                 _logger.LogError(e, "could not parse to ReferencePart");
-                return new ConfigValuePart[0];
+                return Array.Empty<ConfigValuePart>();
             }
         }
     }

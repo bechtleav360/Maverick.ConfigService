@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         {
             Path = path;
             ParentPath = parent?.FullPath ?? string.Empty;
-            Children = new List<EnvironmentLayerKeyPath>(children ?? new EnvironmentLayerKeyPath[0]);
+            Children = new List<EnvironmentLayerKeyPath>(children ?? Array.Empty<EnvironmentLayerKeyPath>());
         }
 
         /// <inheritdoc />
