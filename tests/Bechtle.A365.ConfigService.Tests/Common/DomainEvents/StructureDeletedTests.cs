@@ -9,14 +9,14 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] {null, 0},
-            new object[] {null, int.MinValue},
-            new object[] {"", 0},
-            new object[] {"", int.MinValue},
-            new object[] {"", int.MaxValue},
-            new object[] {"Baz", 42},
-            new object[] {"Baz", int.MaxValue},
-            new object[] {"Baz", int.MinValue}
+            new object[] { null, 0 },
+            new object[] { null, int.MinValue },
+            new object[] { "", 0 },
+            new object[] { "", int.MinValue },
+            new object[] { "", int.MaxValue },
+            new object[] { "Baz", 42 },
+            new object[] { "Baz", int.MaxValue },
+            new object[] { "Baz", int.MinValue }
         };
 
         [Theory]
@@ -35,11 +35,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new StructureDeleted(new StructureIdentifier(structName, structVersion));
 
-            var hashes = Enumerable.Range(0, 1000)
-                                   .Select(i => domainEvent.GetHashCode())
-                                   .ToList();
+            List<int> hashes = Enumerable.Range(0, 1000)
+                                         .Select(i => domainEvent.GetHashCode())
+                                         .ToList();
 
-            var example = domainEvent.GetHashCode();
+            int example = domainEvent.GetHashCode();
 
             Assert.True(hashes.All(h => h == example), "hashes.All(h=>h==example)");
         }
@@ -50,7 +50,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new StructureDeleted(new StructureIdentifier(structName, structVersion));
 
-            var metadata = domainEvent.GetMetadata();
+            DomainEventMetadata metadata = domainEvent.GetMetadata();
 
             Assert.NotEmpty(metadata.Filters);
         }

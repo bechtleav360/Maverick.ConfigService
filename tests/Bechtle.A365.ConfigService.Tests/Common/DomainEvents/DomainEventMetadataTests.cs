@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         [Fact]
         public void FillMetadata()
         {
-            var metadata = new DomainEventMetadata {["Foo"] = "Bar"};
+            var metadata = new DomainEventMetadata { ["Foo"] = "Bar" };
 
             Assert.Equal("Bar", metadata["Foo"]);
         }
@@ -30,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         [Fact]
         public void IndexerCaseInsensitive()
         {
-            var metadata = new DomainEventMetadata {["Foo"] = "Bar"};
+            var metadata = new DomainEventMetadata { ["Foo"] = "Bar" };
 
             Assert.Equal("Bar", metadata["foo"]);
         }

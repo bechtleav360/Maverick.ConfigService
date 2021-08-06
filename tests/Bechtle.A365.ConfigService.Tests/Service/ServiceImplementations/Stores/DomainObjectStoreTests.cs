@@ -10,6 +10,7 @@ using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -167,9 +168,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
             }
 
-            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(
-                                                         layer => layer.Name == "Foo-2",
-                                                         QueryRange.All);
+            IResult<Page<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(
+                                                        layer => layer.Name == "Foo-2",
+                                                        QueryRange.All);
 
             AssertPositiveResult(result, new List<LayerIdentifier> { new LayerIdentifier("Foo-2") });
         }
@@ -197,7 +198,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
             }
 
-            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
+            IResult<Page<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
 
             // DomainObjectStore uses LiteDb as underlying store which stores the Ids in their .ToString() representation
             // this means the result will be ordered in a way that is unaware of the numbers in the Layer-Name
@@ -233,7 +234,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             }
 
             // take items 26-50
-            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.Make(25, 25));
+            IResult<Page<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.Make(25, 25));
 
             List<LayerIdentifier> expectedIds = items.Select(i => i.Id)
                                                      .OrderBy(id => id.ToString())
@@ -286,7 +287,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 await ObjectStore.Store<EnvironmentLayer, LayerIdentifier>(item);
             }
 
-            IResult<IList<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
+            IResult<Page<LayerIdentifier>> result = await ObjectStore.ListAll<EnvironmentLayer, LayerIdentifier>(QueryRange.All);
 
             AssertPositiveResult(
                 result,
@@ -506,6 +507,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             Assert.NotNull(result);
             Assert.False(result.IsError, "result.IsError");
             Assert.Equal(expectedResult, result.Data);
+        }
+
+        private static void AssertPositiveResult<TData>(IResult<Page<TData>> result, IList<TData> expectedResult)
+        {
+            Assert.NotNull(result);
+            Assert.False(result.IsError, "result.IsError");
+            Assert.Equal(expectedResult, result.Data.Items);
         }
 
         /// <summary>

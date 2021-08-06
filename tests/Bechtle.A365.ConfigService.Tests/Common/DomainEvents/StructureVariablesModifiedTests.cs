@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -10,38 +11,38 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] {null, 0, new ConfigKeyAction[0]},
-            new object[] {null, 0, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {null, 0, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {null, 0, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
-            new object[] {null, int.MinValue, new ConfigKeyAction[0]},
-            new object[] {null, int.MinValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {null, int.MinValue, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {null, int.MinValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
-            new object[] {"", 0, new ConfigKeyAction[0]},
-            new object[] {"", 0, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {"", 0, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {"", 0, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
-            new object[] {"", int.MinValue, new ConfigKeyAction[0]},
-            new object[] {"", int.MinValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {"", int.MinValue, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {"", int.MinValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
-            new object[] {"", int.MaxValue, new ConfigKeyAction[0]},
-            new object[] {"", int.MaxValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {"", int.MaxValue, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {"", int.MaxValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
-            new object[] {"Baz", 42, new ConfigKeyAction[0]},
-            new object[] {"Baz", 42, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {"Baz", 42, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {"Baz", 42, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
-            new object[] {"Baz", int.MaxValue, new ConfigKeyAction[0]},
-            new object[] {"Baz", int.MaxValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {"Baz", int.MaxValue, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {"Baz", int.MaxValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
-            new object[] {"Baz", int.MinValue, new ConfigKeyAction[0]},
-            new object[] {"Baz", int.MinValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?")}},
-            new object[] {"Baz", int.MinValue, new[] {ConfigKeyAction.Delete("Boo")}},
-            new object[] {"Baz", int.MinValue, new[] {ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo")}},
+            new object[] { null, 0, Array.Empty<ConfigKeyAction>() },
+            new object[] { null, 0, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { null, 0, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { null, 0, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
+            new object[] { null, int.MinValue, Array.Empty<ConfigKeyAction>() },
+            new object[] { null, int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { null, int.MinValue, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { null, int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
+            new object[] { "", 0, Array.Empty<ConfigKeyAction>() },
+            new object[] { "", 0, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { "", 0, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { "", 0, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
+            new object[] { "", int.MinValue, Array.Empty<ConfigKeyAction>() },
+            new object[] { "", int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { "", int.MinValue, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { "", int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
+            new object[] { "", int.MaxValue, Array.Empty<ConfigKeyAction>() },
+            new object[] { "", int.MaxValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { "", int.MaxValue, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { "", int.MaxValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
+            new object[] { "Baz", 42, Array.Empty<ConfigKeyAction>() },
+            new object[] { "Baz", 42, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { "Baz", 42, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { "Baz", 42, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
+            new object[] { "Baz", int.MaxValue, Array.Empty<ConfigKeyAction>() },
+            new object[] { "Baz", int.MaxValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { "Baz", int.MaxValue, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { "Baz", int.MaxValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
+            new object[] { "Baz", int.MinValue, Array.Empty<ConfigKeyAction>() },
+            new object[] { "Baz", int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
+            new object[] { "Baz", int.MinValue, new[] { ConfigKeyAction.Delete("Boo") } },
+            new object[] { "Baz", int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } }
         };
 
         [Theory]
@@ -60,11 +61,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new StructureVariablesModified(new StructureIdentifier(structName, structVersion), actions);
 
-            var hashes = Enumerable.Range(0, 1000)
-                                   .Select(i => domainEvent.GetHashCode())
-                                   .ToList();
+            List<int> hashes = Enumerable.Range(0, 1000)
+                                         .Select(i => domainEvent.GetHashCode())
+                                         .ToList();
 
-            var example = domainEvent.GetHashCode();
+            int example = domainEvent.GetHashCode();
 
             Assert.True(hashes.All(h => h == example), "hashes.All(h=>h==example)");
         }
@@ -75,7 +76,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new StructureVariablesModified(new StructureIdentifier(structName, structVersion), actions);
 
-            var metadata = domainEvent.GetMetadata();
+            DomainEventMetadata metadata = domainEvent.GetMetadata();
 
             Assert.NotEmpty(metadata.Filters);
         }

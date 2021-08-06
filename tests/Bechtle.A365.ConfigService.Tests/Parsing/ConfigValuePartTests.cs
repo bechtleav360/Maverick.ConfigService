@@ -7,26 +7,16 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
 {
     public class ConfigValuePartTests
     {
+        [Fact]
+        public void CreateEmptyReferencePart() => Assert.NotNull(new ReferencePart(new Dictionary<ReferenceCommand, string>()));
+
         [Theory]
         [InlineData(ReferenceCommand.None, "")]
         [InlineData(ReferenceCommand.None, null)]
         [InlineData(ReferenceCommand.Using, "some/path/somewhere")]
         [InlineData(ReferenceCommand.Fallback, "42")]
         public void CreateReferencePart(ReferenceCommand command, string value)
-            => Assert.NotNull(new ReferencePart(new Dictionary<ReferenceCommand, string> {{command, value}}));
-
-        [Theory]
-        [InlineData(ReferenceCommand.None, "")]
-        [InlineData(ReferenceCommand.None, null)]
-        [InlineData(ReferenceCommand.Using, "some/path/somewhere")]
-        [InlineData(ReferenceCommand.Fallback, "42")]
-        public void ReadReferencePart(ReferenceCommand command, string value)
-        {
-            var part = new ReferencePart(new Dictionary<ReferenceCommand, string> {{command, value}});
-
-            Assert.Equal(command, part.Commands.First().Key);
-            Assert.Equal(value, part.Commands.First().Value);
-        }
+            => Assert.NotNull(new ReferencePart(new Dictionary<ReferenceCommand, string> { { command, value } }));
 
         [Theory]
         [InlineData("")]
@@ -35,6 +25,19 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
         [InlineData("42")]
         [InlineData("false")]
         public void CreateValuePart(string value) => Assert.NotNull(new ValuePart(value));
+
+        [Theory]
+        [InlineData(ReferenceCommand.None, "")]
+        [InlineData(ReferenceCommand.None, null)]
+        [InlineData(ReferenceCommand.Using, "some/path/somewhere")]
+        [InlineData(ReferenceCommand.Fallback, "42")]
+        public void ReadReferencePart(ReferenceCommand command, string value)
+        {
+            var part = new ReferencePart(new Dictionary<ReferenceCommand, string> { { command, value } });
+
+            Assert.Equal(command, part.Commands.First().Key);
+            Assert.Equal(value, part.Commands.First().Value);
+        }
 
         [Theory]
         [InlineData("")]
@@ -48,8 +51,5 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
 
             Assert.Equal(value, part.Text);
         }
-
-        [Fact]
-        public void CreateEmptyReferencePart() => Assert.NotNull(new ReferencePart(new Dictionary<ReferenceCommand, string>()));
     }
 }

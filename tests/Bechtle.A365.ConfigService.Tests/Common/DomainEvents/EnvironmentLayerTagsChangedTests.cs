@@ -9,9 +9,9 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] {null},
-            new object[] {""},
-            new object[] {"Foo"}
+            new object[] { null },
+            new object[] { "" },
+            new object[] { "Foo" }
         };
 
         [Theory]
@@ -30,11 +30,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
 
-            var hashes = Enumerable.Range(0, 1000)
-                                   .Select(i => domainEvent.GetHashCode())
-                                   .ToList();
+            List<int> hashes = Enumerable.Range(0, 1000)
+                                         .Select(i => domainEvent.GetHashCode())
+                                         .ToList();
 
-            var example = domainEvent.GetHashCode();
+            int example = domainEvent.GetHashCode();
 
             Assert.True(hashes.All(h => h == example), "hashes.All(h=>h==example)");
         }
@@ -45,7 +45,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
 
-            var metadata = domainEvent.GetMetadata();
+            DomainEventMetadata metadata = domainEvent.GetMetadata();
 
             Assert.NotEmpty(metadata.Filters);
         }

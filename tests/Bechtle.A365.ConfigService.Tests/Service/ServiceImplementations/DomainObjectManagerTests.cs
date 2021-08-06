@@ -10,6 +10,7 @@ using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
 using Bechtle.A365.ServiceBase.EventStore.DomainEventBase;
 using Microsoft.Extensions.Logging;
@@ -117,26 +118,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                 It.IsAny<Func<ConfigurationIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
-                            Result.Success<IList<ConfigurationIdentifier>>(
-                                new List<ConfigurationIdentifier>
-                                {
-                                    new ConfigurationIdentifier(
-                                        new EnvironmentIdentifier("Foo", "Bar"),
-                                        new StructureIdentifier("Foo", 42),
-                                        69),
-                                    new ConfigurationIdentifier(
-                                        new EnvironmentIdentifier("Foo", "Bar"),
-                                        new StructureIdentifier("Foo", 43),
-                                        70)
-                                }))
+                            Result.Success(
+                                new Page<ConfigurationIdentifier>(
+                                    new[]
+                                    {
+                                        new ConfigurationIdentifier(
+                                            new EnvironmentIdentifier("Foo", "Bar"),
+                                            new StructureIdentifier("Foo", 42),
+                                            69),
+                                        new ConfigurationIdentifier(
+                                            new EnvironmentIdentifier("Foo", "Bar"),
+                                            new StructureIdentifier("Foo", 43),
+                                            70)
+                                    })))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<ConfigurationIdentifier>> result = await manager.GetConfigurations(QueryRange.All, CancellationToken.None);
+            IResult<Page<ConfigurationIdentifier>> result = await manager.GetConfigurations(QueryRange.All, CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
         }
 
         [Fact]
@@ -164,29 +166,30 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                 It.IsAny<Func<ConfigurationIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
-                            Result.Success<IList<ConfigurationIdentifier>>(
-                                new List<ConfigurationIdentifier>
-                                {
-                                    new ConfigurationIdentifier(
-                                        new EnvironmentIdentifier("Foo", "Bro"),
-                                        new StructureIdentifier("Foo", 42),
-                                        71),
-                                    new ConfigurationIdentifier(
-                                        new EnvironmentIdentifier("Foo", "Bro"),
-                                        new StructureIdentifier("Foo", 43),
-                                        72)
-                                }))
+                            Result.Success(
+                                new Page<ConfigurationIdentifier>(
+                                    new[]
+                                    {
+                                        new ConfigurationIdentifier(
+                                            new EnvironmentIdentifier("Foo", "Bro"),
+                                            new StructureIdentifier("Foo", 42),
+                                            71),
+                                        new ConfigurationIdentifier(
+                                            new EnvironmentIdentifier("Foo", "Bro"),
+                                            new StructureIdentifier("Foo", 43),
+                                            72)
+                                    })))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<ConfigurationIdentifier>> result = await manager.GetConfigurations(
-                                                                 new EnvironmentIdentifier("Foo", "Bro"),
-                                                                 QueryRange.All,
-                                                                 CancellationToken.None);
+            IResult<Page<ConfigurationIdentifier>> result = await manager.GetConfigurations(
+                                                                new EnvironmentIdentifier("Foo", "Bro"),
+                                                                QueryRange.All,
+                                                                CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
         }
 
         [Fact]
@@ -197,29 +200,30 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                 It.IsAny<Func<ConfigurationIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
-                            Result.Success<IList<ConfigurationIdentifier>>(
-                                new List<ConfigurationIdentifier>
-                                {
-                                    new ConfigurationIdentifier(
-                                        new EnvironmentIdentifier("Foo", "Bar"),
-                                        new StructureIdentifier("Foo", 43),
-                                        70),
-                                    new ConfigurationIdentifier(
-                                        new EnvironmentIdentifier("Foo", "Bro"),
-                                        new StructureIdentifier("Foo", 43),
-                                        72)
-                                }))
+                            Result.Success(
+                                new Page<ConfigurationIdentifier>(
+                                    new[]
+                                    {
+                                        new ConfigurationIdentifier(
+                                            new EnvironmentIdentifier("Foo", "Bar"),
+                                            new StructureIdentifier("Foo", 43),
+                                            70),
+                                        new ConfigurationIdentifier(
+                                            new EnvironmentIdentifier("Foo", "Bro"),
+                                            new StructureIdentifier("Foo", 43),
+                                            72)
+                                    })))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<ConfigurationIdentifier>> result = await manager.GetConfigurations(
-                                                                 new StructureIdentifier("Foo", 43),
-                                                                 QueryRange.All,
-                                                                 CancellationToken.None);
+            IResult<Page<ConfigurationIdentifier>> result = await manager.GetConfigurations(
+                                                                new StructureIdentifier("Foo", 43),
+                                                                QueryRange.All,
+                                                                CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
         }
 
         [Fact]
@@ -244,20 +248,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                 It.IsAny<Func<EnvironmentIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
-                            Result.Success<IList<EnvironmentIdentifier>>(
-                                new List<EnvironmentIdentifier>
-                                {
-                                    new EnvironmentIdentifier("Foo", "Bar"),
-                                    new EnvironmentIdentifier("Foo", "Baz")
-                                }))
+                            Result.Success(
+                                new Page<EnvironmentIdentifier>(
+                                    new[]
+                                    {
+                                        new EnvironmentIdentifier("Foo", "Bar"),
+                                        new EnvironmentIdentifier("Foo", "Baz")
+                                    })))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<EnvironmentIdentifier>> result = await manager.GetEnvironments(QueryRange.All, CancellationToken.None);
+            IResult<Page<EnvironmentIdentifier>> result = await manager.GetEnvironments(QueryRange.All, CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
         }
 
         [Fact]
@@ -282,20 +287,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                 It.IsAny<Func<LayerIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
-                            Result.Success<IList<LayerIdentifier>>(
-                                new List<LayerIdentifier>
-                                {
-                                    new LayerIdentifier("Foo"),
-                                    new LayerIdentifier("Bar")
-                                }))
+                            Result.Success(
+                                new Page<LayerIdentifier>(
+                                    new[]
+                                    {
+                                        new LayerIdentifier("Foo"),
+                                        new LayerIdentifier("Bar")
+                                    })))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<LayerIdentifier>> result = await manager.GetLayers(QueryRange.All, CancellationToken.None);
+            IResult<Page<LayerIdentifier>> result = await manager.GetLayers(QueryRange.All, CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
         }
 
         [Fact]
@@ -316,12 +322,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                 It.IsAny<Func<ConfigurationIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
-                            Result.Success<IList<ConfigurationIdentifier>>(
-                                new List<ConfigurationIdentifier>
-                                {
-                                    staleConfigId,
-                                    freshConfigId
-                                }))
+                            Result.Success(
+                                new Page<ConfigurationIdentifier>(
+                                    new[]
+                                    {
+                                        staleConfigId,
+                                        freshConfigId
+                                    })))
                         .Verifiable("object-list not queried from object-store");
 
             _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.Is<ConfigurationIdentifier>(id => id == staleConfigId)))
@@ -338,12 +345,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                         .Verifiable("metadata for fresh config was not checked");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<ConfigurationIdentifier>> result = await manager.GetStaleConfigurations(QueryRange.All, CancellationToken.None);
+            IResult<Page<ConfigurationIdentifier>> result = await manager.GetStaleConfigurations(QueryRange.All, CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.Single(result.Data);
-            Assert.Equal(staleConfigId, result.Data.First());
+            Assert.Single(result.Data.Items);
+            Assert.Equal(staleConfigId, result.Data.Items.First());
         }
 
         [Fact]
@@ -368,20 +375,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                 It.IsAny<Func<StructureIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
                         .ReturnsAsync(
-                            Result.Success<IList<StructureIdentifier>>(
-                                new List<StructureIdentifier>
-                                {
-                                    new StructureIdentifier("Foo", 69),
-                                    new StructureIdentifier("Bar", 42)
-                                }))
+                            Result.Success(
+                                new Page<StructureIdentifier>(
+                                    new[]
+                                    {
+                                        new StructureIdentifier("Foo", 69),
+                                        new StructureIdentifier("Bar", 42)
+                                    })))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<StructureIdentifier>> result = await manager.GetStructures(QueryRange.All, CancellationToken.None);
+            IResult<Page<StructureIdentifier>> result = await manager.GetStructures(QueryRange.All, CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
         }
 
         [Fact]
@@ -391,15 +399,15 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                             m => m.ListAll<ConfigStructure, StructureIdentifier>(
                                 It.IsAny<Func<StructureIdentifier, bool>>(),
                                 It.IsAny<QueryRange>()))
-                        .ReturnsAsync(Result.Success<IList<StructureIdentifier>>(new List<StructureIdentifier> { new StructureIdentifier("Foo", 69) }))
+                        .ReturnsAsync(Result.Success(new Page<StructureIdentifier>(new[] { new StructureIdentifier("Foo", 69) })))
                         .Verifiable("object-list not queried from object-store");
 
             DomainObjectManager manager = CreateTestObject();
-            IResult<IList<StructureIdentifier>> result = await manager.GetStructures("Foo", QueryRange.All, CancellationToken.None);
+            IResult<Page<StructureIdentifier>> result = await manager.GetStructures("Foo", QueryRange.All, CancellationToken.None);
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.Single(result.Data);
+            Assert.Single(result.Data.Items);
         }
 
         [Fact]
@@ -489,30 +497,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         }
 
         [Fact]
-        public async Task IsStaleWithoutMetadata()
-        {
-            var configId = new ConfigurationIdentifier(
-                new EnvironmentIdentifier("Foo", "Bar"),
-                new StructureIdentifier("Foo", 42),
-                69);
-
-            AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
-            AssertGetsProjectedVersion();
-
-            _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
-                        .ReturnsAsync(
-                            Result.Success<IDictionary<string, string>>(
-                                new Dictionary<string, string>()))
-                        .Verifiable("metadata for object not loaded");
-
-            DomainObjectManager manager = CreateTestObject();
-            IResult<bool> result = await manager.IsStale(configId);
-
-            AssertPositiveResult(result);
-            Assert.True(result.Data);
-        }
-
-        [Fact]
         public async Task IsStale()
         {
             var configId = new ConfigurationIdentifier(
@@ -540,6 +524,30 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         }
 
         [Fact]
+        public async Task IsStaleWithoutMetadata()
+        {
+            var configId = new ConfigurationIdentifier(
+                new EnvironmentIdentifier("Foo", "Bar"),
+                new StructureIdentifier("Foo", 42),
+                69);
+
+            AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
+            AssertGetsProjectedVersion();
+
+            _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
+                        .ReturnsAsync(
+                            Result.Success<IDictionary<string, string>>(
+                                new Dictionary<string, string>()))
+                        .Verifiable("metadata for object not loaded");
+
+            DomainObjectManager manager = CreateTestObject();
+            IResult<bool> result = await manager.IsStale(configId);
+
+            AssertPositiveResult(result);
+            Assert.True(result.Data);
+        }
+
+        [Fact]
         public async Task ModifyLayerKeys()
             => await TestObjectModification<EnvironmentLayer, LayerIdentifier, EnvironmentLayerKeysModified>(
                    async manager => await manager.ModifyLayerKeys(
@@ -547,7 +555,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                         new List<ConfigKeyAction>
                                         {
                                             ConfigKeyAction.Set("Baz", "BazValue"),
-                                            ConfigKeyAction.Delete("Foo"),
+                                            ConfigKeyAction.Delete("Foo")
                                         },
                                         CancellationToken.None),
                    new EnvironmentLayer(new LayerIdentifier("Foo"))
@@ -555,7 +563,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                        Keys = new Dictionary<string, EnvironmentLayerKey>
                        {
                            { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 42) },
-                           { "Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 42) },
+                           { "Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 42) }
                        }
                    });
 
@@ -567,7 +575,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                         new List<ConfigKeyAction>
                                         {
                                             ConfigKeyAction.Set("Baz", "BazValue"),
-                                            ConfigKeyAction.Delete("Foo"),
+                                            ConfigKeyAction.Delete("Foo")
                                         },
                                         CancellationToken.None),
                    new ConfigStructure(new StructureIdentifier("Foo", 42))
@@ -575,12 +583,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                        Keys = new Dictionary<string, string>
                        {
                            { "Foo", "FooValue" },
-                           { "Bar", "BarValue" },
+                           { "Bar", "BarValue" }
                        },
                        Variables = new Dictionary<string, string>
                        {
                            { "Foo", "FooValue" },
-                           { "Bar", "BarValue" },
+                           { "Bar", "BarValue" }
                        }
                    });
 

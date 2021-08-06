@@ -9,38 +9,38 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] {null, 0, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {null, 0, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {null, 0, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {null, 0, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
-            new object[] {null, int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {null, int.MinValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {null, int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {null, int.MinValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
-            new object[] {"", 0, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {"", 0, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {"", 0, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {"", 0, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
-            new object[] {"", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {"", int.MinValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {"", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {"", int.MinValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
-            new object[] {"", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {"", int.MaxValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {"", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {"", int.MaxValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
-            new object[] {"Baz", 42, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {"Baz", 42, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {"Baz", 42, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {"Baz", 42, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
-            new object[] {"Baz", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {"Baz", int.MaxValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {"Baz", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {"Baz", int.MaxValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
-            new object[] {"Baz", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string>()},
-            new object[] {"Baz", int.MinValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string>()},
-            new object[] {"Baz", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string> {{"", ""}}},
-            new object[] {"Baz", int.MinValue, new Dictionary<string, string> {{"", ""}}, new Dictionary<string, string> {{"", ""}}},
+            new object[] { null, 0, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { null, 0, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { null, 0, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { null, 0, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } },
+            new object[] { null, int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { null, int.MinValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { null, int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { null, int.MinValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } },
+            new object[] { "", 0, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { "", 0, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { "", 0, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { "", 0, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } },
+            new object[] { "", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { "", int.MinValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { "", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { "", int.MinValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } },
+            new object[] { "", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { "", int.MaxValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { "", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { "", int.MaxValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } },
+            new object[] { "Baz", 42, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { "Baz", 42, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { "Baz", 42, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { "Baz", 42, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } },
+            new object[] { "Baz", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { "Baz", int.MaxValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { "Baz", int.MaxValue, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { "Baz", int.MaxValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } },
+            new object[] { "Baz", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string>() },
+            new object[] { "Baz", int.MinValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string>() },
+            new object[] { "Baz", int.MinValue, new Dictionary<string, string>(), new Dictionary<string, string> { { "", "" } } },
+            new object[] { "Baz", int.MinValue, new Dictionary<string, string> { { "", "" } }, new Dictionary<string, string> { { "", "" } } }
         };
 
         [Theory]
@@ -59,11 +59,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new StructureCreated(new StructureIdentifier(structName, structVersion), keys, variables);
 
-            var hashes = Enumerable.Range(0, 1000)
-                                   .Select(i => domainEvent.GetHashCode())
-                                   .ToList();
+            List<int> hashes = Enumerable.Range(0, 1000)
+                                         .Select(i => domainEvent.GetHashCode())
+                                         .ToList();
 
-            var example = domainEvent.GetHashCode();
+            int example = domainEvent.GetHashCode();
 
             Assert.True(hashes.All(h => h == example), "hashes.All(h=>h==example)");
         }
@@ -74,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new StructureCreated(new StructureIdentifier(structName, structVersion), keys, variables);
 
-            var metadata = domainEvent.GetMetadata();
+            DomainEventMetadata metadata = domainEvent.GetMetadata();
 
             Assert.NotEmpty(metadata.Filters);
         }

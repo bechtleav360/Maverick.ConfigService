@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CreateDeleteActionViaShortcut()
         {
-            var action = ConfigKeyAction.Delete("Foo");
+            ConfigKeyAction action = ConfigKeyAction.Delete("Foo");
 
             Assert.Equal(ConfigKeyActionType.Delete, action.Type);
             Assert.Equal("Foo", action.Key);
@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CreateSetActionViaShortcut()
         {
-            var action = ConfigKeyAction.Set("Foo", "Bar");
+            ConfigKeyAction action = ConfigKeyAction.Set("Foo", "Bar");
 
             Assert.NotNull(action);
             Assert.Equal(ConfigKeyActionType.Set, action.Type);
@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CreateSetActionViaShortcutFull()
         {
-            var action = ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?");
+            ConfigKeyAction action = ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?");
 
             Assert.NotNull(action);
             Assert.Equal(ConfigKeyActionType.Set, action.Type);

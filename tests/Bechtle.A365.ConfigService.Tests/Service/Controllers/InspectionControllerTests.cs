@@ -26,96 +26,45 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
     {
         private readonly Mock<IConfigurationCompiler> _compiler = new Mock<IConfigurationCompiler>(MockBehavior.Strict);
         private readonly Mock<IConfigurationParser> _parser = new Mock<IConfigurationParser>(MockBehavior.Strict);
-        private readonly Mock<IJsonTranslator> _translator = new Mock<IJsonTranslator>(MockBehavior.Strict);
         private readonly Mock<IProjectionStore> _projectionStore = new Mock<IProjectionStore>(MockBehavior.Strict);
-
-        /// <inheritdoc />
-        protected override InspectionController CreateController()
-        {
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection()
-                                                          .Build();
-
-            var provider = new ServiceCollection().AddLogging()
-                                                  .AddSingleton<IConfiguration>(configuration)
-                                                  .BuildServiceProvider();
-
-            return new InspectionController(
-                provider.GetService<ILogger<InspectionController>>(),
-                _compiler.Object,
-                _parser.Object,
-                _translator.Object,
-                _projectionStore.Object);
-        }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        public async Task InspectStructureStructProviderError(int version)
-        {
-            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
-                            .Verifiable("environment keys not retrieved");
-
-            if (version == 1)
-            {
-                _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                                .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                                {
-                                    {"Foo", "Bar"}
-                                }))
-                                .Verifiable("structure keys not retrieved");
-
-                _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                                .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
-                                .Verifiable("structure variables not retrieved");
-            }
-            else if (version == 2)
-            {
-                _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                                .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
-                                .Verifiable("structure keys not retrieved");
-
-                _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                                .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                                {
-                                    {"Foo", "Bar"}
-                                }));
-            }
-
-            var result = await TestAction<ObjectResult>(c => c.InspectStructure("Foo", "Bar", "Foo", 42));
-
-            Assert.NotNull(result.Value);
-            _projectionStore.Verify();
-        }
+        private readonly Mock<IJsonTranslator> _translator = new Mock<IJsonTranslator>(MockBehavior.Strict);
 
         [Fact]
         public async Task GetUsedKeysPerStructureAll()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
-            _projectionStore.Setup(s => s.Configurations.GetAvailableWithEnvironment(It.IsAny<EnvironmentIdentifier>(),
-                                                                                     It.IsAny<DateTime>(),
-                                                                                     It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>
-                            {
-                                new ConfigurationIdentifier(new EnvironmentIdentifier("Foo", "Bar"),
-                                                            new StructureIdentifier("Foo", 42),
-                                                            0)
-                            }))
+            _projectionStore.Setup(
+                                s => s.Configurations.GetAvailableWithEnvironment(
+                                    It.IsAny<EnvironmentIdentifier>(),
+                                    It.IsAny<DateTime>(),
+                                    It.IsAny<QueryRange>()))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<ConfigurationIdentifier>(
+                                        new List<ConfigurationIdentifier>
+                                        {
+                                            new ConfigurationIdentifier(
+                                                new EnvironmentIdentifier("Foo", "Bar"),
+                                                new StructureIdentifier("Foo", 42),
+                                                0)
+                                        })))
                             .Verifiable("available configurations for environment not retrieved");
 
-            _projectionStore.Setup(s => s.Configurations.GetUsedConfigurationKeys(It.IsAny<ConfigurationIdentifier>(),
-                                                                                  It.IsAny<DateTime>(),
-                                                                                  It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IEnumerable<string>>(new[] {"Foo"}))
+            _projectionStore.Setup(
+                                s => s.Configurations.GetUsedConfigurationKeys(
+                                    It.IsAny<ConfigurationIdentifier>(),
+                                    It.IsAny<DateTime>(),
+                                    It.IsAny<QueryRange>()))
+                            .ReturnsAsync(() => Result.Success<IEnumerable<string>>(new[] { "Foo" }))
                             .Verifiable("used keys for environment not retrieved");
 
             var result = await TestAction<OkObjectResult>(c => c.GetUsedKeysPerStructureAll("Foo", "Bar"));
@@ -128,16 +77,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetUsedKeysPerStructureAllConfigProviderError()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
-            _projectionStore.Setup(s => s.Configurations.GetAvailableWithEnvironment(It.IsAny<EnvironmentIdentifier>(),
-                                                                                     It.IsAny<DateTime>(),
-                                                                                     It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Error<IList<ConfigurationIdentifier>>("something went wrong", ErrorCode.DbQueryError))
+            _projectionStore.Setup(
+                                s => s.Configurations.GetAvailableWithEnvironment(
+                                    It.IsAny<EnvironmentIdentifier>(),
+                                    It.IsAny<DateTime>(),
+                                    It.IsAny<QueryRange>()))
+                            .ReturnsAsync(() => Result.Error<Page<ConfigurationIdentifier>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("available configurations for environment not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetUsedKeysPerStructureAll("Foo", "Bar"));
@@ -150,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetUsedKeysPerStructureAllEnvironmentProviderError()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetUsedKeysPerStructureAll("Foo", "Bar"));
@@ -179,27 +133,38 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetUsedKeysPerStructureLatest()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
-            _projectionStore.Setup(s => s.Configurations.GetAvailableWithEnvironment(It.IsAny<EnvironmentIdentifier>(),
-                                                                                     It.IsAny<DateTime>(),
-                                                                                     It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IList<ConfigurationIdentifier>>(new List<ConfigurationIdentifier>
-                            {
-                                new ConfigurationIdentifier(new EnvironmentIdentifier("Foo", "Bar"),
-                                                            new StructureIdentifier("Foo", 42),
-                                                            0)
-                            }))
+            _projectionStore.Setup(
+                                s => s.Configurations.GetAvailableWithEnvironment(
+                                    It.IsAny<EnvironmentIdentifier>(),
+                                    It.IsAny<DateTime>(),
+                                    It.IsAny<QueryRange>()))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<ConfigurationIdentifier>(
+                                        new[]
+                                        {
+                                            new ConfigurationIdentifier(
+                                                new EnvironmentIdentifier("Foo", "Bar"),
+                                                new StructureIdentifier("Foo", 42),
+                                                0)
+                                        })))
                             .Verifiable("available configurations for environment not retrieved");
 
-            _projectionStore.Setup(s => s.Configurations.GetUsedConfigurationKeys(It.IsAny<ConfigurationIdentifier>(),
-                                                                                  It.IsAny<DateTime>(),
-                                                                                  It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IEnumerable<string>>(new[] {"Foo"}))
+            _projectionStore.Setup(
+                                s => s.Configurations.GetUsedConfigurationKeys(
+                                    It.IsAny<ConfigurationIdentifier>(),
+                                    It.IsAny<DateTime>(),
+                                    It.IsAny<QueryRange>()))
+                            .ReturnsAsync(() => Result.Success<IEnumerable<string>>(new[] { "Foo" }))
                             .Verifiable("used keys for environment not retrieved");
 
             var result = await TestAction<OkObjectResult>(c => c.GetUsedKeysPerStructureLatest("Foo", "Bar"));
@@ -212,16 +177,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetUsedKeysPerStructureLatestConfigProviderError()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
-            _projectionStore.Setup(s => s.Configurations.GetAvailableWithEnvironment(It.IsAny<EnvironmentIdentifier>(),
-                                                                                     It.IsAny<DateTime>(),
-                                                                                     It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Error<IList<ConfigurationIdentifier>>("something went wrong", ErrorCode.DbQueryError))
+            _projectionStore.Setup(
+                                s => s.Configurations.GetAvailableWithEnvironment(
+                                    It.IsAny<EnvironmentIdentifier>(),
+                                    It.IsAny<DateTime>(),
+                                    It.IsAny<QueryRange>()))
+                            .ReturnsAsync(() => Result.Error<Page<ConfigurationIdentifier>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("available configurations for environment not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetUsedKeysPerStructureLatest("Foo", "Bar"));
@@ -234,7 +204,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetUsedKeysPerStructureLatestEnvironmentProviderError()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetUsedKeysPerStructureLatest("Foo", "Bar"));
@@ -263,50 +233,60 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task InspectStructure()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("structure keys not retrieved");
 
             _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("structure variables not retrieved");
 
             _compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(), It.IsAny<StructureCompilationInfo>(), It.IsAny<IConfigurationParser>()))
-                     .Returns(() => new CompilationResult(
-                                  new Dictionary<string, string>
-                                  {
-                                      {"Foo", "Bar"}
-                                  },
-                                  new TraceResult[]
-                                  {
-                                      new KeyTraceResult
-                                      {
-                                          Key = "Foo",
-                                          OriginalValue = "Bar",
-                                          Errors = new string[0],
-                                          Warnings = new string[0],
-                                          Children = new TraceResult[0]
-                                      }
-                                  }))
+                     .Returns(
+                         () => new CompilationResult(
+                             new Dictionary<string, string>
+                             {
+                                 { "Foo", "Bar" }
+                             },
+                             new TraceResult[]
+                             {
+                                 new KeyTraceResult
+                                 {
+                                     Key = "Foo",
+                                     OriginalValue = "Bar",
+                                     Errors = Array.Empty<string>(),
+                                     Warnings = Array.Empty<string>(),
+                                     Children = Array.Empty<TraceResult>()
+                                 }
+                             }))
                      .Verifiable("configuration not compiled");
 
             var result = await TestAction<OkObjectResult>(c => c.InspectStructure("Foo", "Bar", "Foo", 42));
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<StructureInspectionResult>(result.Value);
-            Assert.True(((StructureInspectionResult) result.Value).CompilationSuccessful);
+            Assert.True(((StructureInspectionResult)result.Value).CompilationSuccessful);
             _projectionStore.Verify();
             _compiler.Verify();
         }
@@ -315,24 +295,33 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task InspectStructureCompilerThrows()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("structure keys not retrieved");
 
             _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("structure variables not retrieved");
 
             _compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(), It.IsAny<StructureCompilationInfo>(), It.IsAny<IConfigurationParser>()))
@@ -343,7 +332,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<StructureInspectionResult>(result.Value);
-            Assert.False(((StructureInspectionResult) result.Value).CompilationSuccessful);
+            Assert.False(((StructureInspectionResult)result.Value).CompilationSuccessful);
             _projectionStore.Verify();
             _compiler.Verify();
         }
@@ -352,7 +341,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task InspectStructureEnvProviderFails()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.InspectStructure("Foo", "Bar", "Foo", 42));
@@ -393,14 +382,70 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             Assert.NotNull(result.Value);
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public async Task InspectStructureStructProviderError(int version)
+        {
+            _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
+                            .Verifiable("environment keys not retrieved");
+
+            if (version == 1)
+            {
+                _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
+                                .ReturnsAsync(
+                                    () => Result.Success(
+                                        new Page<KeyValuePair<string, string>>(
+                                            new Dictionary<string, string>
+                                            {
+                                                { "Foo", "Bar" }
+                                            })))
+                                .Verifiable("structure keys not retrieved");
+
+                _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .Verifiable("structure variables not retrieved");
+            }
+            else if (version == 2)
+            {
+                _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .Verifiable("structure keys not retrieved");
+
+                _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
+                                .ReturnsAsync(
+                                    () => Result.Success(
+                                        new Page<KeyValuePair<string, string>>(
+                                            new Dictionary<string, string>
+                                            {
+                                                { "Foo", "Bar" }
+                                            })));
+            }
+
+            var result = await TestAction<ObjectResult>(c => c.InspectStructure("Foo", "Bar", "Foo", 42));
+
+            Assert.NotNull(result.Value);
+            _projectionStore.Verify();
+        }
+
         [Fact]
         public async Task InspectStructureStructProviderThrows()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
@@ -417,49 +462,58 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task InspectUploadedStructure()
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
-                       .Returns(() => new Dictionary<string, string>
-                       {
-                           {"Foo", "Bar"}
-                       })
+                       .Returns(
+                           () => new Dictionary<string, string>
+                           {
+                               { "Foo", "Bar" }
+                           })
                        .Verifiable("structure not translated");
 
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
             _compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(), It.IsAny<StructureCompilationInfo>(), It.IsAny<IConfigurationParser>()))
-                     .Returns(() => new CompilationResult(
-                                  new Dictionary<string, string>
-                                  {
-                                      {"Foo", "Bar"}
-                                  },
-                                  new TraceResult[]
-                                  {
-                                      new KeyTraceResult
-                                      {
-                                          Key = "Foo",
-                                          OriginalValue = "Bar",
-                                          Children = new TraceResult[0],
-                                          Warnings = new string[0],
-                                          Errors = new string[0]
-                                      }
-                                  }))
+                     .Returns(
+                         () => new CompilationResult(
+                             new Dictionary<string, string>
+                             {
+                                 { "Foo", "Bar" }
+                             },
+                             new TraceResult[]
+                             {
+                                 new KeyTraceResult
+                                 {
+                                     Key = "Foo",
+                                     OriginalValue = "Bar",
+                                     Children = Array.Empty<TraceResult>(),
+                                     Warnings = Array.Empty<string>(),
+                                     Errors = Array.Empty<string>()
+                                 }
+                             }))
                      .Verifiable("configuration not compiled");
 
-            var result = await TestAction<OkObjectResult>(c => c.InspectUploadedStructure("Foo", "Bar", new DtoStructure
-            {
-                Name = "Foo",
-                Version = 42,
-                Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
-                Variables = new Dictionary<string, object> {{"Foo", "Bar"}}
-            }));
+            var result = await TestAction<OkObjectResult>(
+                             c => c.InspectUploadedStructure(
+                                 "Foo",
+                                 "Bar",
+                                 new DtoStructure
+                                 {
+                                     Name = "Foo",
+                                     Version = 42,
+                                     Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
+                                     Variables = new Dictionary<string, object> { { "Foo", "Bar" } }
+                                 }));
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<StructureInspectionResult>(result.Value);
-            Assert.True(((StructureInspectionResult) result.Value).CompilationSuccessful);
+            Assert.True(((StructureInspectionResult)result.Value).CompilationSuccessful);
             _translator.Verify();
             _projectionStore.Verify();
         }
@@ -468,34 +522,42 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task InspectUploadedStructureCompilationThrows()
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
-                       .Returns(() => new Dictionary<string, string>
-                       {
-                           {"Foo", "Bar"}
-                       })
+                       .Returns(
+                           () => new Dictionary<string, string>
+                           {
+                               { "Foo", "Bar" }
+                           })
                        .Verifiable("structure not translated");
 
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-                            {
-                                {"Foo", "Bar"}
-                            }))
+                            .ReturnsAsync(
+                                () => Result.Success(
+                                    new Page<KeyValuePair<string, string>>(
+                                        new Dictionary<string, string>
+                                        {
+                                            { "Foo", "Bar" }
+                                        })))
                             .Verifiable("environment keys not retrieved");
 
             _compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(), It.IsAny<StructureCompilationInfo>(), It.IsAny<IConfigurationParser>()))
                      .Throws<Exception>()
                      .Verifiable("configuration not compiled");
 
-            var result = await TestAction<OkObjectResult>(c => c.InspectUploadedStructure("Foo", "Bar", new DtoStructure
-            {
-                Name = "Foo",
-                Version = 42,
-                Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
-                Variables = new Dictionary<string, object>()
-            }));
+            var result = await TestAction<OkObjectResult>(
+                             c => c.InspectUploadedStructure(
+                                 "Foo",
+                                 "Bar",
+                                 new DtoStructure
+                                 {
+                                     Name = "Foo",
+                                     Version = 42,
+                                     Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
+                                     Variables = new Dictionary<string, object>()
+                                 }));
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<StructureInspectionResult>(result.Value);
-            Assert.False(((StructureInspectionResult) result.Value).CompilationSuccessful);
+            Assert.False(((StructureInspectionResult)result.Value).CompilationSuccessful);
             _translator.Verify();
             _projectionStore.Verify();
         }
@@ -503,13 +565,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task InspectUploadedStructureEmptyStructure()
         {
-            var result = await TestAction<BadRequestObjectResult>(c => c.InspectUploadedStructure("Foo", "Bar", new DtoStructure
-            {
-                Name = "Foo",
-                Version = 42,
-                Structure = JsonDocument.Parse("{}").RootElement,
-                Variables = new Dictionary<string, object>()
-            }));
+            var result = await TestAction<BadRequestObjectResult>(
+                             c => c.InspectUploadedStructure(
+                                 "Foo",
+                                 "Bar",
+                                 new DtoStructure
+                                 {
+                                     Name = "Foo",
+                                     Version = 42,
+                                     Structure = JsonDocument.Parse("{}").RootElement,
+                                     Variables = new Dictionary<string, object>()
+                                 }));
 
             Assert.NotNull(result.Value);
         }
@@ -518,23 +584,28 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task InspectUploadedStructureEnvironmentProviderError()
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
-                       .Returns(() => new Dictionary<string, string>
-                       {
-                           {"Foo", "Bar"}
-                       })
+                       .Returns(
+                           () => new Dictionary<string, string>
+                           {
+                               { "Foo", "Bar" }
+                           })
                        .Verifiable("structure not translated");
 
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
-            var result = await TestAction<ObjectResult>(c => c.InspectUploadedStructure("Foo", "Bar", new DtoStructure
-            {
-                Name = "Foo",
-                Version = 42,
-                Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
-                Variables = new Dictionary<string, object>()
-            }));
+            var result = await TestAction<ObjectResult>(
+                             c => c.InspectUploadedStructure(
+                                 "Foo",
+                                 "Bar",
+                                 new DtoStructure
+                                 {
+                                     Name = "Foo",
+                                     Version = 42,
+                                     Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
+                                     Variables = new Dictionary<string, object>()
+                                 }));
 
             Assert.NotNull(result.Value);
             _translator.Verify();
@@ -544,13 +615,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task InspectUploadedStructureInvalidEnvCategory()
         {
-            var result = await TestAction<BadRequestObjectResult>(c => c.InspectUploadedStructure("", "Bar", new DtoStructure
-            {
-                Name = "Foo",
-                Version = 42,
-                Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
-                Variables = new Dictionary<string, object>()
-            }));
+            var result = await TestAction<BadRequestObjectResult>(
+                             c => c.InspectUploadedStructure(
+                                 "",
+                                 "Bar",
+                                 new DtoStructure
+                                 {
+                                     Name = "Foo",
+                                     Version = 42,
+                                     Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
+                                     Variables = new Dictionary<string, object>()
+                                 }));
 
             Assert.NotNull(result.Value);
         }
@@ -558,13 +633,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task InspectUploadedStructureInvalidEnvName()
         {
-            var result = await TestAction<BadRequestObjectResult>(c => c.InspectUploadedStructure("Foo", "", new DtoStructure
-            {
-                Name = "Foo",
-                Version = 42,
-                Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
-                Variables = new Dictionary<string, object>()
-            }));
+            var result = await TestAction<BadRequestObjectResult>(
+                             c => c.InspectUploadedStructure(
+                                 "Foo",
+                                 "",
+                                 new DtoStructure
+                                 {
+                                     Name = "Foo",
+                                     Version = 42,
+                                     Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
+                                     Variables = new Dictionary<string, object>()
+                                 }));
 
             Assert.NotNull(result.Value);
         }
@@ -576,13 +655,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                        .Throws<Exception>()
                        .Verifiable("structure not translated");
 
-            var result = await TestAction<BadRequestObjectResult>(c => c.InspectUploadedStructure("Foo", "Bar", new DtoStructure
-            {
-                Name = "Foo",
-                Version = 42,
-                Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
-                Variables = new Dictionary<string, object>()
-            }));
+            var result = await TestAction<BadRequestObjectResult>(
+                             c => c.InspectUploadedStructure(
+                                 "Foo",
+                                 "Bar",
+                                 new DtoStructure
+                                 {
+                                     Name = "Foo",
+                                     Version = 42,
+                                     Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
+                                     Variables = new Dictionary<string, object>()
+                                 }));
 
             Assert.NotNull(result.Value);
             _translator.Verify();
@@ -594,6 +677,24 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             var result = await TestAction<BadRequestObjectResult>(c => c.InspectUploadedStructure("Foo", "Bar", null));
 
             Assert.NotNull(result.Value);
+        }
+
+        /// <inheritdoc />
+        protected override InspectionController CreateController()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder().AddInMemoryCollection()
+                                                                         .Build();
+
+            ServiceProvider provider = new ServiceCollection().AddLogging()
+                                                              .AddSingleton<IConfiguration>(configuration)
+                                                              .BuildServiceProvider();
+
+            return new InspectionController(
+                provider.GetService<ILogger<InspectionController>>(),
+                _compiler.Object,
+                _parser.Object,
+                _translator.Object,
+                _projectionStore.Object);
         }
     }
 }

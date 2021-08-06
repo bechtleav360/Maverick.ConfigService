@@ -9,11 +9,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] {null, null},
-            new object[] {"", ""},
-            new object[] {"", null},
-            new object[] {null, ""},
-            new object[] {"Foo", "Bar"}
+            new object[] { null, null },
+            new object[] { "", "" },
+            new object[] { "", null },
+            new object[] { null, "" },
+            new object[] { "Foo", "Bar" }
         };
 
         [Theory]
@@ -32,11 +32,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentCreated(new EnvironmentIdentifier(envCategory, envName));
 
-            var hashes = Enumerable.Range(0, 1000)
-                                   .Select(i => domainEvent.GetHashCode())
-                                   .ToList();
+            List<int> hashes = Enumerable.Range(0, 1000)
+                                         .Select(i => domainEvent.GetHashCode())
+                                         .ToList();
 
-            var example = domainEvent.GetHashCode();
+            int example = domainEvent.GetHashCode();
 
             Assert.True(hashes.All(h => h == example), "hashes.All(h=>h==example)");
         }
@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentCreated(new EnvironmentIdentifier(envCategory, envName));
 
-            var metadata = domainEvent.GetMetadata();
+            DomainEventMetadata metadata = domainEvent.GetMetadata();
 
             Assert.NotEmpty(metadata.Filters);
         }

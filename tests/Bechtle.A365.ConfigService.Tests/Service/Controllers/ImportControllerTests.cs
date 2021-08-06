@@ -22,20 +22,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
     {
         private readonly Mock<IDataImporter> _dataImporter = new Mock<IDataImporter>();
 
-        protected override ImportController CreateController()
-        {
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection()
-                                                          .Build();
-
-            var provider = new ServiceCollection().AddLogging()
-                                                  .AddSingleton<IConfiguration>(configuration)
-                                                  .BuildServiceProvider();
-
-            return new ImportController(
-                provider.GetService<ILogger<ImportController>>(),
-                _dataImporter.Object);
-        }
-
         [Fact]
         public async Task ImportEnv()
         {
@@ -43,26 +29,29 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                          .ReturnsAsync(Result.Success)
                          .Verifiable("nothing imported");
 
-            await TestAction<AcceptedAtActionResult>(async c =>
-            {
-                await using var stream = new MemoryStream();
-                await JsonSerializer.SerializeAsync(stream, new ConfigExport
+            await TestAction<AcceptedAtActionResult>(
+                async c =>
                 {
-                    Environments = new[]
-                    {
-                        new EnvironmentExport
+                    await using var stream = new MemoryStream();
+                    await JsonSerializer.SerializeAsync(
+                        stream,
+                        new ConfigExport
                         {
-                            Category = "Foo",
-                            Name = "Bar",
-                            Layers = new[] {new LayerIdentifier("Foo")}
-                        }
-                    }
+                            Environments = new[]
+                            {
+                                new EnvironmentExport
+                                {
+                                    Category = "Foo",
+                                    Name = "Bar",
+                                    Layers = new[] { new LayerIdentifier("Foo") }
+                                }
+                            }
+                        });
+
+                    stream.Position = 0;
+
+                    return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
                 });
-
-                stream.Position = 0;
-
-                return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
-            });
 
             _dataImporter.Verify();
         }
@@ -74,26 +63,29 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                          .ReturnsAsync(() => Result.Error("something went wrong", ErrorCode.DbUpdateError))
                          .Verifiable("nothing imported");
 
-            var result = await TestAction<ObjectResult>(async c =>
-            {
-                await using var stream = new MemoryStream();
-                await JsonSerializer.SerializeAsync(stream, new ConfigExport
-                {
-                    Environments = new[]
-                    {
-                        new EnvironmentExport
-                        {
-                            Category = "Foo",
-                            Name = "Bar",
-                            Layers = new[] {new LayerIdentifier("Foo")}
-                        }
-                    }
-                });
+            var result = await TestAction<ObjectResult>(
+                             async c =>
+                             {
+                                 await using var stream = new MemoryStream();
+                                 await JsonSerializer.SerializeAsync(
+                                     stream,
+                                     new ConfigExport
+                                     {
+                                         Environments = new[]
+                                         {
+                                             new EnvironmentExport
+                                             {
+                                                 Category = "Foo",
+                                                 Name = "Bar",
+                                                 Layers = new[] { new LayerIdentifier("Foo") }
+                                             }
+                                         }
+                                     });
 
-                stream.Position = 0;
+                                 stream.Position = 0;
 
-                return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
-            });
+                                 return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                             });
 
             Assert.NotNull(result.Value);
 
@@ -107,26 +99,29 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                          .Throws<Exception>()
                          .Verifiable("nothing imported");
 
-            var result = await TestAction<ObjectResult>(async c =>
-            {
-                await using var stream = new MemoryStream();
-                await JsonSerializer.SerializeAsync(stream, new ConfigExport
-                {
-                    Environments = new[]
-                    {
-                        new EnvironmentExport
-                        {
-                            Category = "Foo",
-                            Name = "Bar",
-                            Layers = new[] {new LayerIdentifier("Foo")}
-                        }
-                    }
-                });
+            var result = await TestAction<ObjectResult>(
+                             async c =>
+                             {
+                                 await using var stream = new MemoryStream();
+                                 await JsonSerializer.SerializeAsync(
+                                     stream,
+                                     new ConfigExport
+                                     {
+                                         Environments = new[]
+                                         {
+                                             new EnvironmentExport
+                                             {
+                                                 Category = "Foo",
+                                                 Name = "Bar",
+                                                 Layers = new[] { new LayerIdentifier("Foo") }
+                                             }
+                                         }
+                                     });
 
-                stream.Position = 0;
+                                 stream.Position = 0;
 
-                return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
-            });
+                                 return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                             });
 
             Assert.NotNull(result.Value);
 
@@ -136,13 +131,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task ImportInvalidFile()
         {
-            var result = await TestAction<BadRequestObjectResult>(c =>
-            {
-                using var stream = new MemoryStream();
-                stream.Write(Encoding.UTF8.GetBytes("[ \"is not a valid ConfigExport, and shall throw during deserialization\" ]"));
-                stream.Position = 0;
-                return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
-            });
+            var result = await TestAction<BadRequestObjectResult>(
+                             c =>
+                             {
+                                 using var stream = new MemoryStream();
+                                 stream.Write(Encoding.UTF8.GetBytes("[ \"is not a valid ConfigExport, and shall throw during deserialization\" ]"));
+                                 stream.Position = 0;
+                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                             });
 
             Assert.NotNull(result.Value);
         }
@@ -150,13 +146,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task ImportNullJson()
         {
-            var result = await TestAction<BadRequestObjectResult>(c =>
-            {
-                using var stream = new MemoryStream();
-                stream.Write(Encoding.UTF8.GetBytes("null"));
-                stream.Position = 0;
-                return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
-            });
+            var result = await TestAction<BadRequestObjectResult>(
+                             c =>
+                             {
+                                 using var stream = new MemoryStream();
+                                 stream.Write(Encoding.UTF8.GetBytes("null"));
+                                 stream.Position = 0;
+                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                             });
 
             Assert.NotNull(result.Value);
         }
@@ -164,13 +161,28 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task ImportZeroLengthFile()
         {
-            var result = await TestAction<BadRequestObjectResult>(c =>
-            {
-                using var stream = new MemoryStream();
-                return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
-            });
+            var result = await TestAction<BadRequestObjectResult>(
+                             c =>
+                             {
+                                 using var stream = new MemoryStream();
+                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                             });
 
             Assert.NotNull(result.Value);
+        }
+
+        protected override ImportController CreateController()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder().AddInMemoryCollection()
+                                                                         .Build();
+
+            ServiceProvider provider = new ServiceCollection().AddLogging()
+                                                              .AddSingleton<IConfiguration>(configuration)
+                                                              .BuildServiceProvider();
+
+            return new ImportController(
+                provider.GetService<ILogger<ImportController>>(),
+                _dataImporter.Object);
         }
     }
 }

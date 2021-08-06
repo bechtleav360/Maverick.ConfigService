@@ -145,7 +145,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 var result = await _store.Layers.GetAvailable(range, targetVersion);
 
-                return Result(result);
+                if (result.IsError)
+                    return ProviderError(result);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {
@@ -312,7 +314,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                         item.Type = string.Empty;
                 }
 
-                return Ok(result.Data);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {
@@ -445,7 +447,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 var identifier = new LayerIdentifier(name);
                 IResult<Page<string>> result = await _store.Layers.GetTags(identifier);
 
-                return Result(result);
+                if (result.IsError)
+                    return ProviderError(result);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {

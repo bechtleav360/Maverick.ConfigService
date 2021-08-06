@@ -15,13 +15,19 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public sealed class SelfConfigurationControllerTests : ControllerTests<SelfConfigurationController>, IDisposable
     {
+        private const string ConfigFileLocation = "data/appsettings.json";
+
+        private readonly IJsonTranslator _translator = new JsonTranslator();
+
         /// <inheritdoc />
         public void Dispose()
         {
             try
             {
                 if (File.Exists(ConfigFileLocation))
+                {
                     File.Delete(ConfigFileLocation);
+                }
             }
             catch (IOException)
             {
@@ -29,46 +35,35 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             }
         }
 
-        private readonly IJsonTranslator _translator = new JsonTranslator();
-        private const string ConfigFileLocation = "data/appsettings.json";
-
-        protected override SelfConfigurationController CreateController()
-        {
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection()
-                                                          .Build();
-
-            var provider = new ServiceCollection().AddLogging()
-                                                  .AddSingleton<IConfiguration>(configuration)
-                                                  .BuildServiceProvider();
-
-            return new SelfConfigurationController(
-                provider.GetService<ILogger<SelfConfigurationController>>(),
-                _translator);
-        }
-
         [Fact]
         public async Task AppendNestedObject()
         {
-            var first = JsonSerializer.Serialize(new
-            {
-                Foo = "FooValue42"
-            }, new JsonSerializerOptions {WriteIndented = true});
-            var firstJson = JsonDocument.Parse(first).RootElement;
-            var second = JsonSerializer.Serialize(new
-            {
-                Bar = new {Baz = 42}
-            }, new JsonSerializerOptions {WriteIndented = true});
-            var secondJson = JsonDocument.Parse(second).RootElement;
-            var result = JsonSerializer.Serialize(new
-            {
-                Bar = new {Baz = 42},
-                Foo = "FooValue42"
-            }, new JsonSerializerOptions {WriteIndented = true});
+            string first = JsonSerializer.Serialize(
+                new
+                {
+                    Foo = "FooValue42"
+                },
+                new JsonSerializerOptions { WriteIndented = true });
+            JsonElement firstJson = JsonDocument.Parse(first).RootElement;
+            string second = JsonSerializer.Serialize(
+                new
+                {
+                    Bar = new { Baz = 42 }
+                },
+                new JsonSerializerOptions { WriteIndented = true });
+            JsonElement secondJson = JsonDocument.Parse(second).RootElement;
+            string result = JsonSerializer.Serialize(
+                new
+                {
+                    Bar = new { Baz = 42 },
+                    Foo = "FooValue42"
+                },
+                new JsonSerializerOptions { WriteIndented = true });
 
             await TestAction<OkResult>(c => c.AppendConfiguration(firstJson));
             await TestAction<OkResult>(c => c.AppendConfiguration(secondJson));
 
-            await using var file = File.OpenRead(ConfigFileLocation);
+            await using FileStream file = File.OpenRead(ConfigFileLocation);
             var actual = await JsonSerializer.DeserializeAsync<JsonElement>(file);
 
             Assert.Equal(result, actual.ToString());
@@ -77,12 +72,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task AppendOnce()
         {
-            var expected = JsonSerializer.Serialize(new {Foo = "Bar"}, new JsonSerializerOptions {WriteIndented = true});
-            var json = JsonDocument.Parse(expected).RootElement;
+            string expected = JsonSerializer.Serialize(new { Foo = "Bar" }, new JsonSerializerOptions { WriteIndented = true });
+            JsonElement json = JsonDocument.Parse(expected).RootElement;
 
             await TestAction<OkResult>(c => c.AppendConfiguration(json));
 
-            var actual = File.ReadAllText(ConfigFileLocation, Encoding.UTF8);
+            string actual = File.ReadAllText(ConfigFileLocation, Encoding.UTF8);
 
             Assert.Equal(expected, actual);
         }
@@ -90,13 +85,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task DumpExistingFile()
         {
-            var expectedFile = JsonSerializer.Serialize(new {Foo = "Bar"});
+            string expectedFile = JsonSerializer.Serialize(new { Foo = "Bar" });
 
             File.WriteAllText(ConfigFileLocation, expectedFile);
 
             var result = await TestAction<OkObjectResult>(c => c.DumpConfiguration());
 
             Assert.Equal(expectedFile, result.Value.ToString());
+        }
+
+        protected override SelfConfigurationController CreateController()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder().AddInMemoryCollection()
+                                                                         .Build();
+
+            ServiceProvider provider = new ServiceCollection().AddLogging()
+                                                              .AddSingleton<IConfiguration>(configuration)
+                                                              .BuildServiceProvider();
+
+            return new SelfConfigurationController(
+                provider.GetService<ILogger<SelfConfigurationController>>(),
+                _translator);
         }
     }
 }

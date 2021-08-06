@@ -5,6 +5,31 @@ namespace Bechtle.A365.ConfigService.Tests.Configuration
 {
     public class ConfigModelTests
     {
+        [Fact]
+        public void CreateEventBusConnectionConfig() => Assert.NotNull(new EventBusConnectionConfiguration());
+
+        [Fact]
+        public void CreateEventStoreConnectionConfig() => Assert.NotNull(new EventStoreConnectionConfiguration());
+
+        [Fact]
+        public void FillEventBusConnectionConfig() => Assert.NotNull(
+            new EventBusConnectionConfiguration
+            {
+                Hub = string.Empty,
+                Server = string.Empty
+            });
+
+        [Fact]
+        public void FillEventStoreConnectionConfig() => Assert.NotNull(
+            new EventStoreConnectionConfiguration
+            {
+                ConnectionName = string.Empty,
+                MaxLiveQueueSize = 42,
+                ReadBatchSize = 42,
+                Stream = string.Empty,
+                Uri = string.Empty
+            });
+
         [Theory]
         [InlineData(null, null)]
         [InlineData("", "")]
@@ -43,28 +68,5 @@ namespace Bechtle.A365.ConfigService.Tests.Configuration
             Assert.Equal(stream, config.Stream);
             Assert.Equal(uri, config.Uri);
         }
-
-        [Fact]
-        public void CreateEventBusConnectionConfig() => Assert.NotNull(new EventBusConnectionConfiguration());
-
-        [Fact]
-        public void CreateEventStoreConnectionConfig() => Assert.NotNull(new EventStoreConnectionConfiguration());
-
-        [Fact]
-        public void FillEventBusConnectionConfig() => Assert.NotNull(new EventBusConnectionConfiguration
-        {
-            Hub = string.Empty,
-            Server = string.Empty
-        });
-
-        [Fact]
-        public void FillEventStoreConnectionConfig() => Assert.NotNull(new EventStoreConnectionConfiguration
-        {
-            ConnectionName = string.Empty,
-            MaxLiveQueueSize = 42,
-            ReadBatchSize = 42,
-            Stream = string.Empty,
-            Uri = string.Empty
-        });
     }
 }

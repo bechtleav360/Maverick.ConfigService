@@ -7,6 +7,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 {
     public class ConfigStructureTests
     {
+        [Fact]
+        public void CreateNew() => Assert.NotNull(new ConfigStructure(new StructureIdentifier("Foo", 42)));
+
         [Theory]
         [InlineData("FooBar", 0)]
         [InlineData("FooBar", -1)]
@@ -23,8 +26,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [InlineData("", int.MinValue)]
         public void ThrowsForInvalidIdentifier(string name, int version) => Assert.Throws<ArgumentNullException>(
             () => new ConfigStructure(new StructureIdentifier(name, version)));
-
-        [Fact]
-        public void CreateNew() => Assert.NotNull(new ConfigStructure(new StructureIdentifier("Foo", 42)));
     }
 }

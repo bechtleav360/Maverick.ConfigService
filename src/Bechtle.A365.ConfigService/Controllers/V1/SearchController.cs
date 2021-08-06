@@ -54,7 +54,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var result = await _store.Environments.GetKeyAutoComplete(identifier, query, range, targetVersion);
 
-                return Result(result);
+                if (result.IsError)
+                    return ProviderError(result);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {
@@ -95,7 +97,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var result = await _store.Layers.GetKeyAutoComplete(identifier, query, range, targetVersion);
 
-                return Result(result);
+                if (result.IsError)
+                    return ProviderError(result);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {

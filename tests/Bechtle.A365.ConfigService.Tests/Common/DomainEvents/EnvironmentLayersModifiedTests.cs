@@ -9,11 +9,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] {null, null},
-            new object[] {"", ""},
-            new object[] {"", null},
-            new object[] {null, ""},
-            new object[] {"Foo", "Bar"}
+            new object[] { null, null },
+            new object[] { "", "" },
+            new object[] { "", null },
+            new object[] { null, "" },
+            new object[] { "Foo", "Bar" }
         };
 
         [Theory]
@@ -22,10 +22,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var left = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
             var right = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
 
             Assert.True(left.Equals(right), "left.Equals(right)");
         }
@@ -36,13 +36,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
 
-            var hashes = Enumerable.Range(0, 1000)
-                                   .Select(i => domainEvent.GetHashCode())
-                                   .ToList();
+            List<int> hashes = Enumerable.Range(0, 1000)
+                                         .Select(i => domainEvent.GetHashCode())
+                                         .ToList();
 
-            var example = domainEvent.GetHashCode();
+            int example = domainEvent.GetHashCode();
 
             Assert.True(hashes.All(h => h == example), "hashes.All(h=>h==example)");
         }
@@ -53,9 +53,9 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
 
-            var metadata = domainEvent.GetMetadata();
+            DomainEventMetadata metadata = domainEvent.GetMetadata();
 
             Assert.NotEmpty(metadata.Filters);
         }
@@ -66,10 +66,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var left = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
             var right = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
 
             Assert.True(left == right, "left == right");
         }
@@ -80,10 +80,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var left = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
             var right = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> {new LayerIdentifier("Foo")});
+                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
 
             Assert.False(left != right, "left != right");
         }

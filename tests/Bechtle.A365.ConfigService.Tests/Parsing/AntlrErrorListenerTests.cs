@@ -33,13 +33,14 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
 
             var listener = new AntlrErrorListener(loggerMock.Object);
 
-            listener.SyntaxError(writerMock.Object,
-                                 recognizerMock.Object,
-                                 0,
-                                 4711,
-                                 42,
-                                 "some message to write",
-                                 new RecognitionException(lexer, charStreamMock.Object));
+            listener.SyntaxError(
+                writerMock.Object,
+                recognizerMock.Object,
+                0,
+                4711,
+                42,
+                "some message to write",
+                new RecognitionException(lexer, charStreamMock.Object));
 
             Assert.NotNull(listener);
         }
@@ -56,13 +57,14 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
 
             var listener = new AntlrErrorListener(loggerMock.Object);
 
-            listener.SyntaxError(writerMock.Object,
-                                 recognizerMock.Object,
-                                 tokenMock.Object,
-                                 4711,
-                                 42,
-                                 "some message to write",
-                                 new RecognitionException(lexer, charStreamMock.Object));
+            listener.SyntaxError(
+                writerMock.Object,
+                recognizerMock.Object,
+                tokenMock.Object,
+                4711,
+                42,
+                "some message to write",
+                new RecognitionException(lexer, charStreamMock.Object));
 
             Assert.NotNull(listener);
         }

@@ -7,20 +7,21 @@ namespace Bechtle.A365.ConfigService.Tests.Common
 {
     public class DictToJsonConversionTests
     {
+        private readonly IJsonTranslator _translator;
+
         public DictToJsonConversionTests()
         {
             _translator = new JsonTranslator();
         }
 
-        private readonly IJsonTranslator _translator;
-
         [Fact]
         public void DeepObject()
         {
-            var translated = _translator.ToJson(new Dictionary<string, string>
-            {
-                {"Foo/Bar/Baz", "4711"}
-            });
+            JsonElement translated = _translator.ToJson(
+                new Dictionary<string, string>
+                {
+                    { "Foo/Bar/Baz", "4711" }
+                });
 
             Assert.IsType<JsonElement>(translated);
             Assert.IsType<JsonElement>(translated.GetProperty("Foo"));
@@ -32,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void EmptyObject()
         {
-            var translated = _translator.ToJson(new Dictionary<string, string>());
+            JsonElement translated = _translator.ToJson(new Dictionary<string, string>());
 
             Assert.IsType<JsonElement>(translated);
             Assert.Empty(translated.EnumerateObject());
@@ -41,11 +42,12 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void SimpleArray()
         {
-            var translated = _translator.ToJson(new Dictionary<string, string>
-            {
-                {"0000", "42"},
-                {"0001", "4711"}
-            });
+            JsonElement translated = _translator.ToJson(
+                new Dictionary<string, string>
+                {
+                    { "0000", "42" },
+                    { "0001", "4711" }
+                });
 
             Assert.IsType<JsonElement>(translated);
             Assert.Equal("42", translated[0].ToString());
@@ -55,10 +57,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void SimpleObject()
         {
-            var translated = _translator.ToJson(new Dictionary<string, string>
-            {
-                {"Foo", "Bar"}
-            });
+            JsonElement translated = _translator.ToJson(
+                new Dictionary<string, string>
+                {
+                    { "Foo", "Bar" }
+                });
 
             Assert.IsType<JsonElement>(translated);
             Assert.Equal("Bar", translated.GetProperty("Foo").ToString());

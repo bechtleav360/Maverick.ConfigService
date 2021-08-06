@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -205,7 +206,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 // add version to the response-headers
                 Response.Headers.Add("x-version", version.Data);
 
-                return Result(result);
+                return result.IsError
+                           ? ProviderError(result)
+                           : Ok(result.Data.Items.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {
@@ -298,7 +301,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 var range = QueryRange.Make(offset, length);
                 var result = await _store.Configurations.GetAvailable(when, range);
 
-                return Result(result);
+                return result.IsError
+                           ? ProviderError(result)
+                           : Ok(result.Data.Items);
             }
             catch (Exception e)
             {
@@ -326,7 +331,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 var range = QueryRange.Make(offset, length);
                 var result = await _store.Configurations.GetStale(range);
 
-                return Result(result);
+                return result.IsError
+                           ? ProviderError(result)
+                           : Ok(result.Data.Items);
             }
             catch (Exception e)
             {

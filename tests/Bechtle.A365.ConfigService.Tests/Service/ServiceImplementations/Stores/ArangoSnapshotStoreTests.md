@@ -2,18 +2,18 @@
 
 > For this test-suite we need to attach behaviour before the actual tests, so we need them to be virtual and override them.
 
-Due to the nature of this store we need to mock the workings of an HttpClient.
-This can be done by providing a "HttpMessageHandler", preferable in the form of an "DelegatingHandler".
-That in turn means we have to store a Func until the HttpClient is called (_handlerFunctions).
-Because we possibly need to support multiple calls per test we need to store multiple functions and call them in the right order.
+Due to the nature of this store we need to mock the workings of an HttpClient. This can be done by providing a "
+HttpMessageHandler", preferable in the form of an "DelegatingHandler". That in turn means we have to store a Func until
+the HttpClient is called (_handlerFunctions). Because we possibly need to support multiple calls per test we need to
+store multiple functions and call them in the right order.
 
-For all this to work we need to bind the tests so tightly to the actual implementation, 
-and provide such complex logic that these "unit"-tests become pretty brittle and useless.
+For all this to work we need to bind the tests so tightly to the actual implementation, and provide such complex logic
+that these "unit"-tests become pretty brittle and useless.
 
 This is an example of what is described above.
 
-DelegatingHandlerStub only needs to retrieve and execute the desired Func after it was created.
-At the time of creation we haven't had the chance to store our HttpClient-Response-Handler yet, so we need to defer that.
+DelegatingHandlerStub only needs to retrieve and execute the desired Func after it was created. At the time of creation
+we haven't had the chance to store our HttpClient-Response-Handler yet, so we need to defer that.
 
 The tests need to be overriden, so that they store the necessary Response-Handler-Funcs before executing the tests.
 

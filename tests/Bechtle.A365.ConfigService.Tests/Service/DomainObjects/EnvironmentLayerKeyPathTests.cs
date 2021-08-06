@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             var baz = new EnvironmentLayerKeyPath("Baz", bar);
             var jar = new EnvironmentLayerKeyPath("Jar", root);
 
-            root.Children.AddRange(new[] {bar, jar});
+            root.Children.AddRange(new[] { bar, jar });
             bar.Children.Add(baz);
 
             // actual tests

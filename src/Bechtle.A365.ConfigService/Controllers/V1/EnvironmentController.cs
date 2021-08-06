@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -145,7 +146,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         {
             try
             {
-                return Result(await _store.Environments.GetAssignedLayers(new EnvironmentIdentifier(category, name)));
+                var result = await _store.Environments.GetAssignedLayers(new EnvironmentIdentifier(category, name));
+
+                if (result.IsError)
+                    return ProviderError(result);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {
@@ -191,7 +196,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 var result = await _store.Environments.GetAvailable(range, targetVersion);
 
-                return Result(result);
+                if (result.IsError)
+                    return ProviderError(result);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {
@@ -366,7 +373,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                         item.Type = string.Empty;
                 }
 
-                return Ok(result.Data);
+                return Ok(result.Data.Items);
             }
             catch (Exception e)
             {

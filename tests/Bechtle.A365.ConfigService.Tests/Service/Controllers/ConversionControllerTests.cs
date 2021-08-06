@@ -16,21 +16,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
     {
         private readonly Mock<IJsonTranslator> _translator = new Mock<IJsonTranslator>(MockBehavior.Strict);
 
-        /// <inheritdoc />
-        protected override ConversionController CreateController()
-        {
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection()
-                                                          .Build();
-
-            var provider = new ServiceCollection().AddLogging()
-                                                  .AddSingleton<IConfiguration>(configuration)
-                                                  .BuildServiceProvider();
-
-            return new ConversionController(
-                provider.GetService<ILogger<ConversionController>>(),
-                _translator.Object);
-        }
-
         [Fact]
         public void DictionaryToJson()
         {
@@ -38,10 +23,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                        .Returns(JsonDocument.Parse("{}").RootElement)
                        .Verifiable("dictionary not translated");
 
-            var result = TestAction<OkObjectResult>(c => c.DictionaryToJson(new Dictionary<string, string>
-            {
-                {"Foo:Bar", "Baz"}
-            }, ":"));
+            var result = TestAction<OkObjectResult>(
+                c => c.DictionaryToJson(
+                    new Dictionary<string, string>
+                    {
+                        { "Foo:Bar", "Baz" }
+                    },
+                    ":"));
 
             Assert.NotNull(result.Value);
             _translator.Verify();
@@ -62,10 +50,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                        .Throws<Exception>()
                        .Verifiable("dictionary not translated");
 
-            var result = TestAction<ObjectResult>(c => c.DictionaryToJson(new Dictionary<string, string>
-            {
-                {"Foo:Bar", "Baz"}
-            }, ":"));
+            var result = TestAction<ObjectResult>(
+                c => c.DictionaryToJson(
+                    new Dictionary<string, string>
+                    {
+                        { "Foo:Bar", "Baz" }
+                    },
+                    ":"));
 
             Assert.NotNull(result.Value);
             _translator.Verify();
@@ -75,14 +66,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public void JsonToDictionary()
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>(), It.IsAny<string>()))
-                       .Returns(() => new Dictionary<string, string> {{"Foo", "Bar"}})
+                       .Returns(() => new Dictionary<string, string> { { "Foo", "Bar" } })
                        .Verifiable("json not translated to dictionary");
 
             var result = TestAction<OkObjectResult>(c => c.JsonToDictionary(JsonDocument.Parse("{\"Foo\": \"Bar\"}").RootElement));
 
             Assert.NotNull(result.Value);
             Assert.IsAssignableFrom<Dictionary<string, string>>(result.Value);
-            Assert.NotEmpty((Dictionary<string, string>) result.Value);
+            Assert.NotEmpty((Dictionary<string, string>)result.Value);
             _translator.Verify();
         }
 
@@ -97,6 +88,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
             Assert.NotNull(result.Value);
             _translator.Verify();
+        }
+
+        /// <inheritdoc />
+        protected override ConversionController CreateController()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder().AddInMemoryCollection()
+                                                                         .Build();
+
+            ServiceProvider provider = new ServiceCollection().AddLogging()
+                                                              .AddSingleton<IConfiguration>(configuration)
+                                                              .BuildServiceProvider();
+
+            return new ConversionController(
+                provider.GetService<ILogger<ConversionController>>(),
+                _translator.Object);
         }
     }
 }

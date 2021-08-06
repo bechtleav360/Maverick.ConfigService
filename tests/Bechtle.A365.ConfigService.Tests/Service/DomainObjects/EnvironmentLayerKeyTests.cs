@@ -5,9 +5,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
 {
     public class EnvironmentLayerKeyTests
     {
-        [Fact]
-        public void CreateNew() => Assert.NotNull(new EnvironmentLayerKey("", "", "", "", 0));
-
         [Theory]
         [InlineData("", "", "", "", long.MinValue)]
         [InlineData("", "", "", "", 0)]
@@ -31,5 +28,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
             Assert.Equal(value, item.Value);
             Assert.Equal(item.Version, item.Version);
         }
+
+        [Fact]
+        public void CreateNew() => Assert.NotNull(new EnvironmentLayerKey("", "", "", "", 0));
     }
 }

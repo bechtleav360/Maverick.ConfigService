@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Bechtle.A365.ConfigService.Common;
 
 namespace Bechtle.A365.ConfigService.Models.V1
@@ -53,6 +54,18 @@ namespace Bechtle.A365.ConfigService.Models.V1
         }
 
         /// <summary>
+        ///     Create a new instance of <see cref="Page{T}" /> filled with the given items, with <see cref="Offset" />=0
+        /// </summary>
+        /// <param name="items">List of items this Page contains</param>
+        public Page(IEnumerable<T> items)
+        {
+            Items = items.ToList();
+            Count = Items.Count;
+            Offset = 0;
+            TotalCount = 0;
+        }
+
+        /// <summary>
         ///     Create a new instance of <see cref="Page{T}" /> filled with the given items,
         ///     with <see cref="Offset" /> and <see cref="TotalCount" /> set to the given values
         /// </summary>
@@ -78,6 +91,36 @@ namespace Bechtle.A365.ConfigService.Models.V1
         {
             Count = items.Count;
             Items = items;
+            Offset = range.Offset;
+            TotalCount = totalCount;
+        }
+
+        /// <summary>
+        ///     Create a new instance of <see cref="Page{T}" /> filled with the given items,
+        ///     with <see cref="Offset" /> and <see cref="TotalCount" /> set to the given values
+        /// </summary>
+        /// <param name="items">List of items this Page contains</param>
+        /// <param name="offset">offset from 0 that this page represents</param>
+        /// <param name="totalCount">total number of items contained in the source-collection</param>
+        public Page(IEnumerable<T> items, int offset, int totalCount)
+        {
+            Items = items.ToList();
+            Count = Items.Count;
+            Offset = offset;
+            TotalCount = totalCount;
+        }
+
+        /// <summary>
+        ///     Create a new instance of <see cref="Page{T}" /> filled with the given items,
+        ///     with <see cref="Offset" /> and <see cref="TotalCount" /> set to the given values
+        /// </summary>
+        /// <param name="items">List of items this Page contains</param>
+        /// <param name="range">range to take offset from</param>
+        /// <param name="totalCount">total number of items contained in the source-collection</param>
+        public Page(IEnumerable<T> items, QueryRange range, int totalCount)
+        {
+            Items = items.ToList();
+            Count = Items.Count;
             Offset = range.Offset;
             TotalCount = totalCount;
         }

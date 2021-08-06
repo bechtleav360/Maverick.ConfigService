@@ -4,10 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Implementations.Stores;
 using Bechtle.A365.ConfigService.Interfaces;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -17,6 +19,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 {
     public class EnvironmentProjectionStoreTests
     {
+        private readonly ILogger<EnvironmentProjectionStore> _logger;
+
         public EnvironmentProjectionStoreTests()
         {
             _logger = new ServiceCollection()
@@ -24,8 +28,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                       .BuildServiceProvider()
                       .GetRequiredService<ILogger<EnvironmentProjectionStore>>();
         }
-
-        private readonly ILogger<EnvironmentProjectionStore> _logger;
 
         [Fact]
         public async Task CreateNewEnvironment()
@@ -41,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.Create(new EnvironmentIdentifier("Foo", "Bar"), false);
+            IResult result = await store.Create(new EnvironmentIdentifier("Foo", "Bar"), false);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
@@ -62,7 +64,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.Delete(new EnvironmentIdentifier("Foo", "Bar"));
+            IResult result = await store.Delete(new EnvironmentIdentifier("Foo", "Bar"));
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
@@ -79,17 +81,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                    (EnvironmentIdentifier id, CancellationToken _) => Result.Success(
                                        new ConfigEnvironment(id)
                                        {
-                                           Layers = new List<LayerIdentifier> {new LayerIdentifier("Foo")}
+                                           Layers = new List<LayerIdentifier> { new LayerIdentifier("Foo") }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetAssignedLayers(new EnvironmentIdentifier("Foo", "Bar"));
+            IResult<Page<LayerIdentifier>> result = await store.GetAssignedLayers(new EnvironmentIdentifier("Foo", "Bar"));
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data);
+            Assert.Single(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -111,18 +113,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new ConfigEnvironment(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeyAutoComplete(new EnvironmentIdentifier("Foo", "Bar"), "Foo/Bar", QueryRange.All);
+            IResult<Page<DtoConfigKeyCompletion>> result = await store.GetKeyAutoComplete(new EnvironmentIdentifier("Foo", "Bar"), "Foo/Bar", QueryRange.All);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -144,18 +146,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new ConfigEnvironment(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeyAutoComplete(new EnvironmentIdentifier("Foo", "Bar"), "Foo/Bar/B", QueryRange.All);
+            IResult<Page<DtoConfigKeyCompletion>> result = await store.GetKeyAutoComplete(new EnvironmentIdentifier("Foo", "Bar"), "Foo/Bar/B", QueryRange.All);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -177,18 +179,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new ConfigEnvironment(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeyAutoComplete(new EnvironmentIdentifier("Foo", "Bar"), string.Empty, QueryRange.All);
+            IResult<Page<DtoConfigKeyCompletion>> result = await store.GetKeyAutoComplete(
+                                                               new EnvironmentIdentifier("Foo", "Bar"),
+                                                               string.Empty,
+                                                               QueryRange.All);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -210,18 +215,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        return Result.Success(
                                            new ConfigEnvironment(id)
                                            {
-                                               KeyPaths = new List<EnvironmentLayerKeyPath> {pathRoot}
+                                               KeyPaths = new List<EnvironmentLayerKeyPath> { pathRoot }
                                            });
                                    })
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeyAutoComplete(new EnvironmentIdentifier("Foo", "Bar"), "Foo", QueryRange.All);
+            IResult<Page<DtoConfigKeyCompletion>> result = await store.GetKeyAutoComplete(new EnvironmentIdentifier("Foo", "Bar"), "Foo", QueryRange.All);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -231,21 +236,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
             domainObjectManager.Setup(m => m.GetEnvironments(It.IsAny<QueryRange>(), It.IsAny<CancellationToken>()))
-                               .ReturnsAsync(
-                                   Result.Success<IList<EnvironmentIdentifier>>(
-                                       new List<EnvironmentIdentifier>
-                                       {
-                                           new EnvironmentIdentifier("Foo", "Bar")
-                                       }))
+                               .ReturnsAsync(Result.Success(new Page<EnvironmentIdentifier>(new[] { new EnvironmentIdentifier("Foo", "Bar") })))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetAvailable(QueryRange.All);
+            IResult<Page<EnvironmentIdentifier>> result = await store.GetAvailable(QueryRange.All);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -255,16 +255,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
             domainObjectManager.Setup(m => m.GetEnvironments(It.IsAny<QueryRange>(), It.IsAny<CancellationToken>()))
-                               .ReturnsAsync(Result.Success<IList<EnvironmentIdentifier>>(new List<EnvironmentIdentifier>()))
+                               .ReturnsAsync(Result.Success(new Page<EnvironmentIdentifier>()))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetAvailable(QueryRange.All);
+            IResult<Page<EnvironmentIdentifier>> result = await store.GetAvailable(QueryRange.All);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Empty(result.Data);
+            Assert.Empty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -274,21 +274,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
             domainObjectManager.Setup(m => m.GetEnvironments(It.IsAny<QueryRange>(), It.IsAny<CancellationToken>()))
-                               .ReturnsAsync(
-                                   Result.Success<IList<EnvironmentIdentifier>>(
-                                       new List<EnvironmentIdentifier>
-                                       {
-                                           new EnvironmentIdentifier("Foo", "Bar")
-                                       }))
+                               .ReturnsAsync(Result.Success(new Page<EnvironmentIdentifier>(new[] { new EnvironmentIdentifier("Foo", "Bar") })))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetAvailable(QueryRange.Make(1, 1));
+            IResult<Page<EnvironmentIdentifier>> result = await store.GetAvailable(QueryRange.Make(1, 1));
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data);
+            Assert.Single(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -304,25 +299,25 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 1)},
-                                               {"Baz", new EnvironmentLayerKey("Baz", "BazValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 1) },
+                                               { "Baz", new EnvironmentLayerKey("Baz", "BazValue", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeyObjects(
-                             new KeyQueryParameters<EnvironmentIdentifier>
-                             {
-                                 Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                 Range = QueryRange.All
-                             });
+            IResult<Page<DtoConfigKey>> result = await store.GetKeyObjects(
+                                                     new KeyQueryParameters<EnvironmentIdentifier>
+                                                     {
+                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                         Range = QueryRange.All
+                                                     });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -338,27 +333,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "BarValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "BarValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeyObjects(
-                             new KeyQueryParameters<EnvironmentIdentifier>
-                             {
-                                 Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                 Filter = "Foo/",
-                                 RemoveRoot = "Foo",
-                                 Range = QueryRange.All
-                             });
+            IResult<Page<DtoConfigKey>> result = await store.GetKeyObjects(
+                                                     new KeyQueryParameters<EnvironmentIdentifier>
+                                                     {
+                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                         Filter = "Foo/",
+                                                         RemoveRoot = "Foo",
+                                                         Range = QueryRange.All
+                                                     });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -374,25 +369,25 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 1)},
-                                               {"Baz", new EnvironmentLayerKey("Baz", "BazValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Bar", new EnvironmentLayerKey("Bar", "BarValue", string.Empty, string.Empty, 1) },
+                                               { "Baz", new EnvironmentLayerKey("Baz", "BazValue", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeys(
-                             new KeyQueryParameters<EnvironmentIdentifier>
-                             {
-                                 Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                 Range = QueryRange.All
-                             });
+            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
+                                                                     new KeyQueryParameters<EnvironmentIdentifier>
+                                                                     {
+                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                         Range = QueryRange.All
+                                                                     });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -408,26 +403,26 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "BarValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "BarValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeys(
-                             new KeyQueryParameters<EnvironmentIdentifier>
-                             {
-                                 Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                 Range = QueryRange.Make(1, 1)
-                             });
+            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
+                                                                     new KeyQueryParameters<EnvironmentIdentifier>
+                                                                     {
+                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                         Range = QueryRange.Make(1, 1)
+                                                                     });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data);
-            Assert.Equal(new KeyValuePair<string, string>("Foo/Bar", "BarValue"), result.Data.First());
+            Assert.Single(result.Data.Items);
+            Assert.Equal(new KeyValuePair<string, string>("Foo/Bar", "BarValue"), result.Data.Items.First());
 
             domainObjectManager.Verify();
         }
@@ -443,27 +438,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Ba", new EnvironmentLayerKey("Foo/Ba", "BaValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Ba", new EnvironmentLayerKey("Foo/Ba", "BaValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeys(
-                             new KeyQueryParameters<EnvironmentIdentifier>
-                             {
-                                 Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                 Filter = "Foo/Ba",
-                                 PreferExactMatch = "Foo/Ba",
-                                 Range = QueryRange.All
-                             });
+            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
+                                                                     new KeyQueryParameters<EnvironmentIdentifier>
+                                                                     {
+                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                         Filter = "Foo/Ba",
+                                                                         PreferExactMatch = "Foo/Ba",
+                                                                         Range = QueryRange.All
+                                                                     });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
@@ -479,27 +474,27 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        {
                                            Keys = new Dictionary<string, EnvironmentLayerKey>
                                            {
-                                               {"Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "BarValue", string.Empty, string.Empty, 1)},
-                                               {"Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1)},
+                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Bar", new EnvironmentLayerKey("Foo/Bar", "BarValue", string.Empty, string.Empty, 1) },
+                                               { "Foo/Baz", new EnvironmentLayerKey("Foo/Baz", "BazValue", string.Empty, string.Empty, 1) }
                                            }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            var result = await store.GetKeys(
-                             new KeyQueryParameters<EnvironmentIdentifier>
-                             {
-                                 Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                 Filter = "Foo/",
-                                 RemoveRoot = "Foo",
-                                 Range = QueryRange.All
-                             });
+            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
+                                                                     new KeyQueryParameters<EnvironmentIdentifier>
+                                                                     {
+                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                         Filter = "Foo/",
+                                                                         RemoveRoot = "Foo",
+                                                                         Range = QueryRange.All
+                                                                     });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
 
             domainObjectManager.Verify();
         }
