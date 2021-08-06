@@ -130,9 +130,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         new Page<DtoConfigKeyCompletion>
                         {
                             Items = rootItems,
-                            Length = rootItems.Count,
+                            Count = rootItems.Count,
                             Offset = 0,
-                            TotalLength = rootItems.Count
+                            TotalCount = rootItems.Count
                         });
                 }
 
@@ -189,9 +189,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         new Page<DtoConfigKeyCompletion>
                         {
                             Items = selectedItems,
-                            Length = selectedItems.Count,
+                            Count = selectedItems.Count,
                             Offset = range.Offset,
-                            TotalLength = totalItems.Count
+                            TotalCount = totalItems.Count
                         });
                 }
 
@@ -243,7 +243,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (result.IsError)
                 return result;
 
-            _logger.LogDebug($"got {result.Data.Length} keys as objects");
+            _logger.LogDebug($"got {result.Data.Count} keys as objects");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
@@ -265,7 +265,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (result.IsError)
                 return result;
 
-            _logger.LogDebug($"got {result.Data.Length} keys for '{parameters.Identifier}'");
+            _logger.LogDebug($"got {result.Data.Count} keys for '{parameters.Identifier}'");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
@@ -287,9 +287,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 new Page<string>
                 {
                     Items = result.Data.Tags,
-                    Length = result.Data.Tags.Count,
+                    Count = result.Data.Tags.Count,
                     Offset = 0,
-                    TotalLength = result.Data.Tags.Count
+                    TotalCount = result.Data.Tags.Count
                 });
         }
 
@@ -467,9 +467,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 new Page<DtoConfigKeyCompletion>
                 {
                     Items = selectedItems,
-                    Length = selectedItems.Count,
+                    Count = selectedItems.Count,
                     Offset = range.Offset,
-                    TotalLength = totalItems.Count
+                    TotalCount = totalItems.Count
                 });
         }
 
@@ -532,9 +532,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 var page = new Page<TResult>
                 {
                     Items = result,
-                    Length = result.Count,
+                    Count = result.Count,
                     Offset = parameters.Range.Offset,
-                    TotalLength = keys.Count
+                    TotalCount = keys.Count
                 };
 
                 return Result.Success(page);

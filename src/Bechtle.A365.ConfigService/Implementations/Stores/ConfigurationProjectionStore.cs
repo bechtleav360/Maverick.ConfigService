@@ -142,9 +142,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 var page = new Page<KeyValuePair<string, string>>
                 {
                     Items = items,
-                    Length = items.Count,
+                    Count = items.Count,
                     Offset = range.Offset,
-                    TotalLength = configuration.Data.Keys.Count,
+                    TotalCount = configuration.Data.Keys.Count,
                 };
 
                 return Result.Success(page);

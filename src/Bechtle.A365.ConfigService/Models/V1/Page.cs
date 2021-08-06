@@ -9,14 +9,14 @@ namespace Bechtle.A365.ConfigService.Models.V1
     public class Page<T>
     {
         /// <summary>
+        ///     Number of items returned in this Page
+        /// </summary>
+        public int Count { get; set; }
+
+        /// <summary>
         ///     List of items returned in this Page
         /// </summary>
         public IList<T> Items { get; set; }
-
-        /// <summary>
-        ///     Number of items returned in this Page
-        /// </summary>
-        public int Length { get; set; }
 
         /// <summary>
         ///     Offset from 0 of items returned in this Page
@@ -26,6 +26,6 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Total number of items in the collection
         /// </summary>
-        public int TotalLength { get; set; }
+        public int TotalCount { get; set; }
     }
 }

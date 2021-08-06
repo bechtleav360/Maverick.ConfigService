@@ -260,9 +260,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             var page = new Page<ConfigurationIdentifier>
             {
                 Items = pagedList,
-                Length = pagedList.Count,
+                Count = pagedList.Count,
                 Offset = range.Offset,
-                TotalLength = totalList.Count
+                TotalCount = totalList.Count
             };
 
             return Result.Success(page);

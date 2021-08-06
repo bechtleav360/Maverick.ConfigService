@@ -132,9 +132,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 var page = new Page<TIdentifier>
                 {
                     Items = ids,
-                    Length = ids.Count,
+                    Count = ids.Count,
                     Offset = range.Offset,
-                    TotalLength = totalItems.Count
+                    TotalCount = totalItems.Count
                 };
 
                 return Result.Success(page);
@@ -182,9 +182,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 var page = new Page<TIdentifier>
                 {
                     Items = ids,
-                    Length = ids.Count,
+                    Count = ids.Count,
                     Offset = range.Offset,
-                    TotalLength = totalItems.Count
+                    TotalCount = totalItems.Count
                 };
 
                 return Result.Success(page);

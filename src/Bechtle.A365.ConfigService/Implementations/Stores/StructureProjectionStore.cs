@@ -103,9 +103,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     new Page<int>
                     {
                         Items = versions,
-                        Length = listResult.Data.Length,
+                        Count = listResult.Data.Count,
                         Offset = listResult.Data.Offset,
-                        TotalLength = listResult.Data.TotalLength
+                        TotalCount = listResult.Data.TotalCount
                     });
             }
             catch (Exception e)
@@ -142,9 +142,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 var page = new Page<KeyValuePair<string, string>>
                 {
                     Items = result,
-                    Length = result.Count,
+                    Count = result.Count,
                     Offset = range.Offset,
-                    TotalLength = structure.Keys.Count
+                    TotalCount = structure.Keys.Count
                 };
 
                 return Result.Success(page);
@@ -183,9 +183,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 var page = new Page<KeyValuePair<string, string>>
                 {
                     Items = result,
-                    Length = result.Count,
+                    Count = result.Count,
                     Offset = range.Offset,
-                    TotalLength = structure.Variables.Count
+                    TotalCount = structure.Variables.Count
                 };
 
                 return Result.Success(page);
