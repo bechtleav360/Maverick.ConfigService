@@ -530,41 +530,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             domainObjectManager.Verify();
         }
-
-        [Fact]
-        public async Task ResistDuplicateKeyErrors()
-        {
-            var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetLayer(It.IsAny<LayerIdentifier>(), It.IsAny<CancellationToken>()))
-                               .ReturnsAsync(
-                                   (LayerIdentifier id, CancellationToken _) => Result.Success(
-                                       new EnvironmentLayer(id)
-                                       {
-                                           Keys = new Dictionary<string, EnvironmentLayerKey>
-                                           {
-                                               { "Foo", new EnvironmentLayerKey("Foo", "FooValue", string.Empty, string.Empty, 1) },
-                                               { "fOO", new EnvironmentLayerKey("fOO", "FooValue", string.Empty, string.Empty, 1) },
-                                           }
-                                       }))
-                               .Verifiable("Layer was not queried from DomainObjectManager");
-
-            var store = new LayerProjectionStore(_logger, domainObjectManager.Object);
-
-            var result = await store.GetKeys(
-                             new KeyQueryParameters<LayerIdentifier>
-                             {
-                                 Identifier = new LayerIdentifier("Foo"),
-                                 Range = QueryRange.All,
-                                 TargetVersion = -1
-                             });
-
-            Assert.Empty(result.Message);
-            Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
-
-            Assert.Single(result.Data.Keys);
-
-            domainObjectManager.Verify();
-        }
     }
 }

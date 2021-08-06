@@ -486,6 +486,16 @@ namespace Bechtle.A365.ConfigService.Implementations
                                                           .ModifiedKeys
                                                           .Where(a => a.Type == ConfigKeyActionType.Set))
             {
+                // if we can find the new key with a different capitalization,
+                // we remove the old and add the new one
+                if (layer.Keys
+                         .Select(k => k.Key)
+                         .FirstOrDefault(k => k.Equals(change.Key, StringComparison.OrdinalIgnoreCase))
+                        is { } existingKey)
+                {
+                    layer.Keys.Remove(existingKey);
+                }
+
                 layer.Keys[change.Key] = new EnvironmentLayerKey(
                     change.Key,
                     change.Value,
@@ -538,9 +548,14 @@ namespace Bechtle.A365.ConfigService.Implementations
                                                           .ModifiedKeys
                                                           .Where(a => a.Type == ConfigKeyActionType.Set))
             {
-                if (layer.Keys.ContainsKey(change.Key))
+                // if we can find the new key with a different capitalization,
+                // we remove the old and add the new one
+                if (layer.Keys
+                         .Select(k => k.Key)
+                         .FirstOrDefault(k => k.Equals(change.Key, StringComparison.OrdinalIgnoreCase))
+                        is { } existingKey)
                 {
-                    layer.Keys.Remove(change.Key);
+                    layer.Keys.Remove(existingKey);
                 }
 
                 layer.Keys[change.Key] = new EnvironmentLayerKey(
