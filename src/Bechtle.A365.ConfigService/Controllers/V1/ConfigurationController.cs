@@ -28,9 +28,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IEventBus _eventBus;
 
         /// <inheritdoc />
-        public ConfigurationController(ILogger<ConfigurationController> logger,
-                                       IProjectionStore store,
-                                       IEventBus eventBus)
+        public ConfigurationController(
+            ILogger<ConfigurationController> logger,
+            IProjectionStore store,
+            IEventBus eventBus)
             : base(logger)
         {
             _store = store;
@@ -47,11 +48,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="buildOptions">times are assumed to be UTC</param>
         /// <returns></returns>
         [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "BuildConfiguration")]
-        public async Task<IActionResult> BuildConfiguration([FromRoute] string environmentCategory,
-                                                            [FromRoute] string environmentName,
-                                                            [FromRoute] string structureName,
-                                                            [FromRoute] int structureVersion,
-                                                            [FromBody] ConfigurationBuildOptions buildOptions)
+        public async Task<IActionResult> BuildConfiguration(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion,
+            [FromBody] ConfigurationBuildOptions buildOptions)
         {
             var buildError = ValidateBuildOptions(buildOptions);
             if (!(buildError is null))
@@ -67,16 +69,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             var environment = availableEnvironments.Data
                                                    .Items
-                                                   .FirstOrDefault(e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase) &&
-                                                                        e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
+                                                   .FirstOrDefault(
+                                                       e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase)
+                                                            && e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
 
             if (environment is null)
                 return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
 
             var structure = availableStructures.Data
                                                .Items
-                                               .FirstOrDefault(s => s.Name.Equals(structureName) &&
-                                                                    s.Version == structureVersion);
+                                               .FirstOrDefault(s => s.Name.Equals(structureName) && s.Version == structureVersion);
 
             if (structure is null)
                 return NotFound($"no versions of structure '{structureName}' found");
@@ -92,9 +94,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             if (stalenessResult.Data)
             {
-                var result = await _store.Configurations.Build(configId,
-                                                               buildOptions?.ValidFrom,
-                                                               buildOptions?.ValidTo);
+                var result = await _store.Configurations.Build(
+                                 configId,
+                                 buildOptions?.ValidFrom,
+                                 buildOptions?.ValidTo);
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -109,16 +112,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             try
             {
-                await _eventBus.Publish(new EventMessage
-                {
-                    Event = new OnConfigurationPublished
+                await _eventBus.Publish(
+                    new EventMessage
                     {
-                        EnvironmentCategory = configId.Environment.Category,
-                        EnvironmentName = configId.Environment.Name,
-                        StructureName = configId.Structure.Name,
-                        StructureVersion = configId.Structure.Version
-                    }
-                });
+                        Event = new OnConfigurationPublished
+                        {
+                            EnvironmentCategory = configId.Environment.Category,
+                            EnvironmentName = configId.Environment.Name,
+                            StructureName = configId.Structure.Name,
+                            StructureVersion = configId.Structure.Version
+                        }
+                    });
             }
             catch (Exception e)
             {
@@ -126,8 +130,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
 
             // add a header indicating if a new Configuration was actually built or not
-            HttpContext.Response.OnStarting(state => Task.FromResult(HttpContext.Response.Headers.TryAdd("x-built", ((bool) state).ToString())),
-                                            requestApproved);
+            HttpContext.Response.OnStarting(
+                state => Task.FromResult(HttpContext.Response.Headers.TryAdd("x-built", ((bool)state).ToString())),
+                requestApproved);
 
             return AcceptedAtAction(
                 nameof(GetConfiguration),
@@ -153,15 +158,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("available", Name = "GetAvailableConfigurations")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int)HttpStatusCode.OK)]
         [Obsolete("use GetConfigurations (GET /) instead")]
-        public IActionResult GetAvailableConfigurations([FromQuery] DateTime when,
-                                                        [FromQuery] int offset = -1,
-                                                        [FromQuery] int length = -1)
-            => RedirectToActionPermanent(nameof(GetConfigurations),
-                                         RouteUtilities.ControllerName<ConfigurationController>(),
-                                         new {when, offset, length, version = ApiVersions.V1});
+        public IActionResult GetAvailableConfigurations(
+            [FromQuery] DateTime when,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
+            => RedirectToActionPermanent(
+                nameof(GetConfigurations),
+                RouteUtilities.ControllerName<ConfigurationController>(),
+                new { when, offset, length, version = ApiVersions.V1 });
 
         /// <summary>
         ///     get the keys of a specific configuration
@@ -175,15 +182,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = "GetConfigurationKeys")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetConfiguration([FromRoute] string environmentCategory,
-                                                          [FromRoute] string environmentName,
-                                                          [FromRoute] string structureName,
-                                                          [FromRoute] int structureVersion,
-                                                          [FromQuery] DateTime when,
-                                                          [FromQuery] int offset = -1,
-                                                          [FromQuery] int length = -1)
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetConfiguration(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion,
+            [FromQuery] DateTime when,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
         {
             try
             {
@@ -213,14 +221,80 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" +
-                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
-                                   $"{nameof(environmentName)}: {environmentName}; " +
-                                   $"{nameof(structureName)}: {structureName}; " +
-                                   $"{nameof(structureVersion)}: {structureVersion}; " +
-                                   $"{nameof(when)}: {when}; " +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length})");
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at ("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
+                    + $"{nameof(environmentName)}: {environmentName}; "
+                    + $"{nameof(structureName)}: {structureName}; "
+                    + $"{nameof(structureVersion)}: {structureVersion}; "
+                    + $"{nameof(when)}: {when}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
+            }
+        }
+
+        /// <summary>
+        ///     get the keys of a specific configuration
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = "GetConfigurationKeysPaged")]
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetConfigurationPaged(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion,
+            [FromQuery] DateTime when,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
+        {
+            try
+            {
+                var range = QueryRange.Make(offset, length);
+                var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+                var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+
+                var configId = new ConfigurationIdentifier(envIdentifier, structureIdentifier, default);
+
+                var result = await _store.Configurations.GetKeys(configId, when, range);
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                var version = await _store.Configurations.GetVersion(configId, when);
+
+                if (version.IsError)
+                    return ProviderError(version);
+
+                // add version to the response-headers
+                Response.Headers.Add("x-version", version.Data);
+
+                return Ok(result);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at ("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
+                    + $"{nameof(environmentName)}: {environmentName}; "
+                    + $"{nameof(structureName)}: {structureName}; "
+                    + $"{nameof(structureVersion)}: {structureVersion}; "
+                    + $"{nameof(when)}: {when}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
             }
         }
@@ -235,13 +309,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="when"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/json", Name = "GetConfigurationJson")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetConfigurationJson([FromRoute] string environmentCategory,
-                                                              [FromRoute] string environmentName,
-                                                              [FromRoute] string structureName,
-                                                              [FromRoute] int structureVersion,
-                                                              [FromQuery] DateTime when)
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetConfigurationJson(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion,
+            [FromQuery] DateTime when)
         {
             try
             {
@@ -272,12 +347,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "failed to retrieve configuration for (" +
-                                   $"{nameof(environmentCategory)}: {environmentCategory}, " +
-                                   $"{nameof(environmentName)}: {environmentName}, " +
-                                   $"{nameof(structureName)}: {structureName}, " +
-                                   $"{nameof(structureVersion)}: {structureVersion}, " +
-                                   $"{nameof(when)}: {when:O})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve configuration for ("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}, "
+                    + $"{nameof(environmentName)}: {environmentName}, "
+                    + $"{nameof(structureName)}: {structureName}, "
+                    + $"{nameof(structureVersion)}: {structureVersion}, "
+                    + $"{nameof(when)}: {when:O})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
             }
         }
@@ -290,11 +367,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet(Name = "GetConfigurations")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetConfigurations([FromQuery] DateTime when,
-                                                           [FromQuery] int offset = -1,
-                                                           [FromQuery] int length = -1)
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetConfigurations(
+            [FromQuery] DateTime when,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
         {
             try
             {
@@ -308,10 +386,39 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" +
-                                   $"{nameof(when)}: {when}; " +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length})");
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at (" + $"{nameof(when)}: {when}; " + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available configurations");
+            }
+        }
+
+        /// <summary>
+        ///     get all available configurations
+        /// </summary>
+        /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet(Name = "GetConfigurationsPaged")]
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetConfigurationsPaged(
+            [FromQuery] DateTime when,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
+        {
+            try
+            {
+                return Result(await _store.Configurations.GetAvailable(when, QueryRange.Make(offset, length)));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at (" + $"{nameof(when)}: {when}; " + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available configurations");
             }
         }
@@ -323,8 +430,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("stale", Name = "GetStaleConfigurations")]
-        public async Task<IActionResult> GetStaleConfigurations([FromQuery] int offset = -1,
-                                                                [FromQuery] int length = -1)
+        public async Task<IActionResult> GetStaleConfigurations(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
         {
             try
             {
@@ -338,9 +446,31 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length})");
+                Logger.LogError(e, "failed to add new environment at (" + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve stale configurations");
+            }
+        }
+
+        /// <summary>
+        ///     get configurations whose keys are stale, that should be re-built
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet("stale", Name = "GetStaleConfigurationsPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetStaleConfigurationsPaged(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
+        {
+            try
+            {
+                return Result(await _store.Configurations.GetStale(QueryRange.Make(offset, length)));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(e, "failed to add new environment at (" + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve stale configurations");
             }
         }
@@ -357,15 +487,75 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "GetUsedEnvironmentKeys")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetUsedKeys([FromRoute] string environmentCategory,
-                                                     [FromRoute] string environmentName,
-                                                     [FromRoute] string structureName,
-                                                     [FromRoute] int structureVersion,
-                                                     [FromQuery] DateTime when,
-                                                     [FromQuery] int offset = -1,
-                                                     [FromQuery] int length = -1)
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetUsedKeys(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion,
+            [FromQuery] DateTime when,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
+        {
+            try
+            {
+                var range = QueryRange.Make(offset, length);
+                var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
+                var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
+
+                var result = await _store.Configurations.GetUsedConfigurationKeys(
+                                 new ConfigurationIdentifier(
+                                     envIdentifier,
+                                     structureIdentifier,
+                                     default),
+                                 when,
+                                 range);
+
+                return result.IsError
+                           ? ProviderError(result)
+                           : Ok(result.Data.Items);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at ("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
+                    + $"{nameof(environmentName)}: {environmentName}; "
+                    + $"{nameof(structureName)}: {structureName}; "
+                    + $"{nameof(structureVersion)}: {structureVersion}; "
+                    + $"{nameof(when)}: {when}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve used keys in configuration");
+            }
+        }
+
+        /// <summary>
+        ///     get the used environment-keys of a specific configuration
+        /// </summary>
+        /// <param name="environmentCategory"></param>
+        /// <param name="environmentName"></param>
+        /// <param name="structureName"></param>
+        /// <param name="structureVersion"></param>
+        /// <param name="when"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "GetUsedEnvironmentKeysPaged")]
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetUsedKeysPaged(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion,
+            [FromQuery] DateTime when,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
         {
             try
             {
@@ -386,14 +576,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" +
-                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
-                                   $"{nameof(environmentName)}: {environmentName}; " +
-                                   $"{nameof(structureName)}: {structureName}; " +
-                                   $"{nameof(structureVersion)}: {structureVersion}; " +
-                                   $"{nameof(when)}: {when}; " +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length})");
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at ("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
+                    + $"{nameof(environmentName)}: {environmentName}; "
+                    + $"{nameof(structureName)}: {structureName}; "
+                    + $"{nameof(structureVersion)}: {structureVersion}; "
+                    + $"{nameof(when)}: {when}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve used keys in configuration");
             }
         }
@@ -408,13 +600,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="when"></param>
         /// <returns></returns>
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/version", Name = "GetConfigurationVersion")]
-        [ProducesResponseType(typeof(string), (int) HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(IDictionary<string, string>), (int) HttpStatusCode.OK)]
-        public async Task<IActionResult> GetVersion([FromRoute] string environmentCategory,
-                                                    [FromRoute] string environmentName,
-                                                    [FromRoute] string structureName,
-                                                    [FromRoute] int structureVersion,
-                                                    [FromQuery] DateTime when)
+        [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
+        [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        public async Task<IActionResult> GetVersion(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion,
+            [FromQuery] DateTime when)
         {
             try
             {
@@ -436,12 +629,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" +
-                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
-                                   $"{nameof(environmentName)}: {environmentName}; " +
-                                   $"{nameof(structureName)}: {structureName}; " +
-                                   $"{nameof(structureVersion)}: {structureVersion}; " +
-                                   $"{nameof(when)}: {when})");
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at ("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
+                    + $"{nameof(environmentName)}: {environmentName}; "
+                    + $"{nameof(structureName)}: {structureName}; "
+                    + $"{nameof(structureVersion)}: {structureVersion}; "
+                    + $"{nameof(when)}: {when})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration-version");
             }
         }
@@ -454,12 +649,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <returns>Metadata for the configuration</returns>
-        [ProducesResponseType(typeof(PreparedConfigurationMetadata), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(PreparedConfigurationMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/info", Name = "GetConfigurationMetadata")]
-        public async Task<IActionResult> GetMetadata([FromRoute] string environmentCategory,
-                                                     [FromRoute] string environmentName,
-                                                     [FromRoute] string structureName,
-                                                     [FromRoute] int structureVersion)
+        public async Task<IActionResult> GetMetadata(
+            [FromRoute] string environmentCategory,
+            [FromRoute] string environmentName,
+            [FromRoute] string structureName,
+            [FromRoute] int structureVersion)
         {
             var envIdentifier = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structureIdentifier = new StructureIdentifier(structureName, structureVersion);
@@ -475,11 +671,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to read metadata for configuration(" +
-                                   $"{nameof(environmentCategory)}: {environmentCategory}; " +
-                                   $"{nameof(environmentName)}: {environmentName}; " +
-                                   $"{nameof(structureName)}: {structureName}; " +
-                                   $"{nameof(structureVersion)}: {structureVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to read metadata for configuration("
+                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
+                    + $"{nameof(environmentName)}: {environmentName}; "
+                    + $"{nameof(structureName)}: {structureName}; "
+                    + $"{nameof(structureVersion)}: {structureVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration-metadata");
             }
         }
@@ -503,8 +701,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 var minimumActiveTime = TimeSpan.FromMinutes(1.0d);
 
                 if (buildOptions.ValidTo - buildOptions.ValidFrom < minimumActiveTime)
-                    return BadRequest("the configuration needs to be valid for at least " +
-                                      $"'{minimumActiveTime:g}' ({buildOptions.ValidTo - buildOptions.ValidFrom})");
+                    return BadRequest(
+                        "the configuration needs to be valid for at least " + $"'{minimumActiveTime:g}' ({buildOptions.ValidTo - buildOptions.ValidFrom})");
             }
 
             return null;

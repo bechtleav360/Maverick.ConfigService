@@ -325,13 +325,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 logger,
                 domainObjectManager.Object);
 
-            IResult<IEnumerable<string>> result = await store.GetUsedConfigurationKeys(CreateConfigurationIdentifier(), DateTime.Now, QueryRange.All);
+            IResult<Page<string>> result = await store.GetUsedConfigurationKeys(CreateConfigurationIdentifier(), DateTime.Now, QueryRange.All);
 
             VerifySetups(domainObjectManager);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.Data.Items);
         }
 
         [Fact]

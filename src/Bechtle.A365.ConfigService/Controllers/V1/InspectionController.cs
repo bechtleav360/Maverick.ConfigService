@@ -428,6 +428,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                      .ForAll(
                          t => t.Result
                                .Data
+                               .Items
                                .AsParallel()
                                .ForAll(
                                    key => annotatedEnv.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase))

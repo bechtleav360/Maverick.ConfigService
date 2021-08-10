@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<IEnumerable<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
+        Task<IResult<Page<string>>> GetUsedConfigurationKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get the version of a projected Configuration

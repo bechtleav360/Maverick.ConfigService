@@ -10,5 +10,10 @@
         ///     Version 1.0 Deprecation
         /// </summary>
         public const bool V1 = false;
+
+        /// <summary>
+        ///     Version 1.1 Deprecation
+        /// </summary>
+        public const bool V11 = false;
     }
 }

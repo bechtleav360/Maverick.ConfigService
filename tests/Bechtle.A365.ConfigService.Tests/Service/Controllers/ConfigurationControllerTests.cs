@@ -572,7 +572,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     It.IsAny<ConfigurationIdentifier>(),
                                     It.IsAny<DateTime>(),
                                     It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Success<IEnumerable<string>>(new[] { "Foo" }))
+                            .ReturnsAsync(() => Result.Success(new Page<string>(new[] { "Foo" })))
                             .Verifiable("used keys not retrieved");
 
             var result = await TestAction<OkObjectResult>(c => c.GetUsedKeys("Foo", "Bar", "Foo", 42, DateTime.Now));
@@ -591,7 +591,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     It.IsAny<ConfigurationIdentifier>(),
                                     It.IsAny<DateTime>(),
                                     It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Error<IEnumerable<string>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<string>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("used keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetUsedKeys("Foo", "Bar", "Foo", 42, DateTime.Now));

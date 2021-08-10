@@ -28,9 +28,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public LayerController(ILogger<LayerController> logger,
-                               IProjectionStore store,
-                               IJsonTranslator translator)
+        public LayerController(
+            ILogger<LayerController> logger,
+            IProjectionStore store,
+            IJsonTranslator translator)
             : base(logger)
         {
             _store = store;
@@ -42,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="name">Name of the given Layer</param>
         /// <returns>redirects to 'GetKeys'-operation</returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{name}", Name = "AddLayer")]
         public async Task<IActionResult> AddLayer(string name)
         {
@@ -55,9 +56,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetKeys),
-                                        RouteUtilities.ControllerName<LayerController>(),
-                                        new {version = ApiVersions.V1, name});
+                return AcceptedAtAction(
+                    nameof(GetKeys),
+                    RouteUtilities.ControllerName<LayerController>(),
+                    new { version = ApiVersions.V1, name });
             }
             catch (Exception e)
             {
@@ -73,7 +75,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name">Name of the given Layer</param>
         /// <param name="cloneName">Name of the new, cloned Layer</param>
         /// <returns>redirects to 'GetKeys'-operation</returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{name}/clone/{cloneName}", Name = "CloneLayer")]
         public async Task<IActionResult> CloneLayer(string name, string cloneName)
         {
@@ -86,9 +88,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetKeys),
-                                        RouteUtilities.ControllerName<LayerController>(),
-                                        new {version = ApiVersions.V1, name});
+                return AcceptedAtAction(
+                    nameof(GetKeys),
+                    RouteUtilities.ControllerName<LayerController>(),
+                    new { version = ApiVersions.V1, name });
             }
             catch (Exception e)
             {
@@ -103,7 +106,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="name">Name of the given Layer</param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{name}", Name = "DeleteLayer")]
         public async Task<IActionResult> DeleteLayer(string name)
         {
@@ -133,11 +136,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length">amount of items to return in the given "page"</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>list of Layer-Ids</returns>
-        [ProducesResponseType(typeof(LayerIdentifier[]), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(LayerIdentifier[]), (int)HttpStatusCode.OK)]
         [HttpGet(Name = "GetLayers")]
-        public async Task<IActionResult> GetAvailableLayers([FromQuery] int offset = -1,
-                                                            [FromQuery] int length = -1,
-                                                            [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetAvailableLayers(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
@@ -152,10 +156,46 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve available Layers (" +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve available Layers ("
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available layers");
+            }
+        }
+
+        /// <summary>
+        ///     get a list of available layers
+        /// </summary>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>list of Layer-Ids</returns>
+        [ProducesResponseType(typeof(LayerIdentifier[]), (int)HttpStatusCode.OK)]
+        [HttpGet(Name = "GetLayersPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetAvailableLayersPaged(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
+        {
+            var range = QueryRange.Make(offset, length);
+
+            try
+            {
+                return Result(await _store.Layers.GetAvailable(range, targetVersion));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to retrieve available Layers ("
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available layers");
             }
         }
@@ -171,30 +211,32 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length">amount of items to return in the given "page"</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>Key-Value map</returns>
-        [ProducesResponseType(typeof(Dictionary<string, string>), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/keys", Name = "GetLayerAsKeys")]
-        public async Task<IActionResult> GetKeys([FromRoute] string name,
-                                                 [FromQuery] string filter,
-                                                 [FromQuery] string preferExactMatch,
-                                                 [FromQuery] string root,
-                                                 [FromQuery] int offset = -1,
-                                                 [FromQuery] int length = -1,
-                                                 [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetKeys(
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
             var identifier = new LayerIdentifier(name);
             try
             {
-                var result = await _store.Layers.GetKeys(new KeyQueryParameters<LayerIdentifier>
-                {
-                    Identifier = identifier,
-                    Filter = filter,
-                    PreferExactMatch = preferExactMatch,
-                    Range = range,
-                    RemoveRoot = root,
-                    TargetVersion = targetVersion
-                });
+                var result = await _store.Layers.GetKeys(
+                                 new KeyQueryParameters<LayerIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = range,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
 
                 return result.IsError
                            ? ProviderError(result)
@@ -203,14 +245,73 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Layer-Keys (" +
-                                   $"{nameof(name)}: {name}; " +
-                                   $"{nameof(filter)}: {filter}; " +
-                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
-                                   $"{nameof(root)}: {root}; " +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Layer-Keys ("
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
+            }
+        }
+
+        /// <summary>
+        ///     get the keys contained in an environment
+        /// </summary>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key-Value map</returns>
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
+        [HttpGet("{name}/keys", Name = "GetLayerAsKeysPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetKeysPaged(
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
+        {
+            var range = QueryRange.Make(offset, length);
+
+            var identifier = new LayerIdentifier(name);
+            try
+            {
+                return Result(
+                    await _store.Layers.GetKeys(
+                        new KeyQueryParameters<LayerIdentifier>
+                        {
+                            Identifier = identifier,
+                            Filter = filter,
+                            PreferExactMatch = preferExactMatch,
+                            Range = range,
+                            RemoveRoot = root,
+                            TargetVersion = targetVersion
+                        }));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Layer-Keys ("
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
             }
         }
@@ -224,27 +325,29 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>environment-keys formatted as JSON</returns>
-        [ProducesResponseType(typeof(object), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(object), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/json", Name = "GetLayerAsJson")]
-        public async Task<IActionResult> GetKeysAsJson([FromRoute] string name,
-                                                       [FromQuery] string filter,
-                                                       [FromQuery] string preferExactMatch,
-                                                       [FromQuery] string root,
-                                                       [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetKeysAsJson(
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] long targetVersion = -1)
         {
             try
             {
                 var identifier = new LayerIdentifier(name);
 
-                var result = await _store.Layers.GetKeys(new KeyQueryParameters<LayerIdentifier>
-                {
-                    Identifier = identifier,
-                    Filter = filter,
-                    PreferExactMatch = preferExactMatch,
-                    Range = QueryRange.All,
-                    RemoveRoot = root,
-                    TargetVersion = targetVersion
-                });
+                var result = await _store.Layers.GetKeys(
+                                 new KeyQueryParameters<LayerIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = QueryRange.All,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -256,12 +359,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Layer-Keys (" +
-                                   $"{nameof(name)}: {name}; " +
-                                   $"{nameof(filter)}: {filter}; " +
-                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
-                                   $"{nameof(root)}: {root}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Layer-Keys ("
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer as json");
             }
         }
@@ -277,15 +382,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length">amount of items to return in the given "page"</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>Key/Value-Objects</returns>
-        [ProducesResponseType(typeof(EnvironmentLayerKey), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(EnvironmentLayerKey), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/objects", Name = "GetLayerAsObjects")]
-        public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string name,
-                                                             [FromQuery] string filter,
-                                                             [FromQuery] string preferExactMatch,
-                                                             [FromQuery] string root,
-                                                             [FromQuery] int offset = -1,
-                                                             [FromQuery] int length = -1,
-                                                             [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetKeysWithMetadata(
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
         {
             try
             {
@@ -293,15 +399,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var identifier = new LayerIdentifier(name);
 
-                var result = await _store.Layers.GetKeyObjects(new KeyQueryParameters<LayerIdentifier>
-                {
-                    Identifier = identifier,
-                    Filter = filter,
-                    PreferExactMatch = preferExactMatch,
-                    Range = range,
-                    RemoveRoot = root,
-                    TargetVersion = targetVersion
-                });
+                var result = await _store.Layers.GetKeyObjects(
+                                 new KeyQueryParameters<LayerIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = range,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -319,14 +426,86 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Layer-Keys (" +
-                                   $"{nameof(name)}: {name}; " +
-                                   $"{nameof(filter)}: {filter}; " +
-                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
-                                   $"{nameof(root)}: {root}; " +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Layer-Keys ("
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
+            }
+        }
+
+        /// <summary>
+        ///     get the keys contained in an environment including all their metadata
+        /// </summary>
+        /// <param name="name">Name of the given Layer</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key/Value-Objects</returns>
+        [ProducesResponseType(typeof(EnvironmentLayerKey), (int)HttpStatusCode.OK)]
+        [HttpGet("{name}/objects", Name = "GetLayerAsObjectsPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetKeysWithMetadataPaged(
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
+        {
+            try
+            {
+                var range = QueryRange.Make(offset, length);
+
+                var identifier = new LayerIdentifier(name);
+
+                var result = await _store.Layers.GetKeyObjects(
+                                 new KeyQueryParameters<LayerIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = range,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                foreach (var item in result.Data.Items)
+                {
+                    if (item.Description is null)
+                        item.Description = string.Empty;
+                    if (item.Type is null)
+                        item.Type = string.Empty;
+                }
+
+                return Result(result);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Layer-Keys ("
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
             }
         }
@@ -337,10 +516,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name">Name of the given Layer</param>
         /// <param name="keys">list of keys to remove from the Layer</param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{name}/keys", Name = "DeleteFromLayer")]
-        public async Task<IActionResult> DeleteKeys([FromRoute] string name,
-                                                    [FromBody] string[] keys)
+        public async Task<IActionResult> DeleteKeys(
+            [FromRoute] string name,
+            [FromBody] string[] keys)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest($"{nameof(name)} is empty");
@@ -354,9 +534,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetKeys),
-                                        RouteUtilities.ControllerName<LayerController>(),
-                                        new {version = ApiVersions.V1, name});
+                return AcceptedAtAction(
+                    nameof(GetKeys),
+                    RouteUtilities.ControllerName<LayerController>(),
+                    new { version = ApiVersions.V1, name });
             }
             catch (Exception e)
             {
@@ -372,10 +553,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name">Name of the given Layer</param>
         /// <param name="keys">Keys to Set / Update</param>
         /// <returns>redirects to 'GetKeys' action</returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPut("{name}/keys", Name = "UpdateLayer")]
-        public async Task<IActionResult> UpdateKeys([FromRoute] string name,
-                                                    [FromBody] DtoConfigKey[] keys)
+        public async Task<IActionResult> UpdateKeys(
+            [FromRoute] string name,
+            [FromBody] DtoConfigKey[] keys)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest($"{nameof(name)} is empty");
@@ -387,10 +569,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                              .ToArray();
 
             if (groups.Any(g => g.Count() > 1))
-                return BadRequest("duplicate keys received: " +
-                                  string.Join(';',
-                                              groups.Where(g => g.Count() > 1)
-                                                    .Select(g => $"'{g.Key}'")));
+                return BadRequest(
+                    "duplicate keys received: "
+                    + string.Join(
+                        ';',
+                        groups.Where(g => g.Count() > 1)
+                              .Select(g => $"'{g.Key}'")));
 
             try
             {
@@ -398,9 +582,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetKeys),
-                                        RouteUtilities.ControllerName<LayerController>(),
-                                        new {version = ApiVersions.V1, name});
+                return AcceptedAtAction(
+                    nameof(GetKeys),
+                    RouteUtilities.ControllerName<LayerController>(),
+                    new { version = ApiVersions.V1, name });
             }
             catch (Exception e)
             {
@@ -414,7 +599,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="name"></param>
         /// <returns>Metadata for the layer</returns>
-        [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/info", Name = "GetLayerMetadata")]
         public async Task<IActionResult> GetMetadata([FromRoute] string name)
         {
@@ -438,7 +623,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="name"></param>
         /// <returns>Metadata for the layer</returns>
-        [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/tags", Name = "GetLayerTags")]
         public async Task<IActionResult> GetTags([FromRoute] string name)
         {
@@ -465,10 +650,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="tags">list of tags to set for layer, adding missing ones and removing superfluous ones</param>
         /// <returns>Metadata for the layer</returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{name}/tags", Name = "SetLayerTags")]
-        public async Task<IActionResult> SetTags([FromRoute] string name,
-                                                 [FromBody] string[] tags)
+        public async Task<IActionResult> SetTags(
+            [FromRoute] string name,
+            [FromBody] string[] tags)
         {
             try
             {
@@ -487,9 +673,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetTags),
-                                        RouteUtilities.ControllerName<LayerController>(),
-                                        new {version = ApiVersions.V1, name});
+                return AcceptedAtAction(
+                    nameof(GetTags),
+                    RouteUtilities.ControllerName<LayerController>(),
+                    new { version = ApiVersions.V1, name });
             }
             catch (Exception e)
             {
@@ -505,10 +692,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="tag"></param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPut("{name}/tags/{tag}", Name = "AddLayerTag")]
-        public async Task<IActionResult> AddTag([FromRoute] string name,
-                                                [FromRoute] string tag)
+        public async Task<IActionResult> AddTag(
+            [FromRoute] string name,
+            [FromRoute] string tag)
         {
             try
             {
@@ -516,15 +704,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var result = await _store.Layers.UpdateTags(
                                  identifier,
-                                 new List<string> {tag},
+                                 new List<string> { tag },
                                  new List<string>());
 
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetTags),
-                                        RouteUtilities.ControllerName<LayerController>(),
-                                        new {version = ApiVersions.V1, name});
+                return AcceptedAtAction(
+                    nameof(GetTags),
+                    RouteUtilities.ControllerName<LayerController>(),
+                    new { version = ApiVersions.V1, name });
             }
             catch (Exception e)
             {
@@ -540,10 +729,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name"></param>
         /// <param name="tag"></param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{name}/tags/{tag}", Name = "RemoveLayerTag")]
-        public async Task<IActionResult> RemoveTag([FromRoute] string name,
-                                                   [FromRoute] string tag)
+        public async Task<IActionResult> RemoveTag(
+            [FromRoute] string name,
+            [FromRoute] string tag)
         {
             try
             {
@@ -552,14 +742,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 var result = await _store.Layers.UpdateTags(
                                  identifier,
                                  new List<string>(),
-                                 new List<string> {tag});
+                                 new List<string> { tag });
 
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetTags),
-                                        RouteUtilities.ControllerName<LayerController>(),
-                                        new {version = ApiVersions.V1, name});
+                return AcceptedAtAction(
+                    nameof(GetTags),
+                    RouteUtilities.ControllerName<LayerController>(),
+                    new { version = ApiVersions.V1, name });
             }
             catch (Exception e)
             {

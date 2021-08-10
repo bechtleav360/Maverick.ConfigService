@@ -174,7 +174,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IEnumerable<string>>> GetUsedConfigurationKeys(
+        public async Task<IResult<Page<string>>> GetUsedConfigurationKeys(
             ConfigurationIdentifier identifier,
             DateTime when,
             QueryRange range)
@@ -192,23 +192,31 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 IResult<PreparedConfiguration> configuration = await _domainObjectManager.GetConfiguration(identifier, CancellationToken.None);
                 if (configuration.IsError)
-                    return Result.Error<IEnumerable<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                    return Result.Error<Page<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
                 var result = configuration.Data
                                           .UsedKeys
                                           .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                                           .Skip(range.Offset)
                                           .Take(range.Length)
-                                          .ToArray();
+                                          .ToList();
 
-                _logger.LogDebug("collected '{UsedKeys}' keys", result.Length);
+                _logger.LogDebug("collected '{UsedKeys}' keys", result.Count);
 
-                return Result.Success<IEnumerable<string>>(result);
+                var page = new Page<string>
+                {
+                    Items = result,
+                    Count = result.Count,
+                    Offset = range.Offset,
+                    TotalCount = configuration.Data.UsedKeys.Count,
+                };
+
+                return Result.Success(page);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve used environment keys for id: {Identifier}", identifier);
-                return Result.Error<IEnumerable<string>>(
+                return Result.Error<Page<string>>(
                     $"failed to retrieve used environment keys for id: {formattedParams}: {e}",
                     ErrorCode.DbQueryError);
             }

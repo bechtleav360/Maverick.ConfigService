@@ -9,5 +9,10 @@
         ///     Version 1.0
         /// </summary>
         public const string V1 = "1.0";
+
+        /// <summary>
+        ///     Version 1.1
+        /// </summary>
+        public const string V11 = "1.1";
     }
 }

@@ -9,7 +9,6 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
-using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -26,9 +25,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public EnvironmentController(ILogger<EnvironmentController> logger,
-                                     IProjectionStore store,
-                                     IJsonTranslator translator)
+        public EnvironmentController(
+            ILogger<EnvironmentController> logger,
+            IProjectionStore store,
+            IJsonTranslator translator)
             : base(logger)
         {
             _store = store;
@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="category">Category of the requested Environment</param>
         /// <param name="name">Name of the given Environment</param>
         /// <returns>redirects to 'GetKeys'-operation</returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{category}/{name}", Name = "AddEnvironment")]
         public async Task<IActionResult> AddEnvironment(string category, string name)
         {
@@ -57,9 +57,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(GetKeys),
-                                        RouteUtilities.ControllerName<EnvironmentController>(),
-                                        new {version = ApiVersions.V1, category, name});
+                return AcceptedAtAction(
+                    nameof(GetKeys),
+                    RouteUtilities.ControllerName<EnvironmentController>(),
+                    new { version = ApiVersions.V1, category, name });
             }
             catch (Exception e)
             {
@@ -76,11 +77,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name">Name of the given Environment</param>
         /// <param name="layers">ordered list of Layers to be assigned</param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPut("{category}/{name}/layers", Name = "AssignLayers")]
-        public async Task<IActionResult> AssignLayers([FromRoute] string category,
-                                                      [FromRoute] string name,
-                                                      [FromBody] LayerIdentifier[] layers)
+        public async Task<IActionResult> AssignLayers(
+            [FromRoute] string category,
+            [FromRoute] string name,
+            [FromBody] LayerIdentifier[] layers)
         {
             try
             {
@@ -107,7 +109,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="category">Category of the requested Environment</param>
         /// <param name="name">Name of the given Environment</param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(void), (int) HttpStatusCode.Accepted)]
+        [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{category}/{name}", Name = "DeleteEnvironment")]
         public async Task<IActionResult> DeleteEnvironment(string category, string name)
         {
@@ -139,10 +141,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="category">Category of the requested Environment</param>
         /// <param name="name">Name of the given Environment</param>
         /// <returns>ordered list of assigned layer-ids</returns>
-        [ProducesResponseType(typeof(LayerIdentifier[]), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(LayerIdentifier[]), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/layers", Name = "GetAssignedLayers")]
-        public async Task<IActionResult> GetAssignedLayers([FromRoute] string category,
-                                                           [FromRoute] string name)
+        public async Task<IActionResult> GetAssignedLayers(
+            [FromRoute] string category,
+            [FromRoute] string name)
         {
             try
             {
@@ -167,15 +170,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length">amount of items to return in the given "page"</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>list of Environment-Ids</returns>
-        [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int)HttpStatusCode.OK)]
         [HttpGet("available", Name = "GetAvailableEnvironments")]
         [Obsolete("use GetEnvironments (GET /) instead")]
-        public IActionResult GetAvailableEnvironments([FromQuery] int offset = -1,
-                                                      [FromQuery] int length = -1,
-                                                      [FromQuery] long targetVersion = -1)
-            => RedirectToActionPermanent(nameof(GetEnvironments),
-                                         RouteUtilities.ControllerName<EnvironmentController>(),
-                                         new {offset, length, targetVersion, version = ApiVersions.V1});
+        public IActionResult GetAvailableEnvironments(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
+            => RedirectToActionPermanent(
+                nameof(GetEnvironments),
+                RouteUtilities.ControllerName<EnvironmentController>(),
+                new { offset, length, targetVersion, version = ApiVersions.V1 });
 
         /// <summary>
         ///     get a list of available environments
@@ -184,11 +189,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length">amount of items to return in the given "page"</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>list of Environment-Ids</returns>
-        [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int)HttpStatusCode.OK)]
         [HttpGet(Name = "GetEnvironments")]
-        public async Task<IActionResult> GetEnvironments([FromQuery] int offset = -1,
-                                                         [FromQuery] int length = -1,
-                                                         [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetEnvironments(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
@@ -203,10 +209,46 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve available Environments (" +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve available Environments ("
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available environments");
+            }
+        }
+
+        /// <summary>
+        ///     get a list of available environments
+        /// </summary>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>list of Environment-Ids</returns>
+        [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int)HttpStatusCode.OK)]
+        [HttpGet(Name = "GetEnvironmentsPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetEnvironmentsPaged(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
+        {
+            var range = QueryRange.Make(offset, length);
+
+            try
+            {
+                return Result(await _store.Environments.GetAvailable(range, targetVersion));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to retrieve available Environments ("
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available environments");
             }
         }
@@ -223,31 +265,33 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length">amount of items to return in the given "page"</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>Key-Value map</returns>
-        [ProducesResponseType(typeof(Dictionary<string, string>), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeys")]
-        public async Task<IActionResult> GetKeys([FromRoute] string category,
-                                                 [FromRoute] string name,
-                                                 [FromQuery] string filter,
-                                                 [FromQuery] string preferExactMatch,
-                                                 [FromQuery] string root,
-                                                 [FromQuery] int offset = -1,
-                                                 [FromQuery] int length = -1,
-                                                 [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetKeys(
+            [FromRoute] string category,
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
         {
             var range = QueryRange.Make(offset, length);
 
             var identifier = new EnvironmentIdentifier(category, name);
             try
             {
-                var result = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-                {
-                    Identifier = identifier,
-                    Filter = filter,
-                    PreferExactMatch = preferExactMatch,
-                    Range = range,
-                    RemoveRoot = root,
-                    TargetVersion = targetVersion
-                });
+                var result = await _store.Environments.GetKeys(
+                                 new KeyQueryParameters<EnvironmentIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = range,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
 
                 return result.IsError
                            ? ProviderError(result)
@@ -256,15 +300,77 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Environment-Keys (" +
-                                   $"{nameof(category)}: {category}; " +
-                                   $"{nameof(name)}: {name}; " +
-                                   $"{nameof(filter)}: {filter}; " +
-                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
-                                   $"{nameof(root)}: {root}; " +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Environment-Keys ("
+                    + $"{nameof(category)}: {category}; "
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
+            }
+        }
+
+        /// <summary>
+        ///     get the keys contained in an environment
+        /// </summary>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key-Value map</returns>
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
+        [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeysPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetKeysPaged(
+            [FromRoute] string category,
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
+        {
+            var range = QueryRange.Make(offset, length);
+
+            var identifier = new EnvironmentIdentifier(category, name);
+            try
+            {
+                return Result(
+                    await _store.Environments.GetKeys(
+                        new KeyQueryParameters<EnvironmentIdentifier>
+                        {
+                            Identifier = identifier,
+                            Filter = filter,
+                            PreferExactMatch = preferExactMatch,
+                            Range = range,
+                            RemoveRoot = root,
+                            TargetVersion = targetVersion
+                        }));
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Environment-Keys ("
+                    + $"{nameof(category)}: {category}; "
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
             }
         }
@@ -279,28 +385,30 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>environment-keys formatted as JSON</returns>
-        [ProducesResponseType(typeof(object), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(object), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
-        public async Task<IActionResult> GetKeysAsJson([FromRoute] string category,
-                                                       [FromRoute] string name,
-                                                       [FromQuery] string filter,
-                                                       [FromQuery] string preferExactMatch,
-                                                       [FromQuery] string root,
-                                                       [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetKeysAsJson(
+            [FromRoute] string category,
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] long targetVersion = -1)
         {
             try
             {
                 var identifier = new EnvironmentIdentifier(category, name);
 
-                var result = await _store.Environments.GetKeys(new KeyQueryParameters<EnvironmentIdentifier>
-                {
-                    Identifier = identifier,
-                    Filter = filter,
-                    PreferExactMatch = preferExactMatch,
-                    Range = QueryRange.All,
-                    RemoveRoot = root,
-                    TargetVersion = targetVersion
-                });
+                var result = await _store.Environments.GetKeys(
+                                 new KeyQueryParameters<EnvironmentIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = QueryRange.All,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -312,13 +420,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Environment-Keys (" +
-                                   $"{nameof(category)}: {category}; " +
-                                   $"{nameof(name)}: {name}; " +
-                                   $"{nameof(filter)}: {filter}; " +
-                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
-                                   $"{nameof(root)}: {root}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Environment-Keys ("
+                    + $"{nameof(category)}: {category}; "
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment as json");
             }
         }
@@ -335,16 +445,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length">amount of items to return in the given "page"</param>
         /// <param name="targetVersion">Event-Version to use for this operation</param>
         /// <returns>Key/Value-Objects</returns>
-        [ProducesResponseType(typeof(EnvironmentLayerKey), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(EnvironmentLayerKey), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
-        public async Task<IActionResult> GetKeysWithMetadata([FromRoute] string category,
-                                                             [FromRoute] string name,
-                                                             [FromQuery] string filter,
-                                                             [FromQuery] string preferExactMatch,
-                                                             [FromQuery] string root,
-                                                             [FromQuery] int offset = -1,
-                                                             [FromQuery] int length = -1,
-                                                             [FromQuery] long targetVersion = -1)
+        public async Task<IActionResult> GetKeysWithMetadata(
+            [FromRoute] string category,
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
         {
             try
             {
@@ -352,15 +463,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 var identifier = new EnvironmentIdentifier(category, name);
 
-                var result = await _store.Environments.GetKeyObjects(new KeyQueryParameters<EnvironmentIdentifier>
-                {
-                    Identifier = identifier,
-                    Filter = filter,
-                    PreferExactMatch = preferExactMatch,
-                    Range = range,
-                    RemoveRoot = root,
-                    TargetVersion = targetVersion
-                });
+                var result = await _store.Environments.GetKeyObjects(
+                                 new KeyQueryParameters<EnvironmentIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = range,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
 
                 if (result.IsError)
                     return ProviderError(result);
@@ -378,15 +490,90 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Environment-Keys (" +
-                                   $"{nameof(category)}: {category}; " +
-                                   $"{nameof(name)}: {name}; " +
-                                   $"{nameof(filter)}: {filter}; " +
-                                   $"{nameof(preferExactMatch)}: {preferExactMatch}; " +
-                                   $"{nameof(root)}: {root}; " +
-                                   $"{nameof(offset)}: {offset}; " +
-                                   $"{nameof(length)}: {length}; " +
-                                   $"{nameof(targetVersion)}: {targetVersion})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Environment-Keys ("
+                    + $"{nameof(category)}: {category}; "
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
+            }
+        }
+
+        /// <summary>
+        ///     get the keys contained in an environment including all their metadata
+        /// </summary>
+        /// <param name="category">Category of the requested Environment</param>
+        /// <param name="name">Name of the given Environment</param>
+        /// <param name="filter">Key-Path based filter to apply to all results. filters out items not matching this path</param>
+        /// <param name="preferExactMatch">same as 'Filter', but will only return exact matches (useful for filtering sub-keys that share parts of their names)</param>
+        /// <param name="root">root to assume when returning items. Will be removed from all keys, if all returned keys start with the given 'Root'</param>
+        /// <param name="offset">offset from the beginning of the returned query-results</param>
+        /// <param name="length">amount of items to return in the given "page"</param>
+        /// <param name="targetVersion">Event-Version to use for this operation</param>
+        /// <returns>Key/Value-Objects</returns>
+        [ProducesResponseType(typeof(EnvironmentLayerKey), (int)HttpStatusCode.OK)]
+        [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjectsPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetKeysWithMetadataPaged(
+            [FromRoute] string category,
+            [FromRoute] string name,
+            [FromQuery] string filter,
+            [FromQuery] string preferExactMatch,
+            [FromQuery] string root,
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1,
+            [FromQuery] long targetVersion = -1)
+        {
+            try
+            {
+                var range = QueryRange.Make(offset, length);
+
+                var identifier = new EnvironmentIdentifier(category, name);
+
+                var result = await _store.Environments.GetKeyObjects(
+                                 new KeyQueryParameters<EnvironmentIdentifier>
+                                 {
+                                     Identifier = identifier,
+                                     Filter = filter,
+                                     PreferExactMatch = preferExactMatch,
+                                     Range = range,
+                                     RemoveRoot = root,
+                                     TargetVersion = targetVersion
+                                 });
+
+                if (result.IsError)
+                    return ProviderError(result);
+
+                foreach (var item in result.Data.Items)
+                {
+                    if (item.Description is null)
+                        item.Description = string.Empty;
+                    if (item.Type is null)
+                        item.Type = string.Empty;
+                }
+
+                return Ok(result.Data);
+            }
+            catch (Exception e)
+            {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Environment-Keys ("
+                    + $"{nameof(category)}: {category}; "
+                    + $"{nameof(name)}: {name}; "
+                    + $"{nameof(filter)}: {filter}; "
+                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
+                    + $"{nameof(root)}: {root}; "
+                    + $"{nameof(offset)}: {offset}; "
+                    + $"{nameof(length)}: {length}; "
+                    + $"{nameof(targetVersion)}: {targetVersion})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
             }
         }
@@ -397,10 +584,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="category">Category of the requested Environment</param>
         /// <param name="name">Name of the given Environment</param>
         /// <returns>Metadata for the environment</returns>
-        [ProducesResponseType(typeof(ConfigEnvironmentMetadata), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ConfigEnvironmentMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/info", Name = "GetEnvironmentMetadata")]
-        public async Task<IActionResult> GetMetadata([FromRoute] string category, 
-                                                     [FromRoute] string name)
+        public async Task<IActionResult> GetMetadata(
+            [FromRoute] string category,
+            [FromRoute] string name)
         {
             var identifier = new EnvironmentIdentifier(category, name);
             try
@@ -412,9 +600,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Environment-Metadata (" +
-                                   $"{nameof(category)}: {category}; " +
-                                   $"{nameof(name)}: {name})");
+                Logger.LogError(e, "failed to retrieve Environment-Metadata (" + $"{nameof(category)}: {category}; " + $"{nameof(name)}: {name})");
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-metadata");
             }
         }
