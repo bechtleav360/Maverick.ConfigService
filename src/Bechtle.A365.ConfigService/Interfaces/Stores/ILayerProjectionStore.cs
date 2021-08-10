@@ -100,6 +100,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult<EnvironmentLayerMetadata>> GetMetadata(LayerIdentifier identifier);
 
         /// <summary>
+        ///     get metadata for all layers
+        /// </summary>
+        /// <param name="range">paging-information for the returned list</param>
+        /// <param name="version">Maximum version within the database to consider for the returned list</param>
+        /// <returns>Result of the operation</returns>
+        Task<IResult<Page<EnvironmentLayerMetadata>>> GetMetadata(QueryRange range, long version);
+
+        /// <summary>
         ///     Get a list of Tags assigned to the given Layer
         /// </summary>
         /// <param name="identifier">Id of the layer to update the tags of</param>

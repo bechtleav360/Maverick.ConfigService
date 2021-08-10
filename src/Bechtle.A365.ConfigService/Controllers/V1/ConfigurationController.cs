@@ -22,7 +22,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     /// </summary>
     [Route(ApiBaseRoute + "configurations")]
     [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
-    public class ConfigurationController : ControllerBase
+    public partial class ConfigurationController : ControllerBase
     {
         private readonly IProjectionStore _store;
         private readonly IEventBus _eventBus;
@@ -411,7 +411,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         {
             try
             {
-                return Result(await _store.Configurations.GetAvailable(when, QueryRange.Make(offset, length)));
+                return Result(await _store.Configurations.GetMetadata(QueryRange.Make(offset, length)));
             }
             catch (Exception e)
             {

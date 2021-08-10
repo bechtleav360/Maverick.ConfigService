@@ -56,6 +56,20 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(StructureIdentifier identifier, QueryRange range);
 
         /// <summary>
+        ///     get metadata for a Structure
+        /// </summary>
+        /// <param name="identifier"></param>
+        /// <returns></returns>
+        Task<IResult<ConfigStructureMetadata>> GetMetadata(StructureIdentifier identifier);
+
+        /// <summary>
+        ///     get metadata for a Structure
+        /// </summary>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        Task<IResult<Page<ConfigStructureMetadata>>> GetMetadata(QueryRange range);
+
+        /// <summary>
         ///     get the variables of a Structure
         /// </summary>
         /// <param name="identifier"></param>
@@ -70,12 +84,5 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="variables"></param>
         /// <returns></returns>
         Task<IResult> UpdateVariables(StructureIdentifier identifier, IDictionary<string, string> variables);
-
-        /// <summary>
-        ///     get metadata for a Structure
-        /// </summary>
-        /// <param name="identifier"></param>
-        /// <returns></returns>
-        Task<IResult<ConfigStructureMetadata>> GetMetadata(StructureIdentifier identifier);
     }
 }

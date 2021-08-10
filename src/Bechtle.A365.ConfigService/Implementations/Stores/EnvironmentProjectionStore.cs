@@ -162,7 +162,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 key = Uri.UnescapeDataString(key ?? string.Empty);
                 _logger.LogDebug($"using new key='{key}'");
 
-                var environmentResult = await _domainObjectManager.GetEnvironment(identifier, CancellationToken.None);
+                var environmentResult = await _domainObjectManager.GetEnvironment(identifier, version, CancellationToken.None);
                 if (environmentResult.IsError)
                 {
                     _logger.LogWarning(
@@ -365,6 +365,34 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             };
 
             return Result.Success(metadata);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<Page<ConfigEnvironmentMetadata>>> GetMetadata(QueryRange range, long version)
+        {
+            _logger.LogDebug("retrieving metadata for range: {Range} at version {Version}", range, version);
+
+            var ids = await _domainObjectManager.GetEnvironments(range, version, CancellationToken.None);
+            if (ids.IsError)
+                return Result.Error<Page<ConfigEnvironmentMetadata>>(ids.Message, ids.Code);
+
+            var results = new List<ConfigEnvironmentMetadata>();
+            foreach (var envId in ids.Data.Items)
+            {
+                IResult<ConfigEnvironmentMetadata> result = await GetMetadata(envId);
+                if (result.IsError)
+                    return Result.Error<Page<ConfigEnvironmentMetadata>>(result.Message, result.Code);
+                results.Add(result.Data);
+            }
+
+            return Result.Success(
+                new Page<ConfigEnvironmentMetadata>
+                {
+                    Items = results,
+                    Count = results.Count,
+                    Offset = range.Offset,
+                    TotalCount = ids.Data.TotalCount
+                });
         }
 
         private IEnumerable<TItem> ApplyPreferredExactFilter<TItem>(

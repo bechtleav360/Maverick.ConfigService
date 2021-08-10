@@ -273,6 +273,29 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         /// <summary>
+        ///     get available structures
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [HttpGet(Name = "GetStructuresPaged")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        public async Task<IActionResult> GetStructuresPaged(
+            [FromQuery] int offset = -1,
+            [FromQuery] int length = -1)
+        {
+            try
+            {
+                return Result(await _store.Structures.GetMetadata(QueryRange.Make(offset, length)));
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "failed to retrieve available structures");
+                return StatusCode((int)HttpStatusCode.InternalServerError, "failed to retrieve available structures");
+            }
+        }
+
+        /// <summary>
         ///     get all variables for the specified config-structure as key / value pairs
         /// </summary>
         /// <param name="name"></param>

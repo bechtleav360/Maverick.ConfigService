@@ -238,7 +238,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             try
             {
-                return Result(await _store.Environments.GetAvailable(range, targetVersion));
+                return Result(await _store.Environments.GetMetadata(range, targetVersion));
             }
             catch (Exception e)
             {

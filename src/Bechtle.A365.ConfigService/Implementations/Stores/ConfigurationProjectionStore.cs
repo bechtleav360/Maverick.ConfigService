@@ -305,5 +305,41 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error<PreparedConfigurationMetadata>("failed to retrieve projected configuration", ErrorCode.DbQueryError);
             }
         }
+
+        /// <inheritdoc />
+        public async Task<IResult<Page<PreparedConfigurationMetadata>>> GetMetadata(QueryRange range)
+        {
+            try
+            {
+                _logger.LogDebug("retrieving config-metadata for range '{Range}'", range);
+
+                var ids = await _domainObjectManager.GetConfigurations(range, CancellationToken.None);
+                if (ids.IsError)
+                    return Result.Error<Page<PreparedConfigurationMetadata>>(ids.Message, ids.Code);
+
+                var results = new List<PreparedConfigurationMetadata>();
+                foreach (var configId in ids.Data.Items)
+                {
+                    IResult<PreparedConfigurationMetadata> result = await GetMetadata(configId);
+                    if (result.IsError)
+                        return Result.Error<Page<PreparedConfigurationMetadata>>(result.Message, result.Code);
+                    results.Add(result.Data);
+                }
+
+                return Result.Success(
+                    new Page<PreparedConfigurationMetadata>
+                    {
+                        Items = results,
+                        Count = results.Count,
+                        Offset = range.Offset,
+                        TotalCount = ids.Data.TotalCount
+                    });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "failed to retrieve projected configurations");
+                return Result.Error<Page<PreparedConfigurationMetadata>>("failed to retrieve projected configuration", ErrorCode.DbQueryError);
+            }
+        }
     }
 }

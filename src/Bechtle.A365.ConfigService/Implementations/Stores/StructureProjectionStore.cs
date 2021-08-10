@@ -156,6 +156,67 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
+        public async Task<IResult<ConfigStructureMetadata>> GetMetadata(StructureIdentifier identifier)
+        {
+            _logger.LogDebug("retrieving metadata for structure {Identifier}", identifier);
+
+            IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
+
+            if (structureResult.IsError)
+            {
+                return Result.Error<ConfigStructureMetadata>(structureResult.Message, structureResult.Code);
+            }
+
+            ConfigStructure structure = structureResult.Data;
+
+            var metadata = new ConfigStructureMetadata
+            {
+                Id = structure.Id,
+                ChangedAt = structure.ChangedAt,
+                ChangedBy = structure.ChangedBy,
+                CreatedAt = structure.CreatedAt,
+                CreatedBy = structure.CreatedBy,
+                KeyCount = structure.Keys.Count,
+                VariablesCount = structure.Variables.Count
+            };
+
+            return Result.Success(metadata);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<Page<ConfigStructureMetadata>>> GetMetadata(QueryRange range)
+        {
+            _logger.LogDebug("retrieving metadata for range: {Range}", range);
+
+            IResult<Page<StructureIdentifier>> ids = await _domainObjectManager.GetStructures(range, CancellationToken.None);
+            if (ids.IsError)
+            {
+                return Result.Error<Page<ConfigStructureMetadata>>(ids.Message, ids.Code);
+            }
+
+            var results = new List<ConfigStructureMetadata>();
+            foreach (StructureIdentifier layerId in ids.Data.Items)
+            {
+                IResult<ConfigStructureMetadata> result = await GetMetadata(layerId);
+                if (result.IsError)
+                {
+                    return Result.Error<Page<ConfigStructureMetadata>>(result.Message, result.Code);
+                }
+
+                results.Add(result.Data);
+            }
+
+            return Result.Success(
+                new Page<ConfigStructureMetadata>
+                {
+                    Items = results,
+                    Count = results.Count,
+                    Offset = range.Offset,
+                    TotalCount = ids.Data.TotalCount
+                });
+        }
+
+        /// <inheritdoc />
         public async Task<IResult<Page<KeyValuePair<string, string>>>> GetVariables(StructureIdentifier identifier, QueryRange range)
         {
             try
@@ -206,32 +267,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                        variables.Select(kvp => ConfigKeyAction.Set(kvp.Key, kvp.Value))
                                 .ToList(),
                        CancellationToken.None);
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult<ConfigStructureMetadata>> GetMetadata(StructureIdentifier identifier)
-        {
-            _logger.LogDebug("retrieving metadata for structure {Identifier}", identifier);
-
-            IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
-
-            if (structureResult.IsError)
-                return Result.Error<ConfigStructureMetadata>(structureResult.Message, structureResult.Code);
-
-            ConfigStructure structure = structureResult.Data;
-
-            var metadata = new ConfigStructureMetadata
-            {
-                Id = structure.Id,
-                ChangedAt = structure.ChangedAt,
-                ChangedBy = structure.ChangedBy,
-                CreatedAt = structure.CreatedAt,
-                CreatedBy = structure.CreatedBy,
-                KeyCount = structure.Keys.Count,
-                VariablesCount = structure.Variables.Count
-            };
-
-            return Result.Success(metadata);
         }
     }
 }

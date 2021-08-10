@@ -18,8 +18,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     /// <inheritdoc />
     public class LayerProjectionStore : ILayerProjectionStore
     {
-        private readonly ILogger<LayerProjectionStore> _logger;
         private readonly IDomainObjectManager _domainObjectManager;
+        private readonly ILogger<LayerProjectionStore> _logger;
 
         /// <inheritdoc cref="LayerProjectionStore" />
         public LayerProjectionStore(
@@ -28,6 +28,25 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger = logger;
             _domainObjectManager = domainObjectManager;
+        }
+
+        /// <inheritdoc />
+        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult> Clone(LayerIdentifier sourceId, LayerIdentifier targetId)
+        {
+            _logger.LogDebug(
+                "cloning layer {SourceLayerId} as {TargetLayerId}",
+                sourceId,
+                targetId);
+
+            return await _domainObjectManager.CloneLayer(sourceId, targetId, CancellationToken.None);
         }
 
         /// <inheritdoc />
@@ -96,7 +115,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 key = Uri.UnescapeDataString(key ?? string.Empty);
                 _logger.LogDebug($"using new key='{key}'");
 
-                var layerResult = await _domainObjectManager.GetLayer(identifier, version, CancellationToken.None);
+                IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, version, CancellationToken.None);
                 if (layerResult.IsError)
                 {
                     _logger.LogWarning(
@@ -227,25 +246,29 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger.LogDebug($"retrieving keys for {parameters.Identifier} to return as objects");
 
-            var result = await GetKeysInternal(
-                             parameters,
-                             item => new DtoConfigKey
-                             {
-                                 Key = item.Key,
-                                 Value = item.Value,
-                                 Description = item.Description,
-                                 Type = item.Type
-                             },
-                             item => item.Key,
-                             items => items);
+            IResult<Page<DtoConfigKey>> result = await GetKeysInternal(
+                                                     parameters,
+                                                     item => new DtoConfigKey
+                                                     {
+                                                         Key = item.Key,
+                                                         Value = item.Value,
+                                                         Description = item.Description,
+                                                         Type = item.Type
+                                                     },
+                                                     item => item.Key,
+                                                     items => items);
 
             if (result.IsError)
+            {
                 return result;
+            }
 
             _logger.LogDebug($"got {result.Data.Count} keys as objects");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
+            {
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
+            }
 
             return result;
         }
@@ -255,21 +278,86 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger.LogDebug($"retrieving keys of environment '{parameters.Identifier}'");
 
-            var result = await GetKeysInternal(
-                             parameters,
-                             item => item,
-                             item => item.Key,
-                             key => new KeyValuePair<string, string>(key.Key, key.Value));
+            IResult<Page<KeyValuePair<string, string>>> result = await GetKeysInternal(
+                                                                     parameters,
+                                                                     item => item,
+                                                                     item => item.Key,
+                                                                     key => new KeyValuePair<string, string>(key.Key, key.Value));
 
             if (result.IsError)
+            {
                 return result;
+            }
 
             _logger.LogDebug($"got {result.Data.Count} keys for '{parameters.Identifier}'");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
+            {
                 return RemoveRoot(result.Data, parameters.RemoveRoot);
+            }
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<EnvironmentLayerMetadata>> GetMetadata(LayerIdentifier identifier)
+        {
+            _logger.LogDebug("retrieving metadata for {Identifier}", identifier);
+
+            IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
+
+            if (layerResult.IsError)
+            {
+                return Result.Error<EnvironmentLayerMetadata>(layerResult.Message, layerResult.Code);
+            }
+
+            EnvironmentLayer layer = layerResult.Data;
+
+            var metadata = new EnvironmentLayerMetadata
+            {
+                Id = layer.Id,
+                Tags = new List<string>(),
+                ChangedAt = layer.ChangedAt,
+                ChangedBy = layer.ChangedBy,
+                CreatedAt = layer.CreatedAt,
+                CreatedBy = layer.CreatedBy,
+                KeyCount = layer.Keys.Count
+            };
+
+            return Result.Success(metadata);
+        }
+
+        /// <inheritdoc />
+        public async Task<IResult<Page<EnvironmentLayerMetadata>>> GetMetadata(QueryRange range, long version)
+        {
+            _logger.LogDebug("retrieving metadata for range: {Range} at version {Version}", range, version);
+
+            IResult<Page<LayerIdentifier>> ids = await _domainObjectManager.GetLayers(range, version, CancellationToken.None);
+            if (ids.IsError)
+            {
+                return Result.Error<Page<EnvironmentLayerMetadata>>(ids.Message, ids.Code);
+            }
+
+            var results = new List<EnvironmentLayerMetadata>();
+            foreach (LayerIdentifier layerId in ids.Data.Items)
+            {
+                IResult<EnvironmentLayerMetadata> result = await GetMetadata(layerId);
+                if (result.IsError)
+                {
+                    return Result.Error<Page<EnvironmentLayerMetadata>>(result.Message, result.Code);
+                }
+
+                results.Add(result.Data);
+            }
+
+            return Result.Success(
+                new Page<EnvironmentLayerMetadata>
+                {
+                    Items = results,
+                    Count = results.Count,
+                    Offset = range.Offset,
+                    TotalCount = ids.Data.TotalCount
+                });
         }
 
         /// <inheritdoc />
@@ -280,7 +368,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             IResult<EnvironmentLayer> result = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
 
             if (result.IsError)
+            {
                 return Result.Error<Page<string>>(result.Message, result.Code);
+            }
 
             return Result.Success(
                 new Page<string>
@@ -304,43 +394,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult> Clone(LayerIdentifier sourceId, LayerIdentifier targetId)
-        {
-            _logger.LogDebug(
-                "cloning layer {SourceLayerId} as {TargetLayerId}",
-                sourceId,
-                targetId);
-
-            return await _domainObjectManager.CloneLayer(sourceId, targetId, CancellationToken.None);
-        }
-
-        /// <inheritdoc />
-        public async Task<IResult<EnvironmentLayerMetadata>> GetMetadata(LayerIdentifier identifier)
-        {
-            _logger.LogDebug("retrieving metadata for {Identifier}", identifier);
-
-            IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
-
-            if (layerResult.IsError)
-                return Result.Error<EnvironmentLayerMetadata>(layerResult.Message, layerResult.Code);
-
-            EnvironmentLayer layer = layerResult.Data;
-
-            var metadata = new EnvironmentLayerMetadata
-            {
-                Id = layer.Id,
-                Tags = new List<string>(),
-                ChangedAt = layer.ChangedAt,
-                ChangedBy = layer.ChangedBy,
-                CreatedAt = layer.CreatedAt,
-                CreatedBy = layer.CreatedBy,
-                KeyCount = layer.Keys.Count
-            };
-
-            return Result.Success(metadata);
-        }
-
-        /// <inheritdoc />
         public async Task<IResult> UpdateTags(LayerIdentifier identifier, ICollection<string> addedTags, ICollection<string> removedTags)
         {
             _logger.LogDebug(
@@ -351,7 +404,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(identifier, CancellationToken.None);
             if (layerResult.IsError)
+            {
                 return layerResult;
+            }
 
             var additions = new List<string>();
             var deletions = new List<string>();
@@ -372,13 +427,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger.LogDebug($"applying PreferredMatch filter to '{items.Count}' items, using {nameof(preferredMatch)}='{preferredMatch}'");
 
-            var exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
+            TItem exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
 
             if (_logger.IsEnabled(LogLevel.Debug))
+            {
                 _logger.LogDebug(
                     exactMatch is null
                         ? $"no exact match found in '{items.Count}' items for query '{preferredMatch}'"
                         : $"preferred match found in '{items.Count}' items for query '{preferredMatch}'");
+            }
 
             return exactMatch is null
                        ? items
@@ -399,13 +456,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger.LogDebug($"walking path from '{root.FullPath}' using ({string.Join(",", parts)}), range={range}");
 
-            var current = root;
+            EnvironmentLayerKeyPath current = root;
             var result = new List<EnvironmentLayerKeyPath>();
             var queue = new Queue<string>(parts);
             var walkedPath = new List<string> { "{START}" };
 
             // try walking the given path to the deepest part, and return all options the user can take from here
-            while (queue.TryDequeue(out var part))
+            while (queue.TryDequeue(out string part))
             {
                 _logger.LogTrace($"try walking down '{part}'");
 
@@ -416,7 +473,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     break;
                 }
 
-                var match = current.Children.FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
+                EnvironmentLayerKeyPath match = current.Children.FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
 
                 if (!(match is null))
                 {
@@ -428,9 +485,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }
 
                 _logger.LogDebug("no matches found, suggesting ");
-                var suggested = current.Children
-                                       .Where(c => c.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
-                                       .ToList();
+                List<EnvironmentLayerKeyPath> suggested = current.Children
+                                                                 .Where(c => c.Path.Contains(part, StringComparison.OrdinalIgnoreCase))
+                                                                 .ToList();
 
                 if (suggested.Any())
                 {
@@ -439,9 +496,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }
 
                 walkedPath.Add("{END}");
-                var walkedPathStr = string.Join(" => ", walkedPath);
+                string walkedPathStr = string.Join(" => ", walkedPath);
 
-                var logMsg = $"no matching objects for '{part}' found; " + $"path taken to get to this dead-end: {walkedPathStr}";
+                string logMsg = $"no matching objects for '{part}' found; " + $"path taken to get to this dead-end: {walkedPathStr}";
 
                 _logger.LogDebug(logMsg);
 
@@ -499,7 +556,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 IResult<EnvironmentLayer> layerResult = await _domainObjectManager.GetLayer(parameters.Identifier, CancellationToken.None);
                 if (layerResult.IsError)
+                {
                     return Result.Error<Page<TResult>>(layerResult.Message, layerResult.Code);
+                }
 
                 EnvironmentLayer layer = layerResult.Data;
 
@@ -624,13 +683,5 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error<Page<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys", ErrorCode.Undefined);
             }
         }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-        }
-
-        /// <inheritdoc />
-        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
     }
 }

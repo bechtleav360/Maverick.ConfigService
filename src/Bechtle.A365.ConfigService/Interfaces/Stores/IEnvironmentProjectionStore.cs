@@ -106,5 +106,13 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier">Id pointing to the Environment to operate on</param>
         /// <returns>result of the operation the desired Metadata</returns>
         Task<IResult<ConfigEnvironmentMetadata>> GetMetadata(EnvironmentIdentifier identifier);
+
+        /// <summary>
+        ///     get all available Metadata for all Environments
+        /// </summary>
+        /// <param name="range">Pagination-Information</param>
+        /// <param name="version">Event-Version to use when streaming Objects</param>
+        /// <returns>result of the operation the desired Metadata</returns>
+        Task<IResult<Page<ConfigEnvironmentMetadata>>> GetMetadata(QueryRange range, long version);
     }
 }
