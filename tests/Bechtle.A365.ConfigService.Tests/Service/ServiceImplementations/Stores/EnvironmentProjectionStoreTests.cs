@@ -100,9 +100,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteChild()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (EnvironmentIdentifier id, CancellationToken _) =>
+                                   (EnvironmentIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);
@@ -133,9 +133,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteChildSuggestion()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (EnvironmentIdentifier id, CancellationToken _) =>
+                                   (EnvironmentIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);
@@ -166,9 +166,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteRoot()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (EnvironmentIdentifier id, CancellationToken _) =>
+                                   (EnvironmentIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);
@@ -202,9 +202,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         public async Task GetAutocompleteRootPart()
         {
             var domainObjectManager = new Mock<IDomainObjectManager>(MockBehavior.Strict);
-            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<CancellationToken>()))
+            domainObjectManager.Setup(m => m.GetEnvironment(It.IsAny<EnvironmentIdentifier>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
                                .ReturnsAsync(
-                                   (EnvironmentIdentifier id, CancellationToken _) =>
+                                   (EnvironmentIdentifier id, long version, CancellationToken _) =>
                                    {
                                        var pathRoot = new EnvironmentLayerKeyPath("Foo");
                                        var child1 = new EnvironmentLayerKeyPath("Foo/Bar", pathRoot);

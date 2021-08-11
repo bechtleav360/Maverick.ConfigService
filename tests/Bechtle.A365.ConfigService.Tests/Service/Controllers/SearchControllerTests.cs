@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .ReturnsAsync(
                                 () => Result.Success(
                                     new Page<DtoConfigKeyCompletion>(
-                                        new[]
+                                        new List<DtoConfigKeyCompletion>
                                         {
                                             new DtoConfigKeyCompletion
                                             {
@@ -152,7 +152,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .ReturnsAsync(
                                 () => Result.Success(
                                     new Page<DtoConfigKeyCompletion>(
-                                        new[]
+                                        new List<DtoConfigKeyCompletion>
                                         {
                                             new DtoConfigKeyCompletion
                                             {

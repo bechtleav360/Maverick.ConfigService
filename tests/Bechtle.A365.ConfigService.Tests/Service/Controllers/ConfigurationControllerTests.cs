@@ -283,7 +283,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .ReturnsAsync(
                                 () => Result.Success(
                                     new Page<ConfigurationIdentifier>(
-                                        new[]
+                                        new List<ConfigurationIdentifier>
                                         {
                                             new ConfigurationIdentifier(
                                                 new EnvironmentIdentifier("Foo", "Bar"),
@@ -521,7 +521,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                             .ReturnsAsync(
                                 () => Result.Success(
                                     new Page<ConfigurationIdentifier>(
-                                        new[]
+                                        new List<ConfigurationIdentifier>
                                         {
                                             new ConfigurationIdentifier(
                                                 new EnvironmentIdentifier("Foo", "Bar"),
