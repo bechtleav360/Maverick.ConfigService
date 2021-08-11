@@ -123,6 +123,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                                       .Value
                                                                       .IsMarkedDeleted)
                                                            .Select(o => o.Id)
+                                                           .Where(filter)
                                                            .ToList();
                 IList<TIdentifier> ids = totalItems.Where(filter)
                                                    .Skip(range.Offset)
@@ -170,10 +171,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                            .Where(
                                                                o => !o.Versions
                                                                       .OrderByDescending(i => i.Key)
-                                                                      .First()
+                                                                      .First(i => version < 0 || i.Key <= version)
                                                                       .Value
                                                                       .IsMarkedDeleted)
                                                            .Select(o => o.Id)
+                                                           .Where(filter)
                                                            .ToList();
                 IList<TIdentifier> ids = totalItems.Skip(range.Offset)
                                                    .Take(range.Length)
@@ -259,7 +261,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 KeyValuePair<long, ObjectLookupInfo> matchingVersion = @object.Versions
                                                                               .OrderByDescending(kvp => kvp.Key)
                                                                               .FirstOrDefault(
-                                                                                  kvp => kvp.Key <= maxVersion
+                                                                                  // return first entry when version < 0
+                                                                                  kvp => maxVersion < 0
+                                                                                         || kvp.Key <= maxVersion
                                                                                          && !kvp.Value.IsMarkedDeleted);
 
                 if (matchingVersion.Value is null)
