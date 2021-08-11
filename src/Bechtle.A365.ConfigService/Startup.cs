@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -17,6 +19,7 @@ using Bechtle.A365.Core.EventBus;
 using Bechtle.A365.Core.EventBus.Abstraction;
 using Bechtle.A365.ServiceBase;
 using Bechtle.A365.ServiceBase.EventStore.Extensions;
+using Bechtle.A365.ServiceBase.Sagas.MessageBroker;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -25,6 +28,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -32,8 +36,9 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using NLog.Web;
 using Prometheus;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
-using ApplicationBuilderExtensions = Bechtle.A365.ConfigService.Common.Utilities.ApplicationBuilderExtensions;
+using static Bechtle.A365.ConfigService.Common.Utilities.ApplicationBuilderExtensions;
 
 namespace Bechtle.A365.ConfigService
 {
@@ -56,7 +61,7 @@ namespace Bechtle.A365.ConfigService
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
         {
             _logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
-            ApplicationBuilderExtensions.AppConfigContainer appConfiguration = app.StartTweakingWith(_logger, Configuration);
+            AppConfigContainer appConfiguration = app.StartTweakingWith(_logger, Configuration);
 
             // basic Asp.NetCore 3.X stuff 
             appConfiguration.Tweak(a => a.UseRouting(), "adding routing")
@@ -157,6 +162,39 @@ namespace Bechtle.A365.ConfigService
         }
 
         /// <inheritdoc />
+        public override void ConfigureServices(IServiceCollection services)
+        {
+            IMvcBuilder mvcBuilder = services.AddControllers();
+
+            ConfigureMvc(mvcBuilder);
+
+            // Swagger
+            services.TryAddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+            services.AddSwaggerGen(
+                options =>
+                {
+                    ConfigureSwaggerGen(options);
+                    ConfigureAssemblyDocumentation(options);
+                });
+
+            // setup API-Versioning and Swagger
+            services.AddApiVersioning(ConfigureApiVersioning)
+                    .AddVersionedApiExplorer(ConfigureVersionedApiExplorer);
+
+            // Options
+            services.AddOptions();
+            services.Configure<MessageBrokerOptions>(Configuration.GetSection("Sagas:MessageBroker"));
+
+            // HttpClients
+            services.AddHttpClient();
+
+            // hook for custom Serializer-Settings
+            RegisterJsonSettingsProvider(services);
+
+            AddServiceConfiguration(services);
+        }
+
+        /// <inheritdoc />
         protected override void AddServiceConfiguration(IServiceCollection services)
         {
             RegisterOptions(services);
@@ -166,6 +204,22 @@ namespace Bechtle.A365.ConfigService
             RegisterSecretStores(services);
             RegisterHealthEndpoints(services);
             RegisterProjections(services);
+        }
+
+        /// <summary>
+        ///     Configure if and which Xml-Docs get loaded from files
+        /// </summary>
+        /// <param name="options"></param>
+        protected override void ConfigureAssemblyDocumentation(SwaggerGenOptions options)
+        {
+            foreach (Assembly ass in LoadAssemblies().Concat(new[] { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() }))
+            {
+                string docFile = Path.Combine(AppContext.BaseDirectory, $"{ass.GetName().Name}.xml");
+                if (File.Exists(docFile))
+                {
+                    options.IncludeXmlComments(docFile);
+                }
+            }
         }
 
         private void RegisterAzureSecretStore(IConfigurationSection section, IServiceCollection services)
@@ -264,28 +318,28 @@ namespace Bechtle.A365.ConfigService
                     .AddCheck<EventStoreClusterCheck>(
                         "EventStore-ConnectionType",
                         HealthStatus.Unhealthy,
-                        new[] {Liveness},
+                        new[] { Liveness },
                         TimeSpan.FromSeconds(2))
                     .AddCheck<HttpPipelineCheck>(
                         "Http-Pipeline",
                         HealthStatus.Unhealthy,
-                        new[] {Liveness},
+                        new[] { Liveness },
                         TimeSpan.FromSeconds(1))
                     .AddCheck<EventStoreConnectionCheck>(
                         "EventStore-Connection",
                         HealthStatus.Unhealthy,
-                        new[] {Readiness},
+                        new[] { Readiness },
                         TimeSpan.FromSeconds(30))
                     .AddCheck<DomainEventProjectionCheck>(
                         "DomainEventProjection-Subscription",
                         HealthStatus.Unhealthy,
-                        new[] {Readiness},
+                        new[] { Readiness },
                         TimeSpan.FromSeconds(30))
                     .AddRedis(
                         Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>(),
                         "Temporary-Keys (Redis)",
                         HealthStatus.Unhealthy,
-                        new[] {Readiness})
+                        new[] { Readiness })
                     .AddSignalRHub(
                         new Uri(
                                 new Uri(signalrServer, UriKind.Absolute),
@@ -293,7 +347,7 @@ namespace Bechtle.A365.ConfigService
                             .ToString(),
                         "SignalR-Connection",
                         HealthStatus.Unhealthy,
-                        new[] {Readiness});
+                        new[] { Readiness });
 
             services.AddHealthChecksUI(
                         setup =>
