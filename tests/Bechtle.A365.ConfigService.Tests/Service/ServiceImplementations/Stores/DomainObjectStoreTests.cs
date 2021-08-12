@@ -72,7 +72,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  .Returns(new HistoryConfiguration())
                                  .Verifiable("History-Configuration not retrieved");
 
-            _domainObjectFileStore.Setup(m => m.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
+            _domainObjectFileStore.Setup(m => m.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>(), It.IsAny<Guid>()))
                                   .ReturnsAsync(Result.Success)
                                   .Verifiable("object was not stored in local file");
 
@@ -316,7 +316,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 }
             };
 
-            _domainObjectFileStore.Setup(s => s.LoadObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<LayerIdentifier>(), It.IsAny<long>()))
+            _domainObjectFileStore.Setup(s => s.LoadObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<Guid>(), It.IsAny<long>()))
                                   .ReturnsAsync(Result.Success(layer))
                                   .Verifiable("object not loaded from local file");
 
@@ -407,7 +407,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  .Returns(new HistoryConfiguration())
                                  .Verifiable("History-Configuration not retrieved");
 
-            _domainObjectFileStore.Setup(s => s.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
+            _domainObjectFileStore.Setup(s => s.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>(), It.IsAny<Guid>()))
                                   .ReturnsAsync(Result.Success())
                                   .Verifiable("object not stored in local file");
 
@@ -450,7 +450,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                  .Returns(new HistoryConfiguration())
                                  .Verifiable("History-Configuration not retrieved");
 
-            _domainObjectFileStore.Setup(s => s.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>()))
+            _domainObjectFileStore.Setup(s => s.StoreObject<EnvironmentLayer, LayerIdentifier>(It.IsAny<EnvironmentLayer>(), It.IsAny<Guid>()))
                                   .ReturnsAsync(Result.Success)
                                   .Verifiable("object was not stored in local file");
 

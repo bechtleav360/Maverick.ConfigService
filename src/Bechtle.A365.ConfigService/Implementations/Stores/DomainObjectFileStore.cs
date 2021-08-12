@@ -35,20 +35,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<TObject>> LoadObject<TObject, TIdentifier>(TIdentifier identifier, long version)
+        public async Task<IResult<TObject>> LoadObject<TObject, TIdentifier>(
+            Guid fileId,
+            long version)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            var location = new FileInfo(
-                Path.Combine(
-                    _locationProvider.Directory,
-                    Base64Encode(typeof(TObject).Name),
-                    Base64Encode(
-                        identifier?.ToString()
-                        ?? throw new ArgumentNullException(
-                            nameof(identifier),
-                            "identifier or identifier.ToString is null")),
-                    version.ToString("x16")));
+            FileInfo location = MakeFileLocation<TObject, TIdentifier>(fileId, version);
 
             try
             {
@@ -81,26 +74,26 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
         }
 
-        private FileInfo MakeFileLocation<TObject, TIdentifier>(TIdentifier identifier, long version)
+        private FileInfo MakeFileLocation<TObject, TIdentifier>(
+            Guid fileId,
+            long version)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
             => new FileInfo(
                 Path.Combine(
                     _locationProvider.Directory,
-                    Base64Encode(typeof(TObject).Name),
-                    Base64Encode(
-                        identifier?.ToString()
-                        ?? throw new ArgumentNullException(
-                            nameof(identifier),
-                            "identifier or identifier.ToString is null")),
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(typeof(TObject).Name)),
+                    Convert.ToBase64String(fileId.ToByteArray()),
                     version.ToString("x16")));
 
         /// <inheritdoc />
-        public Task<IResult> DeleteObject<TObject, TIdentifier>(TIdentifier identifier, long version)
+        public Task<IResult> DeleteObject<TObject, TIdentifier>(
+            Guid fileId,
+            long version)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            FileInfo location = MakeFileLocation<TObject, TIdentifier>(identifier, version);
+            FileInfo location = MakeFileLocation<TObject, TIdentifier>(fileId, version);
 
             try
             {
@@ -130,11 +123,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult> StoreObject<TObject, TIdentifier>(TObject obj)
+        public async Task<IResult> StoreObject<TObject, TIdentifier>(
+            TObject obj,
+            Guid fileId)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
-            FileInfo location = MakeFileLocation<TObject, TIdentifier>(obj.Id, obj.CurrentVersion);
+            FileInfo location = MakeFileLocation<TObject, TIdentifier>(fileId, obj.CurrentVersion);
 
             try
             {
@@ -167,7 +162,5 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error("unknown error occured while writing object to file-storage", ErrorCode.Undefined);
             }
         }
-
-        private string Base64Encode(string str) => Convert.ToBase64String(Encoding.UTF8.GetBytes(str));
     }
 }

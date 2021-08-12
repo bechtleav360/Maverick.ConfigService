@@ -227,7 +227,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 if (maxExistingVersion >= 0)
                 {
-                    IResult<TObject> result = await _fileStore.LoadObject<TObject, TIdentifier>(identifier, maxExistingVersion);
+                    IResult<TObject> result = await _fileStore.LoadObject<TObject, TIdentifier>(@object.FileId, maxExistingVersion);
                     if (result.IsError)
                     {
                         return result;
@@ -278,7 +278,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 if (matchingVersion.Key >= 0)
                 {
-                    return await _fileStore.LoadObject<TObject, TIdentifier>(identifier, matchingVersion.Key);
+                    return await _fileStore.LoadObject<TObject, TIdentifier>(@object.FileId, matchingVersion.Key);
                 }
             }
             catch (Exception e)
@@ -400,8 +400,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string collectionName = typeof(TObject).Name;
             try
             {
-                await RecordObjectVersion<TObject, TIdentifier>(domainObject);
-                await _fileStore.StoreObject<TObject, TIdentifier>(domainObject);
+                Guid fileId = await RecordObjectVersion<TObject, TIdentifier>(domainObject);
+                await _fileStore.StoreObject<TObject, TIdentifier>(domainObject, fileId);
                 _memoryCache.Set(domainObject.Id.ToString(), domainObject, TimeSpan.FromSeconds(30));
             }
             catch (Exception e)
@@ -431,7 +431,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                     foreach (long version in versionsToRemove)
                     {
-                        await _fileStore.DeleteObject<TObject, TIdentifier>(domainObject.Id, version);
+                        await _fileStore.DeleteObject<TObject, TIdentifier>(info.FileId, version);
                         await RemoveObjectVersionData<TObject, TIdentifier>(domainObject.Id, version);
                     }
                 }
@@ -465,9 +465,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 if (!domainObjectAvailable)
                 {
-                    _logger.LogWarning(
-                        "attempted to update/insert metadata for domainObject for which no version is stored",
-                        collectionName);
+                    _logger.LogWarning("attempted to update/insert metadata for domainObject for which no version is stored");
                     return Result.Error(
                         "attempted to update/insert metadata for domainObject for which no version is stored",
                         ErrorCode.NotFound);
@@ -511,6 +509,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 ?? new ObjectLookup<TIdentifier>
                 {
                     Id = identifier,
+                    FileId = Guid.NewGuid(),
                     Versions = new Dictionary<long, ObjectLookupInfo>()
                 };
 
@@ -531,7 +530,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Task.FromResult(objectInfo);
         }
 
-        private async Task RecordObjectVersion<TObject, TIdentifier>(TObject domainObject)
+        private async Task<Guid> RecordObjectVersion<TObject, TIdentifier>(TObject domainObject)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
         {
@@ -546,6 +545,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             };
 
             collection.Upsert(@object);
+
+            return @object.FileId;
         }
 
         private async Task RemoveObjectVersion<TObject, TIdentifier>(TIdentifier identifier, long version)
@@ -636,6 +637,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             ///     Identifier of the stored DomainObject
             /// </summary>
             public TIdentifier Id { get; set; }
+
+            /// <summary>
+            ///     DomainObject-Instance-Unique GUID
+            /// </summary>
+            public Guid FileId { get; set; }
 
             /// <summary>
             ///     Map of Versions and their current Status. True = Object exists, False = Object was deleted
