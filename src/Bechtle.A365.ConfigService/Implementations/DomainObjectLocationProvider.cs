@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Bechtle.A365.ConfigService.Interfaces;
 
 namespace Bechtle.A365.ConfigService.Implementations
@@ -9,7 +8,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// </summary>
     public class DomainObjectStoreLocationProvider : IDomainObjectStoreLocationProvider
     {
-        private readonly FileInfo _localDbLocation = new FileInfo(Path.Combine(Environment.CurrentDirectory, "data/projections.current.db"));
+        private readonly FileInfo _localDbLocation = new FileInfo(Path.Combine("./data/projections.current.db"));
 
         /// <inheritdoc />
         public string Directory => _localDbLocation.DirectoryName;

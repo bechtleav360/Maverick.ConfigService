@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security;
 using System.Text;
@@ -82,8 +83,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             => new FileInfo(
                 Path.Combine(
                     _locationProvider.Directory,
-                    Convert.ToBase64String(Encoding.UTF8.GetBytes(typeof(TObject).Name)),
-                    Convert.ToBase64String(fileId.ToByteArray()),
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(typeof(TObject).Name)).Replace('/', '_'),
+                    fileId.ToString("N"),
                     version.ToString("x16")));
 
         /// <inheritdoc />
