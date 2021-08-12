@@ -29,7 +29,7 @@ namespace Bechtle.A365.ConfigService
         ///     Delegate App-Startup to the default ServiceBase-Behaviour
         /// </summary>
         /// <param name="args"></param>
-        public static Task<int> Main(string[] args) => Main<Startup, CliBase>(args);
+        public static Task<int> Main(string[] args) => InternalMain<Startup, CliBase>(args);
 
         private static void ConfigureActivityIdLogging()
         {
@@ -83,7 +83,7 @@ namespace Bechtle.A365.ConfigService
         /// <typeparam name="TStartup">Startup-Type, consider extending <see cref="DefaultStartup" /></typeparam>
         /// <param name="args">command-line args</param>
         /// <param name="hostCustomizer">function to customize the prepared <see cref="IHostBuilder" /> for your application</param>
-        private static void Main<TStartup>(string[] args, Action<IHostBuilder> hostCustomizer = null)
+        private static void CliMain<TStartup>(string[] args, Action<IHostBuilder> hostCustomizer = null)
             where TStartup : class
         {
             ConfigureActivityIdLogging();
@@ -114,7 +114,7 @@ namespace Bechtle.A365.ConfigService
         /// <typeparam name="TStartup">Startup-Type, consider extending <see cref="DefaultStartup" /></typeparam>
         /// <typeparam name="TCommandRoot">CommandRoot-Type, as the entrypoint for the cli</typeparam>
         /// <returns></returns>
-        private static async Task<int> Main<TStartup, TCommandRoot>(
+        private static async Task<int> InternalMain<TStartup, TCommandRoot>(
             string[] args,
             Action<IHostBuilder> cliHostCustomizer = null,
             Action<IHostBuilder> appHostCustomizer = null)
@@ -160,7 +160,7 @@ namespace Bechtle.A365.ConfigService
                                {
                                    try
                                    {
-                                       Main<TStartup>(args, appHostCustomizer);
+                                       CliMain<TStartup>(args, appHostCustomizer);
                                        return 0;
                                    }
                                    catch (Exception ex)
