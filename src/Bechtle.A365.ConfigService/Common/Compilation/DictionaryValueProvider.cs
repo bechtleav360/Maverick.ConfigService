@@ -17,7 +17,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <inheritdoc cref="DictionaryValueProvider" />
         public DictionaryValueProvider(IDictionary<string, string> repository, string repositoryDisplayname)
         {
-            _repository = repository;
+            // ensure the given dictionary is case-insensitive
+            _repository = new Dictionary<string, string>(repository, StringComparer.OrdinalIgnoreCase);
             _repositoryDisplayname = repositoryDisplayname;
         }
 
@@ -30,7 +31,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <returns></returns>
         private static int MatchingStringLength(string left, string right)
         {
-            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right)) return 0;
+            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+                return 0;
 
             var matching = 0;
             var shortestStringLength = Math.Min(left.Length, right.Length);
@@ -80,9 +82,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 return Task.FromResult(Result.Error<string>($"path '{path}' could not be found in {_repositoryDisplayname}", ErrorCode.NotFound));
 
             return Task.FromResult(
-                Result.Error($"path '{path}' could not be found in {_repositoryDisplayname}",
-                             ErrorCode.NotFoundPossibleIndirection,
-                             possibleIndirections.First().Key));
+                Result.Error(
+                    $"path '{path}' could not be found in {_repositoryDisplayname}",
+                    ErrorCode.NotFoundPossibleIndirection,
+                    possibleIndirections.First().Key));
         }
     }
 }
