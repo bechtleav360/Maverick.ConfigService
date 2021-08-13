@@ -413,19 +413,10 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             IResult<TObject> result = await LoadObject<TObject, TIdentifier>(identifier, cancellationToken);
-            // thing is already created, act as if we did our job
-            if (!result.IsError)
-            {
-                _logger.LogDebug(
-                    "skipping creation of {DomainObject} with id {Identifier} because it already exists",
-                    typeof(TObject).Name,
-                    identifier);
-                return Result.Success();
-            }
 
             // thing couldn't be found, but not because it doesn't exist
             // this means there is an actual problem and we can't create the thing
-            if (result.Code != ErrorCode.NotFound)
+            if (result.Code != ErrorCode.None && result.Code != ErrorCode.NotFound)
             {
                 _logger.LogWarning(
                     "unable to create object {DomainObject} with id {Identifier}: {ErrorCode} {Message}",
