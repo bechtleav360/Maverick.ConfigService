@@ -295,6 +295,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     WarningCount = configuration.Warnings.Count,
                     Errors = configuration.Errors,
                     ErrorCount = configuration.Errors.Count,
+                    UsedKeys = configuration.UsedKeys,
+                    UsedKeysCount = configuration.UsedKeys.Count
                 };
 
                 return Result.Success(metadata);
