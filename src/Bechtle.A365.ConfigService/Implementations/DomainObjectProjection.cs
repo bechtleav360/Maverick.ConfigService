@@ -838,7 +838,8 @@ namespace Bechtle.A365.ConfigService.Implementations
                 List<string> usedKeys = config.UsedKeys;
                 List<string> changedKeys = modifiedKeys.Select(k => k.Key).ToList();
 
-                List<string> changedUsedKeys = changedKeys.Where(k => usedKeys.Contains(k)).ToList();
+                List<string> changedUsedKeys = changedKeys.Where(k => usedKeys.Contains(k, StringComparer.OrdinalIgnoreCase))
+                                                          .ToList();
                 if (changedUsedKeys.Any())
                 {
                     _logger.LogDebug(
