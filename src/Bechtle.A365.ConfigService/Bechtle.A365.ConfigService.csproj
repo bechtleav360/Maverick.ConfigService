@@ -10,7 +10,7 @@
 
   <!-- AspNetCore Hosting / Use OOP hosting explicitly to maintain Linux-Compatibility -->
   <PropertyGroup>
-    <AspNetCoreHostingModel>OutOfProcess</AspNetCoreHostingModel>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
   </PropertyGroup>
 
   <!-- Docker Stuff -->
