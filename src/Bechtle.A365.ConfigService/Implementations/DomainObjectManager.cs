@@ -77,6 +77,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             => CreateObject<PreparedConfiguration, ConfigurationIdentifier>(
                 identifier,
                 new List<DomainEvent> { new ConfigurationBuilt(identifier, validFrom, validTo) },
+                true,
                 cancellationToken);
 
         /// <inheritdoc />
@@ -93,6 +94,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                         ? new DefaultEnvironmentCreated(identifier)
                         : (DomainEvent)new EnvironmentCreated(identifier)
                 },
+                false,
                 cancellationToken);
 
         /// <inheritdoc />
@@ -100,6 +102,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             => CreateObject<EnvironmentLayer, LayerIdentifier>(
                 identifier,
                 new List<DomainEvent> { new EnvironmentLayerCreated(identifier) },
+                false,
                 cancellationToken);
 
         /// <inheritdoc />
@@ -111,6 +114,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             => CreateObject<ConfigStructure, StructureIdentifier>(
                 identifier,
                 new List<DomainEvent> { new StructureCreated(identifier, keys, variables) },
+                false,
                 cancellationToken);
 
         /// <inheritdoc />
@@ -396,6 +400,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         private async Task<IResult> CreateObject<TObject, TIdentifier>(
             TIdentifier identifier,
             IList<DomainEvent> createEvents,
+            bool allowRecreation,
             CancellationToken cancellationToken)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
@@ -413,6 +418,16 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             IResult<TObject> result = await LoadObject<TObject, TIdentifier>(identifier, cancellationToken);
+            // if we mustn't re-create this object, act as if we did our job.
+            // some can be re-created at different times (Configuration)
+            if (!allowRecreation && !result.IsError)
+            {
+                _logger.LogDebug(
+                    "skipping creation of {DomainObject} with id {Identifier} because it already exists",
+                    typeof(TObject).Name,
+                    identifier);
+                return Result.Success();
+            }
 
             // thing couldn't be found, but not because it doesn't exist
             // this means there is an actual problem and we can't create the thing
