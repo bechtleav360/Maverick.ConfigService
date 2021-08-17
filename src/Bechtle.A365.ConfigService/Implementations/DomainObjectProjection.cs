@@ -92,7 +92,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 // we're losing half the amount of events we could be projecting
                 // but the ConfigService isn't meant to handle either
                 // 18.446.744.073.709.551.615 or 9.223.372.036.854.775.807 events, so cutting off half our range seems fine
-                subscriptionBuilder.FromEvent((ulong) lastProjectedEvent);
+                subscriptionBuilder.FromEvent((ulong)lastProjectedEvent);
             }
 
             _healthCheck.SetReady();
@@ -147,7 +147,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                 await _objectStore.SetProjectedVersion(
                     eventHeader.EventId.ToString("D"),
-                    (long) eventHeader.EventNumber,
+                    (long)eventHeader.EventNumber,
                     eventHeader.EventType);
 
                 stopwatch.Stop();
@@ -231,10 +231,10 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var config = new PreparedConfiguration(domainEvent.Payload.Identifier)
             {
-                ConfigurationVersion = (long) domainEvent.Timestamp
-                                                         .Subtract(DateTime.UnixEpoch)
-                                                         .TotalSeconds,
-                CurrentVersion = (long) eventHeader.EventNumber,
+                ConfigurationVersion = (long)domainEvent.Timestamp
+                                                        .Subtract(DateTime.UnixEpoch)
+                                                        .TotalSeconds,
+                CurrentVersion = (long)eventHeader.EventNumber,
                 ValidFrom = domainEvent.Payload.ValidFrom,
                 ValidTo = domainEvent.Payload.ValidTo,
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
@@ -296,7 +296,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 config.Keys = compilationResult.CompiledConfiguration;
                 config.Json = translator.ToJson(config.Keys).ToString();
                 config.UsedKeys = compilationResult.GetUsedKeys().ToList();
-                config.CurrentVersion = (long) eventHeader.EventNumber;
+                config.CurrentVersion = (long)eventHeader.EventNumber;
 
                 var tracerStack = new Stack<TraceResult>(compilationResult.CompilationTrace);
                 while (tracerStack.TryPop(out TraceResult result))
@@ -362,7 +362,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long)eventHeader.EventNumber,
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
@@ -374,7 +374,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var environment = new ConfigEnvironment(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long)eventHeader.EventNumber,
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
@@ -406,7 +406,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Json = source.Json,
                 Keys = source.Keys,
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long)eventHeader.EventNumber,
                 KeyPaths = source.KeyPaths,
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime()
@@ -419,7 +419,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var layer = new EnvironmentLayer(domainEvent.Payload.Identifier)
             {
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long)eventHeader.EventNumber,
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime()
             };
@@ -449,7 +449,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             layer.Keys.Clear();
             layer.KeyPaths.Clear();
             layer.Json = "{}";
-            layer.CurrentVersion = (long) eventHeader.EventNumber;
+            layer.CurrentVersion = (long)eventHeader.EventNumber;
 
             using IServiceScope scope = _serviceProvider.CreateScope();
 
@@ -476,9 +476,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             EnvironmentLayer layer = layerResult.Data;
 
             // set the 'Version' property of all changed Keys to the current unix-timestamp for later use
-            var keyVersion = (long) DateTime.UtcNow
-                                            .Subtract(DateTime.UnixEpoch)
-                                            .TotalSeconds;
+            var keyVersion = (long)DateTime.UtcNow
+                                           .Subtract(DateTime.UnixEpoch)
+                                           .TotalSeconds;
 
             // clear all currently-stored keys, because the import always overwrites whatever is there
             layer.Keys.Clear();
@@ -504,7 +504,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     keyVersion);
             }
 
-            layer.CurrentVersion = (long) eventHeader.EventNumber;
+            layer.CurrentVersion = (long)eventHeader.EventNumber;
             layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             using IServiceScope scope = _serviceProvider.CreateScope();
@@ -540,9 +540,9 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             // set the 'Version' property of all changed Keys to the current unix-timestamp for later use
-            var keyVersion = (long) DateTime.UtcNow
-                                            .Subtract(DateTime.UnixEpoch)
-                                            .TotalSeconds;
+            var keyVersion = (long)DateTime.UtcNow
+                                           .Subtract(DateTime.UnixEpoch)
+                                           .TotalSeconds;
 
             foreach (ConfigKeyAction change in domainEvent.Payload
                                                           .ModifiedKeys
@@ -566,7 +566,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     keyVersion);
             }
 
-            layer.CurrentVersion = (long) eventHeader.EventNumber;
+            layer.CurrentVersion = (long)eventHeader.EventNumber;
             layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             using IServiceScope scope = _serviceProvider.CreateScope();
@@ -609,7 +609,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             environment.Keys = envDataResult.Data;
             environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
             environment.KeyPaths = GenerateKeyPaths(environment.Keys);
-            environment.CurrentVersion = (long) eventHeader.EventNumber;
+            environment.CurrentVersion = (long)eventHeader.EventNumber;
             environment.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -639,11 +639,14 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 string existingTag = layer.Tags.FirstOrDefault(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
                 if (existingTag is null)
+                {
                     continue;
+                }
+
                 layer.Tags.Remove(existingTag);
             }
 
-            layer.CurrentVersion = (long) eventHeader.EventNumber;
+            layer.CurrentVersion = (long)eventHeader.EventNumber;
             layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
@@ -655,7 +658,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Keys = domainEvent.Payload.Keys,
                 Variables = domainEvent.Payload.Variables,
-                CurrentVersion = (long) eventHeader.EventNumber,
+                CurrentVersion = (long)eventHeader.EventNumber,
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime()
             };
@@ -700,7 +703,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 structure.Variables[change.Key] = change.Value;
             }
 
-            structure.CurrentVersion = (long) eventHeader.EventNumber;
+            structure.CurrentVersion = (long)eventHeader.EventNumber;
             structure.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
 
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
@@ -755,7 +758,8 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IResult<Dictionary<string, EnvironmentLayerKey>>> ResolveEnvironmentKeys(ConfigEnvironment environment)
         {
-            var environmentData = new Dictionary<string, EnvironmentLayerKey>();
+            var result = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
+
             foreach (LayerIdentifier layerId in environment.Layers)
             {
                 IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layerId);
@@ -765,13 +769,21 @@ namespace Bechtle.A365.ConfigService.Implementations
                 }
 
                 EnvironmentLayer layer = layerResult.Data;
-                foreach ((string _, EnvironmentLayerKey key) in layer.Keys)
+
+                foreach ((string _, EnvironmentLayerKey entry) in layer.Keys)
                 {
-                    environmentData[key.Key] = key;
+                    // remove existing key if it exists already...
+                    if (result.ContainsKey(entry.Key))
+                    {
+                        result.Remove(entry.Key);
+                    }
+
+                    // add or replace key
+                    result.Add(entry.Key, entry);
                 }
             }
 
-            return Result.Success(environmentData);
+            return Result.Success(result);
         }
 
         // @TODO: un-/assignment of Layers in Environment don't currently mark a Configuration as Stale

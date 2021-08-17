@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -63,23 +64,29 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             var envId = new EnvironmentIdentifier(environmentCategory, environmentName);
             var structId = new StructureIdentifier(structureName, structureVersion);
 
-            var structureKeyResult = await _store.Structures.GetKeys(structId, QueryRange.All);
+            IResult<Page<KeyValuePair<string, string>>> structureKeyResult = await _store.Structures.GetKeys(structId, QueryRange.All);
             if (structureKeyResult.IsError)
+            {
                 return ProviderError(structureKeyResult);
+            }
 
-            var structureVariableResult = await _store.Structures.GetVariables(structId, QueryRange.All);
+            IResult<Page<KeyValuePair<string, string>>> structureVariableResult = await _store.Structures.GetVariables(structId, QueryRange.All);
             if (structureVariableResult.IsError)
+            {
                 return ProviderError(structureVariableResult);
+            }
 
-            var environmentResult = await _store.Environments.GetKeys(
-                                        new KeyQueryParameters<EnvironmentIdentifier>
-                                        {
-                                            Identifier = envId,
-                                            Range = QueryRange.All
-                                        });
+            IResult<Page<KeyValuePair<string, string>>> environmentResult = await _store.Environments.GetKeys(
+                                                                                new KeyQueryParameters<EnvironmentIdentifier>
+                                                                                {
+                                                                                    Identifier = envId,
+                                                                                    Range = QueryRange.All
+                                                                                });
 
             if (environmentResult.IsError)
+            {
                 return ProviderError(environmentResult);
+            }
 
             var structureSnapshot = new Dictionary<string, string>(structureKeyResult.Data.Items);
             var variableSnapshot = new Dictionary<string, string>(structureVariableResult.Data.Items);
@@ -99,12 +106,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             try
             {
-                var compiled = _compiler.Compile(
+                CompilationResult compiled = _compiler.Compile(
                     environmentInfo,
                     structureInfo,
                     _parser);
 
-                var json = _translator.ToJson(compiled.CompiledConfiguration);
+                JsonElement json = _translator.ToJson(compiled.CompiledConfiguration);
 
                 return Ok(json);
             }
@@ -132,13 +139,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {
             if (previewOptions is null)
+            {
                 return BadRequest("no preview-data received");
+            }
 
             if (previewOptions.Environment is null)
+            {
                 return BadRequest("no environment-data received");
+            }
 
             if (previewOptions.Structure is null)
+            {
                 return BadRequest("no structure-data received");
+            }
 
             var environmentInfo = new EnvironmentCompilationInfo
             {
@@ -146,7 +159,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Keys = await ResolveEnvironmentPreview(previewOptions.Environment)
             };
 
-            var (structKeys, varKeys) = await ResolveStructurePreview(previewOptions.Structure);
+            (IDictionary<string, string> structKeys, IDictionary<string, string> varKeys) = await ResolveStructurePreview(previewOptions.Structure);
             var structureInfo = new StructureCompilationInfo
             {
                 Name = "Intermediate-Preview-Structure",
@@ -154,7 +167,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Variables = varKeys
             };
 
-            var compiled = _compiler.Compile(
+            CompilationResult compiled = _compiler.Compile(
                 environmentInfo,
                 structureInfo,
                 _parser);
@@ -168,21 +181,109 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 });
         }
 
+        /// <summary>
+        ///     Preview the result of stacking multiple Layers in a given order (Environment).
+        ///     Identifiers given in <paramref name="layer" /> will be stacked in the order their provided in the URL - first param=first layer/lowest priority.
+        /// </summary>
+        /// <param name="layer">layer-identifier</param>
+        /// <returns>key/value-result of building an environment</returns>
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        [HttpGet("environment/json", Name = "PreviewEnvironmentJson")]
+        public async Task<IActionResult> PreviewEnvironmentJson([FromQuery] string[] layer)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (LayerIdentifier layerId in layer.Select(l => new LayerIdentifier(l)))
+            {
+                IResult<Page<KeyValuePair<string, string>>> layerResult = await _store.Layers.GetKeys(
+                                                                              new KeyQueryParameters<LayerIdentifier>
+                                                                              {
+                                                                                  Identifier = layerId,
+                                                                                  Range = QueryRange.All
+                                                                              });
+                if (layerResult.IsError)
+                {
+                    return ProviderError(layerResult);
+                }
+
+                foreach ((string key, string value) in layerResult.Data.Items)
+                {
+                    // remove existing key if it exists already...
+                    if (result.ContainsKey(key))
+                    {
+                        result.Remove(key);
+                    }
+
+                    // add or replace key
+                    result.Add(key, value);
+                }
+            }
+
+            JsonElement json = _translator.ToJson(result);
+
+            return Ok(json);
+        }
+
+        /// <summary>
+        ///     Preview the result of stacking multiple Layers in a given order (Environment).
+        ///     Identifiers given in <paramref name="layer" /> will be stacked in the order their provided in the URL - first param=first layer/lowest priority.
+        /// </summary>
+        /// <param name="layer">layer-identifier</param>
+        /// <returns>key/value-result of building an environment</returns>
+        [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
+        [HttpGet("environment/keys", Name = "PreviewEnvironmentKeys")]
+        public async Task<IActionResult> PreviewEnvironmentKeys([FromQuery] string[] layer)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (LayerIdentifier layerId in layer.Select(l => new LayerIdentifier(l)))
+            {
+                IResult<Page<KeyValuePair<string, string>>> layerResult = await _store.Layers.GetKeys(
+                                                                              new KeyQueryParameters<LayerIdentifier>
+                                                                              {
+                                                                                  Identifier = layerId,
+                                                                                  Range = QueryRange.All
+                                                                              });
+                if (layerResult.IsError)
+                {
+                    return ProviderError(layerResult);
+                }
+
+                foreach ((string key, string value) in layerResult.Data.Items)
+                {
+                    // remove existing key if it exists already...
+                    if (result.ContainsKey(key))
+                    {
+                        result.Remove(key);
+                    }
+
+                    // add or replace key
+                    result.Add(key, value);
+                }
+            }
+
+            return Ok(result.ToImmutableSortedDictionary());
+        }
+
         private async Task<IDictionary<string, string>> ResolveEnvironmentPreview(EnvironmentPreview environment)
         {
             // if there is a reference to an existing Environment, retrieve its keys
             if (!string.IsNullOrWhiteSpace(environment.Category) && !string.IsNullOrWhiteSpace(environment.Name))
             {
                 var id = new EnvironmentIdentifier(environment.Category, environment.Name);
-                var result = await _store.Environments.GetKeys(
-                                 new KeyQueryParameters<EnvironmentIdentifier>
-                                 {
-                                     Identifier = id,
-                                     Range = QueryRange.All
-                                 });
+                IResult<Page<KeyValuePair<string, string>>> result = await _store.Environments.GetKeys(
+                                                                         new KeyQueryParameters<EnvironmentIdentifier>
+                                                                         {
+                                                                             Identifier = id,
+                                                                             Range = QueryRange.All
+                                                                         });
 
                 if (!result.IsError)
+                {
                     return new Dictionary<string, string>(result.Data.Items);
+                }
 
                 Logger.LogWarning($"could not retrieve referenced environment '{id}' for preview: {result.Message}");
             }
@@ -195,15 +296,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         {
             if (!string.IsNullOrWhiteSpace(structure.Name) && !string.IsNullOrWhiteSpace(structure.Version))
             {
-                int.TryParse(structure.Version, out var structureVersion);
+                int.TryParse(structure.Version, out int structureVersion);
                 var id = new StructureIdentifier(structure.Name, structureVersion);
 
-                var structResult = await _store.Structures.GetKeys(id, QueryRange.All);
-                var variableResult = await _store.Structures.GetVariables(id, QueryRange.All);
+                IResult<Page<KeyValuePair<string, string>>> structResult = await _store.Structures.GetKeys(id, QueryRange.All);
+                IResult<Page<KeyValuePair<string, string>>> variableResult = await _store.Structures.GetVariables(id, QueryRange.All);
 
                 if (!structResult.IsError && !variableResult.IsError)
+                {
                     return (Structure: new Dictionary<string, string>(structResult.Data.Items),
                                Variables: new Dictionary<string, string>(variableResult.Data.Items));
+                }
 
                 Logger.LogWarning(
                     $"could not retrieve referenced structure / variables '{id}' for preview: "
