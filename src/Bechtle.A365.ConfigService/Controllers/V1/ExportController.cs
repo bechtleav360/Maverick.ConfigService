@@ -16,7 +16,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     export data to import it at a later time in a different location
     /// </summary>
     [Route(ApiBaseRoute + "export")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class ExportController : ControllerBase
     {
         private readonly IDataExporter _exporter;
@@ -35,6 +34,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="definition"></param>
         /// <returns></returns>
         [HttpPost(Name = "ExportConfiguration")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> Export([FromBody] ExportDefinition definition)
         {
             if (definition is null)

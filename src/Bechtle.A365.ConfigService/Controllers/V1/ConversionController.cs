@@ -12,7 +12,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     convert Dictionary{string, string} to and from JSON
     /// </summary>
     [Route(ApiBaseRoute + "convert")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class ConversionController : ControllerBase
     {
         private readonly IJsonTranslator _translator;
@@ -32,6 +31,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="separator"></param>
         /// <returns></returns>
         [HttpPost("map/json", Name = "ConvertDictionaryToJson")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary,
                                               [FromQuery] string separator = null)
         {
@@ -61,6 +62,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="separator"></param>
         /// <returns></returns>
         [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public IActionResult JsonToDictionary([FromBody] JsonElement json,
                                               [FromQuery] string separator = null)
         {

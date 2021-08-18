@@ -9,7 +9,7 @@
         /// <summary>
         ///     Version 1.0 Deprecation
         /// </summary>
-        public const bool V1 = false;
+        public const bool V1 = true;
 
         /// <summary>
         ///     Version 1.1 Deprecation

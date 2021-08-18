@@ -22,7 +22,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     preview the Results of Building different Configurations
     /// </summary>
     [Route(ApiBaseRoute + "preview")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class PreviewController : ControllerBase
     {
         private readonly IConfigurationCompiler _compiler;
@@ -55,6 +54,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>built configuration rendered as JSON</returns>
         [ProducesResponseType(typeof(object), (int)HttpStatusCode.OK)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "PreviewConfigurationWithStoredValues")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> PreviewConfiguration(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
@@ -136,6 +137,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Result of the Compilation with associated Metadata and both Key/Value and JSON representation of the Config</returns>
         [ProducesResponseType(typeof(PreviewResult), (int)HttpStatusCode.OK)]
         [HttpPost(Name = "PreviewConfigurationWithGivenValues")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> PreviewConfiguration([FromBody] PreviewContainer previewOptions)
         {
             if (previewOptions is null)
@@ -188,8 +191,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="layer">layer-identifier</param>
         /// <returns>key/value-result of building an environment</returns>
         [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
-        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         [HttpGet("environment/json", Name = "PreviewEnvironmentJson")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> PreviewEnvironmentJson([FromQuery] string[] layer)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -232,8 +235,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="layer">layer-identifier</param>
         /// <returns>key/value-result of building an environment</returns>
         [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
-        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         [HttpGet("environment/keys", Name = "PreviewEnvironmentKeys")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> PreviewEnvironmentKeys([FromQuery] string[] layer)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

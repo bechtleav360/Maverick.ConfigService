@@ -16,7 +16,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     Controller responsible to read / write its own Configuration.
     /// </summary>
     [Route(ApiBaseRoute + "configurations/custom")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class SelfConfigurationController : ControllerBase
     {
         private const string ConfigFileLocation = "data/appsettings.json";
@@ -35,6 +34,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpPut]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> AppendConfiguration([FromBody] JsonElement json)
         {
             var givenKeys = _translator.ToDictionary(json);
@@ -122,6 +123,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpGet]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> DumpConfiguration()
         {
             try
@@ -169,6 +172,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="json"></param>
         /// <returns></returns>
         [HttpPost]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> SetConfiguration([FromBody] JsonElement json)
         {
             try

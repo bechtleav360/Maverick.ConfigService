@@ -18,7 +18,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     Query / Manage Environment-Data
     /// </summary>
     [Route(ApiBaseRoute + "environments")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class EnvironmentController : ControllerBase
     {
         private readonly IProjectionStore _store;
@@ -43,6 +42,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>redirects to 'GetKeys'-operation</returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{category}/{name}", Name = "AddEnvironment")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> AddEnvironment(string category, string name)
         {
             if (string.IsNullOrWhiteSpace(category))
@@ -79,6 +80,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPut("{category}/{name}/layers", Name = "AssignLayers")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> AssignLayers(
             [FromRoute] string category,
             [FromRoute] string name,
@@ -111,6 +114,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{category}/{name}", Name = "DeleteEnvironment")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> DeleteEnvironment(string category, string name)
         {
             if (string.IsNullOrWhiteSpace(category))
@@ -142,6 +147,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="name">Name of the given Environment</param>
         /// <returns>ordered list of assigned layer-ids</returns>
         [ProducesResponseType(typeof(LayerIdentifier[]), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         [HttpGet("{category}/{name}/layers", Name = "GetAssignedLayers")]
         public async Task<IActionResult> GetAssignedLayers(
             [FromRoute] string category,
@@ -173,6 +180,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int)HttpStatusCode.OK)]
         [HttpGet("available", Name = "GetAvailableEnvironments")]
         [Obsolete("use GetEnvironments (GET /) instead")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public IActionResult GetAvailableEnvironments(
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
@@ -191,6 +199,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>list of Environment-Ids</returns>
         [ProducesResponseType(typeof(EnvironmentIdentifier[]), (int)HttpStatusCode.OK)]
         [HttpGet(Name = "GetEnvironments")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetEnvironments(
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
@@ -267,6 +276,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Key-Value map</returns>
         [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/keys", Name = "GetEnvironmentAsKeys")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetKeys(
             [FromRoute] string category,
             [FromRoute] string name,
@@ -387,6 +397,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>environment-keys formatted as JSON</returns>
         [ProducesResponseType(typeof(object), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/json", Name = "GetEnvironmentAsJson")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetKeysAsJson(
             [FromRoute] string category,
             [FromRoute] string name,
@@ -447,6 +459,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Key/Value-Objects</returns>
         [ProducesResponseType(typeof(EnvironmentLayerKey), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/keys/objects", Name = "GetEnvironmentAsObjects")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetKeysWithMetadata(
             [FromRoute] string category,
             [FromRoute] string name,
@@ -586,6 +599,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Metadata for the environment</returns>
         [ProducesResponseType(typeof(ConfigEnvironmentMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{category}/{name}/info", Name = "GetEnvironmentMetadata")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetMetadata(
             [FromRoute] string category,
             [FromRoute] string name)

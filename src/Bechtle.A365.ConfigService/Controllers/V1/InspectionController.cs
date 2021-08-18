@@ -22,7 +22,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     controller to inspect and analyze the current state of all stored Configuration-Data
     /// </summary>
     [Route(ApiBaseRoute + "inspect")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class InspectionController : ControllerBase
     {
         private readonly IConfigurationCompiler _compiler;
@@ -51,6 +50,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpPost("environment/{environmentCategory}/{environmentName}/structures/all")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetUsedKeysPerStructureAll(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName)
@@ -88,6 +89,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="environmentName"></param>
         /// <returns></returns>
         [HttpPost("environment/{environmentCategory}/{environmentName}/structures/latest")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetUsedKeysPerStructureLatest(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName)
@@ -139,6 +142,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureVersion"></param>
         /// <returns></returns>
         [HttpPost("structure/compile/{environmentCategory}/{environmentName}/{structureName}/{structureVersion}")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> InspectStructure(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
@@ -235,6 +240,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="environmentName"></param>
         /// <returns></returns>
         [HttpPost("structure/compile/{environmentCategory}/{environmentName}")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> InspectUploadedStructure(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,

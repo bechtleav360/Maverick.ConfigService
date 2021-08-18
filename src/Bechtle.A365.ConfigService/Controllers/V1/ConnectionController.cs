@@ -11,7 +11,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     read information on how to connect to this Service
     /// </summary>
     [Route(ApiBaseRoute + "connections")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class ConnectionController : ControllerBase
     {
         private readonly IOptionsMonitor<EventBusConnectionConfiguration> _config;
@@ -29,6 +28,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <returns></returns>
         [HttpGet("events", Name = "GetEventConnection")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public IActionResult GetEventConnection()
         {
             KnownMetrics.ConnectionInfo.Inc();

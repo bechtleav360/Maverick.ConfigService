@@ -21,8 +21,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     Query / Build Service-Configurations
     /// </summary>
     [Route(ApiBaseRoute + "configurations")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
-    public partial class ConfigurationController : ControllerBase
+    public class ConfigurationController : ControllerBase
     {
         private readonly IProjectionStore _store;
         private readonly IEventBus _eventBus;
@@ -48,6 +47,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="buildOptions">times are assumed to be UTC</param>
         /// <returns></returns>
         [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "BuildConfiguration")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> BuildConfiguration(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
@@ -161,6 +162,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int)HttpStatusCode.OK)]
         [Obsolete("use GetConfigurations (GET /) instead")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public IActionResult GetAvailableConfigurations(
             [FromQuery] DateTime when,
             [FromQuery] int offset = -1,
@@ -184,6 +186,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/keys", Name = "GetConfigurationKeys")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetConfiguration(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
@@ -311,6 +314,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/json", Name = "GetConfigurationJson")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetConfigurationJson(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
@@ -369,6 +374,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet(Name = "GetConfigurations")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<EnvironmentIdentifier, IList<StructureIdentifier>>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetConfigurations(
             [FromQuery] DateTime when,
             [FromQuery] int offset = -1,
@@ -430,6 +436,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="length"></param>
         /// <returns></returns>
         [HttpGet("stale", Name = "GetStaleConfigurations")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetStaleConfigurations(
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1)
@@ -489,6 +496,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/usedKeys", Name = "GetUsedEnvironmentKeys")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetUsedKeys(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
@@ -602,6 +610,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/version", Name = "GetConfigurationVersion")]
         [ProducesResponseType(typeof(string), (int)HttpStatusCode.BadRequest)]
         [ProducesResponseType(typeof(IDictionary<string, string>), (int)HttpStatusCode.OK)]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetVersion(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
@@ -651,6 +661,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Metadata for the configuration</returns>
         [ProducesResponseType(typeof(PreparedConfigurationMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}/info", Name = "GetConfigurationMetadata")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetMetadata(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,

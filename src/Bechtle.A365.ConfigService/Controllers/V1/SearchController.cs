@@ -14,7 +14,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     search through the projected data
     /// </summary>
     [Route(ApiBaseRoute + "search")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class SearchController : ControllerBase
     {
         private readonly IProjectionStore _store;
@@ -40,6 +39,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>list of Keys that match the given query</returns>
         [ProducesResponseType(typeof(DtoConfigKeyCompletion), (int)HttpStatusCode.OK)]
         [HttpGet("environment/{category}/{name}/keys/autocomplete", Name = "GetEnvironmentKeyAutocomplete")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetEnvironmentKeyAutocompleteList(
             [FromRoute] string category,
             [FromRoute] string name,
@@ -133,6 +133,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>list of Keys that match the given query</returns>
         [ProducesResponseType(typeof(DtoConfigKeyCompletion), (int)HttpStatusCode.OK)]
         [HttpGet("layer/{name}/keys/autocomplete", Name = "GetLayerKeyAutocomplete")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetLayerKeyAutocompleteList(
             [FromRoute] string name,
             [FromQuery] string query = null,

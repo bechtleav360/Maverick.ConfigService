@@ -21,7 +21,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     ///     Query / Manage Layer-Data
     /// </summary>
     [Route(ApiBaseRoute + "layers")]
-    [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
     public class LayerController : ControllerBase
     {
         private readonly IProjectionStore _store;
@@ -45,6 +44,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>redirects to 'GetKeys'-operation</returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{name}", Name = "AddLayer")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> AddLayer(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -77,6 +78,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>redirects to 'GetKeys'-operation</returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{name}/clone/{cloneName}", Name = "CloneLayer")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> CloneLayer(string name, string cloneName)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -108,6 +110,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{name}", Name = "DeleteLayer")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> DeleteLayer(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -138,6 +142,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>list of Layer-Ids</returns>
         [ProducesResponseType(typeof(LayerIdentifier[]), (int)HttpStatusCode.OK)]
         [HttpGet(Name = "GetLayers")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetAvailableLayers(
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
@@ -213,6 +218,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Key-Value map</returns>
         [ProducesResponseType(typeof(Dictionary<string, string>), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/keys", Name = "GetLayerAsKeys")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetKeys(
             [FromRoute] string name,
             [FromQuery] string filter,
@@ -327,6 +333,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>environment-keys formatted as JSON</returns>
         [ProducesResponseType(typeof(object), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/json", Name = "GetLayerAsJson")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetKeysAsJson(
             [FromRoute] string name,
             [FromQuery] string filter,
@@ -384,6 +392,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Key/Value-Objects</returns>
         [ProducesResponseType(typeof(EnvironmentLayerKey), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/objects", Name = "GetLayerAsObjects")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetKeysWithMetadata(
             [FromRoute] string name,
             [FromQuery] string filter,
@@ -518,6 +527,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{name}/keys", Name = "DeleteFromLayer")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> DeleteKeys(
             [FromRoute] string name,
             [FromBody] string[] keys)
@@ -555,6 +566,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>redirects to 'GetKeys' action</returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPut("{name}/keys", Name = "UpdateLayer")]
+        [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> UpdateKeys(
             [FromRoute] string name,
             [FromBody] DtoConfigKey[] keys)
@@ -601,6 +614,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Metadata for the layer</returns>
         [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/info", Name = "GetLayerMetadata")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetMetadata([FromRoute] string name)
         {
             try
@@ -625,6 +639,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Metadata for the layer</returns>
         [ProducesResponseType(typeof(EnvironmentLayerMetadata), (int)HttpStatusCode.OK)]
         [HttpGet("{name}/tags", Name = "GetLayerTags")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetTags([FromRoute] string name)
         {
             try
@@ -652,6 +667,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns>Metadata for the layer</returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{name}/tags", Name = "SetLayerTags")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> SetTags(
             [FromRoute] string name,
             [FromBody] string[] tags)
@@ -694,6 +710,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPut("{name}/tags/{tag}", Name = "AddLayerTag")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> AddTag(
             [FromRoute] string name,
             [FromRoute] string tag)
@@ -731,6 +748,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <returns></returns>
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpDelete("{name}/tags/{tag}", Name = "RemoveLayerTag")]
+        [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> RemoveTag(
             [FromRoute] string name,
             [FromRoute] string tag)
