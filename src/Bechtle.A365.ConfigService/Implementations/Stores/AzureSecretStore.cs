@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Identity;
@@ -30,10 +31,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             var config = configuration.Value;
 
-            _client = new SecretClient(configuration.Value.Uri,
-                                       new ClientSecretCredential(config.TenantId,
-                                                                  config.ClientId,
-                                                                  config.ClientSecret));
+            _client = new SecretClient(
+                configuration.Value.Uri,
+                new ClientSecretCredential(
+                    config.TenantId ?? throw new ArgumentNullException(nameof(config.TenantId), "Azure Tenant-Id is missing from configuration"),
+                    config.ClientId ?? throw new ArgumentNullException(nameof(config.ClientId), "Azure Client-Id is missing from configuration"),
+                    config.ClientSecret ?? throw new ArgumentNullException(nameof(config.ClientSecret), "Azure Client-Secret is missing from configuration")));
         }
 
         /// <inheritdoc />

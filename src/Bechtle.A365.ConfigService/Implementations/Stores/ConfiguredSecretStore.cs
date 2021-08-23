@@ -16,11 +16,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     {
         /// <inheritdoc cref="ConfiguredSecretStore" />
         public ConfiguredSecretStore(IOptionsSnapshot<ConfiguredSecretStoreConfiguration> configuration)
-            : base(configuration.Value
-                                .Secrets
-                                .ToDictionary(kvp => NormalizePath(kvp.Key),
-                                              kvp => kvp.Value),
-                   "Configured-Secrets")
+            : base(
+                configuration?.Value
+                             ?.Secrets
+                             ?.ToDictionary(
+                                 kvp => NormalizePath(kvp.Key),
+                                 kvp => kvp.Value)
+                ?? new Dictionary<string, string>(),
+                "Configured-Secrets")
         {
         }
 
