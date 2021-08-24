@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -11,10 +12,10 @@ using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Models.V1;
 using Bechtle.A365.ServiceBase.EventStore.Abstractions;
-using Bechtle.A365.ServiceBase.EventStore.DomainEventBase;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Bechtle.A365.ConfigService.Implementations
 {
@@ -299,17 +300,14 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public async Task<IResult> ImportLayer(LayerIdentifier identifier, IList<EnvironmentLayerKey> keys, CancellationToken cancellationToken)
         {
-            var events = new List<IDomainEvent>();
+            var events = new List<DomainEvent>();
 
             IResult<EnvironmentLayer> result = await LoadObject<EnvironmentLayer, LayerIdentifier>(identifier, cancellationToken);
             if (result.IsError)
             {
                 if (result.Code == ErrorCode.NotFound)
                 {
-                    events.Add(
-                        new DomainEvent<EnvironmentLayerCreated>(
-                            "Anonymous",
-                            new EnvironmentLayerCreated(identifier)));
+                    events.Add(new EnvironmentLayerCreated(identifier));
                 }
                 else
                 {
@@ -322,34 +320,14 @@ namespace Bechtle.A365.ConfigService.Implementations
                 }
             }
 
-            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
-            if (lastProjectedEventResult.IsError)
-            {
-                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
-                return lastProjectedEventResult;
-            }
-
-            long lastProjectedEvent = lastProjectedEventResult.Data;
             ConfigKeyAction[] actions = keys.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
                                             .ToArray();
             events.Add(
-                new DomainEvent<EnvironmentLayerKeysImported>(
-                    "Anonymous",
-                    new EnvironmentLayerKeysImported(
-                        identifier,
-                        actions)));
+                new EnvironmentLayerKeysImported(
+                    identifier,
+                    actions));
 
-            await _eventStore.WriteEventsAsync(
-                events,
-                _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
-
-            foreach (IDomainEvent e in events)
-            {
-                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
-            }
-
-            return Result.Success();
+            return await WriteEventsInternal(events);
         }
 
         /// <inheritdoc />
@@ -442,30 +420,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return Result.Error(result.Message, result.Code);
             }
 
-            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
-            if (lastProjectedEventResult.IsError)
-            {
-                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
-                return lastProjectedEventResult;
-            }
-
-            long lastProjectedEvent = lastProjectedEventResult.Data;
-
-            // convert *our*-type of DomainEvent to the generic late-binding one
-            IList<IDomainEvent> domainEvents = createEvents.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
-                                                           .ToList();
-
-            await _eventStore.WriteEventsAsync(
-                domainEvents,
-                _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
-
-            foreach (IDomainEvent e in domainEvents)
-            {
-                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
-            }
-
-            return Result.Success();
+            return await WriteEventsInternal(createEvents);
         }
 
         private async Task<IResult> DeleteObject<TObject, TIdentifier>(
@@ -494,30 +449,61 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return objectResult;
             }
 
-            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
-            if (lastProjectedEventResult.IsError)
+            return await WriteEventsInternal(deleteEvents);
+        }
+
+        private async Task<List<OptionEntry>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
+        {
+            var storeUri = new Uri(_eventStoreConfiguration.Uri);
+
+            Uri optionsUri = storeUri.Query.Contains("tls=true", StringComparison.OrdinalIgnoreCase)
+                                 ? new Uri($"https://{storeUri.Authority}{storeUri.AbsolutePath}info/options")
+                                 : new Uri($"http://{storeUri.Authority}{storeUri.AbsolutePath}info/options");
+
+            // yes creating HttpClient is frowned upon, but we don't need it *that* often and can immediately release it
+            using var httpClient = new HttpClient();
+            HttpResponseMessage response;
+
+            try
             {
-                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
-                return lastProjectedEventResult;
+                response = await httpClient.GetAsync(optionsUri, cancellationToken);
+
+                if (response is null)
+                {
+                    return null;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "unable to read ES-Options");
+                return null;
             }
 
-            long lastProjectedEvent = lastProjectedEventResult.Data;
-
-            // convert *our*-type of DomainEvent to the generic late-binding one
-            IList<IDomainEvent> domainEvents = deleteEvents.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
-                                                           .ToList();
-
-            await _eventStore.WriteEventsAsync(
-                domainEvents,
-                _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
-
-            foreach (IDomainEvent e in domainEvents)
+            string json = await response.Content.ReadAsStringAsync();
+            try
             {
-                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
+                return JsonConvert.DeserializeObject<List<OptionEntry>>(json);
             }
+            catch (JsonException e)
+            {
+                _logger.LogWarning(e, "unable to parse ES-Options");
+                return null;
+            }
+        }
 
-            return Result.Success();
+        private async Task<long> GetMaxEventSize()
+        {
+            List<OptionEntry> options = await GetEventStoreOptionsAsync();
+
+            long maxAppendSize = long.Parse(
+                options?.FirstOrDefault(
+                           o => o.Name.Equals(
+                               "MaxAppendSize",
+                               StringComparison.OrdinalIgnoreCase))
+                       ?.Value
+                ?? "0");
+
+            return maxAppendSize;
         }
 
         private async Task<IResult<Page<TIdentifier>>> ListObjects<TObject, TIdentifier>(QueryRange range, CancellationToken cancellationToken)
@@ -669,31 +655,14 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return result;
             }
 
-            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
-            if (lastProjectedEventResult.IsError)
-            {
-                _logger.LogWarning("unable to determine which event was last projected, to write safely into stream");
-                return lastProjectedEventResult;
-            }
-
-            long lastProjectedEvent = lastProjectedEventResult.Data;
-
-            // convert *our*-type of DomainEvent to the generic late-binding one
-            IList<IDomainEvent> domainEvents = modificationEvents.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
-                                                                 .ToList();
-
-            await _eventStore.WriteEventsAsync(
-                domainEvents,
-                _eventStoreConfiguration.Stream,
-                ExpectRevision.AtPosition(StreamPosition.Revision((ulong)lastProjectedEvent)));
-
-            foreach (IDomainEvent e in domainEvents)
-            {
-                KnownMetrics.EventsWritten.WithLabels(e.Type).Inc();
-            }
-
-            return Result.Success();
+            return await WriteEventsInternal(modificationEvents);
         }
+
+        private ExpectRevision ToRevision(long eventNumber) => eventNumber switch
+        {
+            var x when x < 0 => ExpectRevision.NotExisting(),
+            _ => ExpectRevision.AtPosition(StreamPosition.Revision((ulong)eventNumber))
+        };
 
         /// <summary>
         ///     validate all recorded events with the given <see cref="ICommandValidator" />
@@ -708,5 +677,92 @@ namespace Bechtle.A365.ConfigService.Implementations
                                                                    .ToList())
                            .Where(kvp => kvp.Value.Any(r => r.IsError))
                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        private async Task<IResult> WriteEventsInternal(IList<DomainEvent> events)
+        {
+            long maxEventSize = await GetMaxEventSize();
+            if (maxEventSize <= 0)
+            {
+                _logger.LogWarning("unable to determine maximum size of ES-Events, unable to write events");
+                return Result.Error("unable to determine maximum event-size", ErrorCode.PrerequisiteFailed);
+            }
+
+            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
+            if (lastProjectedEventResult.IsError)
+            {
+                _logger.LogWarning("unable to determine which event was last projected to write safely into stream");
+                return lastProjectedEventResult;
+            }
+
+            long lastProjectedEvent = lastProjectedEventResult.Data;
+
+            // convert *our*-type of DomainEvent to the generic late-binding one
+            /*IList<IDomainEvent> domainEvents = events.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
+                                                     .ToList();*/
+            var options = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                Converters = new List<JsonConverter> { new StringEnumConverter() }
+            };
+            IList<IDomainEvent> domainEvents = new List<IDomainEvent>();
+            try
+            {
+                // this is *the* most resource-heavy way i could think of, but it's the easiest way of knowing if
+                // the written events will fit into the size-constraints of ES
+                var eventStack = new Stack<DomainEvent>(events);
+                while (eventStack.TryPop(out DomainEvent item))
+                {
+                    var domainEvent = new LateBindingDomainEvent<DomainEvent>("Anonymous", item);
+
+                    // 1048576
+                    int jsonLength = JsonConvert.SerializeObject(domainEvent, options).Length;
+
+                    if (jsonLength < maxEventSize)
+                    {
+                        domainEvents.Add(domainEvent);
+                        continue;
+                    }
+
+                    IList<DomainEvent> smallerEvents = item.Split().Reverse().ToList();
+                    if (smallerEvents.Count == 1)
+                    {
+                        return Result.Error(
+                            "domainEvents exceed maximum size supported by EventStore, and cannot be resized",
+                            ErrorCode.PrerequisiteFailed);
+                    }
+
+                    foreach (DomainEvent smallerItem in smallerEvents)
+                    {
+                        eventStack.Push(smallerItem);
+                    }
+                }
+            }
+            catch (JsonException e)
+            {
+                _logger.LogWarning(e, "unable to approximate size of DomainEvents to be written");
+                return Result.Error("unable to approximate size of DomainEvents", ErrorCode.PrerequisiteFailed);
+            }
+
+            // write all events one-by-one, because ES writes all events in a single message
+            // ---
+            // this is not a ServiceBase.EventStore limitation, but a EventStore.EventStore one
+            // ServiceBase.EventStore.WriteEventsAsync is just passing stuff around and calling _.AppendToStreamAsync(,,{events})
+            // ---
+            // this library is a cluster-fuck
+            var offset = 0;
+            foreach (IDomainEvent domainEvent in domainEvents)
+            {
+                await _eventStore.WriteEventsAsync(
+                    new[] { domainEvent },
+                    _eventStoreConfiguration.Stream,
+                    ToRevision(lastProjectedEvent + offset));
+                KnownMetrics.EventsWritten.WithLabels(domainEvent.Type).Inc();
+
+                ++offset;
+            }
+
+            return Result.Success();
+        }
     }
 }
