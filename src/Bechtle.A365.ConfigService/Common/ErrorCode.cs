@@ -79,5 +79,10 @@
         ///     IO-Operation failed
         /// </summary>
         IOError = 14,
+
+        /// <summary>
+        ///     Pre-Requisite for an Operation was not met.
+        /// </summary>
+        PrerequisiteFailed = 15,
     }
 }
