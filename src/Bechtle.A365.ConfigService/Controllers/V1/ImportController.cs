@@ -22,8 +22,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IDataImporter _importer;
 
         /// <inheritdoc />
-        public ImportController(ILogger<ImportController> logger,
-                                IDataImporter importer)
+        public ImportController(
+            ILogger<ImportController> logger,
+            IDataImporter importer)
             : base(logger)
         {
             _importer = importer;
@@ -84,16 +85,20 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                return AcceptedAtAction(nameof(EnvironmentController.GetEnvironments),
-                                        RouteUtilities.ControllerName<EnvironmentController>(),
-                                        new {version = ApiVersions.V1});
+                return AcceptedAtAction(
+                    nameof(EnvironmentController.GetEnvironments),
+                    RouteUtilities.ControllerName<EnvironmentController>(),
+                    new { version = ApiVersions.V1 });
             }
             catch (Exception e)
             {
-                var targetEnvironments = string.Join(", ", export.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
+                var targetEnvironments = string.Join(
+                    ", ",
+                    export.Environments?.Select(eid => $"{eid.Category}/{eid.Name}")
+                    ?? Array.Empty<string>());
 
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to import '{export.Environments.Length}' environments ({targetEnvironments})");
+                Logger.LogError(e, $"failed to import '{export.Environments?.Length ?? -1}' environments ({targetEnvironments})");
                 return StatusCode(HttpStatusCode.InternalServerError, $"failed to import environments '{targetEnvironments}'");
             }
         }
