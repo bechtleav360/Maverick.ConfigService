@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -85,22 +86,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
             }
 
             return HealthCheckResult.Unhealthy();
-        }
-
-        /// <summary>
-        ///     a single entry returned from [EventStore]/options
-        /// </summary>
-        private class OptionEntry
-        {
-            /// <summary>
-            ///     Name of the Option
-            /// </summary>
-            public string Name { get; set; }
-
-            /// <summary>
-            ///     Value of the Option
-            /// </summary>
-            public string Value { get; set; }
         }
     }
 }

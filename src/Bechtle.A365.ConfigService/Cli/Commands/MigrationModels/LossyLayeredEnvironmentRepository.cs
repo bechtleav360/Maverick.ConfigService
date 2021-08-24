@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
     /// </summary>
     public class LossyLayeredEnvironmentRepository : IState
     {
-        private List<EventStoreOption> _options;
+        private List<OptionEntry> _options;
 
         /// <summary>
         ///     Connection-String used to retrieve information about the maximum size of an Event
@@ -172,7 +172,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
             return bytes.Length;
         }
 
-        private async Task<List<EventStoreOption>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
+        private async Task<List<OptionEntry>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             var storeUri = new Uri(EventStoreConnectionString);
 
@@ -201,28 +201,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
             string json = await response.Content.ReadAsStringAsync();
             try
             {
-                return JsonConvert.DeserializeObject<List<EventStoreOption>>(json);
+                return JsonConvert.DeserializeObject<List<OptionEntry>>(json);
             }
             catch (JsonException)
             {
                 return null;
             }
-        }
-
-        /// <summary>
-        ///     a single entry returned from [EventStore]/options
-        /// </summary>
-        private class EventStoreOption
-        {
-            /// <summary>
-            ///     Name of the Option
-            /// </summary>
-            public string Name { get; set; }
-
-            /// <summary>
-            ///     Value of the Option
-            /// </summary>
-            public string Value { get; set; }
         }
     }
 }
