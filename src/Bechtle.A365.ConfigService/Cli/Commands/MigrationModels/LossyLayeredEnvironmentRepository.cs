@@ -126,7 +126,11 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
 
                 // split events into smaller events where necessary
                 List<DomainEvent> events = Split(rawEvent, maxAppendSize);
-                IEnumerable<LateBindingDomainEvent<DomainEvent>> domainEvents = events.Select(e => new LateBindingDomainEvent<DomainEvent>("Anonymous", e));
+                IEnumerable<LateBindingDomainEvent<DomainEvent>> domainEvents = events.Select(
+                    e => new LateBindingDomainEvent<DomainEvent>("Anonymous", e)
+                    {
+                        Timestamp = recordedEvent.OriginalEvent.Created.ToUniversalTime()
+                    });
 
                 RecordedDomainEvents.AddRange(domainEvents);
             }

@@ -22,10 +22,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var left = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
             var right = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
 
             Assert.True(left.Equals(right), "left.Equals(right)");
         }
@@ -36,7 +36,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
 
             List<int> hashes = Enumerable.Range(0, 1000)
                                          .Select(i => domainEvent.GetHashCode())
@@ -53,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var domainEvent = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
 
             DomainEventMetadata metadata = domainEvent.GetMetadata();
 
@@ -66,10 +66,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var left = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
             var right = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
 
             Assert.True(left == right, "left == right");
         }
@@ -80,10 +80,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         {
             var left = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
             var right = new EnvironmentLayersModified(
                 new EnvironmentIdentifier(envCategory, envName),
-                new List<LayerIdentifier> { new LayerIdentifier("Foo") });
+                new[] { new LayerIdentifier("Foo") });
 
             Assert.False(left != right, "left != right");
         }

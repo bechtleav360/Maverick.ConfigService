@@ -62,7 +62,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             CancellationToken cancellationToken)
             => ModifyObject<ConfigEnvironment, EnvironmentIdentifier>(
                 environmentIdentifier,
-                new List<DomainEvent> { new EnvironmentLayersModified(environmentIdentifier, layerIdentifiers.ToList()) },
+                new List<DomainEvent> { new EnvironmentLayersModified(environmentIdentifier, layerIdentifiers.ToArray()) },
                 cancellationToken);
 
         /// <inheritdoc />

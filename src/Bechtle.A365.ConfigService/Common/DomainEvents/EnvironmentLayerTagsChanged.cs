@@ -10,17 +10,17 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentLayerTagsChanged : DomainEvent, IEquatable<EnvironmentLayerTagsChanged>
     {
         /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier Identifier { get; set; }
+        public LayerIdentifier Identifier { get; }
 
         /// <summary>
         ///     List of tags that were newly assigned to this Layer
         /// </summary>
-        public List<string> AddedTags { get; set; }
+        public List<string> AddedTags { get; }
 
         /// <summary>
         ///     List of tags that were removed from this Layer
         /// </summary>
-        public List<string> RemovedTags { get; set; }
+        public List<string> RemovedTags { get; }
 
         /// <inheritdoc />
         public EnvironmentLayerTagsChanged(LayerIdentifier identifier, List<string> addedTags, List<string> removedTags)

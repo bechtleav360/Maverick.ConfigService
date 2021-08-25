@@ -70,10 +70,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
                                    new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
                                    new EnvironmentLayersModified(
                                        new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
-                                       new List<LayerIdentifier>
-                                       {
-                                           new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")
-                                       }),
+                                       new[] { new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}") }),
                                    // don't generate Keys-Imported event when there are no keys to import
                                    // will be filtered out in the next step
                                    e.Keys.Any()

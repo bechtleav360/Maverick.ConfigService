@@ -10,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentLayersModified : DomainEvent, IEquatable<EnvironmentLayersModified>
     {
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; set; }
+        public EnvironmentIdentifier Identifier { get; }
 
         /// <summary>
         ///     List of Layers used in this Environment.
@@ -20,10 +20,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         ///         <item>n. {overwrites 0..n-1}</item>
         ///     </list>
         /// </summary>
-        public List<LayerIdentifier> Layers { get; set; }
+        public List<LayerIdentifier> Layers { get; }
 
         /// <inheritdoc />
-        public EnvironmentLayersModified(EnvironmentIdentifier identifier, List<LayerIdentifier> layers)
+        public EnvironmentLayersModified(EnvironmentIdentifier identifier, LayerIdentifier[] layers)
         {
             Identifier = identifier;
             Layers = new List<LayerIdentifier>(layers);
