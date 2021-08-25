@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
@@ -25,6 +24,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     public class DomainObjectManager : IDomainObjectManager
     {
         private readonly IEventStore _eventStore;
+        private readonly IEventStoreOptionsProvider _optionsProvider;
         private readonly EventStoreConnectionConfiguration _eventStoreConfiguration;
         private readonly ILogger<DomainObjectManager> _logger;
         private readonly IDomainObjectStore _objectStore;
@@ -35,18 +35,21 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// </summary>
         /// <param name="objectStore">instance to store/load DomainObjects to/from</param>
         /// <param name="eventStore">IEventStore to write new domain-events to</param>
+        /// <param name="optionsProvider"></param>
         /// <param name="eventStoreConfiguration">eventStore-configuration</param>
         /// <param name="validators">list of domain-event-validators, to use for validating generated Domain-Events</param>
         /// <param name="logger"></param>
         public DomainObjectManager(
             IDomainObjectStore objectStore,
             IEventStore eventStore,
+            IEventStoreOptionsProvider optionsProvider,
             IOptionsSnapshot<EventStoreConnectionConfiguration> eventStoreConfiguration,
             IEnumerable<ICommandValidator> validators,
             ILogger<DomainObjectManager> logger)
         {
             _objectStore = objectStore;
             _eventStore = eventStore;
+            _optionsProvider = optionsProvider;
             _eventStoreConfiguration = eventStoreConfiguration.Value;
             _validators = validators.ToList();
             _logger = logger;
@@ -452,60 +455,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             return await WriteEventsInternal(deleteEvents);
         }
 
-        private async Task<List<OptionEntry>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
-        {
-            var storeUri = new Uri(_eventStoreConfiguration.Uri);
-
-            Uri optionsUri = storeUri.Query.Contains("tls=true", StringComparison.OrdinalIgnoreCase)
-                                 ? new Uri($"https://{storeUri.Authority}{storeUri.AbsolutePath}info/options")
-                                 : new Uri($"http://{storeUri.Authority}{storeUri.AbsolutePath}info/options");
-
-            // yes creating HttpClient is frowned upon, but we don't need it *that* often and can immediately release it
-            using var httpClient = new HttpClient();
-            HttpResponseMessage response;
-
-            try
-            {
-                response = await httpClient.GetAsync(optionsUri, cancellationToken);
-
-                if (response is null)
-                {
-                    return null;
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(e, "unable to read ES-Options");
-                return null;
-            }
-
-            string json = await response.Content.ReadAsStringAsync();
-            try
-            {
-                return JsonConvert.DeserializeObject<List<OptionEntry>>(json);
-            }
-            catch (JsonException e)
-            {
-                _logger.LogWarning(e, "unable to parse ES-Options");
-                return null;
-            }
-        }
-
-        private async Task<long> GetMaxEventSize()
-        {
-            List<OptionEntry> options = await GetEventStoreOptionsAsync();
-
-            long maxAppendSize = long.Parse(
-                options?.FirstOrDefault(
-                           o => o.Name.Equals(
-                               "MaxAppendSize",
-                               StringComparison.OrdinalIgnoreCase))
-                       ?.Value
-                ?? "0");
-
-            return maxAppendSize;
-        }
-
         private async Task<IResult<Page<TIdentifier>>> ListObjects<TObject, TIdentifier>(QueryRange range, CancellationToken cancellationToken)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
@@ -680,11 +629,11 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IResult> WriteEventsInternal(IList<DomainEvent> events)
         {
-            long maxEventSize = await GetMaxEventSize();
-            if (maxEventSize <= 0)
+            long maxEventSize;
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
             {
-                _logger.LogWarning("unable to determine maximum size of ES-Events, unable to write events");
-                return Result.Error("unable to determine maximum event-size", ErrorCode.PrerequisiteFailed);
+                await _optionsProvider.LoadConfiguration(cts.Token);
+                maxEventSize = _optionsProvider.EventSizeLimited ? long.MaxValue : _optionsProvider.MaxEventSizeInBytes;
             }
 
             IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
@@ -710,7 +659,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 // this is *the* most resource-heavy way i could think of, but it's the easiest way of knowing if
                 // the written events will fit into the size-constraints of ES
-                var eventStack = new Stack<DomainEvent>(events);
+                var eventStack = new Stack<DomainEvent>(events.Reverse());
                 while (eventStack.TryPop(out DomainEvent item))
                 {
                     var domainEvent = new LateBindingDomainEvent<DomainEvent>("Anonymous", item);
@@ -751,15 +700,22 @@ namespace Bechtle.A365.ConfigService.Implementations
             // ---
             // this library is a cluster-fuck
             var offset = 0;
-            foreach (IDomainEvent domainEvent in domainEvents)
+            try
             {
-                await _eventStore.WriteEventsAsync(
-                    new[] { domainEvent },
-                    _eventStoreConfiguration.Stream,
-                    ToRevision(lastProjectedEvent + offset));
-                KnownMetrics.EventsWritten.WithLabels(domainEvent.Type).Inc();
+                foreach (IDomainEvent domainEvent in domainEvents)
+                {
+                    await _eventStore.WriteEventsAsync(
+                        new[] { domainEvent },
+                        _eventStoreConfiguration.Stream,
+                        ToRevision(lastProjectedEvent + offset));
+                    KnownMetrics.EventsWritten.WithLabels(domainEvent.Type).Inc();
 
-                ++offset;
+                    ++offset;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
 
             return Result.Success();

@@ -244,17 +244,17 @@ namespace Bechtle.A365.ConfigService
 
                             options.Configuration = connectionString;
                         })
-                    .AddTransient<IProjectionStore, ProjectionStore>()
-                    .AddTransient<ILayerProjectionStore, LayerProjectionStore>()
-                    .AddTransient<IStructureProjectionStore, StructureProjectionStore>()
-                    .AddTransient<IEnvironmentProjectionStore, EnvironmentProjectionStore>()
-                    .AddTransient<IConfigurationProjectionStore, ConfigurationProjectionStore>()
-                    .AddTransient<ITemporaryKeyStore, TemporaryKeyStore>()
+                    .AddScoped<IProjectionStore, ProjectionStore>()
+                    .AddScoped<ILayerProjectionStore, LayerProjectionStore>()
+                    .AddScoped<IStructureProjectionStore, StructureProjectionStore>()
+                    .AddScoped<IEnvironmentProjectionStore, EnvironmentProjectionStore>()
+                    .AddScoped<IConfigurationProjectionStore, ConfigurationProjectionStore>()
+                    .AddScoped<ITemporaryKeyStore, TemporaryKeyStore>()
                     .AddTransient<IConfigurationCompiler, ConfigurationCompiler>()
-                    .AddTransient<IJsonTranslator, JsonTranslator>()
-                    .AddTransient<IConfigurationParser, AntlrConfigurationParser>()
-                    .AddTransient<IDataExporter, DataExporter>()
-                    .AddTransient<IDataImporter, DataImporter>()
+                    .AddScoped<IJsonTranslator, JsonTranslator>()
+                    .AddScoped<IConfigurationParser, AntlrConfigurationParser>()
+                    .AddScoped<IDataExporter, DataExporter>()
+                    .AddScoped<IDataImporter, DataImporter>()
                     .AddTransient<IEventBus, WebSocketEventBusClient>(
                         provider =>
                         {
@@ -280,7 +280,8 @@ namespace Bechtle.A365.ConfigService
                     .AddTransient<IDomainObjectFileStore, DomainObjectFileStore>()
                     .AddTransient<IDomainObjectStore, DomainObjectStore>()
                     .AddTransient<IDomainObjectManager, DomainObjectManager>()
-                    .AddSingleton<IJsonTranslator, JsonTranslator>()
+                    .AddTransient<IEventStoreOptionsProvider, EventStoreOptionsProvider>()
+                    .AddTransient<IJsonTranslator, JsonTranslator>()
                     .AddEventStore(
                         Configuration.GetSection("EventStoreConnection"),
                         services.BuildServiceProvider().GetService<ILoggerFactory>(),

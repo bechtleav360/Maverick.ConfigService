@@ -29,9 +29,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         private readonly Mock<IEventStore> _eventStore = new Mock<IEventStore>(MockBehavior.Strict);
 
         private readonly ILogger<DomainObjectManager> _logger = new NullLogger<DomainObjectManager>();
+
         private readonly Mock<IDomainObjectStore> _objectStore = new Mock<IDomainObjectStore>(MockBehavior.Strict);
 
         private readonly IEnumerable<ICommandValidator> _validators = new List<ICommandValidator>();
+
+        private readonly Mock<IEventStoreOptionsProvider> _optionsProvider = new Mock<IEventStoreOptionsProvider>(MockBehavior.Strict);
 
         public DomainObjectManagerTests()
         {
@@ -415,11 +418,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             AssertLoadsObjectSuccessfully<EnvironmentLayer, LayerIdentifier>(new EnvironmentLayer(new LayerIdentifier("Foo")));
             AssertGetsProjectedVersion();
+            AssertEventStoreOptionsLoaded();
             _eventStore.Setup(
                            e => e.WriteEventsAsync(
                                It.Is<IList<IDomainEvent>>(
                                    list => list.Count == 1
-                                           && ((DomainEvent<EnvironmentLayerKeysImported>)list[0]).Payload != null),
+                                           && ((LateBindingDomainEvent<DomainEvent>)list[0]).Payload is EnvironmentLayerKeysImported),
                                It.IsAny<string>(),
                                It.Is<ExpectStreamPosition>(r => ((NumberedPosition)r.StreamPosition).EventNumber == 4711)))
                        .Returns(Task.CompletedTask)
@@ -444,14 +448,24 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             AssertLoadsObject<EnvironmentLayer, LayerIdentifier>();
             AssertGetsProjectedVersion();
+            AssertEventStoreOptionsLoaded();
             _eventStore.Setup(
                            e => e.WriteEventsAsync(
                                It.Is<IList<IDomainEvent>>(
-                                   list => list.Count == 2
-                                           && ((DomainEvent<EnvironmentLayerCreated>)list[0]).Payload != null
-                                           && ((DomainEvent<EnvironmentLayerKeysImported>)list[1]).Payload != null),
+                                   list => list.Count == 1
+                                           && ((LateBindingDomainEvent<DomainEvent>)list[0]).Payload is EnvironmentLayerCreated),
                                It.IsAny<string>(),
                                It.Is<ExpectStreamPosition>(r => ((NumberedPosition)r.StreamPosition).EventNumber == 4711)))
+                       .Returns(Task.CompletedTask)
+                       .Verifiable("events were not written to stream");
+
+            _eventStore.Setup(
+                           e => e.WriteEventsAsync(
+                               It.Is<IList<IDomainEvent>>(
+                                   list => list.Count == 1
+                                           && ((LateBindingDomainEvent<DomainEvent>)list[0]).Payload is EnvironmentLayerKeysImported),
+                               It.IsAny<string>(),
+                               It.Is<ExpectStreamPosition>(r => ((NumberedPosition)r.StreamPosition).EventNumber == 4712)))
                        .Returns(Task.CompletedTask)
                        .Verifiable("events were not written to stream");
 
@@ -618,21 +632,36 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         }
 
         private void AssertWritesOneEvent<TEvent>(ulong expectedVersion = 4711)
-            => _eventStore.Setup(
-                              e => e.WriteEventsAsync(
-                                  It.Is<IList<IDomainEvent>>(
-                                      domainEvents => domainEvents.Any(de => ((LateBindingDomainEvent<DomainEvent>)de).Payload is TEvent)),
-                                  It.IsAny<string>(),
-                                  It.Is<ExpectStreamPosition>(
-                                      // check if we're writing with the EXACT position that we saved at the last projection
-                                      // if this does not hold, writes could result in invalid state
-                                      r => ((NumberedPosition)r.StreamPosition).EventNumber == expectedVersion)))
-                          .Returns(Task.CompletedTask)
-                          .Verifiable("events were not written to stream");
+        {
+            _eventStore.Setup(
+                           e => e.WriteEventsAsync(
+                               It.Is<IList<IDomainEvent>>(
+                                   domainEvents => domainEvents.Any(de => ((LateBindingDomainEvent<DomainEvent>)de).Payload is TEvent)),
+                               It.IsAny<string>(),
+                               It.Is<ExpectStreamPosition>(
+                                   // check if we're writing with the EXACT position that we saved at the last projection
+                                   // if this does not hold, writes could result in invalid state
+                                   r => ((NumberedPosition)r.StreamPosition).EventNumber == expectedVersion)))
+                       .Returns(Task.CompletedTask)
+                       .Verifiable("events were not written to stream");
+        }
+
+        private void AssertEventStoreOptionsLoaded()
+        {
+            _optionsProvider.Setup(p => p.LoadConfiguration(It.IsAny<CancellationToken>()))
+                            .Returns(Task.CompletedTask);
+
+            _optionsProvider.Setup(p => p.EventSizeLimited)
+                            .Returns(true);
+
+            _optionsProvider.Setup(p => p.MaxEventSizeInBytes)
+                            .Returns(long.MaxValue);
+        }
 
         private DomainObjectManager CreateTestObject() => new DomainObjectManager(
             _objectStore.Object,
             _eventStore.Object,
+            _optionsProvider.Object,
             _configuration.Object,
             _validators,
             _logger);
@@ -653,6 +682,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             AssertLoadsObject<TDomainObject, TIdentifier>();
             AssertGetsProjectedVersion();
             AssertWritesOneEvent<TEvent>();
+            AssertEventStoreOptionsLoaded();
 
             DomainObjectManager manager = CreateTestObject();
             IResult result = await testedFunction(manager);
@@ -677,6 +707,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             AssertLoadsObjectSuccessfully<TDomainObject, TIdentifier>(domainObject);
             AssertGetsProjectedVersion();
             AssertWritesOneEvent<TEvent>();
+            AssertEventStoreOptionsLoaded();
 
             DomainObjectManager manager = CreateTestObject();
             IResult result = await testedFunction(manager);
