@@ -45,6 +45,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="structureName"></param>
         /// <param name="structureVersion"></param>
         /// <param name="buildOptions">times are assumed to be UTC</param>
+        /// <param name="force">ignore sanity-checks and force building of this configuration</param>
         /// <returns></returns>
         [HttpPost("{environmentCategory}/{environmentName}/{structureName}/{structureVersion}", Name = "BuildConfiguration")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
@@ -54,7 +55,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             [FromRoute] string environmentName,
             [FromRoute] string structureName,
             [FromRoute] int structureVersion,
-            [FromBody] ConfigurationBuildOptions buildOptions)
+            [FromBody] ConfigurationBuildOptions buildOptions,
+            [FromQuery] bool force = false)
         {
             var buildError = ValidateBuildOptions(buildOptions);
             if (!(buildError is null))
@@ -93,8 +95,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             bool requestApproved;
 
-            if (stalenessResult.Data)
+            if (force || stalenessResult.Data)
             {
+                if (force)
+                    Logger.LogInformation("build of configuration forced, ignoring sanity-checks");
+
                 var result = await _store.Configurations.Build(
                                  configId,
                                  buildOptions?.ValidFrom,
