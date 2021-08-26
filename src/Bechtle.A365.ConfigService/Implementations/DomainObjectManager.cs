@@ -633,7 +633,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
             {
                 await _optionsProvider.LoadConfiguration(cts.Token);
-                maxEventSize = _optionsProvider.EventSizeLimited ? long.MaxValue : _optionsProvider.MaxEventSizeInBytes;
+                maxEventSize = _optionsProvider.EventSizeLimited ? _optionsProvider.MaxEventSizeInBytes : long.MaxValue;
             }
 
             IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
