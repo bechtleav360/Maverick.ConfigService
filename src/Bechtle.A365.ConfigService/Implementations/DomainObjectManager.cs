@@ -715,7 +715,11 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                _logger.LogWarning(
+                    e,
+                    "error while writing {DomainEvents} domainEvents, some events may have been written before this error",
+                    domainEvents.Count);
+                return Result.Error("unable to write events to EventStore", ErrorCode.DbUpdateError);
             }
 
             return Result.Success();
