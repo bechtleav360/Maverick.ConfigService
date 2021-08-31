@@ -23,7 +23,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         /// <inheritdoc />
-        public async Task<IResult> Import(ConfigExport export)
+        public async Task<IResult> Import(ConfigExport export, CancellationToken cancellationToken)
         {
             if (export is null)
             {

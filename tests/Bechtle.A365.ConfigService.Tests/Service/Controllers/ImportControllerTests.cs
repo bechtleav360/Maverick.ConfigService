@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -25,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task ImportEnv()
         {
-            _dataImporter.Setup(i => i.Import(It.IsAny<ConfigExport>()))
+            _dataImporter.Setup(i => i.Import(It.IsAny<ConfigExport>(), It.IsAny<CancellationToken>()))
                          .ReturnsAsync(Result.Success)
                          .Verifiable("nothing imported");
 
@@ -50,7 +51,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
                     stream.Position = 0;
 
-                    return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                    return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"), CancellationToken.None);
                 });
 
             _dataImporter.Verify();
@@ -59,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task ImportEnvProviderError()
         {
-            _dataImporter.Setup(i => i.Import(It.IsAny<ConfigExport>()))
+            _dataImporter.Setup(i => i.Import(It.IsAny<ConfigExport>(), It.IsAny<CancellationToken>()))
                          .ReturnsAsync(() => Result.Error("something went wrong", ErrorCode.DbUpdateError))
                          .Verifiable("nothing imported");
 
@@ -84,7 +85,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
                                  stream.Position = 0;
 
-                                 return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                                 return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"), CancellationToken.None);
                              });
 
             Assert.NotNull(result.Value);
@@ -95,7 +96,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task ImportEnvStoreThrows()
         {
-            _dataImporter.Setup(i => i.Import(It.IsAny<ConfigExport>()))
+            _dataImporter.Setup(i => i.Import(It.IsAny<ConfigExport>(), It.IsAny<CancellationToken>()))
                          .Throws<Exception>()
                          .Verifiable("nothing imported");
 
@@ -120,7 +121,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
                                  stream.Position = 0;
 
-                                 return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                                 return await c.Import(new FormFile(stream, 0, stream.Length, "export", "export"), CancellationToken.None);
                              });
 
             Assert.NotNull(result.Value);
@@ -137,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                  using var stream = new MemoryStream();
                                  stream.Write(Encoding.UTF8.GetBytes("[ \"is not a valid ConfigExport, and shall throw during deserialization\" ]"));
                                  stream.Position = 0;
-                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"), CancellationToken.None);
                              });
 
             Assert.NotNull(result.Value);
@@ -152,7 +153,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                  using var stream = new MemoryStream();
                                  stream.Write(Encoding.UTF8.GetBytes("null"));
                                  stream.Position = 0;
-                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"), CancellationToken.None);
                              });
 
             Assert.NotNull(result.Value);
@@ -165,7 +166,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                              c =>
                              {
                                  using var stream = new MemoryStream();
-                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"));
+                                 return c.Import(new FormFile(stream, 0, stream.Length, "export", "export"), CancellationToken.None);
                              });
 
             Assert.NotNull(result.Value);

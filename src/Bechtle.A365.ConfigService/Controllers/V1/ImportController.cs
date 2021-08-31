@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Interfaces;
@@ -34,23 +35,24 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         ///     import a previous exported file
         /// </summary>
         /// <param name="file"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
         [HttpPost(Name = "ImportConfiguration")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> Import(IFormFile file)
+        public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
         {
             if (file is null || file.Length == 0)
                 return BadRequest("no or empty file uploaded");
 
             byte[] buffer;
 
-            using (var memStream = new MemoryStream())
+            await using (var memStream = new MemoryStream())
             {
-                await file.CopyToAsync(memStream);
+                await file.CopyToAsync(memStream, cancellationToken);
                 memStream.Seek(0, SeekOrigin.Begin);
                 buffer = new byte[memStream.Length];
-                memStream.Read(buffer, 0, buffer.Length);
+                await memStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
             }
 
             if (!buffer.Any())
@@ -80,7 +82,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
             try
             {
-                var result = await _importer.Import(export);
+                var result = await _importer.Import(export, cancellationToken);
 
                 if (result.IsError)
                     return ProviderError(result);
