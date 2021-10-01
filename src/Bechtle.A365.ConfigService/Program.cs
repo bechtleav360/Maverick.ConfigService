@@ -26,6 +26,11 @@ namespace Bechtle.A365.ConfigService
     public static class Program
     {
         /// <summary>
+        ///     Activity-Source used for all Activities in this service
+        /// </summary>
+        public static readonly ActivitySource Source = new ActivitySource("Maverick.ConfigService", "1.0");
+
+        /// <summary>
         ///     Delegate App-Startup to the default ServiceBase-Behaviour
         /// </summary>
         /// <param name="args"></param>
@@ -85,7 +90,7 @@ namespace Bechtle.A365.ConfigService
         /// <typeparam name="TStartup">Startup-Type, consider extending <see cref="DefaultStartup" /></typeparam>
         /// <param name="args">command-line args</param>
         /// <param name="hostCustomizer">function to customize the prepared <see cref="IHostBuilder" /> for your application</param>
-        private static void CliMain<TStartup>(string[] args, Action<IHostBuilder> hostCustomizer = null)
+        private static void ServiceMain<TStartup>(string[] args, Action<IHostBuilder> hostCustomizer = null)
             where TStartup : class
         {
             ConfigureActivityIdLogging();
@@ -162,7 +167,7 @@ namespace Bechtle.A365.ConfigService
                                {
                                    try
                                    {
-                                       CliMain<TStartup>(args, appHostCustomizer);
+                                       ServiceMain<TStartup>(args, appHostCustomizer);
                                        return 0;
                                    }
                                    catch (Exception ex)

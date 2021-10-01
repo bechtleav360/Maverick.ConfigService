@@ -21,6 +21,7 @@ using Bechtle.A365.ServiceBase;
 using Bechtle.A365.ServiceBase.EventStore.Extensions;
 using Bechtle.A365.ServiceBase.Sagas.MessageBroker;
 using HealthChecks.UI.Client;
+using Maverick.Extensions.CorrelationIds;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -63,7 +64,19 @@ namespace Bechtle.A365.ConfigService
             _logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
             AppConfigContainer appConfiguration = app.StartTweakingWith(_logger, Configuration);
 
-            // basic Asp.NetCore 3.X stuff 
+            appConfiguration.Tweak(
+                a => a.UseCorrelationIds(
+                    new CorrelationCoercionOptions
+                    {
+                        PossibleHeaders = new List<string>
+                        {
+                            "x-correlation-id",
+                            "X-FOOBAR-ID"
+                        }
+                    }),
+                "using legacy correlation-ids");
+
+            // basic Asp.NetCore 3.X stuff
             appConfiguration.Tweak(a => a.UseRouting(), "adding routing")
                             .Tweak(a => a.UseHttpMetrics(), "adding http-metrics");
 
@@ -118,7 +131,7 @@ namespace Bechtle.A365.ConfigService
             // Don't do this before other Endpoints, so they get the chance to handle stuff before the Controllers do
             appConfiguration.Tweak(a => a.UseEndpoints(builder => builder.MapControllers()), "adding controller-endpoints");
 
-            // Metrics and Live-/Readiness-Probes 
+            // Metrics and Live-/Readiness-Probes
             appConfiguration.Tweak(a => a.UseEndpoints(builder => builder.MapMetrics()), "adding metrics-endpoints");
             appConfiguration.Tweak(
                                 a => a.UseEndpoints(
