@@ -119,7 +119,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     IDomainEvent<ConfigurationBuilt> e => HandleConfigurationBuilt(eventHeader, e),
                     IDomainEvent<DefaultEnvironmentCreated> e => HandleDefaultEnvironmentCreated(eventHeader, e),
                     IDomainEvent<EnvironmentCreated> e => HandleEnvironmentCreated(eventHeader, e),
-                    IDomainEvent<EnvironmentDeleted> e => HandleEnvironmentDeleted(eventHeader, e),
+                    IDomainEvent<EnvironmentDeleted> e => HandleEnvironmentDeleted(e),
                     IDomainEvent<EnvironmentLayersModified> e => HandleEnvironmentLayersModified(eventHeader, e),
                     IDomainEvent<EnvironmentLayerCreated> e => HandleEnvironmentLayerCreated(eventHeader, e),
                     IDomainEvent<EnvironmentLayerDeleted> e => HandleEnvironmentLayerDeleted(eventHeader, e),
@@ -128,7 +128,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     IDomainEvent<EnvironmentLayerKeysImported> e => HandleEnvironmentLayerKeysImported(eventHeader, e),
                     IDomainEvent<EnvironmentLayerKeysModified> e => HandleEnvironmentLayerKeysModified(eventHeader, e),
                     IDomainEvent<StructureCreated> e => HandleStructureCreated(eventHeader, e),
-                    IDomainEvent<StructureDeleted> e => HandleStructureDeleted(eventHeader, e),
+                    IDomainEvent<StructureDeleted> e => HandleStructureDeleted(e),
                     IDomainEvent<StructureVariablesModified> e => HandleStructureVariablesModified(eventHeader, e),
                     _ => null
                 };
@@ -382,7 +382,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
         }
 
-        private async Task HandleEnvironmentDeleted(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentDeleted> domainEvent)
+        private async Task HandleEnvironmentDeleted(IDomainEvent<EnvironmentDeleted> domainEvent)
         {
             await _objectStore.Remove<ConfigEnvironment, EnvironmentIdentifier>(domainEvent.Payload.Identifier);
         }
@@ -666,7 +666,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
         }
 
-        private async Task HandleStructureDeleted(StreamedEventHeader eventHeader, IDomainEvent<StructureDeleted> domainEvent)
+        private async Task HandleStructureDeleted(IDomainEvent<StructureDeleted> domainEvent)
         {
             await _objectStore.Remove<ConfigStructure, StructureIdentifier>(domainEvent.Payload.Identifier);
         }
