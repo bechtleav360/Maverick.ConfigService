@@ -46,17 +46,18 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                     return 1;
                 }
 
-                Output.WriteTable(environments.OrderBy(e => e.Environment.Category)
-                                              .ThenBy(e => e.Environment.Name)
-                                              .ThenBy(e => e.Structure.Name)
-                                              .ThenBy(e => e.Structure.Version),
-                                  e => new Dictionary<string, object>
-                                  {
-                                      {"Category", e.Environment.Category},
-                                      {"Environment", e.Environment.Name},
-                                      {"Structure", e.Structure.Name},
-                                      {"Version", e.Structure.Version}
-                                  });
+                Output.WriteTable(
+                    environments.OrderBy(e => e.Environment?.Category)
+                                .ThenBy(e => e.Environment?.Name)
+                                .ThenBy(e => e.Structure?.Name)
+                                .ThenBy(e => e.Structure?.Version),
+                    e => new Dictionary<string, object>
+                    {
+                        { "Category", e.Environment?.Category ?? string.Empty },
+                        { "Environment", e.Environment?.Name ?? string.Empty },
+                        { "Structure", e.Structure?.Name ?? string.Empty },
+                        { "Version", e.Structure?.Version ?? -1 }
+                    });
 
                 return 0;
             }
@@ -73,9 +74,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
         private class Configuration
         {
-            public ConfigEnv Environment { get; set; } = null;
+            public ConfigEnv? Environment { get; set; } = null;
 
-            public ConfigStruct Structure { get; set; } = null;
+            public ConfigStruct? Structure { get; set; } = null;
         }
 
         private class ConfigEnv

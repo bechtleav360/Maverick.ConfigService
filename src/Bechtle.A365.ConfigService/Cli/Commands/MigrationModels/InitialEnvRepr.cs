@@ -20,6 +20,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
         /// <summary>
         ///     List of Keys contained in this Environment
         /// </summary>
-        public List<InitialKeyRepr> Keys;
+        public List<InitialKeyRepr>? Keys;
     }
 }

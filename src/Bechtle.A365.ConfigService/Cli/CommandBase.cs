@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Cli
         ///     Service-Endpoint to use when querying data or issuing commands
         /// </summary>
         [Option("-s|--service")]
-        public string ConfigServiceEndpoint { get; set; }
+        public string ConfigServiceEndpoint { get; set; } = string.Empty;
 
         /// <summary>
         ///     Computed Property that increases the logging-verbosity of <see cref="Output"/> everytime it's set

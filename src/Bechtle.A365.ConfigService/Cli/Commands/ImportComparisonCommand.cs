@@ -29,15 +29,17 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         ///     File containing the layer-dump to compare against
         /// </summary>
         [Option("-i|--input", Description = "location of layer-dump")]
-        public string InputFile { get; set; }
+        public string InputFile { get; set; } = string.Empty;
 
         /// <summary>
         ///     current Diff-Mode, decides which data is written to output
         /// </summary>
-        [Option("-m|--mode", Description = "which operations should be executed to match the target-environment. " +
-                                           "\n\t\t- 'Add'   : add keys which are new in source. " +
-                                           "\n\t\t- 'Delete': remove keys that have been deleted in source. " +
-                                           "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
+        [Option(
+            "-m|--mode",
+            Description = "which operations should be executed to match the target-environment. "
+                          + "\n\t\t- 'Add'   : add keys which are new in source. "
+                          + "\n\t\t- 'Delete': remove keys that have been deleted in source. "
+                          + "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
         public ComparisonMode Mode { get; set; } = ComparisonMode.Match;
 
         /// <inheritdoc />
@@ -78,34 +80,42 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             if (!CheckParameters())
                 return 1;
 
-            var (readSuccess, fileContent) = await ReadInput(InputFile);
+            (bool readSuccess, var fileContent) = await ReadInput(InputFile);
             if (!readSuccess)
                 return 1;
 
-            var comparisons = DeserializeInput(fileContent);
+            IList<LayerComparison>? comparisons = DeserializeInput(fileContent);
             if (comparisons is null || !comparisons.Any())
                 return 1;
 
-            foreach (var comparison in comparisons)
-                await ExecuteActions(comparison.Target, comparison.RequiredActions);
+            foreach (LayerComparison comparison in comparisons)
+            {
+                if (comparison.Target is { } target
+                    && comparison.RequiredActions is { } actions)
+                {
+                    await ExecuteActions(target, actions);
+                }
+            }
 
             return 1;
         }
 
-        private IList<LayerComparison> DeserializeInput(string json)
+        private IList<LayerComparison>? DeserializeInput(string json)
         {
             try
             {
-                return JsonSerializer.Deserialize<List<LayerComparison>>(json, new JsonSerializerOptions
-                {
-                    Converters =
+                return JsonSerializer.Deserialize<List<LayerComparison>>(
+                    json,
+                    new JsonSerializerOptions
                     {
-                        new JsonIsoDateConverter(),
-                        new JsonStringEnumConverter(),
-                        new DoubleConverter(),
-                        new FloatConverter()
-                    }
-                });
+                        Converters =
+                        {
+                            new JsonIsoDateConverter(),
+                            new JsonStringEnumConverter(),
+                            new DoubleConverter(),
+                            new FloatConverter()
+                        }
+                    });
             }
             catch (JsonException e)
             {
@@ -142,17 +152,21 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
                 if ((Mode & ComparisonMode.Delete) != 0 && deletions.Any())
                     return RestRequest.Make(Output)
-                                      .Delete(new Uri(new Uri(ConfigServiceEndpoint), $"v1/layers/{identifier.Name}/keys"),
-                                              new StringContent(serializedDeletions,
-                                                                Encoding.UTF8,
-                                                                "application/json"));
+                                      .Delete(
+                                          new Uri(new Uri(ConfigServiceEndpoint), $"v1/layers/{identifier.Name}/keys"),
+                                          new StringContent(
+                                              serializedDeletions,
+                                              Encoding.UTF8,
+                                              "application/json"));
 
                 if ((Mode & ComparisonMode.Add) != 0 && changes.Any())
                     return RestRequest.Make(Output)
-                                      .Put(new Uri(new Uri(ConfigServiceEndpoint), $"v1/layers/{identifier.Name}/keys"),
-                                           new StringContent(serializedChanges,
-                                                             Encoding.UTF8,
-                                                             "application/json"));
+                                      .Put(
+                                          new Uri(new Uri(ConfigServiceEndpoint), $"v1/layers/{identifier.Name}/keys"),
+                                          new StringContent(
+                                              serializedChanges,
+                                              Encoding.UTF8,
+                                              "application/json"));
             }
             catch (Exception e)
             {
@@ -167,7 +181,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             string fileContent;
             try
             {
-                await using (var file = File.OpenRead(path))
+                await using (FileStream? file = File.OpenRead(path))
                 {
                     using var reader = new StreamReader(file, Encoding.UTF8, leaveOpen: true);
                     fileContent = await reader.ReadToEndAsync();
@@ -176,13 +190,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 if (string.IsNullOrWhiteSpace(fileContent))
                 {
                     Output.WriteError($"could not read content of '{path}'");
-                    return (false, null);
+                    return (false, string.Empty);
                 }
             }
             catch (IOException e)
             {
                 Output.WriteError($"could not read input-file properly: {e.Message}");
-                return (false, null);
+                return (false, string.Empty);
             }
 
             return (true, fileContent);

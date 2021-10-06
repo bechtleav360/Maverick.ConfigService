@@ -17,6 +17,6 @@ namespace Bechtle.A365.ConfigService.Cli
         /// <summary>
         ///     reference to Parent-Command
         /// </summary>
-        protected T Parent { get; set; }
+        protected T? Parent { get; set; }
     }
 }

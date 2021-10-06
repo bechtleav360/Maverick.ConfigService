@@ -23,8 +23,10 @@ namespace Bechtle.A365.ConfigService.Cli
             _console = console;
         }
 
+        // this implementation comes from ILogger<T>, but it's not clear if any parameters are nullable or not
+        // this code assumed 'formatter' could be null before moving to a nullable-enabled project, so we're leaving it as is
         /// <inheritdoc />
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string>? formatter)
         {
             if (!IsEnabled(logLevel))
                 return;

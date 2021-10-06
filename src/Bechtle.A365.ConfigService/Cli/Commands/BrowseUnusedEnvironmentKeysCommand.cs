@@ -32,7 +32,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         ///     Identifier for the Environment in question
         /// </summary>
         [Option("-e|--environment", "use the given environment for comparison, given in \"{Category}/{Name}\" form", CommandOptionType.SingleValue)]
-        public string Environment { get; set; }
+        public string Environment { get; set; } = string.Empty;
 
         /// <summary>
         ///     Flag indicating if used keys should be shown along unused ones or not
@@ -111,7 +111,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                                       {
                                           {"Key", e.Key},
                                           {"Structures (Count)", e.Structures.Count},
-                                          {"Value (Length)", $"{e.Value?.Length.ToString() ?? "null"}"}
+                                          {"Value (Length)", $"{e.Value.Length.ToString()}"}
                                       },
                                       new Dictionary<string, TextAlign>
                                       {
@@ -171,7 +171,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             /// <summary>
             ///     List of Structures that used this Key
             /// </summary>
-            public List<StructureIdentifier> Structures { get; set; } = new List<StructureIdentifier>();
+            public List<StructureIdentifier> Structures { get; set; } = new();
 
             /// <summary>
             ///     Current Value

@@ -306,7 +306,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                     Output.WriteVerboseLine($"writing event {lastPosition} '{type}', data={data.Length}b, metadata={metadata.Length}b");
 
                     var @event = new EventData(Uuid.NewUuid(), type, data, metadata);
-                    IWriteResult result = await eventStore.AppendToStreamAsync(EventStoreStream, lastPosition, new[] {@event});
+                    IWriteResult result = await eventStore.AppendToStreamAsync(EventStoreStream, lastPosition, new[] { @event });
 
                     lastPosition = result.NextExpectedStreamRevision;
                 }
@@ -330,17 +330,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         private async Task<int> GenerateState<TState>(
             EventStoreClient eventStore,
             string backupFileLocation,
-            Func<EventStoreClient, Task<TState>> stateGenerator)
+            Func<EventStoreClient, Task<TState?>> stateGenerator)
         {
             Output.WriteVerboseLine("reading relevant current state from EventStore");
 
             try
             {
-                TState currentState = await stateGenerator(eventStore);
-
-                if (currentState is null)
+                if (await stateGenerator(eventStore) is not { } currentState)
                 {
-                    return 1;
+                    return -1;
                 }
 
                 string json = JsonConvert.SerializeObject(
@@ -382,7 +380,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         ///     this migration only preserves the last state of all existing Environments.
         /// </summary>
         /// <returns>exit-code, 0=success | 1=failure</returns>
-        private async Task<int> LossyMigration<TState>(Func<EventStoreClient, Task<TState>> stateGenerator)
+        private async Task<int> LossyMigration<TState>(Func<EventStoreClient, Task<TState?>> stateGenerator)
             where TState : IState
         {
             var backupFileLocation = "./migrated-state.json";
@@ -428,14 +426,16 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
                 try
                 {
-                    state = JsonConvert.DeserializeObject<TState>(
-                        json,
-                        new JsonSerializerSettings
-                        {
-                            TypeNameHandling = TypeNameHandling.All
-                        });
-
-                    if (state is null)
+                    if (JsonConvert.DeserializeObject<TState>(
+                            json,
+                            new JsonSerializerSettings
+                            {
+                                TypeNameHandling = TypeNameHandling.All
+                            }) is { } deserialized)
+                    {
+                        state = deserialized;
+                    }
+                    else
                     {
                         Output.WriteError("could not deserialize backup into object");
                         return 1;
@@ -464,7 +464,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <param name="eventStore">opened EventStore-Connection</param>
         /// <param name="stateCustomizer">action to customize the state before applying events to it</param>
         /// <returns>object containing all relevant state for the Initial-Version of this Stream</returns>
-        private async Task<TState> RecordState<TState>(EventStoreClient eventStore, Action<TState> stateCustomizer = null)
+        private async Task<TState?> RecordState<TState>(EventStoreClient eventStore, Action<TState>? stateCustomizer = null)
             where TState : class, IState, new()
         {
             var currentState = new TState();

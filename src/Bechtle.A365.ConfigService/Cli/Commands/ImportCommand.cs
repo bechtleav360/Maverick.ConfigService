@@ -28,12 +28,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     File containing the previously generated Export
         /// </summary>
-        [Option("-f|--file", Description = "Config-Exports created with the 'export' command, or directly from ConfigService. \r\n" +
-                                           "Multiple files each with a single Environment can be given, " +
-                                           "they will overwrite their data in the order they're given.\r\n" +
-                                           "If the first file contains multiple Environments, overwriting keys is not possible.\r\n" +
-                                           "If subsequent files contain multiple Environments, none are used to overwrite data.")]
-        public string File { get; set; }
+        [Option(
+            "-f|--file",
+            Description = "Config-Exports created with the 'export' command, or directly from ConfigService. \r\n"
+                          + "Multiple files each with a single Environment can be given, "
+                          + "they will overwrite their data in the order they're given.\r\n"
+                          + "If the first file contains multiple Environments, overwriting keys is not possible.\r\n"
+                          + "If subsequent files contain multiple Environments, none are used to overwrite data.")]
+        public string File { get; set; } = string.Empty;
 
         /// <inheritdoc />
         protected override async Task<int> OnExecuteAsync(CommandLineApplication app)
@@ -66,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return 0;
         }
 
-        private ConfigExport GetInput()
+        private ConfigExport? GetInput()
         {
             if (string.IsNullOrWhiteSpace(File))
             {
@@ -80,9 +82,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return GetInputFromFile(File);
         }
 
-        private ConfigExport GetInputFromFile(string file)
+        private ConfigExport? GetInputFromFile(string file)
         {
-            ConfigExport result = null;
+            ConfigExport? result = null;
 
             try
             {
@@ -103,7 +105,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             return result;
         }
 
-        private ConfigExport GetInputFromStdIn()
+        private ConfigExport? GetInputFromStdIn()
         {
             if (!Output.IsInputRedirected)
                 return null;

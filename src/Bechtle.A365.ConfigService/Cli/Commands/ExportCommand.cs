@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         ///     Environments to export from remote ConfigService
         /// </summary>
         [Option("-e|--environment", Description = "Environment to export, given in \"{Category}/{Name}\" form")]
-        public string[] Environments { get; set; }
+        public string[] Environments { get; set; } = Array.Empty<string>();
 
         /// <summary>
         ///     how to modify output from ConfigService, if at all
@@ -64,13 +64,13 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         ///     Layers to export from remote ConfigService
         /// </summary>
         [Option("-l|--layer", Description = "Layer to export")]
-        public string[] Layers { get; set; }
+        public string[] Layers { get; set; } = Array.Empty<string>();
 
         /// <summary>
         ///     output-file to save export to
         /// </summary>
         [Option("-o|--output", Description = "location to export data to")]
-        public string OutputFile { get; set; }
+        public string OutputFile { get; set; } = string.Empty;
 
         /// <inheritdoc />
         protected override bool CheckParameters()
@@ -78,7 +78,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             // check Base-Parameters
             base.CheckParameters();
 
-            if (Environments is null || !Environments.Any())
+            if (!Environments.Any())
             {
                 Output.WriteError($"no {nameof(Environments)} given -- see help for more information");
                 return false;

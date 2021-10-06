@@ -12,16 +12,16 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     Source-Layer used in this Comparison
         /// </summary>
-        public LayerIdentifier Source { get; set; }
+        public LayerIdentifier? Source { get; set; }
 
         /// <summary>
         ///     Target-Layer used in this Comparison
         /// </summary>
-        public LayerIdentifier Target { get; set; }
+        public LayerIdentifier? Target { get; set; }
 
         /// <summary>
         ///     List of Actions required to get from <see cref="Source"/> to <see cref="Target"/>
         /// </summary>
-        public List<ConfigKeyAction> RequiredActions { get; set; }
+        public List<ConfigKeyAction>? RequiredActions { get; set; }
     }
 }

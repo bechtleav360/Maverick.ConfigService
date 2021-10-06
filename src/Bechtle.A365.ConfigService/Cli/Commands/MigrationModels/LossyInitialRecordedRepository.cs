@@ -19,7 +19,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
         /// <summary>
         ///     List of environments that need to be remade
         /// </summary>
-        public readonly List<InitialEnvRepr> Environments = new List<InitialEnvRepr>();
+        public readonly List<InitialEnvRepr> Environments = new();
 
         /// <inheritdoc />
         public void ApplyEvent(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
@@ -62,28 +62,29 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
         /// <inheritdoc />
         public List<(string Type, byte[] Data, byte[] Metadata)> GenerateEventData()
             => Environments.SelectMany(
-                               e => new List<DomainEvent>
+                               e => new List<DomainEvent?>
                                {
                                    e.IsDefault
                                        ? new DefaultEnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name))
-                                       : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)) as DomainEvent,
+                                       : new EnvironmentCreated(new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name)),
                                    new EnvironmentLayerCreated(new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}")),
                                    new EnvironmentLayersModified(
                                        new EnvironmentIdentifier(e.Identifier.Category, e.Identifier.Name),
                                        new[] { new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}") }),
                                    // don't generate Keys-Imported event when there are no keys to import
                                    // will be filtered out in the next step
-                                   e.Keys.Any()
+                                   e.Keys?.Any() == true
                                        ? new EnvironmentLayerKeysImported(
                                            new LayerIdentifier($"ll-{e.Identifier.Category}-{e.Identifier.Name}"),
                                            e.Keys
-                                            .Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
-                                            .ToArray())
+                                            ?.Select(k => ConfigKeyAction.Set(k.Key, k.Value, k.Description, k.Type))
+                                            .ToArray()
+                                           ?? Array.Empty<ConfigKeyAction>())
                                        : null
                                })
                            .Where(e => e != null)
                            .Select(
-                               e => (Type: e.EventType,
+                               e => (Type: e!.EventType,
                                         Data: Encoding.UTF8.GetBytes(
                                             JsonConvert.SerializeObject(e)),
                                         Metadata: Encoding.UTF8.GetBytes(
@@ -95,7 +96,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
         {
             var domainEvent = JsonConvert.DeserializeAnonymousType(
                 Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
-                new {Identifier = new InitialEnvIdRepr()});
+                new { Identifier = new InitialEnvIdRepr() });
 
             if (Environments.Any(
                     repr => repr.Identifier.Category == domainEvent.Identifier.Category
@@ -119,7 +120,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
         {
             var domainEvent = JsonConvert.DeserializeAnonymousType(
                 Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
-                new {Identifier = new InitialEnvIdRepr()});
+                new { Identifier = new InitialEnvIdRepr() });
 
             if (Environments.Any(
                     repr => repr.Identifier.Category == domainEvent.Identifier.Category
@@ -143,7 +144,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
         {
             var domainEvent = JsonConvert.DeserializeAnonymousType(
                 Encoding.UTF8.GetString(resolvedEvent.Event.Data.Span),
-                new {Identifier = new InitialEnvIdRepr()});
+                new { Identifier = new InitialEnvIdRepr() });
 
             int existingIndex = Environments.FindIndex(
                 repr => repr.Identifier.Category == domainEvent.Identifier.Category
@@ -177,15 +178,16 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
                     ModifiedKeys = new List<InitialKeyActionRepr>()
                 });
 
-            InitialEnvRepr existing = Environments.FirstOrDefault(
+            InitialEnvRepr? maybeExistingEnvironment = Environments.FirstOrDefault(
                 repr => repr.Identifier.Category == domainEvent.Identifier.Category
                         && repr.Identifier.Name == domainEvent.Identifier.Name);
+            InitialEnvRepr existing;
 
-            if (existing is null)
+            if (maybeExistingEnvironment is null)
             {
                 if (importEnvironment)
                 {
-                    existing = new InitialEnvRepr {Identifier = domainEvent.Identifier, Keys = new List<InitialKeyRepr>()};
+                    existing = new InitialEnvRepr { Identifier = domainEvent.Identifier, Keys = new List<InitialKeyRepr>() };
                     Environments.Add(existing);
                 }
                 else
@@ -199,6 +201,12 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
                         $"unable to find Environment '{domainEvent.Identifier.Category}'/'{domainEvent.Identifier.Name}'");
                 }
             }
+            else
+            {
+                existing = maybeExistingEnvironment;
+            }
+
+            existing.Keys ??= new List<InitialKeyRepr>();
 
             foreach (InitialKeyActionRepr action in domainEvent.ModifiedKeys.Where(a => a.Type == InitialKeyActionTypeRepr.Delete))
             {
@@ -206,7 +214,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
 
                 if (existingIndex >= 0)
                 {
-                    existing.Keys.RemoveAt(existingIndex);
+                    existing.Keys!.RemoveAt(existingIndex);
                 }
             }
 

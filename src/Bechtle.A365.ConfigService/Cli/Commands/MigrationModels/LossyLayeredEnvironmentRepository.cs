@@ -19,18 +19,18 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
     /// </summary>
     public class LossyLayeredEnvironmentRepository : IState
     {
-        private List<OptionEntry> _options;
+        private List<OptionEntry>? _options;
 
         /// <summary>
         ///     Connection-String used to retrieve information about the maximum size of an Event
         /// </summary>
-        public string EventStoreConnectionString;
+        public string EventStoreConnectionString = string.Empty;
 
         // public so it can be properly de-/serialized
         /// <summary>
         ///     List of DomainEvents stored in this State
         /// </summary>
-        public readonly List<IDomainEvent> RecordedDomainEvents = new List<IDomainEvent>();
+        public readonly List<IDomainEvent> RecordedDomainEvents = new();
 
         /// <summary>
         ///     take the Domain-Event and apply its changes.
@@ -112,7 +112,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
         {
             _options ??= GetEventStoreOptionsAsync().RunSync();
 
-            var maxAppendSize = long.Parse(
+            long maxAppendSize = long.Parse(
                 _options?.FirstOrDefault(
                             o => o.Name.Equals(
                                 "MaxAppendSize",
@@ -176,7 +176,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
             return bytes.Length;
         }
 
-        private async Task<List<OptionEntry>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
+        private async Task<List<OptionEntry>?> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new())
         {
             var storeUri = new Uri(EventStoreConnectionString);
 

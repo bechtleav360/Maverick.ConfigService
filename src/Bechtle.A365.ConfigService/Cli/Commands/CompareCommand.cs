@@ -43,17 +43,21 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     flag indicating if properties with null-value should be kept or pruned
         /// </summary>
-        [Option("--keep-null-properties", CommandOptionType.NoValue,
-                Description = "set this flag to retain null-values if present. otherwise they are replaced with \"\"")]
+        [Option(
+            "--keep-null-properties",
+            CommandOptionType.NoValue,
+            Description = "set this flag to retain null-values if present. otherwise they are replaced with \"\"")]
         public bool KeepNullProperties { get; set; } = false;
 
         /// <summary>
         ///     current Diff-Mode, decides which data is written to output
         /// </summary>
-        [Option("-m|--mode", Description = "which operations should be executed to match the target-layer. " +
-                                           "\n\t\t- 'Add'   : add keys which are new in source. " +
-                                           "\n\t\t- 'Delete': remove keys that have been deleted in source. " +
-                                           "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
+        [Option(
+            "-m|--mode",
+            Description = "which operations should be executed to match the target-layer. "
+                          + "\n\t\t- 'Add'   : add keys which are new in source. "
+                          + "\n\t\t- 'Delete': remove keys that have been deleted in source. "
+                          + "\n\t\t- 'Match' : execute both 'Add' and 'Delete' operations")]
         public ComparisonMode Mode { get; set; } = ComparisonMode.Match;
 
         /// <summary>
@@ -65,8 +69,10 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <summary>
         ///     layer-id to compare against
         /// </summary>
-        [Option("-u|--use-layer", Description = "Layer to use from the ones available in <InputFile> or <stdin> if multiple defined. " +
-                                                "Can be left out if only one is defined.")]
+        [Option(
+            "-u|--use-layer",
+            Description = "Layer to use from the ones available in <InputFile> or <stdin> if multiple defined. "
+                          + "Can be left out if only one is defined.")]
         public string UseInputLayer { get; set; } = string.Empty;
 
         /// <inheritdoc />
@@ -76,15 +82,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             if (!base.CheckParameters())
                 return false;
 
-            if (Layers is null || !Layers.Any())
+            if (!Layers.Any())
             {
                 Output.WriteError($"no {nameof(Layers)} given -- see help for more information");
                 return false;
             }
 
             // if environment doesn't contain '/' or contains multiple of them...
-            var errEnvironments = Layers.Where(e => !e.Contains('/') ||
-                                                    e.IndexOf('/') != e.LastIndexOf('/'))
+            var errEnvironments = Layers.Where(e => !e.Contains('/') || e.IndexOf('/') != e.LastIndexOf('/'))
                                         .ToArray();
 
             // ... complain about them
@@ -96,8 +101,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             // if UseInputLayer is given we have to check for the correct format
             if (!string.IsNullOrWhiteSpace(UseInputLayer)
-                && (!UseInputLayer.Contains('/') ||
-                    UseInputLayer.IndexOf('/') != UseInputLayer.LastIndexOf('/')))
+                && (!UseInputLayer.Contains('/') || UseInputLayer.IndexOf('/') != UseInputLayer.LastIndexOf('/')))
             {
                 Output.WriteError("parameter '-u|--use-environment' is invalid, see 'compare --help' for the required format");
                 return false;
@@ -114,13 +118,16 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             var json = GetInput();
 
-            if (!ValidateInput(json, out var export))
+            if (!ValidateInput(json, out ConfigExport? export))
             {
                 Output.WriteError("input failed to validate");
                 return 1;
             }
 
-            var sourceEnvironment = GetExportedEnvironment(export);
+            // ValidateInput checks for null before returning
+            ConfigExport validatedExport = export!;
+
+            LayerExport? sourceEnvironment = GetExportedEnvironment(validatedExport);
 
             if (sourceEnvironment is null)
             {
@@ -138,7 +145,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
 
             var comparisons = CompareLayers(sourceEnvironment, targetEnvironments);
 
-            if (comparisons is null || !comparisons.Any())
+            if (!comparisons.Any())
             {
                 Output.WriteError("environments could not be compared");
                 return 1;
@@ -163,43 +170,55 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 {
                     Output.WriteVerboseLine($"comparing '{targetLayer.Name}' <=> '{id}'");
 
-                    var changedKeys = (Mode & ComparisonMode.Add) != 0
-                                          ? targetLayer.Keys.Where(key =>
-                                          {
-                                              // if the given key does not exist in the target environment or is somehow changed
-                                              // we add it to the list of changed keys for review
-                                              var sourceKey = sourceKeys.FirstOrDefault(k => k.Key.Equals(key.Key));
+                    List<EnvironmentKeyExport> changedKeys =
+                        (Mode & ComparisonMode.Add) != 0
+                            ? targetLayer.Keys.Where(
+                                             key =>
+                                             {
+                                                 // if the given key does not exist in the target environment or is somehow changed
+                                                 // we add it to the list of changed keys for review
+                                                 DtoConfigKey? sourceKey = sourceKeys.FirstOrDefault(k => k.Key.Equals(key.Key));
 
-                                              // null and "" are treated as equals here
-                                              return sourceKey is null
-                                                     || !(sourceKey.Value ?? string.Empty).Equals(key.Value ?? string.Empty)
-                                                     || !(sourceKey.Type ?? string.Empty).Equals(key.Type ?? string.Empty)
-                                                     || !(sourceKey.Description ?? string.Empty).Equals(key.Description ?? string.Empty);
-                                          }).ToList()
-                                          : new List<EnvironmentKeyExport>();
+                                                 // null and "" are treated as equals here
+                                                 return sourceKey is null
+                                                        || !(sourceKey.Value ?? string.Empty).Equals(key.Value)
+                                                        || !sourceKey.Type.Equals(key.Type)
+                                                        || !sourceKey.Description.Equals(key.Description);
+                                             })
+                                         .ToList()
+                            : new List<EnvironmentKeyExport>();
 
-                    var deletedKeys = (Mode & ComparisonMode.Delete) != 0
-                                          ? sourceKeys.Where(sk =>
-                                          {
-                                              // if any target-key doesn't exist in the source any more,
-                                              // we add it to the list of deleted keys for review
-                                              return targetLayer.Keys.All(tk => !tk.Key.Equals(sk.Key));
-                                          }).ToList()
-                                          : new List<DtoConfigKey>();
+                    List<DtoConfigKey> deletedKeys =
+                        (Mode & ComparisonMode.Delete) != 0
+                            ? sourceKeys.Where(
+                                            sk =>
+                                            {
+                                                // if any target-key doesn't exist in the source any more,
+                                                // we add it to the list of deleted keys for review
+                                                return targetLayer.Keys.All(tk => !string.Equals(tk.Key, sk.Key));
+                                            })
+                                        .ToList()
+                            : new List<DtoConfigKey>();
 
-                    comparisons.Add(new LayerComparison
-                    {
-                        Source = new LayerIdentifier(targetLayer.Name),
-                        Target = id,
-                        RequiredActions = changedKeys.Select(c => KeepNullProperties
-                                                                      ? ConfigKeyAction.Set(c.Key, c.Value, c.Description, c.Type)
-                                                                      : ConfigKeyAction.Set(c.Key,
-                                                                                            c.Value ?? string.Empty,
-                                                                                            c.Description ?? string.Empty,
-                                                                                            c.Type ?? string.Empty))
-                                                     .Concat(deletedKeys.Select(d => ConfigKeyAction.Delete(d.Key)))
-                                                     .ToList()
-                    });
+                    comparisons.Add(
+                        new LayerComparison
+                        {
+                            Source = new LayerIdentifier(targetLayer.Name),
+                            Target = id,
+                            RequiredActions = changedKeys.Where(
+                                                             // null-keys are useless, throw them away
+                                                             c => c.Key != null)
+                                                         .Select(
+                                                             c => KeepNullProperties
+                                                                      ? ConfigKeyAction.Set(c.Key!, c.Value, c.Description, c.Type)
+                                                                      : ConfigKeyAction.Set(
+                                                                          c.Key!,
+                                                                          c.Value ?? string.Empty,
+                                                                          c.Description ?? string.Empty,
+                                                                          c.Type ?? string.Empty))
+                                                         .Concat(deletedKeys.Select(d => ConfigKeyAction.Delete(d.Key)))
+                                                         .ToList()
+                        });
                 }
             }
             catch (Exception e)
@@ -216,7 +235,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="envIds"></param>
         /// <returns></returns>
-        private async Task<Dictionary<LayerIdentifier, DtoConfigKey[]>> GetLayerKeys(IEnumerable<LayerIdentifier> envIds)
+        private async Task<Dictionary<LayerIdentifier, DtoConfigKey[]>?> GetLayerKeys(IEnumerable<LayerIdentifier> envIds)
         {
             var results = new Dictionary<LayerIdentifier, DtoConfigKey[]>();
 
@@ -225,13 +244,15 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 foreach (var target in envIds)
                 {
                     var request = await RestRequest.Make(Output)
-                                                   .Get(new Uri(new Uri(ConfigServiceEndpoint),
-                                                                $"v1/layers/{target.Name}/objects"))
+                                                   .Get(
+                                                       new Uri(
+                                                           new Uri(ConfigServiceEndpoint),
+                                                           $"v1/layers/{target.Name}/objects"))
                                                    .ReceiveString()
                                                    .ReceiveObject<List<DtoConfigKey>>();
 
                     if (request.HttpResponseMessage?.IsSuccessStatusCode == true)
-                        results.Add(target, (await request.Take<List<DtoConfigKey>>())?.ToArray());
+                        results.Add(target, (await request.Take<List<DtoConfigKey>>())?.ToArray() ?? Array.Empty<DtoConfigKey>());
                     else
                         Output.WriteErrorLine($"could not retrieve environment '{target}' for comparison");
                 }
@@ -250,9 +271,9 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// </summary>
         /// <param name="export"></param>
         /// <returns></returns>
-        private LayerExport GetExportedEnvironment(ConfigExport export)
+        private LayerExport? GetExportedEnvironment(ConfigExport export)
         {
-            if (export.Environments.Length > 1)
+            if (export.Environments?.Length > 1)
             {
                 if (string.IsNullOrWhiteSpace(UseInputLayer))
                 {
@@ -263,11 +284,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 var usedLayerId = new LayerIdentifier(UseInputLayer);
 
                 return export.Layers
-                             .FirstOrDefault(layer => string.Equals(layer.Name, usedLayerId.Name,
-                                                                    StringComparison.OrdinalIgnoreCase));
+                             ?.FirstOrDefault(
+                                 layer => string.Equals(
+                                     layer.Name,
+                                     usedLayerId.Name,
+                                     StringComparison.OrdinalIgnoreCase));
             }
 
-            return export.Layers.FirstOrDefault();
+            return export.Layers?.FirstOrDefault();
         }
 
         /// <summary>
@@ -337,7 +361,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <param name="input"></param>
         /// <param name="export">the actual validated export</param>
         /// <returns></returns>
-        private bool ValidateInput(string input, out ConfigExport export)
+        private bool ValidateInput(string input, out ConfigExport? export)
         {
             if (string.IsNullOrWhiteSpace(input))
             {
