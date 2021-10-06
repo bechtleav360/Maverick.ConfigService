@@ -20,19 +20,19 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Path => Error dictionary
         /// </summary>
-        public Dictionary<string, List<string>> Errors { get; set; }
+        public Dictionary<string, List<string>> Errors { get; set; } = new();
 
         /// <inheritdoc cref="CompilationStats" />
-        public CompilationStats Stats { get; set; } = new CompilationStats();
+        public CompilationStats Stats { get; set; } = new();
 
         /// <summary>
         ///     List of Environment-Keys used to compile this Configuration
         /// </summary>
-        public List<string> UsedKeys { get; set; }
+        public List<string> UsedKeys { get; set; } = new();
 
         /// <summary>
         ///     Path => Warning dictionary
         /// </summary>
-        public Dictionary<string, List<string>> Warnings { get; set; }
+        public Dictionary<string, List<string>> Warnings { get; set; } = new();
     }
 }

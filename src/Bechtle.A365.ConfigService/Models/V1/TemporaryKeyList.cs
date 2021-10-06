@@ -10,11 +10,11 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     How long <see cref="Entries" /> are kept in the store
         /// </summary>
-        public TimeSpan Duration { get; set; }
+        public TimeSpan Duration { get; set; } = TimeSpan.MinValue;
 
         /// <summary>
         ///     number of temporary entries
         /// </summary>
-        public TemporaryKey[] Entries { get; set; }
+        public TemporaryKey[] Entries { get; set; } = Array.Empty<TemporaryKey>();
     }
 }

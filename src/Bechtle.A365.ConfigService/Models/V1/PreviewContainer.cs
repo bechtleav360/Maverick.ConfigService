@@ -6,9 +6,9 @@
     public class PreviewContainer
     {
         /// <inheritdoc cref="EnvironmentPreview" />
-        public EnvironmentPreview Environment { get; set; }
+        public EnvironmentPreview? Environment { get; set; }
 
         /// <inheritdoc cref="StructurePreview" />
-        public StructurePreview Structure { get; set; }
+        public StructurePreview? Structure { get; set; }
     }
 }

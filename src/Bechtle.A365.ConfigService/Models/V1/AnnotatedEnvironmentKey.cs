@@ -16,7 +16,7 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     List of Structures that used this Key
         /// </summary>
-        public ConcurrentBag<StructureIdentifier> Structures { get; set; } = new ConcurrentBag<StructureIdentifier>();
+        public ConcurrentBag<StructureIdentifier> Structures { get; set; } = new();
 
         /// <summary>
         ///     Current Value

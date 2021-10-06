@@ -10,21 +10,21 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Custom Keys
         /// </summary>
-        public Dictionary<string, object> Keys { get; set; }
+        public Dictionary<string, object> Keys { get; set; } = new();
 
         /// <summary>
         ///     Reference to an existing Structure
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         ///     Custom Variables
         /// </summary>
-        public Dictionary<string, object> Variables { get; set; }
+        public Dictionary<string, object> Variables { get; set; } = new();
 
         /// <summary>
         ///     Reference to an existing Structure
         /// </summary>
-        public string Version { get; set; }
+        public string Version { get; set; } = string.Empty;
     }
 }

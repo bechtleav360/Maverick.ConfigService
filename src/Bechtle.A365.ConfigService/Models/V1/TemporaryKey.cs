@@ -8,11 +8,11 @@
         /// <summary>
         ///     Name / Key for this temporary entry
         /// </summary>
-        public string Key { get; set; }
+        public string Key { get; set; } = string.Empty;
 
         /// <summary>
         ///     Value stored in this temporary entry
         /// </summary>
-        public string Value { get; set; }
+        public string? Value { get; set; }
     }
 }
