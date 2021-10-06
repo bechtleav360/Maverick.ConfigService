@@ -9,31 +9,31 @@ namespace Bechtle.A365.ConfigService.Common.Converters
     public class JsonTranslator : IJsonTranslator
     {
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionary(JsonElement json)
+        public IDictionary<string, string?> ToDictionary(JsonElement json)
             => ToDictionary(json, JsonTranslatorDefaultSettings.Separator, JsonTranslatorDefaultSettings.EscapePath);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionary(JsonElement json, bool encodePath)
+        public IDictionary<string, string?> ToDictionary(JsonElement json, bool encodePath)
             => ToDictionary(json, JsonTranslatorDefaultSettings.Separator, encodePath);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionary(JsonElement json, string separator)
+        public IDictionary<string, string?> ToDictionary(JsonElement json, string separator)
             => ToDictionary(json, separator, JsonTranslatorDefaultSettings.EscapePath);
 
         /// <inheritdoc />
-        public IDictionary<string, string> ToDictionary(JsonElement json, string separator, bool encodePath)
+        public IDictionary<string, string?> ToDictionary(JsonElement json, string separator, bool encodePath)
             => JsonToDictConverter.ToDict(json, separator, encodePath);
 
         /// <inheritdoc />
-        public JsonElement ToJson(IDictionary<string, string> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
+        public JsonElement ToJson(IDictionary<string, string?> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
 
         /// <inheritdoc />
-        public JsonElement ToJson(IDictionary<string, string> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
+        public JsonElement ToJson(IDictionary<string, string?> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
 
         /// <inheritdoc />
-        public JsonElement ToJson(ICollection<KeyValuePair<string, string>> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
+        public JsonElement ToJson(ICollection<KeyValuePair<string, string?>> dict) => DictToJsonConverter.ToJson(dict, JsonTranslatorDefaultSettings.Separator);
 
         /// <inheritdoc />
-        public JsonElement ToJson(ICollection<KeyValuePair<string, string>> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
+        public JsonElement ToJson(ICollection<KeyValuePair<string, string?>> dict, string separator) => DictToJsonConverter.ToJson(dict, separator);
     }
 }

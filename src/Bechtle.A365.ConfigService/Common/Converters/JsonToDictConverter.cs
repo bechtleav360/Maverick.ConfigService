@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace Bechtle.A365.ConfigService.Common.Converters
 {
     /// <summary>
-    ///     Component that converts Json to its equivalent representation as a Map of Paths/Values 
+    ///     Component that converts Json to its equivalent representation as a Map of Paths/Values
     /// </summary>
     public static class JsonToDictConverter
     {
@@ -17,17 +17,21 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="separator">separator to use for the Paths in the Result</param>
         /// <param name="encodePath">flag indicating if the Paths should be string-encoded, or left as-is</param>
         /// <returns>Dictionary containing Paths to all Values found the Json-Object, and their Values</returns>
-        public static IDictionary<string, string> ToDict(JsonElement json, string separator, bool encodePath)
+        public static IDictionary<string, string?> ToDict(
+            JsonElement json,
+            string separator,
+            bool encodePath)
         {
-            var dict = new Dictionary<string, string>();
+            var dict = new Dictionary<string, string?>();
 
             Visit(json, string.Empty, dict, encodePath);
 
-            if (separator is null || separator.Equals("/", StringComparison.OrdinalIgnoreCase))
+            if (separator.Equals("/", StringComparison.OrdinalIgnoreCase))
                 return dict;
 
-            return dict.ToDictionary(kvp => kvp.Key.Replace("/", separator),
-                                     kvp => kvp.Value);
+            return dict.ToDictionary(
+                kvp => kvp.Key.Replace("/", separator),
+                kvp => kvp.Value);
         }
 
         /// <summary>
@@ -46,7 +50,11 @@ namespace Bechtle.A365.ConfigService.Common.Converters
                    ? EscapePath(nextPath, encodePath)
                    : $"{currentPath}/{EscapePath(nextPath, encodePath)}";
 
-        private static void Visit(JsonElement json, string currentPath, IDictionary<string, string> dict, bool encodePath)
+        private static void Visit(
+            JsonElement json,
+            string currentPath,
+            IDictionary<string, string?> dict,
+            bool encodePath)
         {
             switch (json.ValueKind)
             {
@@ -87,7 +95,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             }
         }
 
-        private static void Visit(JsonProperty property, string currentPath, IDictionary<string, string> dict, bool encodePath)
+        private static void Visit(JsonProperty property, string currentPath, IDictionary<string, string?> dict, bool encodePath)
             => Visit(property.Value, MakeNextPath(currentPath, property.Name, encodePath), dict, encodePath);
     }
 }

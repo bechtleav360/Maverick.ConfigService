@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="dict">Dictionary containing paths ("Foo/Bar/Baz") to values ("42")</param>
         /// <param name="separator">separator used to split parts in the Path</param>
         /// <returns>the equivalent Json-Representation of the data in <paramref name="dict"/></returns>
-        public static JsonElement ToJson(IDictionary<string, string> dict, string separator)
+        public static JsonElement ToJson(IDictionary<string, string?> dict, string separator)
         {
             if (!dict.Any())
                 return JsonDocument.Parse("{}").RootElement;
@@ -41,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
         /// <param name="dict">Dictionary containing paths ("Foo/Bar/Baz") to values ("42")</param>
         /// <param name="separator">separator used to split parts in the Path</param>
         /// <returns>the equivalent Json-Representation of the data in <paramref name="dict"/></returns>
-        public static JsonElement ToJson(ICollection<KeyValuePair<string, string>> dict, string separator)
+        public static JsonElement ToJson(ICollection<KeyValuePair<string, string?>> dict, string separator)
         {
             if (!dict.Any())
                 return JsonDocument.Parse("{}").RootElement;
@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Common.Converters
             return JsonDocument.Parse(memoryStream).RootElement;
         }
 
-        private static Node ConvertToTree(IEnumerable<KeyValuePair<string, string>> dict, string separator)
+        private static Node ConvertToTree(IEnumerable<KeyValuePair<string, string?>> dict, string separator)
         {
             var root = new Node();
 
@@ -154,11 +154,11 @@ namespace Bechtle.A365.ConfigService.Common.Converters
 
         private class Node
         {
-            public List<Node> Children { get; } = new List<Node>();
+            public List<Node> Children { get; } = new();
 
             public string Name { get; set; } = string.Empty;
 
-            public string Value { get; set; } = string.Empty;
+            public string? Value { get; set; } = string.Empty;
         }
     }
 }
