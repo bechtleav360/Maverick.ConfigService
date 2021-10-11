@@ -556,11 +556,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(domainObject.Id);
 
-            itemInfo.Versions[domainObject.CurrentVersion] = new ObjectLookupInfo
-            {
-                IsDataAvailable = true,
-                IsMarkedDeleted = false
-            };
+            itemInfo.Versions[domainObject.CurrentVersion] = new ObjectLookupInfo(false, true);
 
             collection.Upsert(itemInfo);
 
@@ -579,8 +575,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return;
             }
 
-            ObjectLookupInfo info = itemInfo.Versions[version];
-            info.IsMarkedDeleted = true;
+            (bool _, bool isDataAvailable) = itemInfo.Versions[version];
+            itemInfo.Versions[version] = new(true, isDataAvailable);
 
             collection.Upsert(itemInfo);
         }
@@ -597,8 +593,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return;
             }
 
-            ObjectLookupInfo info = itemInfo.Versions[version];
-            info.IsDataAvailable = false;
+            (bool isMarkedDeleted, bool _) = itemInfo.Versions[version];
+            itemInfo.Versions[version] = new(isMarkedDeleted, false);
 
             collection.Upsert(itemInfo);
         }
@@ -607,7 +603,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         ///     Additional metadata that is stored in a separate collection along the projected DomainObjects.
         ///     These Records aren't meant to be updated, only written.
         /// </summary>
-        private class StorageMetadata
+        private record StorageMetadata
         {
             /// <summary>
             ///     Timestamp when this entry was written
@@ -660,24 +656,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     Information for a DomainObject
         /// </summary>
-        private class ObjectLookupInfo
-        {
-            /// <summary>
-            ///     Flag to show if actual Data for this DomainObject is available
-            /// </summary>
-            public bool IsDataAvailable { get; set; }
-
-            /// <summary>
-            ///     Flag to show if DomainObject is currently marked as deleted
-            /// </summary>
-            public bool IsMarkedDeleted { get; set; }
-        }
+        /// <param name="IsMarkedDeleted">Flag to show if DomainObject is currently marked as deleted</param>
+        /// <param name="IsDataAvailable">Flag to show if actual Data for this DomainObject is available</param>
+        private record ObjectLookupInfo(bool IsMarkedDeleted, bool IsDataAvailable);
 
         /// <summary>
         ///     Additional metadata for a given DomainObject
         /// </summary>
         /// <typeparam name="TIdentifier">identifier of the associated DomainObject</typeparam>
-        private class DomainObjectMetadata<TIdentifier>
+        private record DomainObjectMetadata<TIdentifier>
             where TIdentifier : Identifier
         {
             /// <summary>
