@@ -28,10 +28,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="structureInfo">Structure-Data used as lookup to resolve values</param>
         /// <param name="valueProviders">list of value-providers usable while resolving values</param>
         /// <param name="logger">logger to write diagnostic messages to</param>
-        public DefaultValueResolver(EnvironmentCompilationInfo environmentInfo,
-                                    StructureCompilationInfo structureInfo,
-                                    IDictionary<ConfigValueProviderType, IConfigValueProvider> valueProviders,
-                                    ILogger logger)
+        public DefaultValueResolver(
+            EnvironmentCompilationInfo environmentInfo,
+            StructureCompilationInfo structureInfo,
+            IDictionary<ConfigValueProviderType, IConfigValueProvider> valueProviders,
+            ILogger logger)
         {
             _environmentInfo = environmentInfo;
             _structureInfo = structureInfo;
@@ -42,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         // do an initial check to see if we're dealing with a range-query or not
         // route responsibility to either ResolveValue or ResolveRange
         /// <inheritdoc />
-        public Task<IResult<IDictionary<string, string>>> Resolve(string path, string value, ITracer tracer, IConfigurationParser parser)
+        public Task<IResult<IDictionary<string, string?>>> Resolve(string path, string? value, ITracer tracer, IConfigurationParser parser)
             => ResolveInternal(new KeyResolveContext(path, value, tracer, parser));
 
         /// <summary>
@@ -98,8 +99,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             // can't compile something that references a region and keys at the same time
             // at least some stuff would be discarded, and that does not qualify as a valid compilation
-            if (pathReferences.Length > 1 &&
-                pathReferences.Any(p => p.Commands[ReferenceCommand.Path].EndsWith('*')))
+            if (pathReferences.Length > 1 && pathReferences.Any(p => p.Commands[ReferenceCommand.Path].EndsWith('*')))
                 return new CompilationPlan
                 {
                     CompilationPossible = false,
@@ -136,8 +136,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             // only works with at least two items
             // see if Path was already used to compile the value - recursive loop (a - b - c - b)
             // skip the check if no Recursion has happened yet
-            if (context.RecursionPath.Count > 1 &&
-                context.RecursionPath.First().Path == context.RecursionPath.Last().Path)
+            if (context.RecursionPath.Count > 1 && context.RecursionPath.First().Path == context.RecursionPath.Last().Path)
             {
                 var paths = context.RecursionPath.Select(t => t.Path).ToList();
 
@@ -161,7 +160,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             var evaluationResult = new ReferenceEvaluationResult
             {
                 Effects = ReferenceEvaluationType.None,
-                ResultingKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                ResultingKeys = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
             };
 
             if (reference.Commands.ContainsKey(ReferenceCommand.Alias) && reference.Commands.ContainsKey(ReferenceCommand.Using))
@@ -172,9 +171,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             if (reference.Commands.ContainsKey(ReferenceCommand.Path))
             {
-                var (resolveType, resolvedEntries) = await ResolveReferencePath(context, reference);
+                (ReferenceEvaluationType resolveType, var resolvedEntries) = await ResolveReferencePath(context, reference);
 
-                foreach (var (k, v) in resolvedEntries)
+                foreach ((var k, string? v) in resolvedEntries)
                     evaluationResult.ResultingKeys[k] = v;
 
                 evaluationResult.Effects |= resolveType;
@@ -183,31 +182,31 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             return evaluationResult;
         }
 
-        private async Task<IResult<IDictionary<string, string>>> ResolveInternal(KeyResolveContext context)
+        private async Task<IResult<IDictionary<string, string?>>> ResolveInternal(KeyResolveContext context)
         {
             if (CheckRecursionErrors(context, out var errorMessage))
             {
                 _logger.LogWarning(WithContext(context, errorMessage));
-                return Result.Success<IDictionary<string, string>>(new Dictionary<string, string> {{context.BasePath, string.Empty}});
+                return Result.Success<IDictionary<string, string?>>(new Dictionary<string, string?> { { context.BasePath, string.Empty } });
             }
 
             if (context.OriginalValue is null)
-                return Result.Success<IDictionary<string, string>>(new Dictionary<string, string> {{context.BasePath, null}});
+                return Result.Success<IDictionary<string, string?>>(new Dictionary<string, string?> { { context.BasePath, null } });
 
-            var parts = context.OriginalValue.Contains("$this")
-                            ? context.Parser.Parse(ResolveThisAlias(context, context.BasePath, context.OriginalValue))
-                            : context.Parser.Parse(context.OriginalValue);
+            List<ConfigValuePart>? parts = context.OriginalValue.Contains("$this")
+                                               ? context.Parser.Parse(ResolveThisAlias(context, context.BasePath, context.OriginalValue))
+                                               : context.Parser.Parse(context.OriginalValue);
 
-            var plan = AnalyzeCompilation(context, parts);
+            CompilationPlan plan = AnalyzeCompilation(context, parts);
 
             // no changes necessary
             if (!plan.CompilationNecessary)
-                return Result.Success<IDictionary<string, string>>(new Dictionary<string, string> {{context.BasePath, context.OriginalValue}});
+                return Result.Success<IDictionary<string, string?>>(new Dictionary<string, string?> { { context.BasePath, context.OriginalValue } });
 
             if (!plan.CompilationPossible)
-                return Result.Error<IDictionary<string, string>>($"can't compile key: '{plan.Message}'", ErrorCode.InvalidData);
+                return Result.Error<IDictionary<string, string?>>($"can't compile key: '{plan.Message}'", ErrorCode.InvalidData);
 
-            IDictionary<string, string> results;
+            IDictionary<string, string?> results;
 
             if (!plan.ContainsRangeQuery)
             {
@@ -217,7 +216,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 if (valueResult.IsError)
                     return valueResult;
 
-                results = valueResult.Data;
+                results = valueResult.CheckedData;
             }
             else
             {
@@ -227,7 +226,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 if (rangeResult.IsError)
                     return rangeResult;
 
-                results = rangeResult.Data;
+                results = rangeResult.CheckedData;
             }
 
             return Result.Success(results);
@@ -254,7 +253,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                     currentResolvedPath = currentResolvedPath.Replace(alias, @using);
                     aliasResolved = true;
                 }
-            } while (aliasResolved);
+            }
+            while (aliasResolved);
 
             return currentResolvedPath;
         }
@@ -265,9 +265,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="context"></param>
         /// <param name="parts"></param>
         /// <returns></returns>
-        private async Task<IResult<IDictionary<string, string>>> ResolveRange(KeyResolveContext context, IList<ConfigValuePart> parts)
+        private async Task<IResult<IDictionary<string, string?>>> ResolveRange(KeyResolveContext context, IList<ConfigValuePart> parts)
         {
-            var results = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var results = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var part in parts)
                 if (part is ValuePart v)
@@ -295,18 +295,19 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 }
                 else
                 {
-                    return Result.Error<IDictionary<string, string>>($"unknown part parsed: '{part.GetType().Name}'", ErrorCode.InvalidData);
+                    return Result.Error<IDictionary<string, string?>>($"unknown part parsed: '{part.GetType().Name}'", ErrorCode.InvalidData);
                 }
 
-            return Result.Success<IDictionary<string, string>>(results);
+            return Result.Success<IDictionary<string, string?>>(results);
         }
 
-        private async Task<(ReferenceEvaluationType, Dictionary<string, string>)> ResolveReferencePath(KeyResolveContext context, ReferencePart reference)
+        private async Task<(ReferenceEvaluationType, Dictionary<string, string?>)> ResolveReferencePath(KeyResolveContext context, ReferencePart reference)
         {
             // this is to check for possible fallback-values, if actual path-resolution goes wrong
             bool FallbackAction()
             {
-                if (!reference.Commands.ContainsKey(ReferenceCommand.Fallback)) return false;
+                if (!reference.Commands.ContainsKey(ReferenceCommand.Fallback))
+                    return false;
 
                 var fallbackValue = reference.Commands[ReferenceCommand.Fallback];
                 context.Tracer.AddWarning($"using fallback '{fallbackValue}' after failing to resolve '{context.BasePath}'");
@@ -316,12 +317,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             }
 
             var resultType = ReferenceEvaluationType.None;
-            var intermediateResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var actualResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var intermediateResult = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            var actualResult = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-            var referencePath = ResolvePathAliases(context, reference.Commands[ReferenceCommand.Path]);
-            var (provider, newPath) = SelectConfigValueProvider(context, referencePath);
-            if (provider is null)
+            string referencePath = ResolvePathAliases(context, reference.Commands[ReferenceCommand.Path]);
+            (IConfigValueProvider? provider, string? newPath) = SelectConfigValueProvider(context, referencePath);
+            if (provider is null || newPath is null)
             {
                 _logger.LogWarning(WithContext(context, "could not resolve any ValueProvider"));
                 return (resultType, intermediateResult);
@@ -334,12 +335,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             if (referencePath.EndsWith('*'))
             {
-                var result = await provider.TryGetRange(referencePath);
+                IResult<Dictionary<string, string?>> result = await provider.TryGetRange(referencePath);
                 if (!result.IsError)
                 {
                     var referenceBase = referencePath.TrimEnd('*').TrimEnd('/');
 
-                    foreach (var (key, value) in result.Data)
+                    foreach ((var key, string? value) in result.CheckedData)
                     {
                         var trimmedKey = key.TrimStart('/');
                         var compositePath = $"{context.BasePath}/{trimmedKey}";
@@ -387,13 +388,16 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                         if (!indirectionValueResult.IsError)
                         {
-                            var indirectionResolveResult = await ResolveInternal(new KeyResolveContext(result.Data,
-                                                                                                       indirectionValueResult.Data,
-                                                                                                       rangeTracer,
-                                                                                                       context.Parser));
+                            var indirectionResolveResult = await ResolveInternal(
+                                                               new KeyResolveContext(
+                                                                   result.Data,
+                                                                   indirectionValueResult.Data,
+                                                                   rangeTracer,
+                                                                   context.Parser));
 
                             if (!indirectionResolveResult.IsError
-                                && indirectionResolveResult.Data.TryGetValue(referencePath, out var resolvedIndirection))
+                                && indirectionResolveResult.CheckedData
+                                                           .TryGetValue(referencePath, out string? resolvedIndirection))
                             {
                                 // value has been successfully resolved through the indirection
                                 intermediateResult[context.BasePath] = resolvedIndirection;
@@ -428,7 +432,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             // once we leave this stack-frame, we lose the correct context of $this
             ResolveThisAlias(context, referencePath, intermediateResult);
 
-            foreach (var (nextKey, nextValue) in intermediateResult)
+            foreach ((var nextKey, string? nextValue) in intermediateResult)
             {
                 var nextTracer = context.Tracer.AddPathResolution(nextValue);
                 var nextContext = context.CreateChildContext(nextKey, nextValue, nextTracer);
@@ -438,8 +442,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                 if (nextResult.IsError)
                     continue;
 
-                foreach (var entry in nextResult.Data)
-                    actualResult[entry.Key] = entry.Value;
+                foreach ((var key, string? value) in nextResult.CheckedData)
+                    actualResult[key] = value;
             }
 
             return (resultType, actualResult);
@@ -451,15 +455,16 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="context"></param>
         /// <param name="referencePath"></param>
         /// <param name="keys"></param>
-        private void ResolveThisAlias(KeyResolveContext context, string referencePath, IDictionary<string, string> keys)
+        private void ResolveThisAlias(KeyResolveContext context, string referencePath, IDictionary<string, string?> keys)
         {
             foreach (var key in keys.Keys.ToArray())
             {
                 // skip for null values, or where $this can't be found
-                if (keys[key]?.Contains("$this", StringComparison.OrdinalIgnoreCase) != true)
-                    continue;
-
-                keys[key] = ResolveThisAlias(context, referencePath, keys[key]);
+                if (keys.ContainsKey(key)
+                    && keys[key]?.Contains("$this", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    keys[key] = ResolveThisAlias(context, referencePath, keys[key]!);
+                }
             }
         }
 
@@ -490,7 +495,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="context"></param>
         /// <param name="parts"></param>
         /// <returns></returns>
-        private async Task<IResult<IDictionary<string, string>>> ResolveValue(KeyResolveContext context, IList<ConfigValuePart> parts)
+        private async Task<IResult<IDictionary<string, string?>>> ResolveValue(KeyResolveContext context, IList<ConfigValuePart> parts)
         {
             var builder = new StringBuilder();
 
@@ -524,25 +529,26 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
                         break;
 
                     default:
-                        return Result.Error<IDictionary<string, string>>($"unknown part parsed: '{part.GetType().Name}'", ErrorCode.InvalidData);
+                        return Result.Error<IDictionary<string, string?>>($"unknown part parsed: '{part.GetType().Name}'", ErrorCode.InvalidData);
                 }
 
-            return Result.Success<IDictionary<string, string>>(new Dictionary<string, string>
-            {
-                {context.BasePath, builder.ToString()}
-            });
+            return Result.Success<IDictionary<string, string?>>(
+                new Dictionary<string, string?>
+                {
+                    { context.BasePath, builder.ToString() }
+                });
         }
 
-        private (IConfigValueProvider, string) SelectConfigValueProvider(KeyResolveContext context, string path)
+        private (IConfigValueProvider?, string?) SelectConfigValueProvider(KeyResolveContext context, string path)
         {
             // will be set once a valid provider is found
-            IConfigValueProvider provider = null;
+            IConfigValueProvider? provider = null;
             var modifiedPath = path;
 
             var providerTypeAssociations = new Dictionary<string, ConfigValueProviderType>
             {
-                {"$secret", ConfigValueProviderType.SecretStore},
-                {"$struct", ConfigValueProviderType.StructVariables}
+                { "$secret", ConfigValueProviderType.SecretStore },
+                { "$struct", ConfigValueProviderType.StructVariables }
             };
 
             var fallbackProviderType = ConfigValueProviderType.Environment;
@@ -621,7 +627,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             /// <summary>
             ///     collection of keys/values that were returned while evaluating the given Reference
             /// </summary>
-            public Dictionary<string, string> ResultingKeys { get; set; }
+            public Dictionary<string, string?> ResultingKeys { get; set; }
         }
 
         /// <summary>
@@ -654,31 +660,32 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         private class KeyResolveContext
         {
             // only kept between different references in same key - thus not kept between KeyContext instances
-            public readonly Dictionary<string, string> Aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            public readonly Dictionary<string, string> Aliases = new(StringComparer.OrdinalIgnoreCase);
 
             public readonly string BasePath;
 
-            public readonly string OriginalValue;
+            public readonly string? OriginalValue;
 
             public readonly IConfigurationParser Parser;
 
             public readonly int RecursionDepth;
 
-            public readonly List<(string Path, ITracer Tracer)> RecursionPath;
+            public readonly List<(string? Path, ITracer Tracer)> RecursionPath;
 
             public readonly ITracer Tracer;
 
-            public KeyResolveContext(string basePath, string originalValue, ITracer tracer, IConfigurationParser parser)
-                : this(basePath, originalValue, tracer, parser, 0, Array.Empty<(string, ITracer)>())
+            public KeyResolveContext(string basePath, string? originalValue, ITracer tracer, IConfigurationParser parser)
+                : this(basePath, originalValue, tracer, parser, 0, Array.Empty<(string?, ITracer)>())
             {
             }
 
-            private KeyResolveContext(string basePath,
-                                      string originalValue,
-                                      ITracer tracer,
-                                      IConfigurationParser parser,
-                                      int recursionDepth,
-                                      IEnumerable<(string, ITracer)> recursionPath)
+            private KeyResolveContext(
+                string basePath,
+                string? originalValue,
+                ITracer tracer,
+                IConfigurationParser parser,
+                int recursionDepth,
+                IEnumerable<(string?, ITracer)> recursionPath)
             {
                 BasePath = basePath;
                 OriginalValue = originalValue;
@@ -695,13 +702,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             /// <param name="nextValue"></param>
             /// <param name="nextTracer"></param>
             /// <returns></returns>
-            public KeyResolveContext CreateChildContext(string nextPath, string nextValue, ITracer nextTracer)
-                => new KeyResolveContext(nextPath,
-                                         nextValue,
-                                         nextTracer,
-                                         Parser,
-                                         RecursionDepth + 1,
-                                         RecursionPath.Append((nextValue, Tracer)));
+            public KeyResolveContext CreateChildContext(string nextPath, string? nextValue, ITracer nextTracer)
+                => new(
+                    nextPath,
+                    nextValue,
+                    nextTracer,
+                    Parser,
+                    RecursionDepth + 1,
+                    RecursionPath.Append((nextValue, Tracer)));
         }
     }
 }

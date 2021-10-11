@@ -79,9 +79,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             long version)
             where TObject : DomainObject<TIdentifier>
             where TIdentifier : Identifier
-            => new FileInfo(
+            => new(
                 Path.Combine(
-                    _locationProvider.Directory,
+                    _locationProvider.Directory ?? "./",
                     Convert.ToBase64String(Encoding.UTF8.GetBytes(typeof(TObject).Name)).Replace('/', '_'),
                     fileId.ToString("N"),
                     version.ToString("x16")));

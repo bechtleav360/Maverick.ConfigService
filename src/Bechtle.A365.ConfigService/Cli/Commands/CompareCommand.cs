@@ -205,17 +205,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                         {
                             Source = new LayerIdentifier(targetLayer.Name),
                             Target = id,
-                            RequiredActions = changedKeys.Where(
-                                                             // null-keys are useless, throw them away
-                                                             c => c.Key != null)
-                                                         .Select(
+                            RequiredActions = changedKeys.Select(
                                                              c => KeepNullProperties
-                                                                      ? ConfigKeyAction.Set(c.Key!, c.Value, c.Description, c.Type)
+                                                                      ? ConfigKeyAction.Set(c.Key, c.Value, c.Description, c.Type)
                                                                       : ConfigKeyAction.Set(
-                                                                          c.Key!,
+                                                                          c.Key,
                                                                           c.Value ?? string.Empty,
-                                                                          c.Description ?? string.Empty,
-                                                                          c.Type ?? string.Empty))
+                                                                          c.Description,
+                                                                          c.Type))
                                                          .Concat(deletedKeys.Select(d => ConfigKeyAction.Delete(d.Key)))
                                                          .ToList()
                         });
@@ -273,7 +270,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
         /// <returns></returns>
         private LayerExport? GetExportedEnvironment(ConfigExport export)
         {
-            if (export.Environments?.Length > 1)
+            if (export.Environments.Length > 1)
             {
                 if (string.IsNullOrWhiteSpace(UseInputLayer))
                 {
@@ -284,14 +281,14 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 var usedLayerId = new LayerIdentifier(UseInputLayer);
 
                 return export.Layers
-                             ?.FirstOrDefault(
+                             .FirstOrDefault(
                                  layer => string.Equals(
                                      layer.Name,
                                      usedLayerId.Name,
                                      StringComparison.OrdinalIgnoreCase));
             }
 
-            return export.Layers?.FirstOrDefault();
+            return export.Layers.FirstOrDefault();
         }
 
         /// <summary>
@@ -378,12 +375,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                 if (export is null)
                 {
                     Output.WriteError("couldn't deserialize input: resulting object is null");
-                    return false;
-                }
-
-                if (export.Environments is null)
-                {
-                    Output.WriteError("couldn't deserialize input: 'Environments' property is null");
                     return false;
                 }
 

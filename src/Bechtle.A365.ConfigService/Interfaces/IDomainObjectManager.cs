@@ -84,8 +84,8 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// <returns>Result of the Operation</returns>
         Task<IResult> CreateStructure(
             StructureIdentifier identifier,
-            IDictionary<string, string> keys,
-            IDictionary<string, string> variables,
+            IDictionary<string, string?> keys,
+            IDictionary<string, string?> variables,
             CancellationToken cancellationToken);
 
         /// <summary>

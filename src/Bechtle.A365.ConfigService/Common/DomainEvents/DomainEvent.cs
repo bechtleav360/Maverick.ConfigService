@@ -15,17 +15,17 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     Get the DomainEvent-Type for the given Type
         /// </summary>
-        /// <typeparam name="T">Sub-Type of <see cref="DomainEvent"/></typeparam>
+        /// <typeparam name="T">Sub-Type of <see cref="DomainEvent" /></typeparam>
         /// <returns>type-identifier for the given Type</returns>
         public static string GetEventType<T>() where T : DomainEvent => typeof(T).Name;
 
         /// <summary>
         ///     Get the DomainEvent-Type for the given Type
         /// </summary>
-        /// <param name="domainEventType">Sub-Type of <see cref="DomainEvent"/></param>
+        /// <param name="domainEventType">Sub-Type of <see cref="DomainEvent" /></param>
         /// <returns>type-identifier for the given Type</returns>
         /// <exception cref="NotSupportedException">
-        ///     thrown when <paramref name="domainEventType"/> is not assignable to <see cref="DomainEvent"/>
+        ///     thrown when <paramref name="domainEventType" /> is not assignable to <see cref="DomainEvent" />
         /// </exception>
         public static string GetEventType(Type domainEventType)
         {
@@ -47,6 +47,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         ///     Split this DomainEvent into multiple smaller DomainEvents, if possible
         /// </summary>
         /// <returns>list of smaller DomainEvents, or list with this DomainEvent if it can't be split again</returns>
-        public virtual IList<DomainEvent> Split() => new List<DomainEvent> {this};
+        public virtual IList<DomainEvent> Split() => new List<DomainEvent> { this };
     }
 }

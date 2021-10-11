@@ -8,6 +8,6 @@
         /// <summary>
         ///     Path that was resolved to multiple values
         /// </summary>
-        public string Path { get; set; }
+        public string? Path { get; set; }
     }
 }

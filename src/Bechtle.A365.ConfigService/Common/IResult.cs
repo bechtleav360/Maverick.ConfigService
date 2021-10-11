@@ -9,11 +9,17 @@
     public interface IResult<T> : IResult
     {
         /// <summary>
+        ///     Computed Property, that returns <see cref="Data" /> or throws an Exception.
+        ///     Ensure that this Result contains valid data, by checking <see cref="IResult{T}.IsError" />
+        /// </summary>
+        T CheckedData { get; }
+
+        /// <summary>
         ///     attached data.
         ///     filled only when operation is successful.
         ///     defaults to <code>default(T)</code>
         /// </summary>
-        T Data { get; set; }
+        T? Data { get; set; }
     }
 
     /// <summary>

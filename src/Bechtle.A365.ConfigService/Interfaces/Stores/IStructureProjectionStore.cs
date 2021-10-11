@@ -21,8 +21,8 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <returns></returns>
         Task<IResult> Create(
             StructureIdentifier identifier,
-            IDictionary<string, string> keys,
-            IDictionary<string, string> variables);
+            IDictionary<string, string?> keys,
+            IDictionary<string, string?> variables);
 
         /// <summary>
         ///     delete a set of variables from the current Structure
@@ -53,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(StructureIdentifier identifier, QueryRange range);
+        Task<IResult<Page<KeyValuePair<string, string?>>>> GetKeys(StructureIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     get metadata for a Structure
@@ -75,7 +75,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="identifier"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<Page<KeyValuePair<string, string>>>> GetVariables(StructureIdentifier identifier, QueryRange range);
+        Task<IResult<Page<KeyValuePair<string, string?>>>> GetVariables(StructureIdentifier identifier, QueryRange range);
 
         /// <summary>
         ///     Update / Set a set of Variables to the given values for the given Structure

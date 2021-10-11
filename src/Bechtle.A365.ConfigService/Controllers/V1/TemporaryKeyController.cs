@@ -25,9 +25,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly ITemporaryKeyStore _keyStore;
 
         /// <inheritdoc />
-        public TemporaryKeyController(ILogger<TemporaryKeyController> logger,
-                                      ITemporaryKeyStore keyStore,
-                                      IEventBus eventBus)
+        public TemporaryKeyController(
+            ILogger<TemporaryKeyController> logger,
+            ITemporaryKeyStore keyStore,
+            IEventBus eventBus)
             : base(logger)
         {
             _keyStore = keyStore;
@@ -44,30 +45,38 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{structure}/{structureVersion}/{key}")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> Get([FromRoute] string structure,
-                                             [FromRoute] int structureVersion,
-                                             [FromRoute] string key)
+        public async Task<IActionResult> Get(
+            [FromRoute] string structure,
+            [FromRoute] int structureVersion,
+            [FromRoute] string key)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(structure))
+                {
                     return BadRequest("structure invalid");
+                }
 
                 if (structureVersion < 0)
+                {
                     return BadRequest("structureVersion invalid");
+                }
 
                 if (string.IsNullOrWhiteSpace(key))
+                {
                     return BadRequest("key invalid");
+                }
 
-                var result = await _keyStore.Get(MakeTemporaryRegion(structure, structureVersion), key);
+                IResult<string?> result = await _keyStore.Get(MakeTemporaryRegion(structure, structureVersion), key);
 
                 return Result(result);
             }
             catch (Exception e)
             {
                 Logger.LogWarning(e, "could not retrieve temporary key due to an internal error");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  "could not retrieve temporary keys due to an internal error");
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "could not retrieve temporary keys due to an internal error");
             }
         }
 
@@ -80,29 +89,37 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpGet("{structure}/{structureVersion}")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> GetAll([FromRoute] string structure,
-                                                [FromRoute] int structureVersion)
+        public async Task<IActionResult> GetAll(
+            [FromRoute] string structure,
+            [FromRoute] int structureVersion)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(structure))
+                {
                     return BadRequest("structure invalid");
+                }
 
                 if (structureVersion < 0)
+                {
                     return BadRequest("structureVersion invalid");
+                }
 
-                var result = await _keyStore.GetAll(MakeTemporaryRegion(structure, structureVersion));
+                IResult<IDictionary<string, string?>> result = await _keyStore.GetAll(MakeTemporaryRegion(structure, structureVersion));
 
                 if (result.Code == ErrorCode.NotFound)
+                {
                     return Ok(new Dictionary<string, string>());
+                }
 
                 return Result(result);
             }
             catch (Exception e)
             {
                 Logger.LogWarning(e, "could not retrieve all temporary keys in the region due to an internal error");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  "could not retrieve all temporary keys in the region due to an internal error");
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "could not retrieve all temporary keys in the region due to an internal error");
             }
         }
 
@@ -116,38 +133,51 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPut("{structure}/{structureVersion}")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> Refresh([FromRoute] string structure,
-                                                 [FromRoute] int structureVersion,
-                                                 [FromBody] TemporaryKeyList keys)
+        public async Task<IActionResult> Refresh(
+            [FromRoute] string structure,
+            [FromRoute] int structureVersion,
+            [FromBody] TemporaryKeyList? keys)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(structure))
+                {
                     return BadRequest("structure invalid");
+                }
 
                 if (structureVersion < 0)
+                {
                     return BadRequest("structureVersion invalid");
+                }
 
                 if (keys is null)
+                {
                     return BadRequest("invalid body-data");
+                }
 
-                if (keys.Entries is null || !keys.Entries.Any())
+                if (!keys.Entries.Any())
+                {
                     return BadRequest("no or invalid {Body}.Entries");
+                }
 
                 if (keys.Duration == default)
+                {
                     return BadRequest("no or invalid {Body}.Duration");
+                }
 
-                var result = await _keyStore.Extend(MakeTemporaryRegion(structure, structureVersion),
-                                                    keys.Entries.Select(e => e.Key).ToList(),
-                                                    keys.Duration);
+                IResult result = await _keyStore.Extend(
+                                     MakeTemporaryRegion(structure, structureVersion),
+                                     keys.Entries.Select(e => e.Key).ToList(),
+                                     keys.Duration);
 
                 return Result(result);
             }
             catch (Exception e)
             {
                 Logger.LogWarning(e, "could not refresh temporary keys due to an internal error");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  "could not refresh temporary keys due to an internal error");
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "could not refresh temporary keys due to an internal error");
             }
         }
 
@@ -161,46 +191,52 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpDelete("{structure}/{structureVersion}/{key}")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> Remove([FromRoute] string structure,
-                                                [FromRoute] int structureVersion,
-                                                [FromBody] string[] keys)
+        public async Task<IActionResult> Remove(
+            [FromRoute] string structure,
+            [FromRoute] int structureVersion,
+            [FromBody] string[]? keys)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(structure))
+                {
                     return BadRequest("structure invalid");
+                }
 
                 if (structureVersion < 0)
+                {
                     return BadRequest("structureVersion invalid");
+                }
 
                 if (keys is null || !keys.Any())
+                {
                     return BadRequest("no or invalid keys");
+                }
 
-                var result = await _keyStore.Remove(MakeTemporaryRegion(structure, structureVersion), keys);
+                IResult result = await _keyStore.Remove(MakeTemporaryRegion(structure, structureVersion), keys);
 
                 if (result.IsError)
+                {
                     return ProviderError(result);
+                }
 
                 await _eventBus.Connect();
 
-                await _eventBus.Publish(new EventMessage
-                {
-                    Event = new TemporaryKeysExpired
+                await _eventBus.Publish(
+                    new EventMessage
                     {
-                        Structure = structure,
-                        Version = structureVersion,
-                        Keys = keys.ToList()
-                    },
-                    EventType = nameof(TemporaryKeysExpired)
-                });
+                        Event = new TemporaryKeysExpired(structure, structureVersion, keys),
+                        EventType = nameof(TemporaryKeysExpired)
+                    });
 
                 return Result(result);
             }
             catch (Exception e)
             {
                 Logger.LogWarning(e, "could not remove temporary keys due to an internal error");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  "could not remove temporary keys due to an internal error");
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "could not remove temporary keys due to an internal error");
             }
         }
 
@@ -214,56 +250,72 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost("{structure}/{structureVersion}")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> Set([FromRoute] string structure,
-                                             [FromRoute] int structureVersion,
-                                             [FromBody] TemporaryKeyList keys)
+        public async Task<IActionResult> Set(
+            [FromRoute] string structure,
+            [FromRoute] int structureVersion,
+            [FromBody] TemporaryKeyList? keys)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(structure))
+                {
                     return BadRequest("structure invalid");
+                }
 
                 if (structureVersion < 0)
+                {
                     return BadRequest("structureVersion invalid");
+                }
 
                 if (keys is null)
+                {
                     return BadRequest("invalid body-data");
+                }
 
-                if (keys.Entries is null || !keys.Entries.Any())
+                if (!keys.Entries.Any())
+                {
                     return BadRequest("no or invalid {Body}.Entries");
+                }
 
                 if (keys.Duration == default)
+                {
                     return BadRequest("no or invalid {Body}.Duration");
+                }
 
-                var result = await _keyStore.Set(MakeTemporaryRegion(structure, structureVersion),
-                                                 keys.Entries.ToDictionary(e => e.Key, e => e.Value),
-                                                 keys.Duration);
+                IResult result = await _keyStore.Set(
+                                     MakeTemporaryRegion(structure, structureVersion),
+                                     keys.Entries.ToDictionary(e => e.Key, e => e.Value),
+                                     keys.Duration);
 
                 if (result.IsError)
+                {
                     return ProviderError(result);
+                }
 
                 KnownMetrics.TemporaryKeyCreated.Inc(keys.Entries.Length);
 
                 await _eventBus.Connect();
 
-                await _eventBus.Publish(new EventMessage
-                {
-                    Event = new TemporaryKeysAdded
+                await _eventBus.Publish(
+                    new EventMessage
                     {
-                        Structure = structure,
-                        Version = structureVersion,
-                        Values = keys.Entries.ToDictionary(e => e.Key, e => e.Value)
-                    },
-                    EventType = nameof(TemporaryKeysAdded)
-                });
+                        Event = new TemporaryKeysAdded
+                        {
+                            Structure = structure,
+                            Version = structureVersion,
+                            Values = keys.Entries.ToDictionary(e => e.Key, e => e.Value)
+                        },
+                        EventType = nameof(TemporaryKeysAdded)
+                    });
 
                 return Result(result);
             }
             catch (Exception e)
             {
                 Logger.LogWarning(e, "could not store temporary keys due to an internal error");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  "could not store temporary key due to an internal error");
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "could not store temporary key due to an internal error");
             }
         }
 

@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (configResult.IsError)
                 return ProviderError(configResult);
 
-            return Result(await AnnotateEnvironmentKeys(envKeyResult.Data.Items, configResult.Data.Items));
+            return Result(await AnnotateEnvironmentKeys(envKeyResult.CheckedData.Items, configResult.CheckedData.Items));
         }
 
         /// <summary>
@@ -118,19 +118,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (configResult.IsError)
                 return ProviderError(configResult);
 
-            var selectedConfigs = configResult.Data
+            var selectedConfigs = configResult.CheckedData
                                               .Items
                                               .GroupBy(configId => configId.Structure.Name)
                                               .Select(
                                                   group => group.OrderByDescending(c => c.Structure.Version)
                                                                 .First());
 
-            var annotatedEnvKeys = await AnnotateEnvironmentKeys(envKeyResult.Data.Items, selectedConfigs);
+            var annotatedEnvKeys = await AnnotateEnvironmentKeys(envKeyResult.CheckedData.Items, selectedConfigs);
 
             if (annotatedEnvKeys.IsError)
                 return ProviderError(annotatedEnvKeys);
 
-            return Ok(annotatedEnvKeys.Data.OrderBy(k => k.Key));
+            return Ok(annotatedEnvKeys.CheckedData.OrderBy(k => k.Key));
         }
 
         /// <summary>
@@ -175,10 +175,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (envKeysResult.IsError)
                 return ProviderError(envKeysResult);
 
-            var envKeys = new Dictionary<string, string>(envKeysResult.Data.Items);
+            var envKeys = new Dictionary<string, string?>(envKeysResult.CheckedData.Items);
 
-            IDictionary<string, string> structKeys;
-            IDictionary<string, string> structVars;
+            IDictionary<string, string?> structKeys;
+            IDictionary<string, string?> structVars;
 
             try
             {
@@ -190,8 +190,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (varResult.IsError)
                     return ProviderError(varResult);
 
-                structKeys = new Dictionary<string, string>(keyResult.Data.Items);
-                structVars = new Dictionary<string, string>(varResult.Data.Items);
+                structKeys = new Dictionary<string, string?>(keyResult.CheckedData.Items);
+                structVars = new Dictionary<string, string?>(varResult.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -245,7 +245,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> InspectUploadedStructure(
             [FromRoute] string environmentCategory,
             [FromRoute] string environmentName,
-            [FromBody] DtoStructure structure)
+            [FromBody] DtoStructure? structure)
         {
             if (string.IsNullOrWhiteSpace(environmentCategory))
                 return BadRequest("no environment-category given");
@@ -272,7 +272,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return BadRequest("invalid structure-body given (invalid type or null)");
             }
 
-            IDictionary<string, string> structKeys;
+            IDictionary<string, string?> structKeys;
 
             try
             {
@@ -296,7 +296,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (envKeysResult.IsError)
                 return ProviderError(envKeysResult);
 
-            var envKeys = new Dictionary<string, string>(envKeysResult.Data.Items);
+            var envKeys = new Dictionary<string, string?>(envKeysResult.CheckedData.Items);
 
             CompilationResult compilationResult;
 
@@ -310,12 +310,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     },
                     new StructureCompilationInfo
                     {
-                        Name = structure.Name ?? "Inspected Structure",
+                        Name = structure.Name,
                         Keys = structKeys,
-                        Variables = (structure.Variables
-                                     ?? new Dictionary<string, object>()).ToDictionary(
+                        Variables = structure.Variables.ToDictionary(
                             kvp => kvp.Key,
-                            kvp => kvp.Value?.ToString())
+                            kvp => kvp.Value.ToString())
                     },
                     _parser);
             }
@@ -353,6 +352,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 foreach (var warning in traceResult.Warnings)
                 {
+                    if (traceResult.Key is null)
+                        continue;
                     if (!warnings.ContainsKey(traceResult.Key))
                         warnings.Add(traceResult.Key, new List<string>());
                     warnings[traceResult.Key].Add(warning);
@@ -364,6 +365,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             {
                 foreach (var error in traceResult.Errors)
                 {
+                    if (traceResult.Key is null)
+                        continue;
                     if (!errors.ContainsKey(traceResult.Key))
                         errors.Add(traceResult.Key, new List<string>());
                     errors[traceResult.Key].Add(error);
@@ -388,7 +391,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         }
 
         private async Task<IResult<List<AnnotatedEnvironmentKey>>> AnnotateEnvironmentKeys(
-            ICollection<KeyValuePair<string, string>> environment,
+            ICollection<KeyValuePair<string, string?>> environment,
             IEnumerable<ConfigurationIdentifier> structures)
         {
             var tasks = structures.AsParallel()
@@ -434,7 +437,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             successes.AsParallel()
                      .ForAll(
                          t => t.Result
-                               .Data
+                               .CheckedData
                                .Items
                                .AsParallel()
                                .ForAll(

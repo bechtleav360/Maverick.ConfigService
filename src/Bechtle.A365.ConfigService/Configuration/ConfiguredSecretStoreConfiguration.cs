@@ -11,6 +11,6 @@ namespace Bechtle.A365.ConfigService.Configuration
         ///     dictionary of all available Secrets.
         ///     Keys represent the whole path, can be separated using ':' or '/'
         /// </summary>
-        public Dictionary<string, string> Secrets { get; set; }
+        public Dictionary<string, string> Secrets { get; set; } = new();
     }
 }

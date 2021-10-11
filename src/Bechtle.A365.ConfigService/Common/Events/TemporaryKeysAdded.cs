@@ -11,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Common.Events
         /// <summary>
         ///     name of target structure
         /// </summary>
-        public string Structure { get; set; }
+        public string Structure { get; set; } = string.Empty;
 
         /// <summary>
         ///     version of target-structure
@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Common.Events
         /// <summary>
         ///     list of values that have been set
         /// </summary>
-        public Dictionary<string, string> Values { get; set; }
+        public Dictionary<string, string?> Values { get; set; } = new();
 
         /// <inheritdoc />
         public string EventName => nameof(TemporaryKeysAdded);

@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection
         /// <param name="key"></param>
         /// <param name="originalValue"></param>
         /// <returns></returns>
-        ITracer AddKey(string key, string originalValue);
+        ITracer AddKey(string key, string? originalValue);
 
         /// <summary>
         ///     get the collected traces as a single result

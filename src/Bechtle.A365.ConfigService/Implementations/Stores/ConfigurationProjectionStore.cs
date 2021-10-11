@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
+        public ValueTask DisposeAsync() => new(Task.CompletedTask);
 
         /// <inheritdoc />
         public async Task<IResult<Page<ConfigurationIdentifier>>> GetAvailable(DateTime when, QueryRange range)
@@ -100,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (configuration.IsError)
                     return Result.Error<JsonElement>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
-                return Result.Success(JsonDocument.Parse(configuration.Data.Json).RootElement);
+                return Result.Success(JsonDocument.Parse(configuration.CheckedData.Json).RootElement);
             }
             catch (Exception e)
             {
@@ -112,7 +112,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(
+        public async Task<IResult<Page<KeyValuePair<string, string?>>>> GetKeys(
             ConfigurationIdentifier identifier,
             DateTime when,
             QueryRange range)
@@ -130,21 +130,22 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 IResult<PreparedConfiguration> configuration = await _domainObjectManager.GetConfiguration(identifier, CancellationToken.None);
                 if (configuration.IsError)
-                    return Result.Error<Page<KeyValuePair<string, string>>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
+                    return Result.Error<Page<KeyValuePair<string, string?>>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
-                var items = configuration.Data
-                                         .Keys
-                                         .OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
-                                         .Skip(range.Offset)
-                                         .Take(range.Length)
-                                         .ToList();
+                List<KeyValuePair<string, string?>> items =
+                    configuration.CheckedData
+                                 .Keys
+                                 .OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
+                                 .Skip(range.Offset)
+                                 .Take(range.Length)
+                                 .ToList();
 
-                var page = new Page<KeyValuePair<string, string>>
+                var page = new Page<KeyValuePair<string, string?>>
                 {
                     Items = items,
                     Count = items.Count,
                     Offset = range.Offset,
-                    TotalCount = configuration.Data.Keys.Count,
+                    TotalCount = configuration.CheckedData.Keys.Count,
                 };
 
                 return Result.Success(page);
@@ -152,7 +153,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve projected configuration keys for id: {Identifier}", identifier);
-                return Result.Error<Page<KeyValuePair<string, string>>>(
+                return Result.Error<Page<KeyValuePair<string, string?>>>(
                     $"failed to retrieve projected configuration keys for id: {formattedParams}",
                     ErrorCode.DbQueryError);
             }
@@ -194,7 +195,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (configuration.IsError)
                     return Result.Error<Page<string>>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
-                var result = configuration.Data
+                var result = configuration.CheckedData
                                           .UsedKeys
                                           .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
                                           .Skip(range.Offset)
@@ -208,7 +209,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Items = result,
                     Count = result.Count,
                     Offset = range.Offset,
-                    TotalCount = configuration.Data.UsedKeys.Count,
+                    TotalCount = configuration.CheckedData.UsedKeys.Count,
                 };
 
                 return Result.Success(page);
@@ -240,7 +241,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (configuration.IsError)
                     return Result.Error<string>($"no configuration found with id: {formattedParams}", ErrorCode.NotFound);
 
-                var result = configuration.Data.ConfigurationVersion.ToString();
+                var result = configuration.CheckedData.ConfigurationVersion.ToString();
 
                 _logger.LogDebug("Config-Version of {Identifier} = {Version}", identifier, result);
 
@@ -281,11 +282,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (result.IsError)
                     return Result.Error<PreparedConfigurationMetadata>(result.Message, result.Code);
 
-                PreparedConfiguration configuration = result.Data;
+                PreparedConfiguration configuration = result.CheckedData;
 
-                var metadata = new PreparedConfigurationMetadata
+                var metadata = new PreparedConfigurationMetadata(configuration.Id)
                 {
-                    Id = configuration.Id,
                     ChangedAt = configuration.ChangedAt,
                     ChangedBy = configuration.ChangedBy,
                     CreatedAt = configuration.CreatedAt,
@@ -320,12 +320,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Error<Page<PreparedConfigurationMetadata>>(ids.Message, ids.Code);
 
                 var results = new List<PreparedConfigurationMetadata>();
-                foreach (var configId in ids.Data.Items)
+                foreach (var configId in ids.CheckedData.Items)
                 {
                     IResult<PreparedConfigurationMetadata> result = await GetMetadata(configId);
                     if (result.IsError)
                         return Result.Error<Page<PreparedConfigurationMetadata>>(result.Message, result.Code);
-                    results.Add(result.Data);
+                    results.Add(result.CheckedData);
                 }
 
                 return Result.Success(
@@ -334,7 +334,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         Items = results,
                         Count = results.Count,
                         Offset = range.Offset,
-                        TotalCount = ids.Data.TotalCount
+                        TotalCount = ids.CheckedData.TotalCount
                     });
             }
             catch (Exception e)

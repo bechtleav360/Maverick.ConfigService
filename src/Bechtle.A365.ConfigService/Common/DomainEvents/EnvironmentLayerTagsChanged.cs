@@ -9,13 +9,13 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     /// </summary>
     public class EnvironmentLayerTagsChanged : DomainEvent, IEquatable<EnvironmentLayerTagsChanged>
     {
-        /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier Identifier { get; }
-
         /// <summary>
         ///     List of tags that were newly assigned to this Layer
         /// </summary>
         public List<string> AddedTags { get; }
+
+        /// <inheritdoc cref="LayerIdentifier" />
+        public LayerIdentifier Identifier { get; }
 
         /// <summary>
         ///     List of tags that were removed from this Layer
@@ -31,16 +31,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
-        {
-            Filters =
-            {
-                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
-            }
-        };
-
-        /// <inheritdoc />
-        public bool Equals(EnvironmentLayerTagsChanged other)
+        public bool Equals(EnvironmentLayerTagsChanged? other)
         {
             if (ReferenceEquals(null, other))
             {
@@ -58,7 +49,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj))
             {
@@ -70,16 +61,25 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return true;
             }
 
-            if (obj.GetType() != this.GetType())
+            if (obj.GetType() != GetType())
             {
                 return false;
             }
 
-            return Equals((EnvironmentLayerTagsChanged) obj);
+            return Equals((EnvironmentLayerTagsChanged)obj);
         }
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Identifier, AddedTags, RemovedTags);
+
+        /// <inheritdoc />
+        public override DomainEventMetadata GetMetadata() => new()
+        {
+            Filters =
+            {
+                { KnownDomainEventMetadata.Identifier, Identifier.ToString() }
+            }
+        };
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(EnvironmentLayerTagsChanged left, EnvironmentLayerTagsChanged right) => Equals(left, right);

@@ -15,26 +15,26 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     keys that make up this Structure
         /// </summary>
-        public Dictionary<string, string> Keys { get; }
+        public Dictionary<string, string?> Keys { get; }
 
         /// <summary>
         ///     variables that may be referenced from Environment or Keys
         /// </summary>
-        public Dictionary<string, string> Variables { get; }
+        public Dictionary<string, string?> Variables { get; }
 
         /// <inheritdoc />
         public StructureCreated(
             StructureIdentifier identifier,
-            IDictionary<string, string> keys,
-            IDictionary<string, string> variables)
+            IDictionary<string, string?> keys,
+            IDictionary<string, string?> variables)
         {
             Identifier = identifier;
-            Keys = new Dictionary<string, string>(keys, StringComparer.OrdinalIgnoreCase);
-            Variables = new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase);
+            Keys = new Dictionary<string, string?>(keys, StringComparer.OrdinalIgnoreCase);
+            Variables = new Dictionary<string, string?>(variables, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(StructureCreated other)
+        public virtual bool Equals(StructureCreated? other)
         {
             if (ReferenceEquals(null, other))
             {
@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj))
             {
@@ -69,18 +69,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return false;
             }
 
-            return Equals((StructureCreated) obj);
+            return Equals((StructureCreated)obj);
         }
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Identifier, Keys, Variables);
 
         /// <inheritdoc />
-        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        public override DomainEventMetadata GetMetadata() => new()
         {
             Filters =
             {
-                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
+                { KnownDomainEventMetadata.Identifier, Identifier.ToString() }
             }
         };
 
@@ -90,9 +90,14 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <inheritdoc cref="operator !=" />
         public static bool operator !=(StructureCreated left, StructureCreated right) => !Equals(left, right);
 
-        private bool CompareDictionaries(IDictionary<string, string> left, IDictionary<string, string> right)
+        private bool CompareDictionaries(IDictionary<string, string?> left, IDictionary<string, string?> right)
             => Equals(left, right)
                || left.Count == right.Count
-               && left.All(kvp => right.ContainsKey(kvp.Key) && right[kvp.Key].Equals(kvp.Value, StringComparison.OrdinalIgnoreCase));
+               && left.All(
+                   kvp => right.ContainsKey(kvp.Key)
+                          && string.Equals(
+                              right[kvp.Key],
+                              kvp.Value,
+                              StringComparison.OrdinalIgnoreCase));
     }
 }

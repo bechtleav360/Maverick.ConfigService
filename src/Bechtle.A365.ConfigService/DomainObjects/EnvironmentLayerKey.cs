@@ -25,7 +25,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     String-Representation of the actual Value
         /// </summary>
-        public string Value { get; set; }
+        public string? Value { get; set; }
 
         /// <summary>
         ///     internal data-version
@@ -33,17 +33,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public long Version { get; set; }
 
         /// <inheritdoc cref="EnvironmentLayerKey" />
-        public EnvironmentLayerKey()
-        {
-            Key = string.Empty;
-            Value = string.Empty;
-            Type = string.Empty;
-            Description = string.Empty;
-            Version = 0;
-        }
-
-        /// <inheritdoc cref="EnvironmentLayerKey" />
-        public EnvironmentLayerKey(string key, string value, string type, string description, long version)
+        public EnvironmentLayerKey(string key, string? value, string type, string description, long version)
         {
             Key = key;
             Value = value;
@@ -53,7 +43,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerKey other && Equals(other);
+        public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerKey other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Description, Key, Type, Value, Version);

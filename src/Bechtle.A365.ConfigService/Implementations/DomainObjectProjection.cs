@@ -131,9 +131,28 @@ namespace Bechtle.A365.ConfigService.Implementations
         }
 
         /// <inheritdoc />
-        protected override async Task OnDomainEventReceived(StreamedEventHeader eventHeader, IDomainEvent domainEvent)
+        protected override async Task OnDomainEventReceived(
+            StreamedEventHeader? eventHeader,
+            IDomainEvent? domainEvent)
         {
             _projectionHealthCheck.SetReady();
+
+            if (eventHeader is null)
+            {
+                _logger.LogWarning("unable to project domainEvent, no header provided - likely serialization problem");
+                return;
+            }
+
+            if (domainEvent is null)
+            {
+                _logger.LogWarning(
+                    "unable to project domainEvent #{EventNumber} with id {EventId} of type {EventType}, "
+                    + "no body provided - likely serialization problem",
+                    eventHeader.EventNumber,
+                    eventHeader.EventId,
+                    eventHeader.EventType);
+                return;
+            }
 
             try
             {
@@ -148,7 +167,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
 
-                Task task = domainEvent switch
+                Task? task = domainEvent switch
                 {
                     IDomainEvent<ConfigurationBuilt> e => HandleConfigurationBuilt(eventHeader, e),
                     IDomainEvent<DefaultEnvironmentCreated> e => HandleDefaultEnvironmentCreated(eventHeader, e),
@@ -201,9 +220,9 @@ namespace Bechtle.A365.ConfigService.Implementations
                 _logger.LogWarning(
                     e,
                     "error while projecting domainEvent {DomainEventId}#{DomainEventNumber} of type {DomainEventType}",
-                    eventHeader?.EventId,
-                    eventHeader?.EventNumber,
-                    eventHeader?.EventType);
+                    eventHeader.EventId,
+                    eventHeader.EventNumber,
+                    eventHeader.EventType);
                 _projectionStatus.SetErrorWhileProjecting(eventHeader, e);
                 throw;
             }
@@ -237,7 +256,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 string[] parts = key.Split('/');
 
                 string rootPart = parts.First();
-                EnvironmentLayerKeyPath root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
+                EnvironmentLayerKeyPath? root = roots.FirstOrDefault(p => p.Path.Equals(rootPart, StringComparison.InvariantCultureIgnoreCase));
 
                 if (root is null)
                 {
@@ -249,7 +268,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                 foreach (string part in parts.Skip(1))
                 {
-                    EnvironmentLayerKeyPath next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
+                    EnvironmentLayerKeyPath? next = current.Children.FirstOrDefault(p => p.Path.Equals(part, StringComparison.InvariantCultureIgnoreCase));
 
                     if (next is null)
                     {
@@ -284,7 +303,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             var parser = scope.ServiceProvider.GetRequiredService<IConfigurationParser>();
             var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            _logger?.LogDebug($"version used during compilation: {config.CurrentVersion}");
+            _logger.LogDebug($"version used during compilation: {config.CurrentVersion}");
 
             // gather data to compile config with
             IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(config.Id.Environment);
@@ -309,8 +328,8 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            ConfigEnvironment environment = envResult.Data;
-            ConfigStructure structure = structResult.Data;
+            ConfigEnvironment environment = envResult.CheckedData;
+            ConfigStructure structure = structResult.CheckedData;
 
             try
             {
@@ -335,18 +354,23 @@ namespace Bechtle.A365.ConfigService.Implementations
                 config.UsedKeys = compilationResult.GetUsedKeys().ToList();
                 config.CurrentVersion = (long)eventHeader.EventNumber;
 
-                var tracerStack = new Stack<TraceResult>(compilationResult.CompilationTrace);
-                while (tracerStack.TryPop(out TraceResult result))
+                Stack<TraceResult> tracerStack = new(compilationResult.CompilationTrace);
+                while (tracerStack.TryPop(out TraceResult? result))
                 {
                     // most if not all traces will be returned as KeyTraceResult
-                    if (!(result is KeyTraceResult keyResult))
+                    if (result is not KeyTraceResult keyResult)
                     {
                         continue;
                     }
 
                     if (keyResult.Errors.Any())
                     {
-                        if (!config.Errors.TryGetValue(keyResult.Key, out List<string> errorList))
+                        if (keyResult.Key is null)
+                        {
+                            continue;
+                        }
+
+                        if (!config.Errors.TryGetValue(keyResult.Key, out List<string>? errorList))
                         {
                             errorList = new List<string>();
                             config.Errors[keyResult.Key] = errorList;
@@ -357,7 +381,12 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                     if (keyResult.Warnings.Any())
                     {
-                        if (!config.Warnings.TryGetValue(keyResult.Key, out List<string> warningList))
+                        if (keyResult.Key is null)
+                        {
+                            continue;
+                        }
+
+                        if (!config.Warnings.TryGetValue(keyResult.Key, out List<string>? warningList))
                         {
                             warningList = new List<string>();
                             config.Errors[keyResult.Key] = warningList;
@@ -381,7 +410,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 }
                 else
                 {
-                    metadata = metadataResult.Data;
+                    metadata = metadataResult.CheckedData;
                 }
 
                 metadata["used_layers"] = JsonConvert.SerializeObject(environment.Layers);
@@ -391,7 +420,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
             catch (Exception e)
             {
-                _logger?.LogWarning(e, "failed to compile configuration, see exception for more details");
+                _logger.LogWarning(e, "failed to compile configuration, see exception for more details");
             }
         }
 
@@ -438,7 +467,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            EnvironmentLayer source = sourceEnvironmentResult.Data;
+            EnvironmentLayer source = sourceEnvironmentResult.CheckedData;
             var newLayer = new EnvironmentLayer(domainEvent.Payload.TargetIdentifier)
             {
                 Json = source.Json,
@@ -478,7 +507,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            EnvironmentLayer layer = layerResult.Data;
+            EnvironmentLayer layer = layerResult.CheckedData;
             List<ConfigKeyAction> impliedActions = layer.Keys
                                                         .Select(k => ConfigKeyAction.Delete(k.Key))
                                                         .ToList();
@@ -510,7 +539,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            EnvironmentLayer layer = layerResult.Data;
+            EnvironmentLayer layer = layerResult.CheckedData;
 
             // set the 'Version' property of all changed Keys to the current unix-timestamp for later use
             var keyVersion = (long)DateTime.UtcNow
@@ -564,7 +593,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            EnvironmentLayer layer = layerResult.Data;
+            EnvironmentLayer layer = layerResult.CheckedData;
 
             foreach (ConfigKeyAction deletion in domainEvent.Payload
                                                             .ModifiedKeys
@@ -625,7 +654,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            ConfigEnvironment environment = envResult.Data;
+            ConfigEnvironment environment = envResult.CheckedData;
 
             environment.Layers = domainEvent.Payload.Layers;
 
@@ -643,7 +672,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             using IServiceScope scope = _serviceProvider.CreateScope();
             var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            environment.Keys = envDataResult.Data;
+            environment.Keys = envDataResult.CheckedData;
             environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
             environment.KeyPaths = GenerateKeyPaths(environment.Keys);
             environment.CurrentVersion = (long)eventHeader.EventNumber;
@@ -665,7 +694,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            EnvironmentLayer layer = layerResult.Data;
+            EnvironmentLayer layer = layerResult.CheckedData;
 
             foreach (string tag in domainEvent.Payload.AddedTags.Where(tag => !layer.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase)))
             {
@@ -674,7 +703,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             foreach (string tag in domainEvent.Payload.RemovedTags)
             {
-                string existingTag = layer.Tags.FirstOrDefault(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
+                string? existingTag = layer.Tags.FirstOrDefault(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
                 if (existingTag is null)
                 {
                     continue;
@@ -721,7 +750,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            ConfigStructure structure = structureResult.Data;
+            ConfigStructure structure = structureResult.CheckedData;
 
             foreach (ConfigKeyAction deletion in domainEvent.Payload
                                                             .ModifiedKeys
@@ -748,7 +777,10 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task OnLayerKeysChanged(EnvironmentLayer layer, ICollection<ConfigKeyAction> modifiedKeys, IJsonTranslator translator)
         {
-            layer.Json = translator.ToJson(layer.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Key))
+            layer.Json = translator.ToJson(
+                                       layer.Keys.ToDictionary(
+                                           kvp => kvp.Value.Key,
+                                           kvp => (string?)kvp.Value.Key))
                                    .ToString();
             layer.KeyPaths = GenerateKeyPaths(layer.Keys);
 
@@ -760,7 +792,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            foreach (EnvironmentIdentifier envId in envIdResult.Data.Items)
+            foreach (EnvironmentIdentifier envId in envIdResult.CheckedData.Items)
             {
                 IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
                 if (environmentResult.IsError)
@@ -768,7 +800,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     return;
                 }
 
-                ConfigEnvironment environment = environmentResult.Data;
+                ConfigEnvironment environment = environmentResult.CheckedData;
                 if (!environment.Layers.Contains(layer.Id))
                 {
                     continue;
@@ -780,7 +812,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     return;
                 }
 
-                environment.Keys = environmentDataResult.Data;
+                environment.Keys = environmentDataResult.CheckedData;
                 environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
                 environment.KeyPaths = GenerateKeyPaths(environment.Keys);
                 environment.CurrentVersion = layer.CurrentVersion;
@@ -805,7 +837,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     return Result.Error<Dictionary<string, EnvironmentLayerKey>>(layerResult.Message, layerResult.Code);
                 }
 
-                EnvironmentLayer layer = layerResult.Data;
+                EnvironmentLayer layer = layerResult.CheckedData;
 
                 foreach ((string _, EnvironmentLayerKey entry) in layer.Keys)
                 {
@@ -834,7 +866,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            foreach (ConfigurationIdentifier configId in configIdResult.Data.Items)
+            foreach (ConfigurationIdentifier configId in configIdResult.CheckedData.Items)
             {
                 IResult<IDictionary<string, string>> metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(configId);
                 if (metadataResult.IsError)
@@ -843,7 +875,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     continue;
                 }
 
-                IDictionary<string, string> metadata = metadataResult.Data;
+                IDictionary<string, string> metadata = metadataResult.CheckedData;
 
                 // no key? assume it's not stale
                 bool isStale = metadata.ContainsKey("stale") && JsonConvert.DeserializeObject<bool>(metadata["stale"]);
@@ -854,9 +886,9 @@ namespace Bechtle.A365.ConfigService.Implementations
                     continue;
                 }
 
-                List<LayerIdentifier> usedLayers = metadata.ContainsKey("used_layers")
-                                                       ? JsonConvert.DeserializeObject<List<LayerIdentifier>>(metadata["used_layers"])
-                                                       : null;
+                List<LayerIdentifier>? usedLayers = metadata.ContainsKey("used_layers")
+                                                        ? JsonConvert.DeserializeObject<List<LayerIdentifier>>(metadata["used_layers"])
+                                                        : null;
 
                 if (usedLayers is null)
                 {
@@ -882,7 +914,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     continue;
                 }
 
-                PreparedConfiguration config = configResult.Data;
+                PreparedConfiguration config = configResult.CheckedData;
 
                 List<string> usedKeys = config.UsedKeys;
                 List<string> changedKeys = modifiedKeys.Select(k => k.Key).ToList();

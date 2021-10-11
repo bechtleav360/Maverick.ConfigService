@@ -13,13 +13,13 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// </summary>
         /// <param name="path">full path to a single value</param>
         /// <returns></returns>
-        Task<IResult<string>> TryGetValue(string path);
+        Task<IResult<string?>> TryGetValue(string path);
 
         /// <summary>
         ///     get the values of all queried keys in the associated store
         /// </summary>
         /// <param name="query">query for a range of keys</param>
         /// <returns>dictionary of all matched keys relative to the query</returns>
-        Task<IResult<Dictionary<string, string>>> TryGetRange(string query);
+        Task<IResult<Dictionary<string, string?>>> TryGetRange(string query);
     }
 }

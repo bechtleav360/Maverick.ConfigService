@@ -8,7 +8,7 @@
         /// <summary>
         ///     Directory-Name of where the local DomainObject-Database should be stored
         /// </summary>
-        public string Directory { get; }
+        public string? Directory { get; }
 
         /// <summary>
         ///     Filename of where the local DomainObject-Database should be stored

@@ -82,7 +82,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return;
             }
 
-            foreach (var (region, data) in result.Data)
+            foreach (var (region, data) in result.CheckedData)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
@@ -116,12 +116,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 await eventBus.Publish(
                     new EventMessage
                     {
-                        Event = new TemporaryKeysExpired
-                        {
-                            Structure = structure,
-                            Version = version,
-                            Keys = keysToExpire
-                        },
+                        Event = new TemporaryKeysExpired(structure, version, keysToExpire),
                         EventType = nameof(TemporaryKeysExpired)
                     });
             }

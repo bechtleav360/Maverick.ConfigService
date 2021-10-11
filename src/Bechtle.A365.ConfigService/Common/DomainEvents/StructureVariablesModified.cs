@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(StructureVariablesModified other)
+        public virtual bool Equals(StructureVariablesModified? other)
         {
             if (ReferenceEquals(null, other))
             {
@@ -36,12 +36,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return true;
             }
 
-            return Equals(Identifier, other.Identifier) 
+            return Equals(Identifier, other.Identifier)
                    && ModifiedKeys.SequenceEqual(other.ModifiedKeys);
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj))
             {
@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return false;
             }
 
-            return Equals((StructureVariablesModified) obj);
+            return Equals((StructureVariablesModified)obj);
         }
 
         /// <inheritdoc />
@@ -66,16 +66,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
             unchecked
             {
-                return ((Identifier != null ? Identifier.GetHashCode() : 0) * 397) ^ (ModifiedKeys != null ? ModifiedKeys.GetHashCode() : 0);
+                return (Identifier.GetHashCode() * 397) ^ ModifiedKeys.GetHashCode();
             }
         }
 
         /// <inheritdoc />
-        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        public override DomainEventMetadata GetMetadata() => new()
         {
             Filters =
             {
-                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
+                { KnownDomainEventMetadata.Identifier, Identifier.ToString() }
             }
         };
 

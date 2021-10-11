@@ -101,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 {
                     isDefault
                         ? new DefaultEnvironmentCreated(identifier)
-                        : (DomainEvent)new EnvironmentCreated(identifier)
+                        : new EnvironmentCreated(identifier)
                 },
                 false,
                 cancellationToken);
@@ -117,8 +117,8 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public Task<IResult> CreateStructure(
             StructureIdentifier identifier,
-            IDictionary<string, string> keys,
-            IDictionary<string, string> variables,
+            IDictionary<string, string?> keys,
+            IDictionary<string, string?> variables,
             CancellationToken cancellationToken)
             => CreateObject<ConfigStructure, StructureIdentifier>(
                 identifier,
@@ -235,7 +235,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             var staleConfigurationIds = new List<ConfigurationIdentifier>();
-            foreach (ConfigurationIdentifier configId in configIdResult.Data.Items)
+            foreach (ConfigurationIdentifier configId in configIdResult.CheckedData.Items)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -253,7 +253,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     return Result.Error<Page<ConfigurationIdentifier>>(configIdResult.Message, configIdResult.Code);
                 }
 
-                IDictionary<string, string> metadata = metadataResult.Data;
+                IDictionary<string, string> metadata = metadataResult.CheckedData;
                 bool isConfigStale = metadata.ContainsKey("stale") && JsonConvert.DeserializeObject<bool>(metadata["stale"]);
 
                 if (isConfigStale)
@@ -348,8 +348,8 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return Result.Error<bool>(metadataResult.Message, metadataResult.Code);
             }
 
-            IDictionary<string, string> metadata = metadataResult.Data;
-            if (!metadata.TryGetValue("stale", out string staleProperty))
+            IDictionary<string, string> metadata = metadataResult.CheckedData;
+            if (!metadata.TryGetValue("stale", out string? staleProperty))
             {
                 return Result.Success(true);
             }
@@ -478,7 +478,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (!result.IsError)
             {
-                return Result.Success(result.Data);
+                return Result.Success(result.CheckedData);
             }
 
             _logger.LogWarning(
@@ -509,7 +509,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (!result.IsError)
             {
-                return Result.Success(result.Data);
+                return Result.Success(result.CheckedData);
             }
 
             _logger.LogWarning(
@@ -536,7 +536,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (!result.IsError)
             {
-                return Result.Success(result.Data);
+                return Result.Success(result.CheckedData);
             }
 
             _logger.LogWarning(
@@ -564,7 +564,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (!result.IsError)
             {
-                return Result.Success(result.Data);
+                return Result.Success(result.CheckedData);
             }
 
             _logger.LogWarning(
@@ -727,7 +727,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 // this is *the* most resource-heavy way i could think of, but it's the easiest way of knowing if
                 // the written events will fit into the size-constraints of ES
                 var eventStack = new Stack<DomainEvent>(events.Reverse());
-                while (eventStack.TryPop(out DomainEvent item))
+                while (eventStack.TryPop(out DomainEvent? item))
                 {
                     var domainEvent = new LateBindingDomainEvent<DomainEvent>("Anonymous", item);
 

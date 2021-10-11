@@ -31,7 +31,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Actual Data built from this Configuration, as Key=>Value pair
         /// </summary>
-        public IDictionary<string, string> Keys { get; set; }
+        public IDictionary<string, string?> Keys { get; set; }
 
         /// <summary>
         ///     List of Environment-Keys used to build this Configuration
@@ -54,19 +54,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public Dictionary<string, List<string>> Warnings { get; set; }
 
         /// <inheritdoc />
-        public PreparedConfiguration()
-        {
-            Errors = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-            Id = null;
-            Json = "{}";
-            Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            UsedKeys = new List<string>();
-            ValidFrom = null;
-            ValidTo = null;
-            Warnings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-        }
-
-        /// <inheritdoc />
         public PreparedConfiguration(ConfigurationIdentifier identifier)
         {
             if (identifier is null)
@@ -87,7 +74,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             Errors = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             Id = identifier;
             Json = "{}";
-            Keys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Keys = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
             UsedKeys = new List<string>();
             ValidFrom = null;
             ValidTo = null;
@@ -95,7 +82,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is PreparedConfiguration other && Equals(other);
+        public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is PreparedConfiguration other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(ConfigurationVersion, Id, ValidFrom, ValidTo, ChangedAt, ChangedBy, CreatedAt, CreatedBy);

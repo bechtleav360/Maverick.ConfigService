@@ -1,4 +1,6 @@
-﻿namespace Bechtle.A365.ConfigService.Common.Objects
+﻿using System;
+
+namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     collection of exported parts of the configuration
@@ -6,9 +8,9 @@
     public class ConfigExport
     {
         /// <inheritdoc cref="EnvironmentExport"/>
-        public EnvironmentExport[] Environments { get; set; }
+        public EnvironmentExport[] Environments { get; set; } = Array.Empty<EnvironmentExport>();
 
         /// <inheritdoc cref="LayerExport"/>
-        public LayerExport[] Layers { get; set; }
+        public LayerExport[] Layers { get; set; } = Array.Empty<LayerExport>();
     }
 }

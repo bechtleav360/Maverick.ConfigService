@@ -8,6 +8,6 @@
         /// <summary>
         ///     Static value resolved as value for a Key
         /// </summary>
-        public string StaticValue { get; set; }
+        public string StaticValue { get; set; } = string.Empty;
     }
 }

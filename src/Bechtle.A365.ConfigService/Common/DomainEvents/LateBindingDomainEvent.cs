@@ -14,11 +14,6 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public override string Type => Payload is null ? typeof(TEventBase).Name : Payload.GetType().Name;
 
         /// <inheritdoc />
-        public LateBindingDomainEvent()
-        {
-        }
-
-        /// <inheritdoc />
         public LateBindingDomainEvent(string eventOwner, TEventBase payload) : base(eventOwner, payload)
         {
         }

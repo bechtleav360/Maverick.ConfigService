@@ -34,16 +34,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public List<string> Tags { get; set; }
 
         /// <inheritdoc />
-        public EnvironmentLayer()
-        {
-            Id = null;
-            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
-            KeyPaths = new List<EnvironmentLayerKeyPath>();
-            Json = "{}";
-            Tags = new List<string>();
-        }
-
-        /// <inheritdoc />
         public EnvironmentLayer(LayerIdentifier identifier)
         {
             if (identifier is null)
@@ -64,7 +54,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayer other && Equals(other);
+        public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayer other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Id, Json, Keys, KeyPaths, ChangedAt, ChangedBy, CreatedAt, CreatedBy);

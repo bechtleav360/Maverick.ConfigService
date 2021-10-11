@@ -9,6 +9,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     /// </summary>
     public class PreparedConfigurationMetadata : MetadataBase
     {
+        /// <inheritdoc />
+        public PreparedConfigurationMetadata(ConfigurationIdentifier id)
+        {
+            Id = id;
+        }
+
         /// <summary>
         ///     Number of Errors found during the compilation of this Configuration
         /// </summary>
@@ -17,12 +23,12 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <summary>
         ///     Map of Keys and Errors found while resolving its Value
         /// </summary>
-        public Dictionary<string, List<string>> Errors { get; set; }
+        public Dictionary<string, List<string>> Errors { get; set; } = new();
 
         /// <summary>
         ///     Identifier for the DomainObject in question
         /// </summary>
-        public ConfigurationIdentifier Id { get; set; }
+        public ConfigurationIdentifier Id { get; }
 
         /// <summary>
         ///     Number of Keys contained in this Configuration
@@ -32,7 +38,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <summary>
         ///     List of Keys used during the compilation of this Configuration
         /// </summary>
-        public List<string> UsedKeys { get; set; }
+        public List<string> UsedKeys { get; set; } = new();
 
         /// <summary>
         ///     Number of Keys used during the compilation of this Configuration
@@ -47,6 +53,6 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <summary>
         ///     Map of Keys and Warnings found while resolving its Value
         /// </summary>
-        public Dictionary<string, List<string>> Warnings { get; set; }
+        public Dictionary<string, List<string>> Warnings { get; set; } = new();
     }
 }

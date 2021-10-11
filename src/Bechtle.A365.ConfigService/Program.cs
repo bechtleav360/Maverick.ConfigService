@@ -28,7 +28,7 @@ namespace Bechtle.A365.ConfigService
         /// <summary>
         ///     Activity-Source used for all Activities in this service
         /// </summary>
-        public static readonly ActivitySource Source = new ActivitySource("Maverick.ConfigService", "1.0");
+        public static readonly ActivitySource Source = new("Maverick.ConfigService", "1.0");
 
         /// <summary>
         ///     Delegate App-Startup to the default ServiceBase-Behaviour
@@ -63,16 +63,20 @@ namespace Bechtle.A365.ConfigService
 
         private static void ConfigureLogging(HostBuilderContext context, ILoggingBuilder builder)
         {
+            if (context.Configuration is null)
+            {
+                Console.WriteLine("context does not contain configuration; unable to apply Nlog-Configuration");
+                return;
+            }
+
             builder.ClearProviders()
                    .SetMinimumLevel(LogLevel.Trace);
 
             try
             {
-                IConfigurationSection nLogSection = context.Configuration
-                                                           .GetSection("LoggingConfiguration")
-                                                           ?.GetSection("NLog");
-
-                if (nLogSection is { })
+                if (context.Configuration
+                           .GetSection("LoggingConfiguration")
+                           ?.GetSection("NLog") is { } nLogSection)
                 {
                     LogManager.Configuration = new NLogLoggingConfiguration(nLogSection);
                 }
@@ -91,7 +95,7 @@ namespace Bechtle.A365.ConfigService
         /// <typeparam name="TStartup">Startup-Type, consider extending <see cref="DefaultStartup" /></typeparam>
         /// <param name="args">command-line args</param>
         /// <param name="hostCustomizer">function to customize the prepared <see cref="IHostBuilder" /> for your application</param>
-        private static void ServiceMain<TStartup>(string[] args, Action<IHostBuilder> hostCustomizer = null)
+        private static void ServiceMain<TStartup>(string[] args, Action<IHostBuilder>? hostCustomizer = null)
             where TStartup : class
         {
             ConfigureActivityIdLogging();
@@ -124,8 +128,8 @@ namespace Bechtle.A365.ConfigService
         /// <returns></returns>
         private static async Task<int> InternalMain<TStartup, TCommandRoot>(
             string[] args,
-            Action<IHostBuilder> cliHostCustomizer = null,
-            Action<IHostBuilder> appHostCustomizer = null)
+            Action<IHostBuilder>? cliHostCustomizer = null,
+            Action<IHostBuilder>? appHostCustomizer = null)
             where TStartup : class
             where TCommandRoot : class
         {

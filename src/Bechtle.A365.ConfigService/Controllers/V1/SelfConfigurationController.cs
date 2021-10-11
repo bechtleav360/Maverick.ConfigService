@@ -39,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> AppendConfiguration([FromBody] JsonElement json)
         {
             var givenKeys = _translator.ToDictionary(json);
-            IDictionary<string, string> currentKeys;
+            IDictionary<string, string?> currentKeys;
 
             try
             {
@@ -63,7 +63,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 }
                 else
                 {
-                    currentKeys = new Dictionary<string, string>();
+                    currentKeys = new Dictionary<string, string?>();
                 }
             }
             catch (IOException e)

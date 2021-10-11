@@ -15,6 +15,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results
         /// <summary>
         ///     Value that was resolved for this Command
         /// </summary>
-        public string Value { get; set; }
+        public string? Value { get; set; }
     }
 }

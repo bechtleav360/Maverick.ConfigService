@@ -17,8 +17,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public ConversionController(ILogger<ConversionController> logger,
-                                    IJsonTranslator translator)
+        public ConversionController(
+            ILogger<ConversionController> logger,
+            IJsonTranslator translator)
             : base(logger)
         {
             _translator = translator;
@@ -33,8 +34,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost("map/json", Name = "ConvertDictionaryToJson")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public IActionResult DictionaryToJson([FromBody] Dictionary<string, string> dictionary,
-                                              [FromQuery] string separator = null)
+        public IActionResult DictionaryToJson(
+            [FromBody] Dictionary<string, string?>? dictionary,
+            [FromQuery] string? separator = null)
         {
             try
             {
@@ -64,8 +66,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost("json/map", Name = "ConvertJsonToDictionary")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public IActionResult JsonToDictionary([FromBody] JsonElement json,
-                                              [FromQuery] string separator = null)
+        public IActionResult JsonToDictionary(
+            [FromBody] JsonElement json,
+            [FromQuery] string? separator = null)
         {
             try
             {
@@ -73,7 +76,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 KnownMetrics.Conversion.WithLabels("Json => Map").Inc();
 
-                return Ok(result ?? new Dictionary<string, string>());
+                return Ok(result);
             }
             catch (Exception e)
             {

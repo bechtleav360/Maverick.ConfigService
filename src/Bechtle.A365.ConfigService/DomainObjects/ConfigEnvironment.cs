@@ -39,17 +39,6 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public List<LayerIdentifier> Layers { get; set; }
 
         /// <inheritdoc />
-        public ConfigEnvironment()
-        {
-            Id = null;
-            IsDefault = false;
-            Json = "{}";
-            KeyPaths = new List<EnvironmentLayerKeyPath>();
-            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
-            Layers = new List<LayerIdentifier>();
-        }
-
-        /// <inheritdoc />
         public ConfigEnvironment(EnvironmentIdentifier identifier)
         {
             if (identifier is null)
@@ -76,7 +65,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is ConfigEnvironment other && Equals(other);
+        public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is ConfigEnvironment other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Id, IsDefault, Layers, ChangedAt, ChangedBy, CreatedAt, CreatedBy);

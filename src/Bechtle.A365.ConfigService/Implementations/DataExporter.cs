@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Common.Objects;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
+using Bechtle.A365.ConfigService.Models.V1;
 using Microsoft.Extensions.Logging;
 
 namespace Bechtle.A365.ConfigService.Implementations
@@ -18,8 +19,9 @@ namespace Bechtle.A365.ConfigService.Implementations
         private readonly IProjectionStore _store;
 
         /// <inheritdoc cref="DataExporter" />
-        public DataExporter(ILogger<DataExporter> logger,
-                            IProjectionStore store)
+        public DataExporter(
+            ILogger<DataExporter> logger,
+            IProjectionStore store)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _logger = logger;
@@ -30,21 +32,22 @@ namespace Bechtle.A365.ConfigService.Implementations
         {
             var result = new ConfigExport();
 
-            if (definition is null)
-                return Result.Error<ConfigExport>($"{nameof(definition)} must not be null", ErrorCode.InvalidData);
-
             if (definition.Environments.Any())
+            {
                 result.Environments = await ExportInternal(definition.Environments);
+            }
 
             if (definition.Layers.Any())
+            {
                 result.Layers = await ExportInternal(definition.Layers);
+            }
 
             return Result.Success(result);
         }
 
         private async Task<LayerExport[]> ExportInternal(IEnumerable<LayerIdentifier> layers)
         {
-            var tasks = layers.Select(ExportInternal).ToArray();
+            Task<LayerExport>[] tasks = layers.Select(ExportInternal).ToArray();
 
             await Task.WhenAll(tasks);
 
@@ -54,11 +57,12 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<LayerExport> ExportInternal(LayerIdentifier layer)
         {
-            var dataResult = await _store.Layers.GetKeyObjects(new KeyQueryParameters<LayerIdentifier>
-            {
-                Identifier = layer,
-                Range = QueryRange.All
-            });
+            IResult<Page<DtoConfigKey>> dataResult = await _store.Layers.GetKeyObjects(
+                                                         new KeyQueryParameters<LayerIdentifier>
+                                                         {
+                                                             Identifier = layer,
+                                                             Range = QueryRange.All
+                                                         });
 
             if (dataResult.IsError)
             {
@@ -73,19 +77,23 @@ namespace Bechtle.A365.ConfigService.Implementations
             return new LayerExport
             {
                 Name = layer.Name,
-                Keys = dataResult.Data.Items.Select(k => new EnvironmentKeyExport
-                {
-                    Key = k.Key,
-                    Value = k.Value,
-                    Description = k.Description,
-                    Type = k.Type
-                }).ToArray()
+                Keys = dataResult.CheckedData
+                                 .Items
+                                 .Select(
+                                     k => new EnvironmentKeyExport
+                                     {
+                                         Key = k.Key,
+                                         Value = k.Value,
+                                         Description = k.Description,
+                                         Type = k.Type
+                                     })
+                                 .ToArray()
             };
         }
 
         private async Task<EnvironmentExport[]> ExportInternal(IEnumerable<EnvironmentIdentifier> environments)
         {
-            var tasks = environments.Select(ExportInternal).ToArray();
+            Task<EnvironmentExport>[] tasks = environments.Select(ExportInternal).ToArray();
 
             await Task.WhenAll(tasks);
 
@@ -95,7 +103,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<EnvironmentExport> ExportInternal(EnvironmentIdentifier id)
         {
-            var env = await _store.Environments.GetAssignedLayers(id);
+            IResult<Page<LayerIdentifier>> env = await _store.Environments.GetAssignedLayers(id);
 
             if (env.IsError)
             {
@@ -111,7 +119,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Category = id.Category,
                 Name = id.Name,
-                Layers = env.Data.Items.ToArray()
+                Layers = env.CheckedData.Items.ToArray()
             };
         }
     }

@@ -7,15 +7,32 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public sealed class ProjectionStore : IProjectionStore
     {
         /// <inheritdoc cref="ProjectionStore" />
-        public ProjectionStore(ILayerProjectionStore layerStore,
-                               IStructureProjectionStore structureStore,
-                               IEnvironmentProjectionStore environmentStore,
-                               IConfigurationProjectionStore configurationStore)
+        public ProjectionStore(
+            ILayerProjectionStore layerStore,
+            IStructureProjectionStore structureStore,
+            IEnvironmentProjectionStore environmentStore,
+            IConfigurationProjectionStore configurationStore)
         {
             Layers = layerStore;
             Structures = structureStore;
             Environments = environmentStore;
             Configurations = configurationStore;
+        }
+
+        /// <inheritdoc />
+        public async ValueTask DisposeAsync()
+        {
+            await Configurations.DisposeAsync();
+            await Environments.DisposeAsync();
+            await Structures.DisposeAsync();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Configurations.Dispose();
+            Environments.Dispose();
+            Structures.Dispose();
         }
 
         /// <inheritdoc />
@@ -29,26 +46,5 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         /// <inheritdoc />
         public IStructureProjectionStore Structures { get; }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            Configurations?.Dispose();
-            Environments?.Dispose();
-            Structures?.Dispose();
-        }
-
-        /// <inheritdoc />
-        public async ValueTask DisposeAsync()
-        {
-            if (Configurations != null)
-                await Configurations.DisposeAsync();
-
-            if (Environments != null)
-                await Environments.DisposeAsync();
-
-            if (Structures != null)
-                await Structures.DisposeAsync();
-        }
     }
 }

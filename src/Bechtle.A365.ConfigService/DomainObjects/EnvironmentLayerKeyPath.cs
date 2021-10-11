@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Full Path including Parents
         /// </summary>
-        public string FullPath => (ParentPath != "" ? ParentPath + "/" : "") + Path + (Children?.Any() == true ? "/" : "");
+        public string FullPath => (ParentPath != "" ? ParentPath + "/" : "") + Path + (Children.Any() ? "/" : "");
 
         /// <summary>
         ///     Full path to the parent-node.
@@ -31,23 +31,18 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         public string Path { get; set; }
 
         /// <inheritdoc cref="EnvironmentLayerKeyPath" />
-        public EnvironmentLayerKeyPath()
-        {
-            Path = string.Empty;
-            ParentPath = string.Empty;
-            Children = new List<EnvironmentLayerKeyPath>();
-        }
-
-        /// <inheritdoc cref="EnvironmentLayerKeyPath" />
-        public EnvironmentLayerKeyPath(string path, EnvironmentLayerKeyPath parent = null, IEnumerable<EnvironmentLayerKeyPath> children = null)
+        public EnvironmentLayerKeyPath(
+            string path,
+            EnvironmentLayerKeyPath? parent = null,
+            IEnumerable<EnvironmentLayerKeyPath>? children = null)
         {
             Path = path;
             ParentPath = parent?.FullPath ?? string.Empty;
-            Children = new List<EnvironmentLayerKeyPath>(children ?? Array.Empty<EnvironmentLayerKeyPath>());
+            Children = children is null ? new List<EnvironmentLayerKeyPath>() : new List<EnvironmentLayerKeyPath>(children);
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerKeyPath other && Equals(other);
+        public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerKeyPath other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Children, ParentPath, Path);

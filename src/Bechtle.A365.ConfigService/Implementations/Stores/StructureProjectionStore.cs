@@ -29,7 +29,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
+        public ValueTask DisposeAsync() => new(Task.CompletedTask);
 
         /// <inheritdoc />
         public void Dispose()
@@ -39,8 +39,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult> Create(
             StructureIdentifier identifier,
-            IDictionary<string, string> keys,
-            IDictionary<string, string> variables)
+            IDictionary<string, string?> keys,
+            IDictionary<string, string?> variables)
         {
             _logger.LogDebug($"attempting to create new structure '{identifier}'");
 
@@ -93,7 +93,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Error<Page<int>>(listResult.Message, listResult.Code);
                 }
 
-                IList<int> versions = listResult.Data
+                IList<int> versions = listResult.CheckedData
                                                 .Items
                                                 .Select(id => id.Version)
                                                 .ToList();
@@ -102,9 +102,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     new Page<int>
                     {
                         Items = versions,
-                        Count = listResult.Data.Count,
-                        Offset = listResult.Data.Offset,
-                        TotalCount = listResult.Data.TotalCount
+                        Count = listResult.CheckedData.Count,
+                        Offset = listResult.CheckedData.Offset,
+                        TotalCount = listResult.CheckedData.TotalCount
                     });
             }
             catch (Exception e)
@@ -115,7 +115,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(StructureIdentifier identifier, QueryRange range)
+        public async Task<IResult<Page<KeyValuePair<string, string?>>>> GetKeys(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -124,21 +124,22 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
                 if (structureResult.IsError)
                 {
-                    return Result.Error<Page<KeyValuePair<string, string>>>(structureResult.Message, structureResult.Code);
+                    return Result.Error<Page<KeyValuePair<string, string?>>>(structureResult.Message, structureResult.Code);
                 }
 
-                ConfigStructure structure = structureResult.Data;
+                ConfigStructure structure = structureResult.CheckedData;
 
                 _logger.LogDebug("got structure at version '{CurrentVersion}'", structure.CurrentVersion);
 
-                List<KeyValuePair<string, string>> result = structure.Keys
-                                                                     .OrderBy(k => k.Key)
-                                                                     .Skip(range.Offset)
-                                                                     .Take(range.Length)
-                                                                     .Select(k => new KeyValuePair<string, string>(k.Key, k.Value))
-                                                                     .ToList();
+                List<KeyValuePair<string, string?>> result =
+                    structure.Keys
+                             .OrderBy(k => k.Key)
+                             .Skip(range.Offset)
+                             .Take(range.Length)
+                             .Select(k => new KeyValuePair<string, string?>(k.Key, k.Value))
+                             .ToList();
 
-                var page = new Page<KeyValuePair<string, string>>
+                var page = new Page<KeyValuePair<string, string?>>
                 {
                     Items = result,
                     Count = result.Count,
@@ -151,7 +152,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve keys for structure {Identifier}", identifier);
-                return Result.Error<Page<KeyValuePair<string, string>>>($"failed to retrieve keys for structure {identifier}", ErrorCode.DbQueryError);
+                return Result.Error<Page<KeyValuePair<string, string?>>>($"failed to retrieve keys for structure {identifier}", ErrorCode.DbQueryError);
             }
         }
 
@@ -167,11 +168,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error<ConfigStructureMetadata>(structureResult.Message, structureResult.Code);
             }
 
-            ConfigStructure structure = structureResult.Data;
+            ConfigStructure structure = structureResult.CheckedData;
 
-            var metadata = new ConfigStructureMetadata
+            var metadata = new ConfigStructureMetadata(structure.Id)
             {
-                Id = structure.Id,
                 ChangedAt = structure.ChangedAt,
                 ChangedBy = structure.ChangedBy,
                 CreatedAt = structure.CreatedAt,
@@ -195,10 +195,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
 
             var results = new List<ConfigStructureMetadata>();
-            foreach (StructureIdentifier layerId in ids.Data.Items)
+            foreach (StructureIdentifier layerId in ids.CheckedData.Items)
             {
                 IResult<ConfigStructureMetadata> result = await GetMetadata(layerId);
-                if (result.IsError)
+                if (result.IsError || result.Data is null)
                 {
                     return Result.Error<Page<ConfigStructureMetadata>>(result.Message, result.Code);
                 }
@@ -212,12 +212,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Items = results,
                     Count = results.Count,
                     Offset = range.Offset,
-                    TotalCount = ids.Data.TotalCount
+                    TotalCount = ids.CheckedData.TotalCount
                 });
         }
 
         /// <inheritdoc />
-        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetVariables(StructureIdentifier identifier, QueryRange range)
+        public async Task<IResult<Page<KeyValuePair<string, string?>>>> GetVariables(StructureIdentifier identifier, QueryRange range)
         {
             try
             {
@@ -226,21 +226,22 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 IResult<ConfigStructure> structureResult = await _domainObjectManager.GetStructure(identifier, CancellationToken.None);
                 if (structureResult.IsError)
                 {
-                    return Result.Error<Page<KeyValuePair<string, string>>>(structureResult.Message, structureResult.Code);
+                    return Result.Error<Page<KeyValuePair<string, string?>>>(structureResult.Message, structureResult.Code);
                 }
 
-                ConfigStructure structure = structureResult.Data;
+                ConfigStructure structure = structureResult.CheckedData;
 
                 _logger.LogDebug("got structure at version '{CurrentVersion}'", structure.CurrentVersion);
 
-                List<KeyValuePair<string, string>> result = structure.Variables
-                                                                     .OrderBy(k => k.Key)
-                                                                     .Skip(range.Offset)
-                                                                     .Take(range.Length)
-                                                                     .Select(k => new KeyValuePair<string, string>(k.Key, k.Value))
-                                                                     .ToList();
+                List<KeyValuePair<string, string?>> result =
+                    structure.Variables
+                             .OrderBy(k => k.Key)
+                             .Skip(range.Offset)
+                             .Take(range.Length)
+                             .Select(k => new KeyValuePair<string, string?>(k.Key, k.Value))
+                             .ToList();
 
-                var page = new Page<KeyValuePair<string, string>>
+                var page = new Page<KeyValuePair<string, string?>>
                 {
                     Items = result,
                     Count = result.Count,
@@ -253,7 +254,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             catch (Exception e)
             {
                 _logger.LogError(e, "failed to retrieve variables for structure {Identifier}", identifier);
-                return Result.Error<Page<KeyValuePair<string, string>>>($"failed to retrieve variables for structure {identifier}", ErrorCode.DbQueryError);
+                return Result.Error<Page<KeyValuePair<string, string?>>>($"failed to retrieve variables for structure {identifier}", ErrorCode.DbQueryError);
             }
         }
 

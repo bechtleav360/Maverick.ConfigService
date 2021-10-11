@@ -36,13 +36,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost(Name = "ExportConfiguration")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> Export([FromBody] ExportDefinition definition)
+        public async Task<IActionResult> Export([FromBody] ExportDefinition? definition)
         {
             if (definition is null)
                 return BadRequest("no definition received");
-
-            if (definition.Environments is null || definition.Layers is null)
-                return BadRequest("neither Environments nor Layers may be null");
 
             if (!definition.Environments.Any() && !definition.Layers.Any())
                 return BadRequest("no Environments or Layers given to export");

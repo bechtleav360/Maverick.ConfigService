@@ -26,7 +26,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
         }
 
         /// <inheritdoc />
-        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new())
         {
             var settings = EventStoreClientSettings.Create(_eventStoreConfiguration.CurrentValue.Uri);
             settings.ConnectionName = $"ConnectionCheck-{Environment.UserDomainName}\\{Environment.UserName}@{Environment.MachineName}";

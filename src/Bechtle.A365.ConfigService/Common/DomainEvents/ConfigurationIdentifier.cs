@@ -7,6 +7,17 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     /// </summary>
     public class ConfigurationIdentifier : Identifier, IEquatable<ConfigurationIdentifier>
     {
+        /// <inheritdoc cref="EnvironmentIdentifier" />
+        public EnvironmentIdentifier Environment { get; set; }
+
+        /// <inheritdoc cref="StructureIdentifier" />
+        public StructureIdentifier Structure { get; set; }
+
+        /// <summary>
+        ///     Optional version of this Configuration
+        /// </summary>
+        public long Version { get; set; }
+
         /// <inheritdoc />
         public ConfigurationIdentifier() : this(null, null, 0)
         {
@@ -20,42 +31,51 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Version = version;
         }
 
-        /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Environment { get; set; }
-
-        /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Structure { get; set; }
-
-        /// <summary>
-        ///     Optional version of this Configuration
-        /// </summary>
-        public long Version { get; set; }
-
-        /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(ConfigurationIdentifier left, ConfigurationIdentifier right) => Equals(left, right);
-
-        /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(ConfigurationIdentifier left, ConfigurationIdentifier right) => !Equals(left, right);
-
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public virtual bool Equals(ConfigurationIdentifier? other)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((ConfigurationIdentifier) obj);
-        }
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
 
-        /// <inheritdoc />
-        public virtual bool Equals(ConfigurationIdentifier other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
             return Equals(Environment, other.Environment) && Equals(Structure, other.Structure) && Version == other.Version;
         }
 
         /// <inheritdoc />
+        public override bool Equals(object? obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != GetType())
+            {
+                return false;
+            }
+
+            return Equals((ConfigurationIdentifier)obj);
+        }
+
+        /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(Environment, Structure, Version);
+
+        /// <inheritdoc cref="operator ==" />
+        public static bool operator ==(ConfigurationIdentifier? left, ConfigurationIdentifier? right) => Equals(left, right);
+
+        /// <inheritdoc cref="operator !=" />
+        public static bool operator !=(ConfigurationIdentifier? left, ConfigurationIdentifier? right) => !Equals(left, right);
 
         /// <inheritdoc />
         public override string ToString() => $"[{nameof(Environment)}: {Environment}; {nameof(Structure)}: {Structure}]";

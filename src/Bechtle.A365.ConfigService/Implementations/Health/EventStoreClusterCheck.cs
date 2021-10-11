@@ -36,7 +36,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
         }
 
         /// <inheritdoc />
-        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new())
         {
             var config = _provider.GetRequiredService<IOptionsMonitor<EventStoreConnectionConfiguration>>();
             var storeUri = new Uri(config.CurrentValue.Uri);
@@ -55,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
             {
                 var options = JsonConvert.DeserializeObject<List<OptionEntry>>(json);
 
-                var clusterSizeOption = options?.FirstOrDefault(o => o.Name.Equals("ClusterSize", StringComparison.OrdinalIgnoreCase));
+                OptionEntry? clusterSizeOption = options.FirstOrDefault(o => o.Name.Equals("ClusterSize", StringComparison.OrdinalIgnoreCase));
 
                 if (clusterSizeOption is null)
                     return HealthCheckResult.Unhealthy("unable to find 'ClusterSize' in [EventStore]/info/options response");

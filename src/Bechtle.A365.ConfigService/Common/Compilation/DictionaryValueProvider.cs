@@ -10,15 +10,15 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
     /// </summary>
     public class DictionaryValueProvider : IConfigValueProvider
     {
-        private readonly IDictionary<string, string> _repository;
+        private readonly IDictionary<string, string?> _repository;
 
         private readonly string _repositoryDisplayname;
 
         /// <inheritdoc cref="DictionaryValueProvider" />
-        public DictionaryValueProvider(IDictionary<string, string> repository, string repositoryDisplayname)
+        public DictionaryValueProvider(IDictionary<string, string?> repository, string repositoryDisplayname)
         {
             // ensure the given dictionary is case-insensitive
-            _repository = new Dictionary<string, string>(repository, StringComparer.OrdinalIgnoreCase);
+            _repository = new Dictionary<string, string?>(repository, StringComparer.OrdinalIgnoreCase);
             _repositoryDisplayname = repositoryDisplayname;
         }
 
@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         }
 
         /// <inheritdoc />
-        public virtual Task<IResult<Dictionary<string, string>>> TryGetRange(string query)
+        public virtual Task<IResult<Dictionary<string, string?>>> TryGetRange(string query)
         {
             var sanitizedQuery = query.TrimEnd('*');
 
@@ -55,14 +55,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             // remove the 'query' part from each result
             // return as new dictionary
             var results = _repository.Where(kvp => kvp.Key.StartsWith(sanitizedQuery, StringComparison.OrdinalIgnoreCase))
-                                     .Select(kvp => new KeyValuePair<string, string>(kvp.Key.Substring(sanitizedQuery.Length), kvp.Value))
+                                     .Select(kvp => new KeyValuePair<string, string?>(kvp.Key.Substring(sanitizedQuery.Length), kvp.Value))
                                      .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             return Task.FromResult(Result.Success(results));
         }
 
         /// <inheritdoc />
-        public virtual Task<IResult<string>> TryGetValue(string path)
+        public virtual Task<IResult<string?>> TryGetValue(string path)
         {
             if (_repository.TryGetValue(path, out var result))
                 return Task.FromResult(Result.Success(result));
@@ -79,10 +79,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             // or we found no alternatives at all
             // we can't automatically resolve this indirection
             if (possibleIndirections?.Count() != 1)
-                return Task.FromResult(Result.Error<string>($"path '{path}' could not be found in {_repositoryDisplayname}", ErrorCode.NotFound));
+                return Task.FromResult(Result.Error<string?>($"path '{path}' could not be found in {_repositoryDisplayname}", ErrorCode.NotFound));
 
             return Task.FromResult(
-                Result.Error(
+                Result.Error<string?>(
                     $"path '{path}' could not be found in {_repositoryDisplayname}",
                     ErrorCode.NotFoundPossibleIndirection,
                     possibleIndirections.First().Key));

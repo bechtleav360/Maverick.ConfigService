@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Custom Keys
         /// </summary>
-        public Dictionary<string, string> Keys { get; set; } = new();
+        public Dictionary<string, string?> Keys { get; set; } = new();
 
         /// <summary>
         ///     Reference to an existing Environment

@@ -5,19 +5,19 @@ using Bechtle.A365.ConfigService.DomainObjects;
 namespace Bechtle.A365.ConfigService.Interfaces.Stores
 {
     /// <summary>
-    ///     Metadata regarding a <see cref="ConfigEnvironment"/>
+    ///     Metadata regarding a <see cref="ConfigEnvironment" />
     /// </summary>
     public class ConfigEnvironmentMetadata : MetadataBase
     {
         /// <summary>
         ///     Identifier for the DomainObject in question
         /// </summary>
-        public EnvironmentIdentifier Id { get; set; }
+        public EnvironmentIdentifier Id { get; }
 
         /// <summary>
-        ///     List of Layers assigned to this Environment
+        ///     Number of Keys contained in this Environment (through assigned Layers)
         /// </summary>
-        public List<LayerIdentifier> Layers { get; set; }
+        public int KeyCount { get; set; }
 
         /// <summary>
         ///     Number of Layers assigned to this Environment
@@ -25,8 +25,14 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         public int LayerCount { get; set; }
 
         /// <summary>
-        ///     Number of Keys contained in this Environment (through assigned Layers)
+        ///     List of Layers assigned to this Environment
         /// </summary>
-        public int KeyCount { get; set; }
+        public List<LayerIdentifier> Layers { get; set; } = new();
+
+        /// <inheritdoc />
+        public ConfigEnvironmentMetadata(EnvironmentIdentifier id)
+        {
+            Id = id;
+        }
     }
 }

@@ -11,11 +11,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     public class VoidSecretStore : ISecretConfigValueProvider
     {
         /// <inheritdoc />
-        public Task<IResult<string>> TryGetValue(string path)
-            => Task.FromResult(Result.Error<string>("no valid Secret-Store registered", ErrorCode.DbQueryError));
+        public Task<IResult<string?>> TryGetValue(string path)
+            => Task.FromResult(Result.Error<string?>("no valid Secret-Store registered", ErrorCode.DbQueryError));
 
         /// <inheritdoc />
-        public Task<IResult<Dictionary<string, string>>> TryGetRange(string query)
-            => Task.FromResult(Result.Error<Dictionary<string, string>>("no valid Secret-Store registered", ErrorCode.DbQueryError));
+        public Task<IResult<Dictionary<string, string?>>> TryGetRange(string query)
+            => Task.FromResult(Result.Error<Dictionary<string, string?>>("no valid Secret-Store registered", ErrorCode.DbQueryError));
     }
 }

@@ -22,9 +22,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="secretProvider">instance of <see cref="ISecretConfigValueProvider"/> that provides values for "$secret/"-references</param>
         /// <param name="logger">logger-instance to write diagnostic-messages to</param>
         /// <param name="resolverLogger">logger-instance passed to a private instance of <see cref="IValueResolver"/></param>
-        public ConfigurationCompiler(ISecretConfigValueProvider secretProvider,
-                                     ILogger<ConfigurationCompiler> logger,
-                                     ILogger<IValueResolver> resolverLogger)
+        public ConfigurationCompiler(
+            ISecretConfigValueProvider secretProvider,
+            ILogger<ConfigurationCompiler> logger,
+            ILogger<IValueResolver> resolverLogger)
         {
             _secretProvider = secretProvider;
             _logger = logger;
@@ -32,31 +33,35 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         }
 
         /// <inheritdoc />
-        public CompilationResult Compile(EnvironmentCompilationInfo environment,
-                                         StructureCompilationInfo structure,
-                                         IConfigurationParser parser)
+        public CompilationResult Compile(
+            EnvironmentCompilationInfo environment,
+            StructureCompilationInfo structure,
+            IConfigurationParser parser)
         {
-            _logger.LogInformation($"compiling environment '{environment.Name}' ({environment.Keys.Count} entries) " +
-                                   $"and structure '{structure.Name}' ({structure.Keys.Count} entries)");
+            _logger.LogInformation(
+                $"compiling environment '{environment.Name}' ({environment.Keys.Count} entries) "
+                + $"and structure '{structure.Name}' ({structure.Keys.Count} entries)");
 
             ICompilationTracer compilationTracer = new CompilationTracer();
-            var resolver = ValueResolverBuilder.CreateNew()
-                                               .UseEnvironment(environment)
-                                               .UseStructure(structure)
-                                               .UseLogger(_resolverLogger)
-                                               .UseEnvironmentKeyProvider()
-                                               .UseStructureVariableProvider()
-                                               .UseSecretProvider(_secretProvider)
-                                               .BuildDefault();
+            IValueResolver resolver = ValueResolverBuilder.CreateNew()
+                                                          .UseEnvironment(environment)
+                                                          .UseStructure(structure)
+                                                          .UseLogger(_resolverLogger)
+                                                          .UseEnvironmentKeyProvider()
+                                                          .UseStructureVariableProvider()
+                                                          .UseSecretProvider(_secretProvider)
+                                                          .BuildDefault();
 
-            var configuration = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (key, value) in structure.Keys)
+            var configuration = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            foreach ((var key, string? value) in structure.Keys)
             {
-                var result = resolver.Resolve(key, value, compilationTracer.AddKey(key, value), parser).RunSync();
+                IResult<IDictionary<string, string?>> result =
+                    resolver.Resolve(key, value, compilationTracer.AddKey(key, value), parser).RunSync();
+
                 if (result.IsError)
                     _logger.LogWarning(result.Message);
 
-                foreach (var (rk, rv) in result.Data)
+                foreach ((string rk, string? rv) in result.CheckedData)
                     configuration[rk] = rv;
             }
 

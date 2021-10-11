@@ -8,26 +8,16 @@
         /// <summary>
         ///     name of this connection
         /// </summary>
-        public string ConnectionName { get; set; }
-
-        /// <summary>
-        ///     max number of live events in the local queue
-        /// </summary>
-        public int MaxLiveQueueSize { get; set; }
-
-        /// <summary>
-        ///     number of items read per batch
-        /// </summary>
-        public int ReadBatchSize { get; set; }
+        public string ConnectionName { get; set; } = string.Empty;
 
         /// <summary>
         ///     stream to which events should be written
         /// </summary>
-        public string Stream { get; set; }
+        public string Stream { get; set; } = string.Empty;
 
         /// <summary>
         ///     Uri with connection-credentials
         /// </summary>
-        public string Uri { get; set; }
+        public string Uri { get; set; } = string.Empty;
     }
 }

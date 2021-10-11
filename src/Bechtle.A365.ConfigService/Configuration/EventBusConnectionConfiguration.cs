@@ -8,11 +8,11 @@
         /// <summary>
         ///     Hub used to receive Config-Events
         /// </summary>
-        public string Hub { get; set; }
+        public string Hub { get; set; } = string.Empty;
 
         /// <summary>
         ///     ser URI used to connect to EventBus
         /// </summary>
-        public string Server { get; set; }
+        public string Server { get; set; } = string.Empty;
     }
 }

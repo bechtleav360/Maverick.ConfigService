@@ -75,6 +75,7 @@
         /// </summary>
         SerializationFailed = 13,
 
+        // ReSharper disable once InconsistentNaming
         /// <summary>
         ///     IO-Operation failed
         /// </summary>

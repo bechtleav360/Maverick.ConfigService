@@ -51,7 +51,7 @@ namespace Bechtle.A365.ConfigService
         private const string Liveness = "Liveness";
         private const string Readiness = "Readiness";
         private const string Status = "Status";
-        private ILogger<Startup> _logger;
+        private ILogger<Startup>? _logger;
 
         /// <inheritdoc cref="Startup" />
         /// <param name="configuration"></param>
@@ -63,7 +63,7 @@ namespace Bechtle.A365.ConfigService
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
         {
             _logger = app.ApplicationServices.GetRequiredService<ILogger<Startup>>();
-            AppConfigContainer appConfiguration = app.StartTweakingWith(_logger, Configuration);
+            AppConfigContainer appConfiguration = app.StartTweakingWith(Configuration, _logger);
 
             appConfiguration.Tweak(
                 a => a.UseCorrelationIds(
@@ -234,8 +234,13 @@ namespace Bechtle.A365.ConfigService
         /// <param name="options"></param>
         protected override void ConfigureAssemblyDocumentation(SwaggerGenOptions options)
         {
-            foreach (Assembly ass in LoadAssemblies().Concat(new[] { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() }))
+            foreach (Assembly? ass in LoadAssemblies().Concat(new[] { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() }))
             {
+                if (ass is null)
+                {
+                    continue;
+                }
+
                 string docFile = Path.Combine(AppContext.BaseDirectory, $"{ass.GetName().Name}.xml");
                 if (File.Exists(docFile))
                 {
@@ -416,8 +421,6 @@ namespace Bechtle.A365.ConfigService
 
         private void RegisterSecretStores(IServiceCollection services)
         {
-            var storeBaseSection = "SecretConfiguration:Stores";
-
             // define section => func that will be evaluated in order
             var storeRegistrations = new (string Section, Action<IConfigurationSection, IServiceCollection> RegistryFunc)[]
             {
@@ -426,21 +429,24 @@ namespace Bechtle.A365.ConfigService
             };
 
             // look for all enabled stores, and collect some metadata
-            List<(string SectionName, Action<IConfigurationSection, IServiceCollection> RegistryFunc, IConfigurationSection Section, bool Enabled)>
-                selectedStores = storeRegistrations.Select(
-                                                       t =>
-                                                       {
-                                                           (string section, Action<IConfigurationSection, IServiceCollection> registryFunc) = t;
+            List<(string SectionName,
+                Action<IConfigurationSection, IServiceCollection> RegistryFunc,
+                IConfigurationSection Section,
+                bool Enabled)> selectedStores
+                = storeRegistrations.Select(
+                                        t =>
+                                        {
+                                            (string section, Action<IConfigurationSection, IServiceCollection> registryFunc) = t;
 
-                                                           IConfigurationSection storeSection = Configuration.GetSection($"{storeBaseSection}:{section}");
-                                                           return (SectionName: section,
-                                                                      RegistryFunc: registryFunc,
-                                                                      Section: storeSection,
-                                                                      Enabled: storeSection.GetSection("Enabled")
-                                                                                           .Get<bool>());
-                                                       })
-                                                   .Where(t => t.Enabled)
-                                                   .ToList();
+                                            IConfigurationSection storeSection = Configuration.GetSection($"SecretConfiguration:Stores:{section}");
+                                            return (SectionName: section,
+                                                       RegistryFunc: registryFunc,
+                                                       Section: storeSection,
+                                                       Enabled: storeSection.GetSection("Enabled")
+                                                                            .Get<bool>());
+                                        })
+                                    .Where(t => t.Enabled)
+                                    .ToList();
 
             if (selectedStores.Count == 0)
             {
@@ -448,7 +454,7 @@ namespace Bechtle.A365.ConfigService
                 return;
             }
 
-            selectedStores[0].RegistryFunc?.Invoke(selectedStores[0].Section, services);
+            selectedStores[0].RegistryFunc(selectedStores[0].Section, services);
         }
 
         private void RegisterVersioning(IServiceCollection services)

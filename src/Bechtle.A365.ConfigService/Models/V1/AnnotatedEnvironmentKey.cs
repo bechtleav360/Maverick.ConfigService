@@ -21,6 +21,6 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     Current Value
         /// </summary>
-        public string Value { get; set; } = string.Empty;
+        public string? Value { get; set; }
     }
 }

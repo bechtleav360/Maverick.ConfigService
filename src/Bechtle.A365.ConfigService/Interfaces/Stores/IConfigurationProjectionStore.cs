@@ -63,7 +63,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="when"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
+        Task<IResult<Page<KeyValuePair<string, string?>>>> GetKeys(ConfigurationIdentifier identifier, DateTime when, QueryRange range);
 
         /// <summary>
         ///     get configurations, that have stale configurations

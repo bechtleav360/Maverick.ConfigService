@@ -10,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
     public class CompilationResult
     {
         /// <inheritdoc cref="CompilationResult" />
-        public CompilationResult(IDictionary<string, string> compiledConfiguration, IEnumerable<TraceResult> traceResults)
+        public CompilationResult(IDictionary<string, string?> compiledConfiguration, IEnumerable<TraceResult> traceResults)
         {
             CompiledConfiguration = compiledConfiguration;
             CompilationTrace = traceResults.ToArray();
@@ -24,7 +24,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <summary>
         ///     Result of the Compilation
         /// </summary>
-        public IDictionary<string, string> CompiledConfiguration { get; }
+        public IDictionary<string, string?> CompiledConfiguration { get; }
 
         /// <summary>
         ///     Compute and return the List of Keys that were used during this Compilation
@@ -56,7 +56,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             while (stack.TryPop(out var r))
             {
-                if (r is KeyTraceResult k)
+                if (r is KeyTraceResult { Key: { } } k)
                     usedKeys.Add(k.Key);
 
                 foreach (var c in r.Children)

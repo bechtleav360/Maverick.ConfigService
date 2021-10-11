@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Bechtle.A365.Core.EventBus.Events.Abstraction;
 
 namespace Bechtle.A365.ConfigService.Common.Events
@@ -9,6 +10,19 @@ namespace Bechtle.A365.ConfigService.Common.Events
     public class TemporaryKeysExpired : IA365Event
     {
         /// <summary>
+        ///     Creates a new instance of <see cref="TemporaryKeysExpired"/>
+        /// </summary>
+        /// <param name="structure">structure, for which the temp-keys expired</param>
+        /// <param name="version">version of the structure</param>
+        /// <param name="keys">keys that have expired</param>
+        public TemporaryKeysExpired(string structure, int version, IEnumerable<string> keys)
+        {
+            Structure = structure;
+            Version = version;
+            Keys = keys.ToList();
+        }
+
+        /// <summary>
         ///     name of target structure
         /// </summary>
         public string Structure { get; set; }
@@ -16,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Common.Events
         /// <summary>
         ///     version of target-structure
         /// </summary>
-        public int Version { get;set; }
+        public int Version { get; set; }
 
         /// <summary>
         ///     list of keys that have expired

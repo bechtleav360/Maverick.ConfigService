@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetEnvironmentKeyAutocompleteList(
             [FromRoute] string category,
             [FromRoute] string name,
-            [FromQuery] string query = null,
+            [FromQuery] string? query = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (result.IsError)
                     return ProviderError(result);
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -92,7 +92,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetEnvironmentKeyAutocompleteListPaged(
             [FromRoute] string category,
             [FromRoute] string name,
-            [FromQuery] string query = null,
+            [FromQuery] string? query = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -136,7 +136,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetLayerKeyAutocompleteList(
             [FromRoute] string name,
-            [FromQuery] string query = null,
+            [FromQuery] string? query = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -151,7 +151,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (result.IsError)
                     return ProviderError(result);
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -182,7 +182,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetLayerKeyAutocompleteListPaged(
             [FromRoute] string name,
-            [FromQuery] string query = null,
+            [FromQuery] string? query = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)

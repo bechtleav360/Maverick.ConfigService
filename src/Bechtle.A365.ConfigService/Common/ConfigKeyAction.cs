@@ -16,13 +16,13 @@ namespace Bechtle.A365.ConfigService.Common
         /// <param name="valueType"></param>
         // ReSharper disable once MemberCanBePrivate.Global
         // needs to be constructable by Newtonsoft.Json
-        public ConfigKeyAction(ConfigKeyActionType type, string key, string value, string description, string valueType)
+        public ConfigKeyAction(ConfigKeyActionType type, string key, string? value, string? description, string? valueType)
         {
             Type = type;
             Key = key;
             Value = value;
-            Description = description;
-            ValueType = valueType;
+            Description = description ?? string.Empty;
+            ValueType = valueType ?? string.Empty;
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Common
         /// <summary>
         ///     optional value
         /// </summary>
-        public string Value { get; }
+        public string? Value { get; }
 
         /// <summary>
         ///     intended type of this key
@@ -54,7 +54,7 @@ namespace Bechtle.A365.ConfigService.Common
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static ConfigKeyAction Delete(string key) => new ConfigKeyAction(ConfigKeyActionType.Delete, key, null, null, null);
+        public static ConfigKeyAction Delete(string key) => new(ConfigKeyActionType.Delete, key, null, null, null);
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(ConfigKeyAction left, ConfigKeyAction right) => Equals(left, right);
@@ -67,7 +67,7 @@ namespace Bechtle.A365.ConfigService.Common
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static ConfigKeyAction Set(string key, string value) => Set(key, value, null, null);
+        public static ConfigKeyAction Set(string key, string? value) => Set(key, value, null, null);
 
         /// <summary>
         /// </summary>
@@ -76,23 +76,28 @@ namespace Bechtle.A365.ConfigService.Common
         /// <param name="description"></param>
         /// <param name="valueType"></param>
         /// <returns></returns>
-        public static ConfigKeyAction Set(string key, string value, string description, string valueType)
-            => new ConfigKeyAction(ConfigKeyActionType.Set, key, value, description, valueType);
+        public static ConfigKeyAction Set(string key, string? value, string? description, string? valueType)
+            => new(ConfigKeyActionType.Set, key, value, description, valueType);
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((ConfigKeyAction) obj);
+            if (ReferenceEquals(null, obj))
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            if (obj.GetType() != GetType())
+                return false;
+            return Equals((ConfigKeyAction)obj);
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(ConfigKeyAction other)
+        public virtual bool Equals(ConfigKeyAction? other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(null, other))
+                return false;
+            if (ReferenceEquals(this, other))
+                return true;
             return string.Equals(Description, other.Description, StringComparison.OrdinalIgnoreCase)
                    && string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase)
                    && Type == other.Type
@@ -105,11 +110,11 @@ namespace Bechtle.A365.ConfigService.Common
         {
             unchecked
             {
-                var hashCode = Description != null ? Description.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ (Key != null ? Key.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (int) Type;
+                var hashCode = Description.GetHashCode();
+                hashCode = (hashCode * 397) ^ Key.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)Type;
                 hashCode = (hashCode * 397) ^ (Value != null ? Value.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (ValueType != null ? ValueType.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ ValueType.GetHashCode();
                 return hashCode;
             }
         }

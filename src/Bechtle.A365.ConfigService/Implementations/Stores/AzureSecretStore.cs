@@ -40,25 +40,25 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<Dictionary<string, string>>> TryGetRange(string query)
+        public Task<IResult<Dictionary<string, string?>>> TryGetRange(string query)
             => Task.FromResult(
-                Result.Error<Dictionary<string, string>>(
+                Result.Error<Dictionary<string, string?>>(
                     nameof(AzureSecretStore) + " does not support Range-Queries",
                     ErrorCode.DbQueryError));
 
         /// <inheritdoc />
-        public async Task<IResult<string>> TryGetValue(string path)
+        public async Task<IResult<string?>> TryGetValue(string path)
         {
             try
             {
-                var response = await _client.GetSecretAsync(path);
+                Response<KeyVaultSecret>? response = await _client.GetSecretAsync(path);
 
-                return Result.Success(response.Value.Value);
+                return Result.Success(response?.Value.Value);
             }
             catch (RequestFailedException e)
             {
                 _logger.LogDebug(e, $"secret '{path}' not found in azure-key-vault");
-                return Result.Error<string>($"secret '{path}' not found in azure-key-vault", ErrorCode.DbQueryError);
+                return Result.Error<string?>($"secret '{path}' not found in azure-key-vault", ErrorCode.DbQueryError);
             }
         }
     }

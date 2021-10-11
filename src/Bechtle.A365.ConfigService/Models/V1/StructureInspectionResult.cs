@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Models.V1
         /// <summary>
         ///     resulting compiled configuration
         /// </summary>
-        public IDictionary<string, string> CompiledConfiguration { get; set; } = new Dictionary<string, string>();
+        public IDictionary<string, string?> CompiledConfiguration { get; set; } = new Dictionary<string, string?>();
 
         /// <summary>
         ///     Path => Error dictionary

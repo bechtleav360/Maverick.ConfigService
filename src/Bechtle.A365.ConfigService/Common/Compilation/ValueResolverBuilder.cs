@@ -10,9 +10,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
     public class ValueResolverBuilder
     {
         private readonly Dictionary<ConfigValueProviderType, IConfigValueProvider> _valueProviders;
-        private EnvironmentCompilationInfo _environment;
-        private ILogger<IValueResolver> _logger;
-        private StructureCompilationInfo _structure;
+        private EnvironmentCompilationInfo? _environment;
+        private ILogger<IValueResolver>? _logger;
+        private StructureCompilationInfo? _structure;
 
         // restrict external access
         private ValueResolverBuilder()
@@ -27,7 +27,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         ///     create a new instance of <see cref="ValueResolverBuilder" />
         /// </summary>
         /// <returns></returns>
-        public static ValueResolverBuilder CreateNew() => new ValueResolverBuilder();
+        public static ValueResolverBuilder CreateNew() => new();
 
         /// <summary>
         ///     build a new instance of <see cref="DefaultValueResolver" /> with the previously given information
@@ -35,10 +35,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <returns></returns>
         public IValueResolver BuildDefault()
         {
-            if (_environment is null) throw new ArgumentException("environment cannot be null");
-            if (_structure is null) throw new ArgumentException("structure cannot be null");
-
-            return new DefaultValueResolver(_environment, _structure, _valueProviders, _logger);
+            return new DefaultValueResolver(
+                _environment ?? throw new ArgumentException("environment cannot be null"),
+                _structure ?? throw new ArgumentException("structure cannot be null"),
+                _valueProviders,
+                _logger ?? throw new ArgumentException("logger cannot be null"));
         }
 
         /// <summary>
@@ -68,7 +69,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// </summary>
         /// <returns></returns>
         public ValueResolverBuilder UseEnvironmentKeyProvider()
-            => UseValueProvider(ConfigValueProviderType.Environment, new EnvironmentValueProvider(_environment.Keys));
+            => UseValueProvider(
+                ConfigValueProviderType.Environment,
+                new EnvironmentValueProvider(
+                    _environment?.Keys
+                    ?? throw new ArgumentException("no environment given to use as provider")));
 
         /// <summary>
         ///     use the given logger for newly built <see cref="IValueResolver" /> instances
@@ -98,7 +103,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// </summary>
         /// <returns></returns>
         public ValueResolverBuilder UseStructureVariableProvider()
-            => UseValueProvider(ConfigValueProviderType.StructVariables, new StructureVariableValueProvider(_structure.Variables));
+            => UseValueProvider(
+                ConfigValueProviderType.StructVariables,
+                new StructureVariableValueProvider(
+                    _structure?.Variables
+                    ?? throw new ArgumentException("no structure given to use as provider")));
 
         /// <summary>
         ///     use the given <see cref="ISecretConfigValueProvider"/> for providing Secrets

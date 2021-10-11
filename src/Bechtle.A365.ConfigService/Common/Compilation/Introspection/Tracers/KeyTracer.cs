@@ -9,9 +9,9 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
     public class KeyTracer : TracerBase
     {
         /// <inheritdoc />
-        public KeyTracer(ITracer parent,
-                         string key,
-                         string originalValue)
+        public KeyTracer(ITracer? parent,
+                         string? key,
+                         string? originalValue)
             : base(parent)
         {
             Key = key;
@@ -21,12 +21,12 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <summary>
         ///     Full Key whose compilation is being traced
         /// </summary>
-        public string Key { get; }
+        public string? Key { get; }
 
         /// <summary>
         ///     Original Value of this Key before its compilation is traced
         /// </summary>
-        public string OriginalValue { get; }
+        public string? OriginalValue { get; }
 
         /// <inheritdoc />
         public override TraceResult GetResult() => new KeyTraceResult

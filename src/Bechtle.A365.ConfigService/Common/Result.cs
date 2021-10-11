@@ -1,16 +1,18 @@
-﻿namespace Bechtle.A365.ConfigService.Common
+﻿using Bechtle.A365.ConfigService.Common.Exceptions;
+
+namespace Bechtle.A365.ConfigService.Common
 {
     /// <inheritdoc />
     public class Result : IResult
     {
         /// <inheritdoc />
-        public ErrorCode Code { get; set; }
+        public ErrorCode Code { get; set; } = ErrorCode.None;
 
         /// <inheritdoc />
         public bool IsError { get; set; }
 
         /// <inheritdoc />
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
 
         /// <summary>
         ///     create a 'Error' result, with the provided <paramref name="message" /> and <paramref name="code" /> property,
@@ -86,6 +88,9 @@
     public class Result<T> : Result, IResult<T>
     {
         /// <inheritdoc />
-        public T Data { get; set; }
+        public T CheckedData => Data ?? throw new InvalidResultAccessException((IResult<object>)this);
+
+        /// <inheritdoc />
+        public T? Data { get; set; }
     }
 }

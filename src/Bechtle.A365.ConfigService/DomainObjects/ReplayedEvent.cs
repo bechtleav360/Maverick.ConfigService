@@ -22,5 +22,13 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     EventStore-Version that this Event represents
         /// </summary>
         public long Version { get; set; }
+
+        /// <inheritdoc cref="ReplayedEvent" />
+        public ReplayedEvent(DomainEvent domainEvent, DateTime utcTime, long version)
+        {
+            DomainEvent = domainEvent;
+            UtcTime = utcTime;
+            Version = version;
+        }
     }
 }

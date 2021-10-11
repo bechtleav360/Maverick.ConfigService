@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public bool Equals(EnvironmentLayerCopied other)
+        public bool Equals(EnvironmentLayerCopied? other)
         {
             if (ReferenceEquals(null, other))
             {
@@ -38,17 +38,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj) => ReferenceEquals(this, obj) || obj is EnvironmentLayerCopied other && Equals(other);
+        public override bool Equals(object? obj)
+            => ReferenceEquals(this, obj) || obj is EnvironmentLayerCopied other && Equals(other);
 
         /// <inheritdoc />
         public override int GetHashCode() => HashCode.Combine(SourceIdentifier, TargetIdentifier);
 
         /// <inheritdoc />
-        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        public override DomainEventMetadata GetMetadata() => new()
         {
             Filters =
             {
-                {KnownDomainEventMetadata.Identifier, SourceIdentifier.ToString()}
+                { KnownDomainEventMetadata.Identifier, SourceIdentifier.ToString() }
             }
         };
 

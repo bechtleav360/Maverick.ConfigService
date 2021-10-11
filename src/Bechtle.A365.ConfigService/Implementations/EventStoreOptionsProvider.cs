@@ -55,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             _eventStoreOptions.Clear();
 
-            List<OptionEntry> options = await GetEventStoreOptionsAsync(cancellationToken);
+            List<OptionEntry>? options = await GetEventStoreOptionsAsync(cancellationToken);
 
             if (options?.Any() == true)
             {
@@ -80,7 +80,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     : long.MaxValue;
         }
 
-        private async Task<List<OptionEntry>> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new CancellationToken())
+        private async Task<List<OptionEntry>?> GetEventStoreOptionsAsync(CancellationToken cancellationToken = new())
         {
             var storeUri = new Uri(_eventStoreConfiguration.Value.Uri);
 

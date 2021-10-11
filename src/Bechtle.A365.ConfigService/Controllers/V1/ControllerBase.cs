@@ -73,7 +73,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// <param name="result"></param>
         /// <param name="successor"></param>
         /// <returns></returns>
-        protected IActionResult Result<T>(IResult<T> result, Func<object, IActionResult> successor)
+        protected IActionResult Result<T>(IResult<T> result, Func<object?, IActionResult> successor)
         {
             if (result.IsError)
                 return ProviderError(result);

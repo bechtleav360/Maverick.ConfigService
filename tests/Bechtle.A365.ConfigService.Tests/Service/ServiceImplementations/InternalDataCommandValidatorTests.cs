@@ -29,10 +29,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             new object[] { new ConfigurationBuilt(null, null, null) },
             new object[]
             {
-                new ConfigurationBuilt(new ConfigurationIdentifier(), null, null)
-            },
-            new object[]
-            {
                 new ConfigurationBuilt(
                     new ConfigurationIdentifier(
                         new EnvironmentIdentifier(),

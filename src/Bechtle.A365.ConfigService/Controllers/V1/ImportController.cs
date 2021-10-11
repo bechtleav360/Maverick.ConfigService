@@ -40,7 +40,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost(Name = "ImportConfiguration")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> Import(IFormFile file, CancellationToken cancellationToken)
+        public async Task<IActionResult> Import(IFormFile? file, CancellationToken cancellationToken)
         {
             if (file is null || file.Length == 0)
                 return BadRequest("no or empty file uploaded");
@@ -94,13 +94,12 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                var targetEnvironments = string.Join(
+                string targetEnvironments = string.Join(
                     ", ",
-                    export.Environments?.Select(eid => $"{eid.Category}/{eid.Name}")
-                    ?? Array.Empty<string>());
+                    export.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
 
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to import '{export.Environments?.Length ?? -1}' environments ({targetEnvironments})");
+                Logger.LogError(e, $"failed to import '{export.Environments.Length}' environments ({targetEnvironments})");
                 return StatusCode(HttpStatusCode.InternalServerError, $"failed to import environments '{targetEnvironments}'");
             }
         }

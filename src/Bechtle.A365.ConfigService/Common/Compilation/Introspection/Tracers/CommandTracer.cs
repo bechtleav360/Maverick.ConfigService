@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <inheritdoc />
         public CommandTracer(ITracer parent,
                              ReferenceCommand command,
-                             string value)
+                             string? value)
             : base(parent)
         {
             Command = command;
@@ -27,7 +27,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <summary>
         ///     Value resolved for <see cref="Command"/>
         /// </summary>
-        public string Value { get; }
+        public string? Value { get; }
 
         /// <inheritdoc />
         public override TraceResult GetResult() => new CommandTraceResult

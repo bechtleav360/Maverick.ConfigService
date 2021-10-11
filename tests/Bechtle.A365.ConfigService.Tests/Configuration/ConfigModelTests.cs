@@ -24,8 +24,6 @@ namespace Bechtle.A365.ConfigService.Tests.Configuration
             new EventStoreConnectionConfiguration
             {
                 ConnectionName = string.Empty,
-                MaxLiveQueueSize = 42,
-                ReadBatchSize = 42,
                 Stream = string.Empty,
                 Uri = string.Empty
             });
@@ -47,24 +45,19 @@ namespace Bechtle.A365.ConfigService.Tests.Configuration
         }
 
         [Theory]
-        [InlineData("", 0, 0, "", "")]
-        [InlineData(null, 0, 0, null, null)]
-        [InlineData(null, -1, -1, null, null)]
-        [InlineData("Foo", 42, 4711, "Bar", "Baz")]
-        public void ReadEventStoreConnectionConfig(string name, int queueSize, int batchSize, string stream, string uri)
+        [InlineData("", "", "")]
+        [InlineData(null, null, null)]
+        [InlineData("Foo", "Bar", "Baz")]
+        public void ReadEventStoreConnectionConfig(string name, string stream, string uri)
         {
             var config = new EventStoreConnectionConfiguration
             {
                 ConnectionName = name,
-                MaxLiveQueueSize = queueSize,
-                ReadBatchSize = batchSize,
                 Stream = stream,
                 Uri = uri
             };
 
             Assert.Equal(name, config.ConnectionName);
-            Assert.Equal(queueSize, config.MaxLiveQueueSize);
-            Assert.Equal(batchSize, config.ReadBatchSize);
             Assert.Equal(stream, config.Stream);
             Assert.Equal(uri, config.Uri);
         }

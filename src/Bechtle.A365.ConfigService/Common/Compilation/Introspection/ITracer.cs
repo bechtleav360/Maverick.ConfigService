@@ -17,21 +17,21 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection
         /// <summary>
         ///     reference to the Parent-Tracer
         /// </summary>
-        ITracer Parent { get; }
+        ITracer? Parent { get; }
 
         /// <summary>
         ///     add a command to the current tracer
         /// </summary>
         /// <param name="command"></param>
         /// <param name="value"></param>
-        void AddCommand(ReferenceCommand command, string value);
+        void AddCommand(ReferenceCommand command, string? value);
 
         /// <summary>
         ///     create a new sub-tracer representing a path-resolution
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        IMultiTracer AddPathResolution(string path);
+        IMultiTracer AddPathResolution(string? path);
 
         /// <summary>
         ///     add a value to the current tracer

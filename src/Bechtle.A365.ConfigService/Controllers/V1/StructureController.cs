@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost(Name = "AddStructure")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> AddStructure([FromBody] DtoStructure structure)
+        public async Task<IActionResult> AddStructure([FromBody] DtoStructure? structure)
         {
             if (structure is null)
                 return BadRequest("no Structure received");
@@ -69,16 +69,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return BadRequest("invalid structure-body given (invalid type or null)");
             }
 
-            if (structure.Variables is null || !structure.Variables.Any())
+            if (!structure.Variables.Any())
                 Logger.LogDebug($"Structure.{nameof(DtoStructure.Variables)} is null or empty, seems fishy but may be correct");
 
             try
             {
                 var keys = _translator.ToDictionary(structure.Structure);
-                var variables = (structure.Variables
-                                 ?? new Dictionary<string, object>()).ToDictionary(
+                var variables = structure.Variables.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => kvp.Value?.ToString());
+                    kvp => kvp.Value.ToString());
 
                 var result = await _store.Structures.Create(new StructureIdentifier(structure.Name, structure.Version), keys, variables);
                 if (result.IsError)
@@ -149,7 +148,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data.Items);
+                var json = _translator.ToJson(result.CheckedData.Items);
 
                 if (json.ValueKind == JsonValueKind.Null)
                     return StatusCode(HttpStatusCode.InternalServerError, "failed to translate keys to json");
@@ -194,7 +193,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items);
+                           : Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -260,7 +259,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var sortedData = result.Data
+                var sortedData = result.CheckedData
                                        .Items
                                        .GroupBy(s => s.Name)
                                        .ToDictionary(
@@ -331,7 +330,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items);
+                           : Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -404,7 +403,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data.Items);
+                var json = _translator.ToJson(result.CheckedData.Items);
 
                 return Ok(json);
             }
@@ -428,7 +427,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> RemoveVariables(
             [FromRoute] string name,
             [FromRoute] int structureVersion,
-            [FromBody] string[] variables)
+            [FromBody] string[]? variables)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest("no name received");
@@ -474,7 +473,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> UpdateVariables(
             [FromRoute] string name,
             [FromRoute] int structureVersion,
-            [FromBody] Dictionary<string, string> changes)
+            [FromBody] Dictionary<string, string>? changes)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest("no name received");

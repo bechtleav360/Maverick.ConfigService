@@ -55,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             [FromRoute] string environmentName,
             [FromRoute] string structureName,
             [FromRoute] int structureVersion,
-            [FromBody] ConfigurationBuildOptions buildOptions,
+            [FromBody] ConfigurationBuildOptions? buildOptions,
             [FromQuery] bool force = false)
         {
             var buildError = ValidateBuildOptions(buildOptions);
@@ -70,7 +70,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (availableEnvironments.IsError)
                 return ProviderError(availableEnvironments);
 
-            var environment = availableEnvironments.Data
+            var environment = availableEnvironments.CheckedData
                                                    .Items
                                                    .FirstOrDefault(
                                                        e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase)
@@ -79,7 +79,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             if (environment is null)
                 return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
 
-            var structure = availableStructures.Data
+            var structure = availableStructures.CheckedData
                                                .Items
                                                .FirstOrDefault(s => s.Name.Equals(structureName) && s.Version == structureVersion);
 
@@ -224,7 +224,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items.ToImmutableSortedDictionary());
+                           : Ok(result.CheckedData.Items.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {
@@ -392,7 +392,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items);
+                           : Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -453,7 +453,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items);
+                           : Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -527,7 +527,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items);
+                           : Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -703,7 +703,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         /// </summary>
         /// <param name="buildOptions"></param>
         /// <returns></returns>
-        private IActionResult ValidateBuildOptions(ConfigurationBuildOptions buildOptions)
+        private IActionResult? ValidateBuildOptions(ConfigurationBuildOptions? buildOptions)
         {
             if (buildOptions is null)
                 return BadRequest("no build-options received");

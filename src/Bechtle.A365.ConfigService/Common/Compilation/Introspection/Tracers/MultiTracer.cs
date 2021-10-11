@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
     public class MultiTracer : TracerBase, IMultiTracer
     {
         /// <inheritdoc />
-        public MultiTracer(ITracer parent, string path)
+        public MultiTracer(ITracer parent, string? path)
             : base(parent)
         {
             Path = path;
@@ -18,10 +18,10 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         /// <summary>
         ///     Full Path to the Key being Traced
         /// </summary>
-        public string Path { get; }
+        public string? Path { get; }
 
         /// <inheritdoc />
-        public ITracer AddPathResult(string value)
+        public ITracer AddPathResult(string? value)
         {
             var tracer = new KeyTracer(this, Path, value);
             Children.Add(tracer);
@@ -30,7 +30,7 @@ namespace Bechtle.A365.ConfigService.Common.Compilation.Introspection.Tracers
         }
 
         /// <inheritdoc />
-        public ITracer AddPathResult(string path, string value)
+        public ITracer AddPathResult(string path, string? value)
         {
             var tracer = new KeyTracer(this, path, value);
             Children.Add(tracer);

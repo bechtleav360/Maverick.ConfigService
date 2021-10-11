@@ -160,7 +160,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (result.IsError)
                     return ProviderError(result);
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -213,7 +213,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (result.IsError)
                     return ProviderError(result);
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -305,7 +305,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items.ToImmutableSortedDictionary());
+                           : Ok(result.CheckedData.Items.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {
@@ -425,7 +425,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data.Items);
+                var json = _translator.ToJson(result.CheckedData.Items);
 
                 return Ok(json);
             }
@@ -490,15 +490,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                foreach (var item in result.Data.Items)
-                {
-                    if (item.Description is null)
-                        item.Description = string.Empty;
-                    if (item.Type is null)
-                        item.Type = string.Empty;
-                }
-
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -562,14 +554,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (result.IsError)
                     return ProviderError(result);
-
-                foreach (var item in result.Data.Items)
-                {
-                    if (item.Description is null)
-                        item.Description = string.Empty;
-                    if (item.Type is null)
-                        item.Type = string.Empty;
-                }
 
                 return Ok(result.Data);
             }

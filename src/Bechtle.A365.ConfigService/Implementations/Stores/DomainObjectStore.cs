@@ -80,7 +80,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public void Dispose()
         {
-            _database?.Dispose();
+            _database.Dispose();
         }
 
         /// <inheritdoc />
@@ -266,18 +266,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
 
-                KeyValuePair<long, ObjectLookupInfo> matchingVersion = itemInfo.Versions
-                                                                               .OrderByDescending(kvp => kvp.Key)
-                                                                               .FirstOrDefault(
-                                                                                   // return first entry when version < 0
-                                                                                   kvp => maxVersion < 0
-                                                                                          || kvp.Key <= maxVersion
-                                                                                          && !kvp.Value.IsMarkedDeleted);
+                KeyValuePair<long, ObjectLookupInfo>? maybeMatchingVersion =
+                    @object.Versions
+                           .OrderByDescending(kvp => kvp.Key)
+                           .Where(
+                               // return first entry when version < 0
+                               kvp => maxVersion < 0
+                                      || kvp.Key <= maxVersion
+                                      && !kvp.Value.IsMarkedDeleted)
+                           .Select(_ => (KeyValuePair<long, ObjectLookupInfo>?)_)
+                           .FirstOrDefault();
 
-                if (matchingVersion.Value is null)
+                if (maybeMatchingVersion?.Value is null)
                 {
                     return Result.Error<TObject>("no matching version found", ErrorCode.NotFound);
                 }
+
+                KeyValuePair<long, ObjectLookupInfo> matchingVersion = maybeMatchingVersion.Value;
 
                 if (!matchingVersion.Value.IsDataAvailable)
                 {
@@ -468,7 +473,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return versionResult;
                 }
 
-                Page<TIdentifier> page = versionResult.Data;
+                Page<TIdentifier> page = versionResult.CheckedData;
                 IList<TIdentifier> versions = page.Items;
                 bool domainObjectAvailable = versions.Any();
 
@@ -485,11 +490,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 collection.EnsureIndex(o => o.Id);
 
                 collection.Upsert(
-                    new DomainObjectMetadata<TIdentifier>
-                    {
-                        Id = domainObject.Id,
-                        Metadata = metadata.ToDictionary(_ => _.Key, _ => _.Value)
-                    });
+                    new DomainObjectMetadata<TIdentifier>(
+                        domainObject.Id,
+                        metadata.ToDictionary(_ => _.Key, _ => _.Value)));
             }
             catch (Exception e)
             {
@@ -521,18 +524,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 collection.Query()
                           .Where(x => x.Id == identifier)
                           .FirstOrDefault()
-                ?? new ObjectLookup<TIdentifier>
-                {
-                    Id = identifier,
-                    FileId = Guid.NewGuid(),
-                    Versions = new Dictionary<long, ObjectLookupInfo>()
-                };
+                ?? new ObjectLookup<TIdentifier>(identifier, Guid.NewGuid(), new Dictionary<long, ObjectLookupInfo>());
 
             return Task.FromResult(itemInfo);
         }
 
         private Task<List<ObjectLookup<TIdentifier>>> GetObjectInfo<TIdentifier>(
-            Expression<Func<ObjectLookup<TIdentifier>, bool>> filter = null)
+            Expression<Func<ObjectLookup<TIdentifier>, bool>>? filter = null) 
             where TIdentifier : Identifier
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
@@ -608,27 +606,27 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             /// <summary>
             ///     Timestamp when this entry was written
             /// </summary>
-            public DateTime CreatedAt { get; set; }
+            public DateTime CreatedAt { get; init; } = DateTime.MinValue;
 
             /// <summary>
             ///     Unique Id for this entry
             /// </summary>
-            public Guid Id { get; set; }
+            public Guid Id { get; init; } = Guid.Empty;
 
             /// <summary>
             ///     last DomainEvent that was projected and written to this Store
             /// </summary>
-            public long LastWrittenEvent { get; set; }
+            public long LastWrittenEvent { get; init; } = -1;
 
             /// <summary>
             ///     generic Id of the last event that was written
             /// </summary>
-            public string LastWrittenEventId { get; set; }
+            public string LastWrittenEventId { get; init; } = string.Empty;
 
             /// <summary>
             ///     Type of the last event that was written
             /// </summary>
-            public string LastWrittenEventType { get; set; }
+            public string LastWrittenEventType { get; init; } = string.Empty;
         }
 
         /// <summary>
@@ -638,6 +636,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             where TIdentifier : Identifier
 
         {
+            public ObjectLookup(TIdentifier id, Guid fileId, Dictionary<long, ObjectLookupInfo> versions)
+            {
+                Id = id;
+                FileId = fileId;
+                Versions = versions;
+            }
+
             /// <summary>
             ///     DomainObject-Instance-Unique GUID
             /// </summary>
@@ -677,6 +682,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private class DomainObjectMetadata<TIdentifier>
             where TIdentifier : Identifier
         {
+            public DomainObjectMetadata(TIdentifier id, Dictionary<string, string> metadata)
+            {
+                Id = id;
+                Metadata = metadata;
+            }
+
             /// <summary>
             ///     Identifier of the associated DomainObject
             /// </summary>

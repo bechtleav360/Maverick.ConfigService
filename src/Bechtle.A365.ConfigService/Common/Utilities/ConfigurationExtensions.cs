@@ -18,7 +18,9 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
         /// <param name="configuration">Configuration-Section that is being bound to NLog</param>
         /// <param name="logger">optional logger to write diagnostics to</param>
         /// <returns>given Configuration without changes</returns>
-        public static IConfiguration ConfigureNLog(this IConfiguration configuration, ILogger logger = null)
+        public static IConfiguration ConfigureNLog(
+            this IConfiguration configuration,
+            ILogger? logger = null)
         {
             try
             {

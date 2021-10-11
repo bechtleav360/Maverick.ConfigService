@@ -25,11 +25,6 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public async Task<IResult> Import(ConfigExport export, CancellationToken cancellationToken)
         {
-            if (export is null)
-            {
-                return Result.Error($"{nameof(export)} must not be null", ErrorCode.InvalidData);
-            }
-
             foreach (LayerExport layerExport in export.Layers)
             {
                 var identifier = new LayerIdentifier(layerExport.Name);
@@ -37,7 +32,13 @@ namespace Bechtle.A365.ConfigService.Implementations
                 IResult importResult = await _domainObjectManager.ImportLayer(
                                            identifier,
                                            layerExport.Keys
-                                                      .Select(k => new EnvironmentLayerKey(k.Key, k.Value, k.Type, k.Description, 0))
+                                                      .Select(
+                                                          k => new EnvironmentLayerKey(
+                                                              k.Key,
+                                                              k.Value,
+                                                              k.Type,
+                                                              k.Description,
+                                                              0))
                                                       .ToList(),
                                            CancellationToken.None);
 

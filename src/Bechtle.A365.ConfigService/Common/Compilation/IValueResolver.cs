@@ -23,6 +23,6 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
         /// <param name="tracer">tracer to use for this entry</param>
         /// <param name="parser">some implementation if <see cref="IConfigurationParser"/> to be used to parse the given <paramref name="value"/></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> Resolve(string path, string value, ITracer tracer, IConfigurationParser parser);
+        Task<IResult<IDictionary<string, string?>>> Resolve(string path, string? value, ITracer tracer, IConfigurationParser parser);
     }
 }

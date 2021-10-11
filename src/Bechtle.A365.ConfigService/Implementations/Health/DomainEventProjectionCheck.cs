@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
     {
         /// <inheritdoc />
         protected override HealthCheckResult GetUnhealthyResult()
-            => new HealthCheckResult(
+            => new(
                 HealthStatus.Unhealthy,
                 "DomainEventProjection is not connected to EventStore");
     }

@@ -31,7 +31,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
+        public ValueTask DisposeAsync() => new(Task.CompletedTask);
 
         /// <inheritdoc />
         public void Dispose()
@@ -92,14 +92,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
             LayerIdentifier identifier,
-            string key,
+            string? key,
             QueryRange range)
             => GetKeyAutoComplete(identifier, key, range, long.MaxValue);
 
         /// <inheritdoc />
         public async Task<IResult<Page<DtoConfigKeyCompletion>>> GetKeyAutoComplete(
             LayerIdentifier identifier,
-            string key,
+            string? key,
             QueryRange range,
             long version)
         {
@@ -127,7 +127,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Error<Page<DtoConfigKeyCompletion>>(layerResult.Message, layerResult.Code);
                 }
 
-                EnvironmentLayer layer = layerResult.Data;
+                EnvironmentLayer layer = layerResult.CheckedData;
                 List<EnvironmentLayerKeyPath> paths = layer.KeyPaths;
 
                 // send auto-completion data for all roots
@@ -213,7 +213,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                         });
                 }
 
-                EnvironmentLayerKeyPath root = paths.FirstOrDefault(p => p.Path == rootPart);
+                EnvironmentLayerKeyPath? root = paths.FirstOrDefault(p => p.Path == rootPart);
 
                 if (root is null)
                 {
@@ -263,37 +263,38 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return result;
             }
 
-            _logger.LogDebug($"got {result.Data.Count} keys as objects");
+            _logger.LogDebug($"got {result.CheckedData.Count} keys as objects");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
             {
-                return RemoveRoot(result.Data, parameters.RemoveRoot);
+                return RemoveRoot(result.CheckedData, parameters.RemoveRoot);
             }
 
             return result;
         }
 
         /// <inheritdoc />
-        public async Task<IResult<Page<KeyValuePair<string, string>>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters)
+        public async Task<IResult<Page<KeyValuePair<string, string?>>>> GetKeys(KeyQueryParameters<LayerIdentifier> parameters)
         {
             _logger.LogDebug($"retrieving keys of environment '{parameters.Identifier}'");
 
-            IResult<Page<KeyValuePair<string, string>>> result = await GetKeysInternal(
-                                                                     parameters,
-                                                                     item => item,
-                                                                     item => item.Key,
-                                                                     key => new KeyValuePair<string, string>(key.Key, key.Value));
+            IResult<Page<KeyValuePair<string, string?>>> result =
+                await GetKeysInternal(
+                    parameters,
+                    item => item,
+                    item => item.Key,
+                    key => new KeyValuePair<string, string?>(key.Key, key.Value));
 
             if (result.IsError)
             {
                 return result;
             }
 
-            _logger.LogDebug($"got {result.Data.Count} keys for '{parameters.Identifier}'");
+            _logger.LogDebug($"got {result.CheckedData.Count} keys for '{parameters.Identifier}'");
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
             {
-                return RemoveRoot(result.Data, parameters.RemoveRoot);
+                return RemoveRoot(result.CheckedData, parameters.RemoveRoot);
             }
 
             return result;
@@ -311,11 +312,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 return Result.Error<EnvironmentLayerMetadata>(layerResult.Message, layerResult.Code);
             }
 
-            EnvironmentLayer layer = layerResult.Data;
+            EnvironmentLayer layer = layerResult.CheckedData;
 
-            var metadata = new EnvironmentLayerMetadata
+            var metadata = new EnvironmentLayerMetadata(layer.Id)
             {
-                Id = layer.Id,
                 Tags = new List<string>(),
                 ChangedAt = layer.ChangedAt,
                 ChangedBy = layer.ChangedBy,
@@ -339,7 +339,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
 
             var results = new List<EnvironmentLayerMetadata>();
-            foreach (LayerIdentifier layerId in ids.Data.Items)
+            foreach (LayerIdentifier layerId in ids.CheckedData.Items)
             {
                 IResult<EnvironmentLayerMetadata> result = await GetMetadata(layerId);
                 if (result.IsError)
@@ -347,7 +347,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Error<Page<EnvironmentLayerMetadata>>(result.Message, result.Code);
                 }
 
-                results.Add(result.Data);
+                results.Add(result.CheckedData);
             }
 
             return Result.Success(
@@ -356,7 +356,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Items = results,
                     Count = results.Count,
                     Offset = range.Offset,
-                    TotalCount = ids.Data.TotalCount
+                    TotalCount = ids.CheckedData.TotalCount
                 });
         }
 
@@ -375,10 +375,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return Result.Success(
                 new Page<string>
                 {
-                    Items = result.Data.Tags,
-                    Count = result.Data.Tags.Count,
+                    Items = result.CheckedData.Tags,
+                    Count = result.CheckedData.Tags.Count,
                     Offset = 0,
-                    TotalCount = result.Data.Tags.Count
+                    TotalCount = result.CheckedData.Tags.Count
                 });
         }
 
@@ -411,7 +411,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var additions = new List<string>();
             var deletions = new List<string>();
 
-            EnvironmentLayer layer = layerResult.Data;
+            EnvironmentLayer layer = layerResult.CheckedData;
 
             additions.AddRange(addedTags.Where(t => !layer.Tags.Contains(t, StringComparer.OrdinalIgnoreCase)));
             deletions.AddRange(removedTags.Where(t => layer.Tags.Contains(t, StringComparer.OrdinalIgnoreCase)));
@@ -427,7 +427,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             _logger.LogDebug($"applying PreferredMatch filter to '{items.Count}' items, using {nameof(preferredMatch)}='{preferredMatch}'");
 
-            TItem exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
+            TItem? exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
 
             if (_logger.IsEnabled(LogLevel.Debug))
             {
@@ -462,7 +462,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             var walkedPath = new List<string> { "{START}" };
 
             // try walking the given path to the deepest part, and return all options the user can take from here
-            while (queue.TryDequeue(out string part))
+            while (queue.TryDequeue(out string? part))
             {
                 _logger.LogTrace($"try walking down '{part}'");
 
@@ -473,7 +473,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     break;
                 }
 
-                EnvironmentLayerKeyPath match = current.Children.FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
+                EnvironmentLayerKeyPath? match = current.Children.FirstOrDefault(c => c.Path.Equals(part, StringComparison.OrdinalIgnoreCase));
 
                 if (!(match is null))
                 {
@@ -560,7 +560,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Error<Page<TResult>>(layerResult.Message, layerResult.Code);
                 }
 
-                EnvironmentLayer layer = layerResult.Data;
+                EnvironmentLayer layer = layerResult.CheckedData;
 
                 IQueryable<EnvironmentLayerKey> query = layer.Keys.Values.AsQueryable();
 
@@ -608,7 +608,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         ///     remove the 'root' portion of each given key
         /// </summary>
         /// <returns></returns>
-        private IResult<Page<KeyValuePair<string, string>>> RemoveRoot(Page<KeyValuePair<string, string>> page, string root)
+        private IResult<Page<KeyValuePair<string, string?>>> RemoveRoot(Page<KeyValuePair<string, string?>> page, string root)
         {
             try
             {
@@ -626,20 +626,20 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 {
                     _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
                     page.Items = page.Items
-                                     .Select(kvp => new KeyValuePair<string, string>(kvp.Key[root.Length..], kvp.Value))
+                                     .Select(kvp => new KeyValuePair<string, string?>(kvp.Key[root.Length..], kvp.Value))
                                      .ToList();
                     return Result.Success(page);
                 }
 
                 _logger.LogDebug($"could not remove root '{root}' from all entries - not all items share same root");
-                return Result.Error<Page<KeyValuePair<string, string>>>(
+                return Result.Error<Page<KeyValuePair<string, string?>>>(
                     $"could not remove root '{root}' from all entries - not all items share same root",
                     ErrorCode.InvalidData);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, $"could not remove root '{root}' from all entries");
-                return Result.Error<Page<KeyValuePair<string, string>>>($"could not remove root '{root}' from all entries", ErrorCode.Undefined);
+                return Result.Error<Page<KeyValuePair<string, string?>>>($"could not remove root '{root}' from all entries", ErrorCode.Undefined);
             }
         }
 

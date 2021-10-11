@@ -1,4 +1,6 @@
-﻿namespace Bechtle.A365.ConfigService.Common.Objects
+﻿using System;
+
+namespace Bechtle.A365.ConfigService.Common.Objects
 {
     /// <summary>
     ///     a single Layer, exported for later import
@@ -8,11 +10,11 @@
         /// <summary>
         ///     Name of the exported Layer
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         ///     List of Keys currently contained in this Layer
         /// </summary>
-        public EnvironmentKeyExport[] Keys { get; set; }
+        public EnvironmentKeyExport[] Keys { get; set; } = Array.Empty<EnvironmentKeyExport>();
     }
 }

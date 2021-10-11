@@ -8,12 +8,12 @@
         /// <summary>
         ///     next part in the searched path
         /// </summary>
-        public string Completion { get; set; }
+        public string Completion { get; set; } = string.Empty;
 
         /// <summary>
         ///     full path including this one
         /// </summary>
-        public string FullPath { get; set; }
+        public string FullPath { get; set; } = string.Empty;
 
         /// <summary>
         ///     true if this is part in the path has children

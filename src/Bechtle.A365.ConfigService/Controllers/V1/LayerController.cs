@@ -156,7 +156,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (result.IsError)
                     return ProviderError(result);
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -246,7 +246,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.Data.Items.ToImmutableSortedDictionary());
+                           : Ok(result.CheckedData.Items.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {
@@ -360,7 +360,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                var json = _translator.ToJson(result.Data.Items);
+                var json = _translator.ToJson(result.CheckedData.Items);
 
                 return Ok(json);
             }
@@ -422,15 +422,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                foreach (var item in result.Data.Items)
-                {
-                    if (item.Description is null)
-                        item.Description = string.Empty;
-                    if (item.Type is null)
-                        item.Type = string.Empty;
-                }
-
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -492,14 +484,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (result.IsError)
                     return ProviderError(result);
 
-                foreach (var item in result.Data.Items)
-                {
-                    if (item.Description is null)
-                        item.Description = string.Empty;
-                    if (item.Type is null)
-                        item.Type = string.Empty;
-                }
-
                 return Result(result);
             }
             catch (Exception e)
@@ -531,7 +515,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> DeleteKeys(
             [FromRoute] string name,
-            [FromBody] string[] keys)
+            [FromBody] string[]? keys)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest($"{nameof(name)} is empty");
@@ -570,7 +554,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> UpdateKeys(
             [FromRoute] string name,
-            [FromBody] DtoConfigKey[] keys)
+            [FromBody] DtoConfigKey[]? keys)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest($"{nameof(name)} is empty");
@@ -649,7 +633,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (result.IsError)
                     return ProviderError(result);
-                return Ok(result.Data.Items);
+                return Ok(result.CheckedData.Items);
             }
             catch (Exception e)
             {
@@ -680,7 +664,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 if (layerResult.IsError)
                     return ProviderError(layerResult);
 
-                IList<string> existingTags = layerResult.Data.Items;
+                IList<string> existingTags = layerResult.CheckedData.Items;
                 List<string> deletions = existingTags.Where(t => !tags.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
                 List<string> additions = tags.Where(t => !existingTags.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
 

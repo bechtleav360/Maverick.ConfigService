@@ -31,7 +31,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public ValueTask DisposeAsync() => new ValueTask(Task.CompletedTask);
+        public ValueTask DisposeAsync() => new(Task.CompletedTask);
 
         /// <inheritdoc />
         public void Dispose()
@@ -40,7 +40,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult> Extend(string region, string key, TimeSpan duration) => Extend(region, new[] {key}, duration);
+        public Task<IResult> Extend(string region, string key, TimeSpan duration) => Extend(region, new[] { key }, duration);
 
         /// <inheritdoc />
         public async Task<IResult> Extend(string region, IEnumerable<string> keys, TimeSpan duration)
@@ -54,18 +54,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (values.IsError)
                     return values;
 
-                var tasks = values.Data
-                                  .AsParallel()
-                                  .Select(kvp => Set(region, kvp.Key, kvp.Value, duration))
-                                  .ToList();
+                List<Task<IResult>> tasks = values.CheckedData
+                                                  .AsParallel()
+                                                  .Select(kvp => Set(region, kvp.Key, kvp.Value, duration))
+                                                  .ToList();
 
                 await Task.WhenAll(tasks);
 
                 var failures = tasks.Where(t => t.Result.IsError)
                                     .ToList();
 
-                _logger.LogDebug($"setting the lifespan of '{keyList.Count}' items to '{duration:g}'; " +
-                                 $"'{failures.Count}' failed, {keyList.Count - failures.Count} succeeded");
+                _logger.LogDebug(
+                    $"setting the lifespan of '{keyList.Count}' items to '{duration:g}'; "
+                    + $"'{failures.Count}' failed, {keyList.Count - failures.Count} succeeded");
 
                 return failures.Any()
                            ? Result.Success()
@@ -80,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> Get(string region, IEnumerable<string> keys)
+        public async Task<IResult<IDictionary<string, string?>>> Get(string region, IEnumerable<string> keys)
         {
             var keyList = keys.ToList();
 
@@ -92,7 +93,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 await Task.WhenAll(tasks.Select(t => t.Task));
 
-                IDictionary<string, string> result = tasks.ToDictionary(t => t.Key, t => Encoding.UTF8.GetString(t.Task?.Result ?? Array.Empty<byte>()));
+                IDictionary<string, string?> result = tasks.ToDictionary(
+                    t => t.Key,
+                    t => t.Task?.Result is { }
+                             ? Encoding.UTF8.GetString(t.Task.Result)
+                             : null);
 
                 return Result.Success(result);
             }
@@ -101,26 +106,26 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 var message = $"could not retrieve values for temporary keys: {string.Join(", ", keyList)}";
 
                 _logger.LogWarning(e, message);
-                return Result.Error<IDictionary<string, string>>(message, ErrorCode.DbQueryError);
+                return Result.Error<IDictionary<string, string?>>(message, ErrorCode.DbQueryError);
             }
         }
 
         /// <inheritdoc />
-        public async Task<IResult<string>> Get(string region, string key)
+        public async Task<IResult<string?>> Get(string region, string key)
         {
-            var result = await Get(region, new[] {key});
+            var result = await Get(region, new[] { key });
 
             return result.IsError
-                       ? Result.Error<string>(result.Message, result.Code)
-                       : Result.Success(result.Data.Values.First());
+                       ? Result.Error<string?>(result.Message, result.Code)
+                       : Result.Success(result.CheckedData.Values.First());
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, IDictionary<string, string>>>> GetAll()
+        public async Task<IResult<IDictionary<string, IDictionary<string, string?>>>> GetAll()
         {
             var journal = await GetJournal();
 
-            IDictionary<string, IDictionary<string, string>> result = new Dictionary<string, IDictionary<string, string>>();
+            IDictionary<string, IDictionary<string, string?>> result = new Dictionary<string, IDictionary<string, string?>>();
 
             foreach (var (region, keys) in journal)
             {
@@ -129,31 +134,32 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (values.IsError)
                     continue;
 
-                result.Add(region, values.Data);
+                result.Add(region, values.CheckedData);
             }
 
             return Result.Success(result);
         }
 
         /// <inheritdoc />
-        public async Task<IResult<IDictionary<string, string>>> GetAll(string region)
+        public async Task<IResult<IDictionary<string, string?>>> GetAll(string region)
         {
             var journal = await GetJournal();
 
             if (!journal.ContainsKey(region))
-                return Result.Error<IDictionary<string, string>>($"no keys for '{region}' in journal - try retrieving keys directly",
-                                                                 ErrorCode.NotFound);
+                return Result.Error<IDictionary<string, string?>>(
+                    $"no keys for '{region}' in journal - try retrieving keys directly",
+                    ErrorCode.NotFound);
 
             var values = await Get(region, journal[region]);
 
             if (values.IsError)
-                return Result.Error<IDictionary<string, string>>(values.Message, values.Code);
+                return Result.Error<IDictionary<string, string?>>(values.Message, values.Code);
 
-            return Result.Success(values.Data);
+            return Result.Success(values.CheckedData);
         }
 
         /// <inheritdoc />
-        public Task<IResult> Remove(string region, string key) => Remove(region, new[] {key});
+        public Task<IResult> Remove(string region, string key) => Remove(region, new[] { key });
 
         /// <inheritdoc />
         public async Task<IResult> Remove(string region, IEnumerable<string> keys)
@@ -181,16 +187,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult> Set(string region, string key, string value, TimeSpan duration)
-            => Set(region, new Dictionary<string, string> {{key, value}}, duration);
+        public Task<IResult> Set(string region, string key, string? value, TimeSpan duration)
+            => Set(region, new Dictionary<string, string?> { { key, value } }, duration);
 
         /// <inheritdoc />
-        public async Task<IResult> Set(string region, IDictionary<string, string> values, TimeSpan duration)
+        public async Task<IResult> Set(string region, IDictionary<string, string?> values, TimeSpan duration)
         {
             try
             {
-                var byteValues = values.ToDictionary(kvp => kvp.Key,
-                                                     kvp => Encoding.UTF8.GetBytes(kvp.Value));
+                var byteValues = values.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value is { }
+                               ? Encoding.UTF8.GetBytes(kvp.Value)
+                               : null);
 
                 var cacheOptions = new DistributedCacheEntryOptions
                 {

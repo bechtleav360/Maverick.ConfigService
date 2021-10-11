@@ -15,6 +15,6 @@ namespace Bechtle.A365.ConfigService.Interfaces
         /// </summary>
         /// <param name="domainEvent"></param>
         /// <returns></returns>
-        IResult ValidateDomainEvent(DomainEvent domainEvent);
+        IResult ValidateDomainEvent(DomainEvent? domainEvent);
     }
 }

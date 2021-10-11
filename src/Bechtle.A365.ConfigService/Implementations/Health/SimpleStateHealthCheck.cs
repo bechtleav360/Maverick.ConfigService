@@ -13,7 +13,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
         public bool IsReady { get; protected set; }
 
         /// <inheritdoc />
-        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
+        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new())
             => Task.FromResult(IsReady switch
             {
                 true => GetHealthyResult(),

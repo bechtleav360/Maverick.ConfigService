@@ -8,11 +8,11 @@
         /// <summary>
         ///     Original Key whose value was resolved
         /// </summary>
-        public string Key { get; set; }
+        public string? Key { get; set; }
 
         /// <summary>
         ///     Original value of <see cref="Key"/> (raw value)
         /// </summary>
-        public string OriginalValue { get; set; }
+        public string? OriginalValue { get; set; }
     }
 }

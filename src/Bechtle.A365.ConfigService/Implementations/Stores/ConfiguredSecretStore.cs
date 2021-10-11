@@ -17,21 +17,21 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc cref="ConfiguredSecretStore" />
         public ConfiguredSecretStore(IOptionsSnapshot<ConfiguredSecretStoreConfiguration> configuration)
             : base(
-                configuration?.Value
+                configuration.Value
                              ?.Secrets
-                             ?.ToDictionary(
+                             .ToDictionary(
                                  kvp => NormalizePath(kvp.Key),
-                                 kvp => kvp.Value)
-                ?? new Dictionary<string, string>(),
+                                 kvp => (string?)kvp.Value)
+                ?? new Dictionary<string, string?>(),
                 "Configured-Secrets")
         {
         }
 
         /// <inheritdoc />
-        Task<IResult<string>> IConfigValueProvider.TryGetValue(string path) => base.TryGetValue(NormalizePath(path));
+        Task<IResult<string?>> IConfigValueProvider.TryGetValue(string path) => base.TryGetValue(NormalizePath(path));
 
         /// <inheritdoc />
-        Task<IResult<Dictionary<string, string>>> IConfigValueProvider.TryGetRange(string query) => base.TryGetRange(NormalizePath(query));
+        Task<IResult<Dictionary<string, string?>>> IConfigValueProvider.TryGetRange(string query) => base.TryGetRange(NormalizePath(query));
 
         private static string NormalizePath(string path) => path.Replace('/', ':');
     }

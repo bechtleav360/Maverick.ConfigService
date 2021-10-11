@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(EnvironmentCreated other)
+        public virtual bool Equals(EnvironmentCreated? other)
         {
             if (ReferenceEquals(null, other))
             {
@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj))
             {
@@ -50,18 +50,18 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return false;
             }
 
-            return Equals((EnvironmentCreated) obj);
+            return Equals((EnvironmentCreated)obj);
         }
 
         /// <inheritdoc />
-        public override int GetHashCode() => Identifier != null ? Identifier.GetHashCode() : 0;
+        public override int GetHashCode() => Identifier.GetHashCode();
 
         /// <inheritdoc />
-        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        public override DomainEventMetadata GetMetadata() => new()
         {
             Filters =
             {
-                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
+                { KnownDomainEventMetadata.Identifier, Identifier.ToString() }
             }
         };
 

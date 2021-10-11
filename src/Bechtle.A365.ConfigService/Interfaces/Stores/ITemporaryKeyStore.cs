@@ -34,7 +34,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="region"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        Task<IResult<string>> Get(string region, string key);
+        Task<IResult<string?>> Get(string region, string key);
 
         /// <summary>
         ///     get values of multiple temporary keys from the store
@@ -42,20 +42,20 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="region"></param>
         /// <param name="keys"></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> Get(string region, IEnumerable<string> keys);
+        Task<IResult<IDictionary<string, string?>>> Get(string region, IEnumerable<string> keys);
 
         /// <summary>
         ///     get all stored keys across all regions
         /// </summary>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, IDictionary<string, string>>>> GetAll();
+        Task<IResult<IDictionary<string, IDictionary<string, string?>>>> GetAll();
 
         /// <summary>
         ///     get all stored keys for a specific region
         /// </summary>
         /// <param name="region"></param>
         /// <returns></returns>
-        Task<IResult<IDictionary<string, string>>> GetAll(string region);
+        Task<IResult<IDictionary<string, string?>>> GetAll(string region);
 
         /// <summary>
         ///     remove a temporary key before its lifespan is over
@@ -81,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="value"></param>
         /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string, string, TimeSpan)" /></param>
         /// <returns></returns>
-        Task<IResult> Set(string region, string key, string value, TimeSpan duration);
+        Task<IResult> Set(string region, string key, string? value, TimeSpan duration);
 
         /// <summary>
         ///     add or update multiple keys with the same lifespan in the store
@@ -90,6 +90,6 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <param name="values"></param>
         /// <param name="duration">sliding lifespan, can be extended through <see cref="Extend(string, IEnumerable{string}, TimeSpan)" /></param>
         /// <returns></returns>
-        Task<IResult> Set(string region, IDictionary<string, string> values, TimeSpan duration);
+        Task<IResult> Set(string region, IDictionary<string, string?> values, TimeSpan duration);
     }
 }

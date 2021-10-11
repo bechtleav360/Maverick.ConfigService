@@ -32,10 +32,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(ConfigurationBuilt other) => Equals(other, false);
+        public virtual bool Equals(ConfigurationBuilt? other) => Equals(other, false);
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj))
             {
@@ -52,8 +52,35 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return false;
             }
 
-            return Equals((ConfigurationBuilt) obj);
+            return Equals((ConfigurationBuilt)obj);
         }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = Identifier.GetHashCode();
+                hashCode = (hashCode * 397) ^ ValidFrom.GetHashCode();
+                hashCode = (hashCode * 397) ^ ValidTo.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        /// <inheritdoc />
+        public override DomainEventMetadata GetMetadata() => new()
+        {
+            Filters =
+            {
+                { KnownDomainEventMetadata.Identifier, Identifier.ToString() }
+            }
+        };
+
+        /// <inheritdoc cref="operator ==" />
+        public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
+
+        /// <inheritdoc cref="operator !=" />
+        public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
 
         /// <summary>
         ///     Compare two instances of this DomainEvent for Property-Level equality
@@ -61,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <param name="other">other instance of this DomainEvent</param>
         /// <param name="strict">compare two instances using strict rules</param>
         /// <returns>true if both objects contain the same data, otherwise false</returns>
-        protected virtual bool Equals(ConfigurationBuilt other, bool strict)
+        protected virtual bool Equals(ConfigurationBuilt? other, bool strict)
         {
             if (ReferenceEquals(null, other))
             {
@@ -79,32 +106,5 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                          && ValidTo.Equals(other.ValidTo)
                        : Equals(Identifier, other.Identifier);
         }
-
-        /// <inheritdoc />
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hashCode = Identifier != null ? Identifier.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ ValidFrom.GetHashCode();
-                hashCode = (hashCode * 397) ^ ValidTo.GetHashCode();
-                return hashCode;
-            }
-        }
-
-        /// <inheritdoc />
-        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
-        {
-            Filters =
-            {
-                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
-            }
-        };
-
-        /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
-
-        /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
     }
 }

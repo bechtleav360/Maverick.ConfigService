@@ -9,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Common
     /// </summary>
     public static class AsyncUtility
     {
-        private static readonly TaskFactory _taskFactory = new TaskFactory(
+        private static readonly TaskFactory _taskFactory = new(
             CancellationToken.None,
             TaskCreationOptions.None,
             TaskContinuationOptions.None,

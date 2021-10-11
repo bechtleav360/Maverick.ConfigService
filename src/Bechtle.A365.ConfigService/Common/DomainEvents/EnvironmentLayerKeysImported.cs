@@ -25,7 +25,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(EnvironmentLayerKeysImported other)
+        public virtual bool Equals(EnvironmentLayerKeysImported? other)
         {
             if (ReferenceEquals(null, other))
             {
@@ -42,7 +42,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj))
             {
@@ -59,7 +59,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                 return false;
             }
 
-            return Equals((EnvironmentLayerKeysImported) obj);
+            return Equals((EnvironmentLayerKeysImported)obj);
         }
 
         /// <inheritdoc />
@@ -67,16 +67,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
             unchecked
             {
-                return ((Identifier != null ? Identifier.GetHashCode() : 0) * 397) ^ (ModifiedKeys != null ? ModifiedKeys.GetHashCode() : 0);
+                return (Identifier.GetHashCode() * 397) ^ ModifiedKeys.GetHashCode();
             }
         }
 
         /// <inheritdoc />
-        public override DomainEventMetadata GetMetadata() => new DomainEventMetadata
+        public override DomainEventMetadata GetMetadata() => new()
         {
             Filters =
             {
-                {KnownDomainEventMetadata.Identifier, Identifier.ToString()}
+                { KnownDomainEventMetadata.Identifier, Identifier.ToString() }
             }
         };
 
@@ -91,12 +91,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         {
             // to split the import, we import without keys (deleting everything)
             // and then we "import" the keys by adding several *Modified events
-            var list = new List<DomainEvent> {new EnvironmentLayerKeysImported(Identifier, Array.Empty<ConfigKeyAction>())};
+            var list = new List<DomainEvent> { new EnvironmentLayerKeysImported(Identifier, Array.Empty<ConfigKeyAction>()) };
 
             // double to force floating-point division, so we can round up and not miss any keys during partitioning
             double totalKeys = ModifiedKeys.Length;
             var partitions = 2;
-            var keysPerPartition = (int) Math.Ceiling(totalKeys / partitions);
+            var keysPerPartition = (int)Math.Ceiling(totalKeys / partitions);
 
             var counter = 0;
             var nextImport = new List<ConfigKeyAction>();

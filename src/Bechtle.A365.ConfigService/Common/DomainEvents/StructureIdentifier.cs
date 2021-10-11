@@ -36,7 +36,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public static bool operator !=(StructureIdentifier left, StructureIdentifier right) => !Equals(left, right);
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
@@ -45,7 +45,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         }
 
         /// <inheritdoc />
-        public virtual bool Equals(StructureIdentifier other)
+        public virtual bool Equals(StructureIdentifier? other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
