@@ -490,9 +490,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 collection.EnsureIndex(o => o.Id);
 
                 collection.Upsert(
-                    new DomainObjectMetadata<TIdentifier>(
-                        domainObject.Id,
-                        metadata.ToDictionary(_ => _.Key, _ => _.Value)));
+                    new DomainObjectMetadata<TIdentifier>
+                    {
+                        Id = domainObject.Id,
+                        Metadata = metadata.ToDictionary(_ => _.Key, _ => _.Value)
+                    });
             }
             catch (Exception e)
             {
@@ -524,7 +526,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 collection.Query()
                           .Where(x => x.Id == identifier)
                           .FirstOrDefault()
-                ?? new ObjectLookup<TIdentifier>(identifier, Guid.NewGuid(), new Dictionary<long, ObjectLookupInfo>());
+                ?? new ObjectLookup<TIdentifier>
+                {
+                    Id = identifier,
+                    FileId = Guid.NewGuid(), Versions = new Dictionary<long, ObjectLookupInfo>()
+                };
 
             return Task.FromResult(itemInfo);
         }
@@ -632,31 +638,23 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <summary>
         ///     Entry for a DomainObject that has been stored
         /// </summary>
-        private class ObjectLookup<TIdentifier>
+        private record ObjectLookup<TIdentifier>
             where TIdentifier : Identifier
-
         {
-            public ObjectLookup(TIdentifier id, Guid fileId, Dictionary<long, ObjectLookupInfo> versions)
-            {
-                Id = id;
-                FileId = fileId;
-                Versions = versions;
-            }
-
             /// <summary>
             ///     DomainObject-Instance-Unique GUID
             /// </summary>
-            public Guid FileId { get; set; }
+            public Guid FileId { get; set; } = Guid.Empty;
 
             /// <summary>
             ///     Identifier of the stored DomainObject
             /// </summary>
-            public TIdentifier Id { get; set; }
+            public TIdentifier Id { get; set; } = Identifier.Empty<TIdentifier>();
 
             /// <summary>
             ///     Map of Versions and their current Status. True = Object exists, False = Object was deleted
             /// </summary>
-            public Dictionary<long, ObjectLookupInfo> Versions { get; set; }
+            public Dictionary<long, ObjectLookupInfo> Versions { get; set; } = new();
         }
 
         /// <summary>
@@ -682,21 +680,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private class DomainObjectMetadata<TIdentifier>
             where TIdentifier : Identifier
         {
-            public DomainObjectMetadata(TIdentifier id, Dictionary<string, string> metadata)
-            {
-                Id = id;
-                Metadata = metadata;
-            }
-
             /// <summary>
             ///     Identifier of the associated DomainObject
             /// </summary>
-            public TIdentifier Id { get; set; }
+            public TIdentifier Id { get; set; } = Identifier.Empty<TIdentifier>();
 
             /// <summary>
             ///     Generic, untyped metadata for the associated DomainObject
             /// </summary>
-            public Dictionary<string, string> Metadata { get; set; }
+            public Dictionary<string, string> Metadata { get; set; } = new();
         }
     }
 }
