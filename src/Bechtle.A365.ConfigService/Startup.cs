@@ -152,8 +152,7 @@ namespace Bechtle.A365.ConfigService
                                             Predicate = check => check.Tags.Contains(Liveness),
                                             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
                                         })),
-                                "adding /health/live endpoint")
-                            .Tweak(a => a.UseEndpoints(builder => builder.MapHealthChecksUI()), "adding /healthchecks-ui endpoint");
+                                "adding /health/live endpoint");
 
             // re-load configuration when possible
             appConfiguration.Tweak(
@@ -369,15 +368,6 @@ namespace Bechtle.A365.ConfigService
                         "SignalR-Connection",
                         HealthStatus.Unhealthy,
                         new[] { Readiness });
-
-            services.AddHealthChecksUI(
-                        setup =>
-                        {
-                            setup.DisableDatabaseMigrations();
-                            setup.AddHealthCheckEndpoint("Ready Checks", "/health/ready");
-                            setup.AddHealthCheckEndpoint("Live Checks", "/health/live");
-                        })
-                    .AddInMemoryStorage();
         }
 
         private void RegisterMvc(IServiceCollection services)
