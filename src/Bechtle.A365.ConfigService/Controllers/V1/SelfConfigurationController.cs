@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
     [Route(ApiBaseRoute + "configurations/custom")]
     public class SelfConfigurationController : ControllerBase
     {
-        private const string ConfigFileLocation = "data/appsettings.json";
+        private const string ConfigFileLocation = "data/configuration/appsettings.json";
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />

@@ -517,17 +517,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         }
 
         /// <summary>
-        ///     implementation of <see cref="IDomainObjectStoreLocationProvider" /> that always points to a new file at ./data/{GUID}.db
+        ///     implementation of <see cref="IDomainObjectStoreLocationProvider" /> that always points to a new file at ./data/cache/{GUID}.db
         /// </summary>
         private class TestDomainObjectStoreLocationProvider : IDomainObjectStoreLocationProvider
         {
             private readonly Guid _fileId = Guid.NewGuid();
 
             /// <inheritdoc />
-            public string Directory => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/{_fileId:N}.db")).DirectoryName;
+            public string Directory => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/cache/{_fileId:N}.db")).DirectoryName;
 
             /// <inheritdoc />
-            public string FileName => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/{_fileId:N}.db")).FullName;
+            public string FileName => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/cache/{_fileId:N}.db")).FullName;
         }
     }
 }

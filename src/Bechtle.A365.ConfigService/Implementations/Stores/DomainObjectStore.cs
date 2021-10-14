@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -25,8 +26,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
     {
         private readonly ILiteDatabase _database;
         private readonly IDomainObjectFileStore _fileStore;
-        private readonly ILogger<DomainObjectStore> _logger;
         private readonly IOptions<HistoryConfiguration> _historyConfiguration;
+        private readonly ILogger<DomainObjectStore> _logger;
         private readonly IMemoryCache _memoryCache;
 
         /// <inheritdoc cref="DomainObjectStore" />
@@ -456,7 +457,9 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 IResult<Page<TIdentifier>> versionResult = await ListAll<TObject, TIdentifier>(QueryRange.All);
 
                 if (versionResult.IsError)
+                {
                     return versionResult;
+                }
 
                 Page<TIdentifier> page = versionResult.Data;
                 IList<TIdentifier> versions = page.Items;
@@ -494,6 +497,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             return Result.Success();
         }
+
+        private ILiteCollection<ObjectLookup<TIdentifier>> GetLookupInfo<TIdentifier>()
+            where TIdentifier : Identifier
+            => _database.GetCollection<ObjectLookup<TIdentifier>>(
+                typeof(ObjectLookup<TIdentifier>).GetFriendlyName()
+                                                 .Replace('<', '_')
+                                                 .Replace(">", string.Empty));
 
         private Task<ObjectLookup<TIdentifier>> GetObjectInfo<TIdentifier>(TIdentifier identifier) where TIdentifier : Identifier
         {
@@ -578,13 +588,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             collection.Upsert(@object);
         }
 
-        private ILiteCollection<ObjectLookup<TIdentifier>> GetLookupInfo<TIdentifier>()
-            where TIdentifier : Identifier
-            => _database.GetCollection<ObjectLookup<TIdentifier>>(
-                typeof(ObjectLookup<TIdentifier>).GetFriendlyName()
-                                                 .Replace('<', '_')
-                                                 .Replace(">", string.Empty));
-
         /// <summary>
         ///     Additional metadata that is stored in a separate collection along the projected DomainObjects.
         ///     These Records aren't meant to be updated, only written.
@@ -625,14 +628,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
         {
             /// <summary>
-            ///     Identifier of the stored DomainObject
-            /// </summary>
-            public TIdentifier Id { get; set; }
-
-            /// <summary>
             ///     DomainObject-Instance-Unique GUID
             /// </summary>
             public Guid FileId { get; set; }
+
+            /// <summary>
+            ///     Identifier of the stored DomainObject
+            /// </summary>
+            public TIdentifier Id { get; set; }
 
             /// <summary>
             ///     Map of Versions and their current Status. True = Object exists, False = Object was deleted
@@ -646,14 +649,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         private class ObjectLookupInfo
         {
             /// <summary>
-            ///     Flag to show if DomainObject is currently marked as deleted
-            /// </summary>
-            public bool IsMarkedDeleted { get; set; }
-
-            /// <summary>
             ///     Flag to show if actual Data for this DomainObject is available
             /// </summary>
             public bool IsDataAvailable { get; set; }
+
+            /// <summary>
+            ///     Flag to show if DomainObject is currently marked as deleted
+            /// </summary>
+            public bool IsMarkedDeleted { get; set; }
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public sealed class SelfConfigurationControllerTests : ControllerTests<SelfConfigurationController>, IDisposable
     {
-        private const string ConfigFileLocation = "data/appsettings.json";
+        private const string ConfigFileLocation = "data/configuration/appsettings.json";
 
         private readonly IJsonTranslator _translator = new JsonTranslator();
 

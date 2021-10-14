@@ -216,7 +216,6 @@ namespace Bechtle.A365.ConfigService
             RegisterDiServices(services);
             RegisterSecretStores(services);
             RegisterHealthEndpoints(services);
-            RegisterProjections(services);
         }
 
         /// <summary>
@@ -316,7 +315,9 @@ namespace Bechtle.A365.ConfigService
                             typeof(StructureVariablesModified)
                         })
                     .AddHostedService<GracefulShutdownService>()
-                    .AddHostedService<TemporaryKeyCleanupService>();
+                    .AddHostedService<TemporaryKeyCleanupService>()
+                    .AddHostedService<DomainObjectProjection>()
+                    .AddHostedService<ProjectionCacheCleanupService>();
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)
@@ -328,6 +329,7 @@ namespace Bechtle.A365.ConfigService
             services.AddSingleton<EventStoreClusterCheck>();
             services.AddSingleton<EventStoreConnectionCheck>();
             services.AddSingleton<DomainEventProjectionCheck>();
+            services.AddSingleton<ProjectionCacheCompatibleCheck>();
             services.AddHealthChecks()
                     .AddCheck<EventStoreClusterCheck>(
                         "EventStore-ConnectionType",
@@ -349,6 +351,11 @@ namespace Bechtle.A365.ConfigService
                         HealthStatus.Unhealthy,
                         new[] { Readiness },
                         TimeSpan.FromSeconds(30))
+                    .AddCheck<ProjectionCacheCompatibleCheck>(
+                        "ProjectionCache-Compatibility",
+                        HealthStatus.Unhealthy,
+                        new[] { Readiness },
+                        TimeSpan.FromSeconds(1))
                     .AddRedis(
                         Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>(),
                         "Temporary-Keys (Redis)",
@@ -398,11 +405,6 @@ namespace Bechtle.A365.ConfigService
             // secret-stores
             services.Configure<ConfiguredSecretStoreConfiguration>(Configuration.GetSection("SecretConfiguration:Stores:Configuration"));
             services.Configure<AzureSecretStoreConfiguration>(Configuration.GetSection("SecretConfiguration:Stores:Azure"));
-        }
-
-        private void RegisterProjections(IServiceCollection services)
-        {
-            services.AddHostedService<DomainObjectProjection>();
         }
 
         private void RegisterSecretStores(IServiceCollection services)

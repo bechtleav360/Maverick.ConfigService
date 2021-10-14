@@ -1,3 +1,0 @@
-﻿# ignore everything except for what we actually want to deploy
-*
-!appsettings.json

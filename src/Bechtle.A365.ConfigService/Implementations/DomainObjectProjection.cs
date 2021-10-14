@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Compilation;
@@ -28,10 +29,11 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// </summary>
     public class DomainObjectProjection : EventSubscriptionBase
     {
+        private readonly ProjectionCacheCompatibleCheck _cacheHealthCheck;
         private readonly IOptions<EventStoreConnectionConfiguration> _configuration;
-        private readonly DomainEventProjectionCheck _healthCheck;
         private readonly ILogger<DomainObjectProjection> _logger;
         private readonly IDomainObjectStore _objectStore;
+        private readonly DomainEventProjectionCheck _projectionHealthCheck;
         private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
@@ -41,30 +43,35 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <param name="objectStore">store for the projected DomainObjects</param>
         /// <param name="serviceProvider">serviceProvider used to retrieve components for compiling configurations</param>
         /// <param name="configuration">options used to configure the subscription</param>
-        /// <param name="healthCheck">associated Health-Check that reports the current status of this component</param>
+        /// <param name="projectionHealthCheck">associated Health-Check that reports the current status of this component</param>
+        /// <param name="cacheHealthCheck">
+        ///     health-check associated with <see cref="ProjectionCacheCleanupService" />. This Service will wait until the health-check is ready
+        /// </param>
         /// <param name="logger">logger to write information to</param>
         public DomainObjectProjection(
             IEventStore eventStore,
             IDomainObjectStore objectStore,
             IServiceProvider serviceProvider,
             IOptions<EventStoreConnectionConfiguration> configuration,
-            DomainEventProjectionCheck healthCheck,
+            DomainEventProjectionCheck projectionHealthCheck,
+            ProjectionCacheCompatibleCheck cacheHealthCheck,
             ILogger<DomainObjectProjection> logger) : base(eventStore)
         {
             _objectStore = objectStore;
             _serviceProvider = serviceProvider;
             _configuration = configuration;
-            _healthCheck = healthCheck;
+            _projectionHealthCheck = projectionHealthCheck;
+            _cacheHealthCheck = cacheHealthCheck;
             _logger = logger;
         }
 
         /// <inheritdoc />
-        protected override async void ConfigureStreamSubscription(IStreamSubscriptionBuilder subscriptionBuilder)
+        protected override void ConfigureStreamSubscription(IStreamSubscriptionBuilder subscriptionBuilder)
         {
             long lastProjectedEvent = -1;
             try
             {
-                IResult<long> result = await _objectStore.GetProjectedVersion();
+                IResult<long> result = _objectStore.GetProjectedVersion().Result;
                 if (result.IsError)
                 {
                     _logger.LogWarning("unable to tell which event was last projected, starting from scratch");
@@ -95,13 +102,34 @@ namespace Bechtle.A365.ConfigService.Implementations
                 subscriptionBuilder.FromEvent((ulong)lastProjectedEvent);
             }
 
-            _healthCheck.SetReady();
+            _projectionHealthCheck.SetReady();
+        }
+
+        /// <summary>
+        ///     Configure and start this Subscription, after <see cref="_cacheHealthCheck" /> is ready
+        /// </summary>
+        /// <param name="stoppingToken">token to stop this subscription with</param>
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            // stop normal subscription-flow until cache is killed / ready
+            _logger.LogInformation("delaying subscription until the caches compatibility is checked");
+
+            while (!_cacheHealthCheck.IsReady)
+            {
+                _logger.LogTrace(
+                    "waiting for cache-compatibility-check to be ready: '{CompatibilityChecked}'",
+                    _cacheHealthCheck.IsReady);
+                await Task.Delay(TimeSpan.FromMilliseconds(100), stoppingToken);
+            }
+
+            // back to our normal flow
+            await base.ExecuteAsync(stoppingToken);
         }
 
         /// <inheritdoc />
         protected override async Task OnDomainEventReceived(StreamedEventHeader eventHeader, IDomainEvent domainEvent)
         {
-            _healthCheck.SetReady();
+            _projectionHealthCheck.SetReady();
 
             try
             {
@@ -175,14 +203,14 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         protected override Task OnSubscriptionDropped(string streamId, string streamName, Exception exception)
         {
-            _healthCheck.SetReady(false);
+            _projectionHealthCheck.SetReady(false);
             return Task.CompletedTask;
         }
 
         /// <inheritdoc />
         protected override Task OnSubscriptionOpened()
         {
-            _healthCheck.SetReady();
+            _projectionHealthCheck.SetReady();
             return Task.CompletedTask;
         }
 
