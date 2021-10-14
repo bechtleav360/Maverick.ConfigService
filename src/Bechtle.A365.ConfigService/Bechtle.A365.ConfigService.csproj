@@ -94,9 +94,4 @@
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="data/cache" />
-    <Folder Include="data/configuration" />
-  </ItemGroup>
-
 </Project>
