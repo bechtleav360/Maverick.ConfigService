@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -61,17 +60,29 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (IsDbVersionMatching())
             {
+                _logger.LogInformation("cache-version matches app-version, green-lighting cache");
                 _healthCheck.SetReady();
                 return Task.CompletedTask;
             }
 
+            _logger.LogInformation("cache-version does not match app-version, removing cache and re-projecting");
+
             if (RemoveProjectionCache())
             {
+                _logger.LogInformation("cache removed, writing current version '{Version}'", AppVersion);
                 if (RecordCurrentVersion())
                 {
+                    _logger.LogInformation("cache marked with current version '{Version}'", AppVersion);
                     _healthCheck.SetReady();
                     return Task.CompletedTask;
                 }
+
+                _logger.LogInformation(
+                    "unable to mark cache with current version, "
+                    + "this is fatal and prevents this service from properly starting. "
+                    + "To start this Service, manually delete the cache, "
+                    + "and make sure this app has write-access to the directory ({CacheDirectory})",
+                    _locationProvider.Directory);
             }
 
             _logger.LogError(
