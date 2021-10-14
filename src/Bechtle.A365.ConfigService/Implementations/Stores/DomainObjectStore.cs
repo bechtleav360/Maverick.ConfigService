@@ -505,7 +505,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                                                  .Replace('<', '_')
                                                  .Replace(">", string.Empty));
 
-        private Task<ObjectLookup<TIdentifier>> GetObjectInfo<TIdentifier>(TIdentifier identifier) where TIdentifier : Identifier
+        private Task<ObjectLookup<TIdentifier>> GetObjectInfo<TIdentifier>(TIdentifier identifier)
+            where TIdentifier : Identifier
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
@@ -524,7 +525,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         private Task<List<ObjectLookup<TIdentifier>>> GetObjectInfo<TIdentifier>(
-            Expression<Func<ObjectLookup<TIdentifier>, bool>> filter = null) where TIdentifier : Identifier
+            Expression<Func<ObjectLookup<TIdentifier>, bool>> filter = null)
+            where TIdentifier : Identifier
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
@@ -554,7 +556,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             return @object.FileId;
         }
 
-        private async Task RemoveObjectVersion<TIdentifier>(TIdentifier identifier, long version) where TIdentifier : Identifier
+        private async Task RemoveObjectVersion<TIdentifier>(TIdentifier identifier, long version)
+            where TIdentifier : Identifier
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
@@ -571,7 +574,8 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             collection.Upsert(@object);
         }
 
-        private async Task RemoveObjectVersionData<TIdentifier>(TIdentifier identifier, long version) where TIdentifier : Identifier
+        private async Task RemoveObjectVersionData<TIdentifier>(TIdentifier identifier, long version)
+            where TIdentifier : Identifier
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
