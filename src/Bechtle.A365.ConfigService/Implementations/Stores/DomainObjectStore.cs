@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -61,6 +62,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Connection = ConnectionType.Shared,
                     Filename = locationProvider.FileName
                 });
+
+            var cacheDirectory = new DirectoryInfo(locationProvider.Directory);
+            if (!cacheDirectory.Exists)
+            {
+                cacheDirectory.Create();
+            }
         }
 
         /// <inheritdoc />
