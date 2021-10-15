@@ -271,15 +271,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
 
                 KeyValuePair<long, ObjectLookupInfo>? maybeMatchingVersion =
-                    @object.Versions
-                           .OrderByDescending(kvp => kvp.Key)
-                           .Where(
-                               // return first entry when version < 0
-                               kvp => maxVersion < 0
-                                      || kvp.Key <= maxVersion
-                                      && !kvp.Value.IsMarkedDeleted)
-                           .Select(_ => (KeyValuePair<long, ObjectLookupInfo>?)_)
-                           .FirstOrDefault();
+                    itemInfo.Versions
+                            .OrderByDescending(kvp => kvp.Key)
+                            .Where(
+                                // return first entry when version < 0
+                                kvp => maxVersion < 0
+                                       || kvp.Key <= maxVersion
+                                       && !kvp.Value.IsMarkedDeleted)
+                            .Select(_ => (KeyValuePair<long, ObjectLookupInfo>?)_)
+                            .FirstOrDefault();
 
                 if (maybeMatchingVersion?.Value is null)
                 {
