@@ -223,19 +223,19 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             try
             {
-                ObjectLookup<TIdentifier> @object = await GetObjectInfo(identifier);
-                List<long> possibleVersions = @object.Versions
-                                                     .Where(kvp => !kvp.Value.IsMarkedDeleted)
-                                                     .OrderByDescending(kvp => kvp.Key)
-                                                     .Select(kvp => kvp.Key)
-                                                     .ToList();
+                ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
+                List<long> possibleVersions = itemInfo.Versions
+                                                      .Where(kvp => !kvp.Value.IsMarkedDeleted)
+                                                      .OrderByDescending(kvp => kvp.Key)
+                                                      .Select(kvp => kvp.Key)
+                                                      .ToList();
                 long maxExistingVersion = possibleVersions.Any()
                                               ? possibleVersions.FirstOrDefault()
                                               : -1;
 
                 if (maxExistingVersion >= 0)
                 {
-                    IResult<TObject> result = await _fileStore.LoadObject<TObject, TIdentifier>(@object.FileId, maxExistingVersion);
+                    IResult<TObject> result = await _fileStore.LoadObject<TObject, TIdentifier>(itemInfo.FileId, maxExistingVersion);
                     if (result.IsError)
                     {
                         return result;
@@ -264,15 +264,15 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                ObjectLookup<TIdentifier> @object = await GetObjectInfo(identifier);
+                ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
 
-                KeyValuePair<long, ObjectLookupInfo> matchingVersion = @object.Versions
-                                                                              .OrderByDescending(kvp => kvp.Key)
-                                                                              .FirstOrDefault(
-                                                                                  // return first entry when version < 0
-                                                                                  kvp => maxVersion < 0
-                                                                                         || kvp.Key <= maxVersion
-                                                                                         && !kvp.Value.IsMarkedDeleted);
+                KeyValuePair<long, ObjectLookupInfo> matchingVersion = itemInfo.Versions
+                                                                               .OrderByDescending(kvp => kvp.Key)
+                                                                               .FirstOrDefault(
+                                                                                   // return first entry when version < 0
+                                                                                   kvp => maxVersion < 0
+                                                                                          || kvp.Key <= maxVersion
+                                                                                          && !kvp.Value.IsMarkedDeleted);
 
                 if (matchingVersion.Value is null)
                 {
@@ -286,7 +286,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 if (matchingVersion.Key >= 0)
                 {
-                    return await _fileStore.LoadObject<TObject, TIdentifier>(@object.FileId, matchingVersion.Key);
+                    return await _fileStore.LoadObject<TObject, TIdentifier>(itemInfo.FileId, matchingVersion.Key);
                 }
             }
             catch (Exception e)
@@ -343,12 +343,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 _memoryCache.Remove(identifier.ToString());
-                ObjectLookup<TIdentifier> @object = await GetObjectInfo(identifier);
-                long maxExistingVersion = @object.Versions.Any()
-                                              ? @object.Versions
-                                                       .Where(kvp => !kvp.Value.IsMarkedDeleted)
-                                                       .Select(kvp => kvp.Key)
-                                                       .Max()
+                ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
+                long maxExistingVersion = itemInfo.Versions.Any()
+                                              ? itemInfo.Versions
+                                                        .Where(kvp => !kvp.Value.IsMarkedDeleted)
+                                                        .Select(kvp => kvp.Key)
+                                                        .Max()
                                               : -1;
                 await RemoveObjectVersion(identifier, maxExistingVersion);
 
@@ -517,7 +517,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            ObjectLookup<TIdentifier> @object =
+            ObjectLookup<TIdentifier> itemInfo =
                 collection.Query()
                           .Where(x => x.Id == identifier)
                           .FirstOrDefault()
@@ -528,7 +528,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Versions = new Dictionary<long, ObjectLookupInfo>()
                 };
 
-            return Task.FromResult(@object);
+            return Task.FromResult(itemInfo);
         }
 
         private Task<List<ObjectLookup<TIdentifier>>> GetObjectInfo<TIdentifier>(
@@ -550,17 +550,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            ObjectLookup<TIdentifier> @object = await GetObjectInfo(domainObject.Id);
+            ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(domainObject.Id);
 
-            @object.Versions[domainObject.CurrentVersion] = new ObjectLookupInfo
+            itemInfo.Versions[domainObject.CurrentVersion] = new ObjectLookupInfo
             {
                 IsDataAvailable = true,
                 IsMarkedDeleted = false
             };
 
-            collection.Upsert(@object);
+            collection.Upsert(itemInfo);
 
-            return @object.FileId;
+            return itemInfo.FileId;
         }
 
         private async Task RemoveObjectVersion<TIdentifier>(TIdentifier identifier, long version)
@@ -568,17 +568,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            ObjectLookup<TIdentifier> @object = await GetObjectInfo(identifier);
+            ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
 
-            if (!@object.Versions.Any())
+            if (!itemInfo.Versions.Any())
             {
                 return;
             }
 
-            ObjectLookupInfo info = @object.Versions[version];
+            ObjectLookupInfo info = itemInfo.Versions[version];
             info.IsMarkedDeleted = true;
 
-            collection.Upsert(@object);
+            collection.Upsert(itemInfo);
         }
 
         private async Task RemoveObjectVersionData<TIdentifier>(TIdentifier identifier, long version)
@@ -586,17 +586,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();
 
-            ObjectLookup<TIdentifier> @object = await GetObjectInfo(identifier);
+            ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
 
-            if (!@object.Versions.Any())
+            if (!itemInfo.Versions.Any())
             {
                 return;
             }
 
-            ObjectLookupInfo info = @object.Versions[version];
+            ObjectLookupInfo info = itemInfo.Versions[version];
             info.IsDataAvailable = false;
 
-            collection.Upsert(@object);
+            collection.Upsert(itemInfo);
         }
 
         /// <summary>
