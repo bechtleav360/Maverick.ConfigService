@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
@@ -63,7 +62,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     Filename = locationProvider.FileName
                 });
 
-            var cacheDirectory = new DirectoryInfo(locationProvider.Directory);
+            var cacheDirectory = new DirectoryInfo(
+                locationProvider.Directory
+                ?? throw new ArgumentOutOfRangeException(
+                    nameof(locationProvider.Directory),
+                    "cache-location is not set"));
+
             if (!cacheDirectory.Exists)
             {
                 cacheDirectory.Create();
@@ -536,7 +540,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         private Task<List<ObjectLookup<TIdentifier>>> GetObjectInfo<TIdentifier>(
-            Expression<Func<ObjectLookup<TIdentifier>, bool>>? filter = null) 
+            Expression<Func<ObjectLookup<TIdentifier>, bool>>? filter = null)
             where TIdentifier : Identifier
         {
             ILiteCollection<ObjectLookup<TIdentifier>> collection = GetLookupInfo<TIdentifier>();

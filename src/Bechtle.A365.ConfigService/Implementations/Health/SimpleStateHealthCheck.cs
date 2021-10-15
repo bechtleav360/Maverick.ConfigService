@@ -14,11 +14,12 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
 
         /// <inheritdoc />
         public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new())
-            => Task.FromResult(IsReady switch
-            {
-                true => GetHealthyResult(),
-                false => GetUnhealthyResult()
-            });
+            => Task.FromResult(
+                IsReady switch
+                {
+                    true => GetHealthyResult(),
+                    false => GetUnhealthyResult()
+                });
 
         /// <summary>
         ///     Set the state of the Http-Pipeline to "Ready"

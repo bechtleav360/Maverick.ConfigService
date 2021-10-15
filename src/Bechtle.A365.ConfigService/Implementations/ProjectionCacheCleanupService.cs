@@ -30,10 +30,12 @@ namespace Bechtle.A365.ConfigService.Implementations
         ///     incrementing build-version before releasing the artifact.
         ///     1.2.3 in our .csproj becomes 1.2.3.x, where x is the build# / 1.2.3.12 / 1.3.0.13 / ...
         /// </summary>
-        private static string AppVersion => Assembly.GetExecutingAssembly()
-                                                    .GetName()
-                                                    .Version
-                                                    ?.ToString(4);
+        private static string AppVersion
+            => Assembly.GetExecutingAssembly()
+                       .GetName()
+                       .Version
+                       ?.ToString(4)
+               ?? throw new InvalidOperationException("unable to access version of executing assembly");
 
         /// <inheritdoc />
         public ProjectionCacheCleanupService(
@@ -101,12 +103,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 string activeVersion = AppVersion;
 
-                if (activeVersion is null)
-                {
-                    throw new InvalidOperationException(
-                        "unable to access version of executing assembly - cannot guarantee");
-                }
-
                 ILiteCollection<AppCacheVersion> collection = _database.GetCollection<AppCacheVersion>("_storageVersion");
                 string storageVersion = collection.Query()
                                                   .FirstOrDefault()
@@ -159,6 +155,13 @@ namespace Bechtle.A365.ConfigService.Implementations
         private bool RemoveProjectionCache()
         {
             var errorEncountered = false;
+
+            if (_locationProvider.Directory is null)
+            {
+                _logger.LogError("location of projection-cache is not set, unable to delete");
+                return false;
+            }
+
             var directory = new DirectoryInfo(_locationProvider.Directory);
 
             if (!directory.Exists)
@@ -217,17 +220,17 @@ namespace Bechtle.A365.ConfigService.Implementations
             /// <summary>
             ///     Application-Version with which this cache was built
             /// </summary>
-            public string ApplicationVersion { get; set; }
+            public string ApplicationVersion { get; set; } = string.Empty;
 
             /// <summary>
             ///     Time at which this record was created
             /// </summary>
-            public DateTime CreatedAt { get; set; }
+            public DateTime CreatedAt { get; set; } = DateTime.MinValue;
 
             /// <summary>
             ///     Unique Id of this Entry
             /// </summary>
-            public Guid Id { get; set; }
+            public Guid Id { get; set; } = Guid.Empty;
         }
     }
 }

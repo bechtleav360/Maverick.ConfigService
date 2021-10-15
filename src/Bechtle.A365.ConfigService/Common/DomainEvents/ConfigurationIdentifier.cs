@@ -19,7 +19,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public long Version { get; set; }
 
         /// <inheritdoc />
-        public ConfigurationIdentifier() : this(null, null, 0)
+        public ConfigurationIdentifier()
+            : this(
+                Empty<EnvironmentIdentifier>(),
+                Empty<StructureIdentifier>(),
+                0)
         {
         }
 
