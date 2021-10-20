@@ -280,9 +280,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetKeys(
             [FromRoute] string category,
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -343,9 +343,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetKeysPaged(
             [FromRoute] string category,
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -402,9 +402,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetKeysAsJson(
             [FromRoute] string category,
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] long targetVersion = -1)
         {
             try
@@ -463,9 +463,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetKeysWithMetadata(
             [FromRoute] string category,
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -528,9 +528,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         public async Task<IActionResult> GetKeysWithMetadataPaged(
             [FromRoute] string category,
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)

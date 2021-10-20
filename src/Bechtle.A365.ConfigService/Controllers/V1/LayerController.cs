@@ -46,7 +46,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpPost("{name}", Name = "AddLayer")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> AddLayer(string name)
+        public async Task<IActionResult> AddLayer([FromRoute] string name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest($"{nameof(name)} is empty");
@@ -79,7 +79,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ProducesResponseType(typeof(void), (int)HttpStatusCode.Accepted)]
         [HttpPost("{name}/clone/{cloneName}", Name = "CloneLayer")]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> CloneLayer(string name, string cloneName)
+        public async Task<IActionResult> CloneLayer(
+            [FromRoute] string name,
+            [FromRoute] string cloneName)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest($"{nameof(name)} is empty");
@@ -112,7 +114,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [HttpDelete("{name}", Name = "DeleteLayer")]
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
-        public async Task<IActionResult> DeleteLayer(string name)
+        public async Task<IActionResult> DeleteLayer([FromRoute] string name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest($"{nameof(name)} is empty");
@@ -221,9 +223,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetKeys(
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -281,9 +283,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetKeysPaged(
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -337,9 +339,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetKeysAsJson(
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] long targetVersion = -1)
         {
             try
@@ -395,9 +397,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V1, Deprecated = ApiDeprecation.V1)]
         public async Task<IActionResult> GetKeysWithMetadata(
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
@@ -457,9 +459,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         [ApiVersion(ApiVersions.V11, Deprecated = ApiDeprecation.V11)]
         public async Task<IActionResult> GetKeysWithMetadataPaged(
             [FromRoute] string name,
-            [FromQuery] string filter,
-            [FromQuery] string preferExactMatch,
-            [FromQuery] string root,
+            [FromQuery] string? filter = null,
+            [FromQuery] string? preferExactMatch = null,
+            [FromQuery] string? root = null,
             [FromQuery] int offset = -1,
             [FromQuery] int length = -1,
             [FromQuery] long targetVersion = -1)
