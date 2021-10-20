@@ -56,8 +56,14 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
             while (stack.TryPop(out var r))
             {
-                if (r is KeyTraceResult { Key: { } } k)
+                if (r is KeyTraceResult { Key: { } } k
+                    // should be handled  ^^^^^^^^ here,
+                    // but resharper wants another check
+                    // ReSharper disable once MergeIntoPattern
+                    && k.Key is not null)
+                {
                     usedKeys.Add(k.Key);
+                }
 
                 foreach (var c in r.Children)
                     stack.Push(c);

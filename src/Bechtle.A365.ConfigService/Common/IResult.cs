@@ -10,7 +10,7 @@
     {
         /// <summary>
         ///     Computed Property, that returns <see cref="Data" /> or throws an Exception.
-        ///     Ensure that this Result contains valid data, by checking <see cref="IResult{T}.IsError" />
+        ///     Ensure that this Result contains valid data, by checking <see cref="IResult.IsError" />
         /// </summary>
         T CheckedData { get; }
 

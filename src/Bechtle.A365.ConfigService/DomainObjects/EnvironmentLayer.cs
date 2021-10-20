@@ -11,46 +11,47 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     public sealed class EnvironmentLayer : DomainObject<LayerIdentifier>
     {
         /// <inheritdoc cref="LayerIdentifier" />
-        public override LayerIdentifier Id { get; set; }
+        public override LayerIdentifier Id { get; init; } = Identifier.Empty<LayerIdentifier>();
 
         /// <summary>
         ///     Json-Representation of the actual Data
         /// </summary>
-        public string Json { get; set; }
+        public string Json { get; init; } = "{}";
 
         /// <summary>
         ///     Keys represented as nested objects
         /// </summary>
-        public List<EnvironmentLayerKeyPath> KeyPaths { get; set; }
+        public List<EnvironmentLayerKeyPath> KeyPaths { get; init; } = new();
 
         /// <summary>
         ///     Actual Data of this Layer
         /// </summary>
-        public Dictionary<string, EnvironmentLayerKey> Keys { get; set; }
+        public Dictionary<string, EnvironmentLayerKey> Keys { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         ///     List of Tags assigned to this Layer
         /// </summary>
-        public List<string> Tags { get; set; }
+        public List<string> Tags { get; init; } = new();
+
+        /// <inheritdoc />
+        public EnvironmentLayer()
+        {
+        }
 
         /// <inheritdoc />
         public EnvironmentLayer(LayerIdentifier identifier)
         {
-            if (identifier is null)
-            {
-                throw new ArgumentNullException(nameof(identifier));
-            }
-
-            if (string.IsNullOrWhiteSpace(identifier.Name))
-            {
-                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Name)} is null or empty");
-            }
-
             Id = identifier;
-            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
-            KeyPaths = new List<EnvironmentLayerKeyPath>();
-            Json = "{}";
-            Tags = new List<string>();
+        }
+
+        /// <inheritdoc />
+        public EnvironmentLayer(EnvironmentLayer other) : base(other)
+        {
+            Id = new LayerIdentifier(other.Id.Name);
+            Json = other.Json;
+            KeyPaths = new List<EnvironmentLayerKeyPath>(other.KeyPaths);
+            Keys = new Dictionary<string, EnvironmentLayerKey>(other.Keys, StringComparer.OrdinalIgnoreCase);
+            Tags = new List<string>(other.Tags);
         }
 
         /// <inheritdoc />

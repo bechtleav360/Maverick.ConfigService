@@ -12,7 +12,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     List of Children that may come after this
         /// </summary>
-        public List<EnvironmentLayerKeyPath> Children { get; }
+        public List<EnvironmentLayerKeyPath> Children { get; } = new();
 
         /// <summary>
         ///     Full Path including Parents
@@ -23,12 +23,17 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         ///     Full path to the parent-node.
         ///     Used instead of parent-reference to make de-/serialisation easier
         /// </summary>
-        public string ParentPath { get; set; }
+        public string ParentPath { get; init; } = string.Empty;
 
         /// <summary>
         ///     last Path-Component of this Node
         /// </summary>
-        public string Path { get; set; }
+        public string Path { get; init; } = string.Empty;
+
+        /// <inheritdoc cref="EnvironmentLayerKeyPath" />
+        public EnvironmentLayerKeyPath()
+        {
+        }
 
         /// <inheritdoc cref="EnvironmentLayerKeyPath" />
         public EnvironmentLayerKeyPath(

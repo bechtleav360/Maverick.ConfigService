@@ -10,7 +10,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     Unique Name for a Layer
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; init; }
 
         /// <summary>
         ///     Creates a new, empty Layer-Identifier

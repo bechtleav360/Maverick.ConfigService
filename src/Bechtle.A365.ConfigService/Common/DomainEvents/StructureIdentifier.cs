@@ -22,12 +22,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     name of this structure, indicates uses the Configuration built from this and <see cref="StructureIdentifier" />
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; init; }
 
         /// <summary>
         ///     unique version of this Structure
         /// </summary>
-        public int Version { get; set; }
+        public int Version { get; init; }
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(StructureIdentifier left, StructureIdentifier right) => Equals(left, right);

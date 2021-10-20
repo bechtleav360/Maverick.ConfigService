@@ -10,27 +10,32 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Description of the Contents of this Key
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; init; } = string.Empty;
 
         /// <summary>
         ///     Full-Path for this Key
         /// </summary>
-        public string Key { get; set; }
+        public string Key { get; init; } = string.Empty;
 
         /// <summary>
         ///     Intended Value-Type of this Key
         /// </summary>
-        public string Type { get; set; }
+        public string Type { get; init; } = string.Empty;
 
         /// <summary>
         ///     String-Representation of the actual Value
         /// </summary>
-        public string? Value { get; set; }
+        public string? Value { get; init; } = null;
 
         /// <summary>
         ///     internal data-version
         /// </summary>
-        public long Version { get; set; }
+        public long Version { get; init; } = 0;
+
+        /// <inheritdoc cref="EnvironmentLayerKey" />
+        public EnvironmentLayerKey()
+        {
+        }
 
         /// <inheritdoc cref="EnvironmentLayerKey" />
         public EnvironmentLayerKey(string key, string? value, string type, string description, long version)

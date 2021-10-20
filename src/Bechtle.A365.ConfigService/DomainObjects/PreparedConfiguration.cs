@@ -13,72 +13,72 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     Data-Version from which this Configuration was built
         /// </summary>
-        public long ConfigurationVersion { get; set; }
+        public long ConfigurationVersion { get; init; }
 
         /// <summary>
         ///     Map of Keys and their associated Errors
         /// </summary>
-        public Dictionary<string, List<string>> Errors { get; set; }
+        public Dictionary<string, List<string>> Errors { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <inheritdoc cref="ConfigurationIdentifier" />
-        public override ConfigurationIdentifier Id { get; set; }
+        public override ConfigurationIdentifier Id { get; init; } = Identifier.Empty<ConfigurationIdentifier>();
 
         /// <summary>
         ///     Actual Data built from this Configuration, as JSON
         /// </summary>
-        public string Json { get; set; }
+        public string Json { get; init; } = "{}";
 
         /// <summary>
         ///     Actual Data built from this Configuration, as Key=>Value pair
         /// </summary>
-        public IDictionary<string, string?> Keys { get; set; }
+        public Dictionary<string, string?> Keys { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         ///     List of Environment-Keys used to build this Configuration
         /// </summary>
-        public List<string> UsedKeys { get; set; }
+        public List<string> UsedKeys { get; init; } = new();
 
         /// <summary>
         ///     Starting-Time from which this Configuration is Valid
         /// </summary>
-        public DateTime? ValidFrom { get; set; }
+        public DateTime? ValidFrom { get; init; }
 
         /// <summary>
         ///     End-Time until which this Configuration is Valid
         /// </summary>
-        public DateTime? ValidTo { get; set; }
+        public DateTime? ValidTo { get; init; }
 
         /// <summary>
         ///     Map of Keys and their associated Warnings
         /// </summary>
-        public Dictionary<string, List<string>> Warnings { get; set; }
+        public Dictionary<string, List<string>> Warnings { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <inheritdoc />
+        public PreparedConfiguration()
+        {
+        }
 
         /// <inheritdoc />
         public PreparedConfiguration(ConfigurationIdentifier identifier)
         {
-            if (identifier is null)
-            {
-                throw new ArgumentNullException(nameof(identifier));
-            }
-
-            if (identifier.Environment is null)
-            {
-                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Environment)} is null");
-            }
-
-            if (identifier.Structure is null)
-            {
-                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Structure)} is null");
-            }
-
-            Errors = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
             Id = identifier;
-            Json = "{}";
-            Keys = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            UsedKeys = new List<string>();
-            ValidFrom = null;
-            ValidTo = null;
-            Warnings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <inheritdoc />
+        public PreparedConfiguration(PreparedConfiguration other) : base(other)
+        {
+            ConfigurationVersion = other.ConfigurationVersion;
+            Errors = new Dictionary<string, List<string>>(other.Errors, StringComparer.OrdinalIgnoreCase);
+            Id = new ConfigurationIdentifier(
+                new EnvironmentIdentifier(other.Id.Environment.Category, other.Id.Environment.Name),
+                new StructureIdentifier(other.Id.Structure.Name, other.Id.Structure.Version),
+                other.Id.Version);
+            Json = other.Json;
+            Keys = new Dictionary<string, string?>(other.Keys, StringComparer.OrdinalIgnoreCase);
+            UsedKeys = new List<string>(other.UsedKeys);
+            ValidFrom = other.ValidFrom;
+            ValidTo = other.ValidTo;
+            Warnings = new Dictionary<string, List<string>>(other.Warnings, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />

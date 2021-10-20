@@ -9,6 +9,7 @@ using Bechtle.A365.ConfigService.Common.Compilation;
 using Bechtle.A365.ConfigService.Common.Compilation.Introspection.Results;
 using Bechtle.A365.ConfigService.Common.Converters;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
+using Bechtle.A365.ConfigService.Common.Utilities;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations.Health;
@@ -285,44 +286,36 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task HandleConfigurationBuilt(StreamedEventHeader eventHeader, IDomainEvent<ConfigurationBuilt> domainEvent)
         {
-            var config = new PreparedConfiguration(domainEvent.Payload.Identifier)
-            {
-                ConfigurationVersion = (long)domainEvent.Timestamp
-                                                        .Subtract(DateTime.UnixEpoch)
-                                                        .TotalSeconds,
-                CurrentVersion = (long)eventHeader.EventNumber,
-                ValidFrom = domainEvent.Payload.ValidFrom,
-                ValidTo = domainEvent.Payload.ValidTo,
-                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
-                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
-            };
-
             using IServiceScope scope = _serviceProvider.CreateScope();
 
             var compiler = scope.ServiceProvider.GetRequiredService<IConfigurationCompiler>();
             var parser = scope.ServiceProvider.GetRequiredService<IConfigurationParser>();
             var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            _logger.LogDebug($"version used during compilation: {config.CurrentVersion}");
+            _logger.LogDebug($"version used during compilation: {eventHeader.EventNumber}");
+
+            ConfigurationIdentifier configId = domainEvent.Payload.Identifier;
 
             // gather data to compile config with
-            IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(config.Id.Environment);
+            IResult<ConfigEnvironment> envResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(configId.Environment);
+
             if (envResult.IsError)
             {
                 _logger.LogWarning(
                     "unable to load environment to compile configuration {ConfigIdentifier}: {Code} {Message}",
-                    config.Id,
+                    configId,
                     envResult.Code,
                     envResult.Message);
                 return;
             }
 
-            IResult<ConfigStructure> structResult = await _objectStore.Load<ConfigStructure, StructureIdentifier>(config.Id.Structure);
+            IResult<ConfigStructure> structResult = await _objectStore.Load<ConfigStructure, StructureIdentifier>(configId.Structure);
+
             if (structResult.IsError)
             {
                 _logger.LogWarning(
                     "unable to load structure to compile configuration {ConfigIdentifier}: {Code} {Message}",
-                    config.Id,
+                    configId,
                     envResult.Code,
                     envResult.Message);
                 return;
@@ -337,22 +330,32 @@ namespace Bechtle.A365.ConfigService.Implementations
                 CompilationResult compilationResult = compiler.Compile(
                     new EnvironmentCompilationInfo
                     {
-                        Name = $"{config.Id.Environment.Category}/{config.Id.Environment.Name}",
+                        Name = $"{configId.Environment.Category}/{configId.Environment.Name}",
                         Keys = environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)
                     },
                     new StructureCompilationInfo
                     {
-                        Name = $"{config.Id.Structure.Name}/{config.Id.Structure.Version}",
+                        Name = $"{configId.Structure.Name}/{configId.Structure.Version}",
                         Keys = structure.Keys,
                         Variables = structure.Variables
                     },
                     parser);
 
                 // store result in DomainObject
-                config.Keys = compilationResult.CompiledConfiguration;
-                config.Json = translator.ToJson(config.Keys).ToString();
-                config.UsedKeys = compilationResult.GetUsedKeys().ToList();
-                config.CurrentVersion = (long)eventHeader.EventNumber;
+                var config = new PreparedConfiguration(configId)
+                {
+                    ConfigurationVersion = (long)domainEvent.Timestamp
+                                                            .Subtract(DateTime.UnixEpoch)
+                                                            .TotalSeconds,
+                    CurrentVersion = (long)eventHeader.EventNumber,
+                    ValidFrom = domainEvent.Payload.ValidFrom,
+                    ValidTo = domainEvent.Payload.ValidTo,
+                    CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
+                    ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                    Keys = compilationResult.CompiledConfiguration.ToDictionary(),
+                    Json = translator.ToJson(compilationResult.CompiledConfiguration).ToString(),
+                    UsedKeys = compilationResult.GetUsedKeys().ToList()
+                };
 
                 Stack<TraceResult> tracerStack = new(compilationResult.CompilationTrace);
                 while (tracerStack.TryPop(out TraceResult? result))
@@ -430,7 +433,8 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 CurrentVersion = (long)eventHeader.EventNumber,
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
-                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                IsDefault = true
             };
 
             await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
@@ -470,12 +474,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             EnvironmentLayer source = sourceEnvironmentResult.CheckedData;
             var newLayer = new EnvironmentLayer(domainEvent.Payload.TargetIdentifier)
             {
+                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                CurrentVersion = (long)eventHeader.EventNumber,
                 Json = source.Json,
                 Keys = source.Keys,
-                CurrentVersion = (long)eventHeader.EventNumber,
                 KeyPaths = source.KeyPaths,
-                CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
-                ChangedAt = domainEvent.Timestamp.ToUniversalTime()
+                Tags = source.Tags
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(newLayer);
@@ -495,6 +500,9 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task HandleEnvironmentLayerDeleted(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerDeleted> domainEvent)
         {
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
+
             // remove this layers keys from all assigned environments
             IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
 
@@ -512,22 +520,37 @@ namespace Bechtle.A365.ConfigService.Implementations
                                                         .Select(k => ConfigKeyAction.Delete(k.Key))
                                                         .ToList();
 
-            layer.Keys.Clear();
-            layer.KeyPaths.Clear();
-            layer.Json = "{}";
-            layer.CurrentVersion = (long)eventHeader.EventNumber;
+            // ReSharper disable ArrangeObjectCreationWhenTypeNotEvident
+            // don't care about type of these lists/maps - just initialize them in empty-state
+            // ---
+            // create an empty version of the layer we're removing,
+            // so we can trigger possible cleanup-actions with the current state (removed) of this layer
+            EnvironmentLayer removedLayer = new(domainEvent.Payload.Identifier)
+            {
+                Json = string.Empty,
+                Keys = new(),
+                Tags = new(),
+                // last change = now (deleted)
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedBy = "Anonymous",
+                // keep original creation-info
+                CreatedAt = layer.CreatedAt,
+                CreatedBy = layer.CreatedBy,
+                // version = now (delete-event)
+                CurrentVersion = (long)eventHeader.EventNumber,
+                KeyPaths = new()
+            };
+            // ReSharper restore ArrangeObjectCreationWhenTypeNotEvident
 
-            using IServiceScope scope = _serviceProvider.CreateScope();
-
-            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
-
-            await OnLayerKeysChanged(layer, impliedActions, translator);
-
+            await OnLayerKeysChanged(removedLayer, impliedActions, translator);
             await _objectStore.Remove<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
         }
 
         private async Task HandleEnvironmentLayerKeysImported(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerKeysImported> domainEvent)
         {
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
+
             IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
 
             if (layerResult.IsError)
@@ -542,27 +565,31 @@ namespace Bechtle.A365.ConfigService.Implementations
             EnvironmentLayer layer = layerResult.CheckedData;
 
             // set the 'Version' property of all changed Keys to the current unix-timestamp for later use
-            var keyVersion = (long)DateTime.UtcNow
-                                           .Subtract(DateTime.UnixEpoch)
-                                           .TotalSeconds;
+            var keyVersion = (long)domainEvent.Timestamp
+                                              .ToUniversalTime()
+                                              .Subtract(DateTime.UnixEpoch)
+                                              .TotalSeconds;
 
-            // clear all currently-stored keys, because the import always overwrites whatever is there
-            layer.Keys.Clear();
+            // start with an empty list, because the import always overwrites whatever is there
+            // so we only need to count SET-Actions and add them to the new list
+            Dictionary<string, EnvironmentLayerKey> importedLayerKeys = new();
             foreach (ConfigKeyAction change in domainEvent.Payload
                                                           .ModifiedKeys
                                                           .Where(a => a.Type == ConfigKeyActionType.Set))
             {
                 // if we can find the new key with a different capitalization,
                 // we remove the old and add the new one
-                if (layer.Keys
-                         .Select(k => k.Key)
-                         .FirstOrDefault(k => k.Equals(change.Key, StringComparison.OrdinalIgnoreCase))
+                if (importedLayerKeys.Keys
+                                     .FirstOrDefault(
+                                         k => k.Equals(
+                                             change.Key,
+                                             StringComparison.OrdinalIgnoreCase))
                         is { } existingKey)
                 {
-                    layer.Keys.Remove(existingKey);
+                    importedLayerKeys.Remove(existingKey);
                 }
 
-                layer.Keys[change.Key] = new EnvironmentLayerKey(
+                importedLayerKeys[change.Key] = new EnvironmentLayerKey(
                     change.Key,
                     change.Value,
                     change.ValueType,
@@ -570,18 +597,29 @@ namespace Bechtle.A365.ConfigService.Implementations
                     keyVersion);
             }
 
-            layer.CurrentVersion = (long)eventHeader.EventNumber;
-            layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
+            EnvironmentLayer importedLayer = new(layer.Id)
+            {
+                CurrentVersion = (long)eventHeader.EventNumber,
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedBy = "Anonymous",
+                Json = translator.ToJson(
+                                     importedLayerKeys.ToDictionary(
+                                         kvp => kvp.Value.Key,
+                                         kvp => kvp.Value.Value))
+                                 .ToString(),
+                Keys = importedLayerKeys,
+                KeyPaths = GenerateKeyPaths(importedLayerKeys)
+            };
 
-            using IServiceScope scope = _serviceProvider.CreateScope();
-
-            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
-
-            await OnLayerKeysChanged(layer, domainEvent.Payload.ModifiedKeys, translator);
+            await OnLayerKeysChanged(importedLayer, domainEvent.Payload.ModifiedKeys, translator);
+            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(importedLayer);
         }
 
         private async Task HandleEnvironmentLayerKeysModified(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerKeysModified> domainEvent)
         {
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
+
             IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
 
             if (layerResult.IsError)
@@ -594,21 +632,23 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             EnvironmentLayer layer = layerResult.CheckedData;
+            Dictionary<string, EnvironmentLayerKey> modifiedKeys = layer.Keys;
 
             foreach (ConfigKeyAction deletion in domainEvent.Payload
                                                             .ModifiedKeys
                                                             .Where(action => action.Type == ConfigKeyActionType.Delete))
             {
-                if (layer.Keys.ContainsKey(deletion.Key))
+                if (modifiedKeys.ContainsKey(deletion.Key))
                 {
-                    layer.Keys.Remove(deletion.Key);
+                    modifiedKeys.Remove(deletion.Key);
                 }
             }
 
             // set the 'Version' property of all changed Keys to the current unix-timestamp for later use
-            var keyVersion = (long)DateTime.UtcNow
-                                           .Subtract(DateTime.UnixEpoch)
-                                           .TotalSeconds;
+            var keyVersion = (long)domainEvent.Timestamp
+                                              .ToUniversalTime()
+                                              .Subtract(DateTime.UnixEpoch)
+                                              .TotalSeconds;
 
             foreach (ConfigKeyAction change in domainEvent.Payload
                                                           .ModifiedKeys
@@ -616,15 +656,14 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 // if we can find the new key with a different capitalization,
                 // we remove the old and add the new one
-                if (layer.Keys
-                         .Select(k => k.Key)
-                         .FirstOrDefault(k => k.Equals(change.Key, StringComparison.OrdinalIgnoreCase))
+                if (modifiedKeys.Select(k => k.Key)
+                                .FirstOrDefault(k => k.Equals(change.Key, StringComparison.OrdinalIgnoreCase))
                         is { } existingKey)
                 {
-                    layer.Keys.Remove(existingKey);
+                    modifiedKeys.Remove(existingKey);
                 }
 
-                layer.Keys[change.Key] = new EnvironmentLayerKey(
+                modifiedKeys[change.Key] = new EnvironmentLayerKey(
                     change.Key,
                     change.Value,
                     change.ValueType,
@@ -632,14 +671,22 @@ namespace Bechtle.A365.ConfigService.Implementations
                     keyVersion);
             }
 
-            layer.CurrentVersion = (long)eventHeader.EventNumber;
-            layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
+            EnvironmentLayer modifiedLayer = new(layer.Id)
+            {
+                CurrentVersion = (long)eventHeader.EventNumber,
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedBy = "Anonymous",
+                Json = translator.ToJson(
+                                     modifiedKeys.ToDictionary(
+                                         kvp => kvp.Value.Key,
+                                         kvp => kvp.Value.Value))
+                                 .ToString(),
+                Keys = modifiedKeys,
+                KeyPaths = GenerateKeyPaths(modifiedKeys)
+            };
 
-            using IServiceScope scope = _serviceProvider.CreateScope();
-
-            var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
-
-            await OnLayerKeysChanged(layer, domainEvent.Payload.ModifiedKeys, translator);
+            await OnLayerKeysChanged(modifiedLayer, domainEvent.Payload.ModifiedKeys, translator);
+            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(modifiedLayer);
         }
 
         private async Task HandleEnvironmentLayersModified(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayersModified> domainEvent)
@@ -656,9 +703,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             ConfigEnvironment environment = envResult.CheckedData;
 
-            environment.Layers = domainEvent.Payload.Layers;
-
-            IResult<Dictionary<string, EnvironmentLayerKey>> envDataResult = await ResolveEnvironmentKeys(environment);
+            IResult<Dictionary<string, EnvironmentLayerKey>> envDataResult = await ResolveEnvironmentKeys(domainEvent.Payload.Layers);
             if (envDataResult.IsError)
             {
                 _logger.LogWarning(
@@ -672,13 +717,18 @@ namespace Bechtle.A365.ConfigService.Implementations
             using IServiceScope scope = _serviceProvider.CreateScope();
             var translator = scope.ServiceProvider.GetRequiredService<IJsonTranslator>();
 
-            environment.Keys = envDataResult.CheckedData;
-            environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
-            environment.KeyPaths = GenerateKeyPaths(environment.Keys);
-            environment.CurrentVersion = (long)eventHeader.EventNumber;
-            environment.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
+            ConfigEnvironment modifiedEnvironment = new(environment)
+            {
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedBy = "Anonymous",
+                CurrentVersion = (long)eventHeader.EventNumber,
+                Json = translator.ToJson(envDataResult.CheckedData.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString(),
+                Keys = envDataResult.CheckedData,
+                KeyPaths = GenerateKeyPaths(envDataResult.CheckedData),
+                Layers = domainEvent.Payload.Layers
+            };
 
-            await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
+            await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(modifiedEnvironment);
         }
 
         private async Task HandleEnvironmentLayerTagsChanged(StreamedEventHeader eventHeader, IDomainEvent<EnvironmentLayerTagsChanged> domainEvent)
@@ -695,27 +745,33 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             EnvironmentLayer layer = layerResult.CheckedData;
+            List<string> modifiedTags = layer.Tags;
 
-            foreach (string tag in domainEvent.Payload.AddedTags.Where(tag => !layer.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase)))
+            foreach (string tag in domainEvent.Payload.AddedTags.Where(tag => !modifiedTags.Contains(tag, StringComparer.OrdinalIgnoreCase)))
             {
-                layer.Tags.Add(tag);
+                modifiedTags.Add(tag);
             }
 
             foreach (string tag in domainEvent.Payload.RemovedTags)
             {
-                string? existingTag = layer.Tags.FirstOrDefault(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
+                string? existingTag = modifiedTags.FirstOrDefault(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase));
                 if (existingTag is null)
                 {
                     continue;
                 }
 
-                layer.Tags.Remove(existingTag);
+                modifiedTags.Remove(existingTag);
             }
 
-            layer.CurrentVersion = (long)eventHeader.EventNumber;
-            layer.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
+            EnvironmentLayer modifiedLayer = new(layer.Id)
+            {
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedBy = "Anonymous",
+                Tags = modifiedTags,
+                CurrentVersion = (long)eventHeader.EventNumber,
+            };
 
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
+            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(modifiedLayer);
         }
 
         private async Task HandleStructureCreated(StreamedEventHeader eventHeader, IDomainEvent<StructureCreated> domainEvent)
@@ -751,14 +807,15 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             ConfigStructure structure = structureResult.CheckedData;
+            Dictionary<string, string?> modifiedVariables = structure.Variables;
 
             foreach (ConfigKeyAction deletion in domainEvent.Payload
                                                             .ModifiedKeys
                                                             .Where(action => action.Type == ConfigKeyActionType.Delete))
             {
-                if (structure.Variables.ContainsKey(deletion.Key))
+                if (modifiedVariables.ContainsKey(deletion.Key))
                 {
-                    structure.Variables.Remove(deletion.Key);
+                    modifiedVariables.Remove(deletion.Key);
                 }
             }
 
@@ -766,70 +823,31 @@ namespace Bechtle.A365.ConfigService.Implementations
                                                           .ModifiedKeys
                                                           .Where(action => action.Type == ConfigKeyActionType.Set))
             {
-                structure.Variables[change.Key] = change.Value;
+                modifiedVariables[change.Key] = change.Value;
             }
 
-            structure.CurrentVersion = (long)eventHeader.EventNumber;
-            structure.ChangedAt = domainEvent.Timestamp.ToUniversalTime();
+            ConfigStructure modifiedStructure = new(structure)
+            {
+                ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
+                ChangedBy = "Anonymous",
+                CurrentVersion = (long)eventHeader.EventNumber,
+                Variables = modifiedVariables
+            };
 
-            await _objectStore.Store<ConfigStructure, StructureIdentifier>(structure);
+            await _objectStore.Store<ConfigStructure, StructureIdentifier>(modifiedStructure);
         }
 
         private async Task OnLayerKeysChanged(EnvironmentLayer layer, ICollection<ConfigKeyAction> modifiedKeys, IJsonTranslator translator)
         {
-            layer.Json = translator.ToJson(
-                                       layer.Keys.ToDictionary(
-                                           kvp => kvp.Value.Key,
-                                           kvp => (string?)kvp.Value.Key))
-                                   .ToString();
-            layer.KeyPaths = GenerateKeyPaths(layer.Keys);
-
-            await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(layer);
-
-            IResult<Page<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
-            if (envIdResult.IsError)
-            {
-                return;
-            }
-
-            foreach (EnvironmentIdentifier envId in envIdResult.CheckedData.Items)
-            {
-                IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
-                if (environmentResult.IsError)
-                {
-                    return;
-                }
-
-                ConfigEnvironment environment = environmentResult.CheckedData;
-                if (!environment.Layers.Contains(layer.Id))
-                {
-                    continue;
-                }
-
-                IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment);
-                if (environmentDataResult.IsError)
-                {
-                    return;
-                }
-
-                environment.Keys = environmentDataResult.CheckedData;
-                environment.Json = translator.ToJson(environment.Keys.ToDictionary(kvp => kvp.Value.Key, kvp => kvp.Value.Value)).ToString();
-                environment.KeyPaths = GenerateKeyPaths(environment.Keys);
-                environment.CurrentVersion = layer.CurrentVersion;
-
-                await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(environment);
-            }
-
+            await UpdateEnvironmentProjections(layer, translator);
             await UpdateConfigurationStaleStatus(layer, modifiedKeys);
-
-            Result.Success();
         }
 
-        private async Task<IResult<Dictionary<string, EnvironmentLayerKey>>> ResolveEnvironmentKeys(ConfigEnvironment environment)
+        private async Task<IResult<Dictionary<string, EnvironmentLayerKey>>> ResolveEnvironmentKeys(IEnumerable<LayerIdentifier> layerIds)
         {
             var result = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (LayerIdentifier layerId in environment.Layers)
+            foreach (LayerIdentifier layerId in layerIds)
             {
                 IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layerId);
                 if (layerResult.IsError)
@@ -931,6 +949,51 @@ namespace Bechtle.A365.ConfigService.Implementations
                     metadata["stale"] = JsonConvert.SerializeObject(true);
                     await _objectStore.StoreMetadata<PreparedConfiguration, ConfigurationIdentifier>(config, metadata);
                 }
+            }
+        }
+
+        private async Task UpdateEnvironmentProjections(EnvironmentLayer layer, IJsonTranslator translator)
+        {
+            IResult<Page<EnvironmentIdentifier>> envIdResult = await _objectStore.ListAll<ConfigEnvironment, EnvironmentIdentifier>(QueryRange.All);
+            if (envIdResult.IsError)
+            {
+                return;
+            }
+
+            foreach (EnvironmentIdentifier envId in envIdResult.CheckedData.Items)
+            {
+                IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
+                if (environmentResult.IsError)
+                {
+                    continue;
+                }
+
+                ConfigEnvironment environment = environmentResult.CheckedData;
+                if (!environment.Layers.Contains(layer.Id))
+                {
+                    continue;
+                }
+
+                IResult<Dictionary<string, EnvironmentLayerKey>> environmentDataResult = await ResolveEnvironmentKeys(environment.Layers);
+                if (environmentDataResult.IsError)
+                {
+                    continue;
+                }
+
+                ConfigEnvironment modifiedEnvironment = new(environment)
+                {
+                    // updated with new layer-data
+                    Keys = environmentDataResult.CheckedData,
+                    Json = translator.ToJson(
+                                         environmentDataResult.CheckedData.ToDictionary(
+                                             kvp => kvp.Value.Key,
+                                             kvp => kvp.Value.Value))
+                                     .ToString(),
+                    KeyPaths = GenerateKeyPaths(environmentDataResult.CheckedData),
+                    CurrentVersion = layer.CurrentVersion
+                };
+
+                await _objectStore.Store<ConfigEnvironment, EnvironmentIdentifier>(modifiedEnvironment);
             }
         }
     }

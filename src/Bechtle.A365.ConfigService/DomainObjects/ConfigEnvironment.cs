@@ -11,57 +11,53 @@ namespace Bechtle.A365.ConfigService.DomainObjects
     public sealed class ConfigEnvironment : DomainObject<EnvironmentIdentifier>
     {
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public override EnvironmentIdentifier Id { get; set; }
+        public override EnvironmentIdentifier Id { get; init; } = Identifier.Empty<EnvironmentIdentifier>();
 
         /// <summary>
         ///     Flag indicating if this is the Default-Environment of its Category
         /// </summary>
-        public bool IsDefault { get; set; }
+        public bool IsDefault { get; init; }
 
         /// <summary>
         ///     Json-Representation of the actual Data
         /// </summary>
-        public string Json { get; set; }
+        public string Json { get; init; } = "{}";
 
         /// <summary>
         ///     Keys represented as nested objects
         /// </summary>
-        public List<EnvironmentLayerKeyPath> KeyPaths { get; set; }
+        public List<EnvironmentLayerKeyPath> KeyPaths { get; init; } = new();
 
         /// <summary>
         ///     Actual Data of this Environment
         /// </summary>
-        public Dictionary<string, EnvironmentLayerKey> Keys { get; set; }
+        public Dictionary<string, EnvironmentLayerKey> Keys { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         ///     ordered layers used to represent this Environment
         /// </summary>
-        public List<LayerIdentifier> Layers { get; set; }
+        public List<LayerIdentifier> Layers { get; init; } = new();
+
+        /// <inheritdoc />
+        public ConfigEnvironment()
+        {
+        }
 
         /// <inheritdoc />
         public ConfigEnvironment(EnvironmentIdentifier identifier)
         {
-            if (identifier is null)
-            {
-                throw new ArgumentNullException(nameof(identifier));
-            }
+            Id = identifier;
+        }
 
-            if (string.IsNullOrWhiteSpace(identifier.Category))
-            {
-                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Category)} is null or empty");
-            }
-
-            if (string.IsNullOrWhiteSpace(identifier.Name))
-            {
-                throw new ArgumentNullException(nameof(identifier), $"{nameof(identifier.Name)} is null or empty");
-            }
-
-            Id = new EnvironmentIdentifier(identifier.Category, identifier.Name);
-            IsDefault = false;
-            Json = "{}";
-            KeyPaths = new List<EnvironmentLayerKeyPath>();
-            Keys = new Dictionary<string, EnvironmentLayerKey>(StringComparer.OrdinalIgnoreCase);
-            Layers = new List<LayerIdentifier>();
+        /// <inheritdoc />
+        public ConfigEnvironment(ConfigEnvironment other) : base(other)
+        {
+            Id = new EnvironmentIdentifier(other.Id.Category, other.Id.Name);
+            IsDefault = other.IsDefault;
+            Json = other.Json;
+            Keys = new Dictionary<string, EnvironmentLayerKey>(other.Keys, StringComparer.OrdinalIgnoreCase);
+            KeyPaths = new List<EnvironmentLayerKeyPath>(other.KeyPaths);
+            Layers = new List<LayerIdentifier>(other.Layers);
         }
 
         /// <inheritdoc />

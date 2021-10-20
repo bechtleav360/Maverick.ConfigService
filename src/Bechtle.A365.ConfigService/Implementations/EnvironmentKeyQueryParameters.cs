@@ -12,28 +12,28 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <summary>
         ///     [Required] Id whose keys should be retrieved
         /// </summary>
-        public T Identifier { get; set; }
+        public T Identifier { get; init; }
 
         /// <summary>
         ///     [Optional] Filter to apply to all Keys
         /// </summary>
-        public string Filter { get; set; }
+        public string? Filter { get; init; }
 
         /// <summary>
         ///     [Optional] If set and the Result-Set contains the given Value, only the Entry matching this will be returned.
         ///     This is used to disambiguate the result-set if a specific entry is searched for.
         /// </summary>
-        public string PreferExactMatch { get; set; }
+        public string? PreferExactMatch { get; init; }
 
         /// <summary>
         ///     [Optional] Limit the Start and End of the Result-set. Used for Paging the Data
         /// </summary>
-        public QueryRange Range { get; set; }
+        public QueryRange Range { get; init; }
 
         /// <summary>
         ///     [Optional] Root-Path that should be removed from all found Entries
         /// </summary>
-        public string RemoveRoot { get; set; }
+        public string? RemoveRoot { get; init; }
 
         /// <summary>
         ///     [Optional] Max-Version to use when retrieving data

@@ -8,15 +8,15 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class ConfigurationIdentifier : Identifier, IEquatable<ConfigurationIdentifier>
     {
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Environment { get; set; }
+        public EnvironmentIdentifier Environment { get; init; }
 
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Structure { get; set; }
+        public StructureIdentifier Structure { get; init; }
 
         /// <summary>
         ///     Optional version of this Configuration
         /// </summary>
-        public long Version { get; set; }
+        public long Version { get; init; }
 
         /// <inheritdoc />
         public ConfigurationIdentifier()

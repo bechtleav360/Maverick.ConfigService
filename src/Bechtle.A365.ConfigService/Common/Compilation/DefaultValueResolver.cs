@@ -136,7 +136,8 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
             // only works with at least two items
             // see if Path was already used to compile the value - recursive loop (a - b - c - b)
             // skip the check if no Recursion has happened yet
-            if (context.RecursionPath.Count > 1 && context.RecursionPath.First().Path == context.RecursionPath.Last().Path)
+            if (context.RecursionPath.LastOrDefault() is { Path: { } latestPath }
+                && context.RecursionPath.Count(t => t.Path == latestPath) > 1)
             {
                 var paths = context.RecursionPath.Select(t => t.Path).ToList();
 
@@ -388,12 +389,11 @@ namespace Bechtle.A365.ConfigService.Common.Compilation
 
                         if (!indirectionValueResult.IsError)
                         {
-                            var indirectionResolveResult = await ResolveInternal(
-                                                               new KeyResolveContext(
-                                                                   result.Data,
-                                                                   indirectionValueResult.Data,
-                                                                   rangeTracer,
-                                                                   context.Parser));
+                            IResult<IDictionary<string, string?>> indirectionResolveResult = await ResolveInternal(
+                                                                                                 context.CreateChildContext(
+                                                                                                     result.Data,
+                                                                                                     indirectionValueResult.Data,
+                                                                                                     rangeTracer));
 
                             if (!indirectionResolveResult.IsError
                                 && indirectionResolveResult.CheckedData
