@@ -226,6 +226,7 @@ namespace Bechtle.A365.ConfigService
             RegisterDiServices(services);
             RegisterSecretStores(services);
             RegisterHealthEndpoints(services);
+            RegisterEventProjection(services);
         }
 
         /// <summary>
@@ -333,6 +334,23 @@ namespace Bechtle.A365.ConfigService
                     .AddHostedService<TemporaryKeyCleanupService>()
                     .AddHostedService<DomainObjectProjection>()
                     .AddHostedService<ProjectionCacheCleanupService>();
+        }
+
+        private void RegisterEventProjection(IServiceCollection services)
+        {
+            List<(Type ActualType, Type InterfaceType)> implementingTypes =
+                Assembly.GetExecutingAssembly()
+                        .GetTypes()
+                        .SelectMany(
+                            t => t.GetInterfaces()
+                                  .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDomainEventProjection<>))
+                                  .Select(i => (ActualType: t, InterfaceType: i)))
+                        .ToList();
+
+            foreach (var (actualType, interfaceType) in implementingTypes)
+            {
+                services.AddScoped(interfaceType, actualType);
+            }
         }
 
         private void RegisterHealthEndpoints(IServiceCollection services)
