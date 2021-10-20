@@ -74,7 +74,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
             var identifier = new EnvironmentIdentifier(category, name);
 
             List<int> hashes = Enumerable.Range(0, 1000)
-                                         .Select(i => identifier.GetHashCode())
+                                         .Select(_ => identifier.GetHashCode())
                                          .ToList();
 
             int example = identifier.GetHashCode();

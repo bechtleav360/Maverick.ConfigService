@@ -438,7 +438,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         {
             ServiceProvider provider = new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
                                                               .AddTransient<ISecretConfigValueProvider, TestSecretProvider>(
-                                                                  p => new TestSecretProvider(secrets))
+                                                                  _ => new TestSecretProvider(secrets))
                                                               .BuildServiceProvider();
 
             var compilerLogger = provider.GetRequiredService<ILogger<ConfigurationCompiler>>();

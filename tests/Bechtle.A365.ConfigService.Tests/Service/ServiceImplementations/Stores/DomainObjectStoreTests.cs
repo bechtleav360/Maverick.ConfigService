@@ -181,7 +181,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             List<EnvironmentLayer> items =
                 Enumerable.Range(0, 100)
                           .Select(
-                              i => new EnvironmentLayer(new LayerIdentifier(Guid.NewGuid().ToString("B")))
+                              _ => new EnvironmentLayer(new LayerIdentifier(Guid.NewGuid().ToString("B")))
                               {
                                   Json = "{ \"Foo\": true }",
                                   Keys = new Dictionary<string, EnvironmentLayerKey>
@@ -216,7 +216,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             List<EnvironmentLayer> items =
                 Enumerable.Range(0, 100)
                           .Select(
-                              i => new EnvironmentLayer(new LayerIdentifier(Guid.NewGuid().ToString("B")))
+                              _ => new EnvironmentLayer(new LayerIdentifier(Guid.NewGuid().ToString("B")))
                               {
                                   Json = "{ \"Foo\": true }",
                                   Keys = new Dictionary<string, EnvironmentLayerKey>

@@ -60,7 +60,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
             var range = new QueryRange(offset, length);
 
             List<int> hashes = Enumerable.Range(0, 1000)
-                                         .Select(i => range.GetHashCode())
+                                         .Select(_ => range.GetHashCode())
                                          .ToList();
 
             int example = range.GetHashCode();

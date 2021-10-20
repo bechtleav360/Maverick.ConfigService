@@ -10,8 +10,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [Fact]
         public void ThrowForInvalidIdentifier()
             => Assert.Throws<ArgumentNullException>(() => new PreparedConfiguration(new ConfigurationIdentifier(null, null, 0)));
-
-        [Fact]
-        public void ThrowForNullIdentifier() => Assert.Throws<ArgumentNullException>(() => new PreparedConfiguration(null));
     }
 }

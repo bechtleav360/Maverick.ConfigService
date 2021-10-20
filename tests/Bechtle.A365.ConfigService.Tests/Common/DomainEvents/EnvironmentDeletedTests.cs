@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
             var domainEvent = new EnvironmentDeleted(new EnvironmentIdentifier(envCategory, envName));
 
             List<int> hashes = Enumerable.Range(0, 1000)
-                                         .Select(i => domainEvent.GetHashCode())
+                                         .Select(_ => domainEvent.GetHashCode())
                                          .ToList();
 
             int example = domainEvent.GetHashCode();

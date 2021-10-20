@@ -39,7 +39,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
             var domainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
 
             List<int> hashes = Enumerable.Range(0, 1000)
-                                         .Select(i => domainEvent.GetHashCode())
+                                         .Select(_ => domainEvent.GetHashCode())
                                          .ToList();
 
             int example = domainEvent.GetHashCode();

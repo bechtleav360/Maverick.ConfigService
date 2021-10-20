@@ -19,8 +19,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
         [InlineData("Foo", "")]
         public void ThrowsForInvalidIdentifier(string category, string name) => Assert.Throws<ArgumentNullException>(
             () => new ConfigEnvironment(new EnvironmentIdentifier(category, name)));
-
-        [Fact]
-        public void ThrowsForNullIdentifier() => Assert.Throws<ArgumentNullException>(() => new ConfigEnvironment(null));
     }
 }

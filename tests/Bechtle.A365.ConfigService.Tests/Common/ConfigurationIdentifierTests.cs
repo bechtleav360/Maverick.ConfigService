@@ -59,7 +59,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                 version);
 
             List<int> hashes = Enumerable.Range(0, 1000)
-                                         .Select(i => identifier.GetHashCode())
+                                         .Select(_ => identifier.GetHashCode())
                                          .ToList();
 
             int example = identifier.GetHashCode();
