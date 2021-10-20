@@ -12,7 +12,7 @@ variables:
   - name: buildRuntime
     value: 'win10-x64'
   - name: netcoreSdkVersion
-    value: '3.1.x'
+    value: '5.0.x'
   - name: buildRevision
     value: $[counter(format('{0}-{1}', variables['Build.Repository.Name'], variables['Build.SourceBranchName']), 1)]
   # Helm
