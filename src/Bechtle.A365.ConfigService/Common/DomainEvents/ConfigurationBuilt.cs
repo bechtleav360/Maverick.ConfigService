@@ -77,10 +77,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         };
 
         /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(ConfigurationBuilt left, ConfigurationBuilt right) => Equals(left, right);
+        public static bool operator ==(ConfigurationBuilt? left, ConfigurationBuilt? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(ConfigurationBuilt left, ConfigurationBuilt right) => !Equals(left, right);
+        public static bool operator !=(ConfigurationBuilt? left, ConfigurationBuilt? right) => !Equals(left, right);
 
         /// <summary>
         ///     Compare two instances of this DomainEvent for Property-Level equality

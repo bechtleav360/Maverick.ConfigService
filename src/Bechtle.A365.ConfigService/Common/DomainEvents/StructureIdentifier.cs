@@ -30,10 +30,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public int Version { get; init; }
 
         /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(StructureIdentifier left, StructureIdentifier right) => Equals(left, right);
+        public static bool operator ==(StructureIdentifier? left, StructureIdentifier? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(StructureIdentifier left, StructureIdentifier right) => !Equals(left, right);
+        public static bool operator !=(StructureIdentifier? left, StructureIdentifier? right) => !Equals(left, right);
 
         /// <inheritdoc />
         public override bool Equals(object? obj)

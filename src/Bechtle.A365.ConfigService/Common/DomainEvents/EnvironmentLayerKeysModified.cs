@@ -81,10 +81,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         };
 
         /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(EnvironmentLayerKeysModified left, EnvironmentLayerKeysModified right) => Equals(left, right);
+        public static bool operator ==(EnvironmentLayerKeysModified? left, EnvironmentLayerKeysModified? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(EnvironmentLayerKeysModified left, EnvironmentLayerKeysModified right) => !Equals(left, right);
+        public static bool operator !=(EnvironmentLayerKeysModified? left, EnvironmentLayerKeysModified? right) => !Equals(left, right);
 
         /// <inheritdoc />
         public override IList<DomainEvent> Split()

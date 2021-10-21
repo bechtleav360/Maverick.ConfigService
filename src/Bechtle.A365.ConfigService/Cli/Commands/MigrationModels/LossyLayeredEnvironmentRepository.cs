@@ -107,6 +107,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands.MigrationModels
             => RecordedDomainEvents.Select(e => (e.Type, Data: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(e)), Array.Empty<byte>()))
                                    .ToList();
 
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private void WrapDomainEvent<T>(ResolvedEvent recordedEvent, bool ignoreReplayErrors)
             where T : DomainEvent
         {

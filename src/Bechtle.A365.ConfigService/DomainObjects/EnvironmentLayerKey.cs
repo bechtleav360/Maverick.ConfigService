@@ -25,12 +25,12 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// <summary>
         ///     String-Representation of the actual Value
         /// </summary>
-        public string? Value { get; init; } = null;
+        public string? Value { get; init; }
 
         /// <summary>
         ///     internal data-version
         /// </summary>
-        public long Version { get; init; } = 0;
+        public long Version { get; init; }
 
         /// <inheritdoc cref="EnvironmentLayerKey" />
         public EnvironmentLayerKey()

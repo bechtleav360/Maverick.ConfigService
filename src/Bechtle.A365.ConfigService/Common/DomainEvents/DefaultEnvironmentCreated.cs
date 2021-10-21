@@ -66,9 +66,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         };
 
         /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(DefaultEnvironmentCreated left, DefaultEnvironmentCreated right) => Equals(left, right);
+        public static bool operator ==(DefaultEnvironmentCreated? left, DefaultEnvironmentCreated? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(DefaultEnvironmentCreated left, DefaultEnvironmentCreated right) => !Equals(left, right);
+        public static bool operator !=(DefaultEnvironmentCreated? left, DefaultEnvironmentCreated? right) => !Equals(left, right);
     }
 }

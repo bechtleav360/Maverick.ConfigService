@@ -69,10 +69,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         public override int GetHashCode() => HashCode.Combine(Name);
 
         /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(LayerIdentifier left, LayerIdentifier right) => Equals(left, right);
+        public static bool operator ==(LayerIdentifier? left, LayerIdentifier? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(LayerIdentifier left, LayerIdentifier right) => !Equals(left, right);
+        public static bool operator !=(LayerIdentifier? left, LayerIdentifier? right) => !Equals(left, right);
 
         /// <inheritdoc />
         public override string ToString() => $"[{nameof(LayerIdentifier)}; {nameof(Name)}: '{Name}']";

@@ -80,9 +80,9 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         };
 
         /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(EnvironmentLayersModified left, EnvironmentLayersModified right) => Equals(left, right);
+        public static bool operator ==(EnvironmentLayersModified? left, EnvironmentLayersModified? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(EnvironmentLayersModified left, EnvironmentLayersModified right) => !Equals(left, right);
+        public static bool operator !=(EnvironmentLayersModified? left, EnvironmentLayersModified? right) => !Equals(left, right);
     }
 }

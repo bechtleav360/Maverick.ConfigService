@@ -624,11 +624,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             /// </summary>
             public long LastWrittenEvent { get; init; } = -1;
 
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
             /// <summary>
             ///     generic Id of the last event that was written
             /// </summary>
             public string LastWrittenEventId { get; init; } = string.Empty;
 
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
             /// <summary>
             ///     Type of the last event that was written
             /// </summary>

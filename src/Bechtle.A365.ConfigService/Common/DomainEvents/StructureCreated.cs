@@ -85,10 +85,10 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         };
 
         /// <inheritdoc cref="operator ==" />
-        public static bool operator ==(StructureCreated left, StructureCreated right) => Equals(left, right);
+        public static bool operator ==(StructureCreated? left, StructureCreated? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
-        public static bool operator !=(StructureCreated left, StructureCreated right) => !Equals(left, right);
+        public static bool operator !=(StructureCreated? left, StructureCreated? right) => !Equals(left, right);
 
         private bool CompareDictionaries(IDictionary<string, string?> left, IDictionary<string, string?> right)
             => Equals(left, right)
