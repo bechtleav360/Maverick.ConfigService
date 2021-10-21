@@ -9,11 +9,5 @@ namespace Bechtle.A365.ConfigService.Tests.Service.DomainObjects
     {
         [Fact]
         public void CreateNew() => Assert.NotNull(new EnvironmentLayer(new LayerIdentifier("Foo")));
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public void ThrowsForInvalidIdentifier(string name) => Assert.Throws<ArgumentNullException>(
-            () => new EnvironmentLayer(new LayerIdentifier(name)));
     }
 }

@@ -31,7 +31,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         {
             new object?[] { null },
             new object?[] { new EnvironmentCreated(new EnvironmentIdentifier()) },
-            new object?[] { new ConfigurationBuilt(null, null, null) },
             new object?[]
             {
                 new ConfigurationBuilt(
@@ -62,7 +61,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                     null,
                     null)
             },
-            new object?[] { new EnvironmentCreated(null) },
             new object?[] { new EnvironmentCreated(new EnvironmentIdentifier()) },
             new object?[] { new EnvironmentCreated(new EnvironmentIdentifier("Foo", string.Empty)) },
             new object?[] { new EnvironmentCreated(new EnvironmentIdentifier(string.Empty, "Bar")) },
@@ -70,7 +68,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             new object?[] { new EnvironmentCreated(new EnvironmentIdentifier(null, "Bar")) },
             new object?[] { new EnvironmentCreated(new EnvironmentIdentifier(string.Empty, string.Empty)) },
             new object?[] { new EnvironmentCreated(new EnvironmentIdentifier(null, null)) },
-            new object?[] { new EnvironmentDeleted(null) },
             new object?[] { new EnvironmentDeleted(new EnvironmentIdentifier()) },
             new object?[] { new EnvironmentDeleted(new EnvironmentIdentifier("Foo", string.Empty)) },
             new object?[] { new EnvironmentDeleted(new EnvironmentIdentifier(string.Empty, "Bar")) },
@@ -78,7 +75,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             new object?[] { new EnvironmentDeleted(new EnvironmentIdentifier(null, "Bar")) },
             new object?[] { new EnvironmentDeleted(new EnvironmentIdentifier(string.Empty, string.Empty)) },
             new object?[] { new EnvironmentDeleted(new EnvironmentIdentifier(null, null)) },
-            new object?[] { new DefaultEnvironmentCreated(null) },
             new object?[] { new DefaultEnvironmentCreated(new EnvironmentIdentifier()) },
             new object?[] { new DefaultEnvironmentCreated(new EnvironmentIdentifier("Foo", string.Empty)) },
             new object?[] { new DefaultEnvironmentCreated(new EnvironmentIdentifier(string.Empty, "Bar")) },
@@ -86,7 +82,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             new object?[] { new DefaultEnvironmentCreated(new EnvironmentIdentifier(null, "Bar")) },
             new object?[] { new DefaultEnvironmentCreated(new EnvironmentIdentifier(string.Empty, string.Empty)) },
             new object?[] { new DefaultEnvironmentCreated(new EnvironmentIdentifier(null, null)) },
-            new object?[] { new EnvironmentLayersModified(null, Array.Empty<LayerIdentifier>()) },
             new object?[] { new EnvironmentLayersModified(new EnvironmentIdentifier(), Array.Empty<LayerIdentifier>()) },
             new object?[] { new EnvironmentLayersModified(new EnvironmentIdentifier("Foo", string.Empty), Array.Empty<LayerIdentifier>()) },
             new object?[] { new EnvironmentLayersModified(new EnvironmentIdentifier(string.Empty, "Bar"), Array.Empty<LayerIdentifier>()) },
@@ -108,7 +103,6 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             new object?[] { new EnvironmentLayerDeleted(new LayerIdentifier()) },
             new object?[] { new EnvironmentLayerDeleted(new LayerIdentifier(string.Empty)) },
             new object?[] { new EnvironmentLayerDeleted(new LayerIdentifier(null)) },
-            new object?[] { new StructureCreated(null, new Dictionary<string, string?>(), new Dictionary<string, string?>()) },
             new object?[] { new StructureCreated(new StructureIdentifier(), new Dictionary<string, string?>(), new Dictionary<string, string?>()) },
             new object?[] { new StructureCreated(new StructureIdentifier("Foo", 0), new Dictionary<string, string?>(), new Dictionary<string, string?>()) },
             new object?[] { new StructureCreated(new StructureIdentifier(null, 0), new Dictionary<string, string?>(), new Dictionary<string, string?>()) },
@@ -120,13 +114,11 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             {
                 new StructureCreated(new StructureIdentifier(string.Empty, 0), new Dictionary<string, string?>(), new Dictionary<string, string?>())
             },
-            new object?[] { new StructureDeleted(null) },
             new object?[] { new StructureDeleted(new StructureIdentifier()) },
             new object?[] { new StructureDeleted(new StructureIdentifier("Foo", 0)) },
             new object?[] { new StructureDeleted(new StructureIdentifier(null, 0)) },
             new object?[] { new StructureDeleted(new StructureIdentifier(string.Empty, 42)) },
             new object?[] { new StructureDeleted(new StructureIdentifier(string.Empty, 0)) },
-            new object?[] { new StructureVariablesModified(null, Array.Empty<ConfigKeyAction>()) },
             new object?[] { new StructureVariablesModified(new StructureIdentifier(), Array.Empty<ConfigKeyAction>()) },
             new object?[] { new StructureVariablesModified(new StructureIdentifier("Foo", 0), Array.Empty<ConfigKeyAction>()) },
             new object?[] { new StructureVariablesModified(new StructureIdentifier(null, 0), Array.Empty<ConfigKeyAction>()) },
