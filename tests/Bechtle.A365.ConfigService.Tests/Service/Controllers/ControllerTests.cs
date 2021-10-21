@@ -11,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
         protected async Task<TActionResult> TestAction<TActionResult>(
             Func<TController, Task<IActionResult>> actionInvoker,
-            Action<TController> setupAction = null)
+            Action<TController>? setupAction = null)
         {
             TController controller = CreateController();
 
@@ -24,7 +24,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             return (TActionResult)result;
         }
 
-        protected TActionResult TestAction<TActionResult>(Func<TController, IActionResult> actionInvoker, Action<TController> setupAction = null)
+        protected TActionResult TestAction<TActionResult>(
+            Func<TController, IActionResult> actionInvoker,
+            Action<TController>? setupAction = null)
         {
             TController controller = CreateController();
 

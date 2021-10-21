@@ -72,11 +72,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.IsType<ValuePart>(result[0]);
             Assert.IsType<ReferencePart>(result[1]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.True(reference.Commands.Keys.Count == 3);
             Assert.True(reference.Commands[ReferenceCommand.Alias] == "Secret");
             Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
@@ -97,11 +97,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.Empty(reference.Commands.First().Value);
         }
 
@@ -115,11 +115,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
             Assert.Equal("", reference.Commands[ReferenceCommand.Fallback]);
         }
@@ -160,11 +160,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.True(reference.Commands.Keys.Count == 1);
             Assert.True(reference.Commands[ReferenceCommand.Path] == "Some/Path/To/The/Unknown");
         }
@@ -177,11 +177,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
         }
 
@@ -193,11 +193,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
         }
 
@@ -210,11 +210,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.IsType<ValuePart>(result[0]);
             Assert.IsType<ReferencePart>(result[1]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.Equal("nothing", reference.Commands[ReferenceCommand.Using]);
             Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
         }
@@ -227,11 +227,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
         }
 
@@ -243,11 +243,11 @@ namespace Bechtle.A365.ConfigService.Tests.Parsing
             Assert.Single(result);
             Assert.IsType<ReferencePart>(result[0]);
 
-            ReferencePart reference = result.OfType<ReferencePart>()
-                                            .FirstOrDefault();
+            ReferencePart? reference = result.OfType<ReferencePart>()
+                                             .FirstOrDefault();
 
             Assert.NotNull(reference);
-            Assert.NotEmpty(reference.Commands);
+            Assert.NotEmpty(reference!.Commands);
             Assert.Equal("/Some/Path/To/The/Unknown", reference.Commands[ReferenceCommand.Path]);
         }
     }

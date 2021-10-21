@@ -17,7 +17,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class ExportControllerTests : ControllerTests<ExportController>
     {
-        private readonly Mock<IDataExporter> _dataExporter = new Mock<IDataExporter>();
+        private readonly Mock<IDataExporter> _dataExporter = new();
 
         [Fact]
         public async Task ExportEnv()

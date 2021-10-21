@@ -67,7 +67,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Empty(result.Data.Items);
+            Assert.Empty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -89,7 +89,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
         }
 
         [Fact]
@@ -118,7 +118,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Empty(result.Data.Items);
+            Assert.Empty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -148,7 +148,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
         }
 
         [Fact]
@@ -177,7 +177,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Empty(result.Data.Items);
+            Assert.Empty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -206,7 +206,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
         }
 
         [Fact]
@@ -228,7 +228,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data);
+            Assert.NotEmpty(result.CheckedData);
         }
 
         [Fact]
@@ -268,7 +268,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                    (ConfigurationIdentifier id, CancellationToken _) => Result.Success(
                                        new PreparedConfiguration(id)
                                        {
-                                           Keys = new Dictionary<string, string>
+                                           Keys = new Dictionary<string, string?>
                                            {
                                                { "Foo", "Bar" }
                                            }
@@ -279,13 +279,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 logger,
                 domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(CreateConfigurationIdentifier(), DateTime.Now, QueryRange.All);
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(CreateConfigurationIdentifier(), DateTime.Now, QueryRange.All);
 
             VerifySetups(domainObjectManager);
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -307,7 +307,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
         }
 
         [Fact]
@@ -331,7 +331,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -406,7 +406,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             string structName = "Foo",
             int structVersion = 42,
             long version = 4711)
-            => new ConfigurationIdentifier(
+            => new(
                 new EnvironmentIdentifier(envCategory, envName),
                 new StructureIdentifier(structName, structVersion),
                 version);

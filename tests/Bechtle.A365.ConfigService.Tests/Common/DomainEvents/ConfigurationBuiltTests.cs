@@ -8,13 +8,12 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
 {
     public class ConfigurationBuiltTests
     {
-        public static IEnumerable<object[]> EventData => new[]
+        public static IEnumerable<object?[]> EventData => new[]
         {
-            new object[] { null, null, null, 0, 0, null, null },
-            new object[] { "", "", "", 0, 0, new DateTime(2000, 1, 2, 3, 4, 5, 678), new DateTime(2020, 1, 2, 3, 4, 5, 678) },
-            new object[] { "", "", "", 0, 0, new DateTime(), new DateTime() },
-            new object[] { "Foo", "Bar", "Baz", 42, 4711, new DateTime(), new DateTime() },
-            new object[] { "Foo", "Bar", "Baz", 42, 4711, null, null }
+            new object?[] { "", "", "", 0, 0, new DateTime(2000, 1, 2, 3, 4, 5, 678), new DateTime(2020, 1, 2, 3, 4, 5, 678) },
+            new object?[] { "", "", "", 0, 0, new DateTime(), new DateTime() },
+            new object?[] { "Foo", "Bar", "Baz", 42, 4711, new DateTime(), new DateTime() },
+            new object?[] { "Foo", "Bar", "Baz", 42, 4711, null, null }
         };
 
         [Theory]
@@ -25,8 +24,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
             string structName,
             int structVersion,
             int version,
-            DateTime start,
-            DateTime end)
+            DateTime? start,
+            DateTime? end)
         {
             var left = new ConfigurationBuilt(
                 new ConfigurationIdentifier(
@@ -55,8 +54,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
             string structName,
             int structVersion,
             int version,
-            DateTime start,
-            DateTime end)
+            DateTime? start,
+            DateTime? end)
         {
             var domainEvent = new ConfigurationBuilt(
                 new ConfigurationIdentifier(
@@ -83,8 +82,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
             string structName,
             int structVersion,
             int version,
-            DateTime start,
-            DateTime end)
+            DateTime? start,
+            DateTime? end)
         {
             var domainEvent = new ConfigurationBuilt(
                 new ConfigurationIdentifier(
@@ -107,8 +106,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
             string structName,
             int structVersion,
             int version,
-            DateTime start,
-            DateTime end)
+            DateTime? start,
+            DateTime? end)
         {
             var left = new ConfigurationBuilt(
                 new ConfigurationIdentifier(
@@ -137,8 +136,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
             string structName,
             int structVersion,
             int version,
-            DateTime start,
-            DateTime end)
+            DateTime? start,
+            DateTime? end)
         {
             var left = new ConfigurationBuilt(
                 new ConfigurationIdentifier(

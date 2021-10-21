@@ -11,7 +11,6 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] { null, Array.Empty<ConfigKeyAction>() },
             new object[] { "", new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
             new object[] { "", new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
             new object[] { "", new[] { ConfigKeyAction.Delete("Boo") } },
@@ -24,19 +23,19 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
 
         [Theory]
         [MemberData(nameof(EventData))]
-        public void Equality(string envName, ConfigKeyAction[] actions)
+        public void Equality(string layerName, ConfigKeyAction[] actions)
         {
-            var left = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
-            var right = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
+            var left = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
+            var right = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
 
             Assert.True(left.Equals(right), "left.Equals(right)");
         }
 
         [Theory]
         [MemberData(nameof(EventData))]
-        public void GetHashCodeStable(string envName, ConfigKeyAction[] actions)
+        public void GetHashCodeStable(string layerName, ConfigKeyAction[] actions)
         {
-            var domainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
+            var domainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
 
             List<int> hashes = Enumerable.Range(0, 1000)
                                          .Select(_ => domainEvent.GetHashCode())
@@ -49,9 +48,9 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
 
         [Theory]
         [MemberData(nameof(EventData))]
-        public void MetadataFilled(string envName, ConfigKeyAction[] actions)
+        public void MetadataFilled(string layerName, ConfigKeyAction[] actions)
         {
-            var domainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
+            var domainEvent = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
 
             DomainEventMetadata metadata = domainEvent.GetMetadata();
 
@@ -60,20 +59,20 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
 
         [Theory]
         [MemberData(nameof(EventData))]
-        public void NullCheckOperator(string envName, ConfigKeyAction[] actions)
+        public void NullCheckOperator(string layerName, ConfigKeyAction[] actions)
         {
-            var left = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
-            var right = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
+            var left = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
+            var right = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
 
             Assert.True(left == right, "left == right");
         }
 
         [Theory]
         [MemberData(nameof(EventData))]
-        public void NullCheckOperatorNegated(string envName, ConfigKeyAction[] actions)
+        public void NullCheckOperatorNegated(string layerName, ConfigKeyAction[] actions)
         {
-            var left = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
-            var right = new EnvironmentLayerKeysModified(new LayerIdentifier(envName), actions);
+            var left = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
+            var right = new EnvironmentLayerKeysModified(new LayerIdentifier(layerName), actions);
 
             Assert.False(left != right, "left != right");
         }

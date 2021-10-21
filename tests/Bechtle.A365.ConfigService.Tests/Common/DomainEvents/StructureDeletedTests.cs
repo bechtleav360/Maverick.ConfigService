@@ -9,8 +9,6 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] { null, 0 },
-            new object[] { null, int.MinValue },
             new object[] { "", 0 },
             new object[] { "", int.MinValue },
             new object[] { "", int.MaxValue },

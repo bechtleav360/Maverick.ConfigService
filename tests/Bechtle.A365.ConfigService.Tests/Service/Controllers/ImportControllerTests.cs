@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class ImportControllerTests : ControllerTests<ImportController>
     {
-        private readonly Mock<IDataImporter> _dataImporter = new Mock<IDataImporter>();
+        private readonly Mock<IDataImporter> _dataImporter = new();
 
         [Fact]
         public async Task ImportEnv()

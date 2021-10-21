@@ -21,7 +21,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void EmptyObject(string json)
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>(json);
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
             Assert.Equal(0, translated.Count);
@@ -31,7 +31,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void EncodeSpacesWhenTold()
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject, true);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject, true);
 
             Assert.NotNull(translated);
             Assert.Equal(1, translated.Count);
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void LeaveSpacesByDefault()
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Foo With Spaces / Slashes\": \"Bar\"}");
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
             Assert.Equal(1, translated.Count);
@@ -55,7 +55,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void NumberArray()
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>("[1,2,3]");
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
             Assert.Equal(3, translated.Count);
@@ -71,7 +71,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void PreserveNull()
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>("{\"NullProp\": null}");
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject, true);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject, true);
 
             Assert.NotNull(translated);
             Assert.Equal(1, translated.Count);
@@ -83,7 +83,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void SimpleObject()
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Foo\": \"Bar\", \"Bar\": \"Baz\", \"Baz\": { \"FooBarBaz\": \"42\"}}");
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
             Assert.Equal(3, translated.Count);
@@ -101,7 +101,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void SimplestObject()
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>("{\"Property\": \"Value\"}");
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
             Assert.Equal(1, translated.Count);
@@ -113,7 +113,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void StringArray()
         {
             var jObject = JsonSerializer.Deserialize<JsonElement>("[{\"Foo\": \"Bar\"}, {\"Bar\": \"Baz\"}]");
-            IDictionary<string, string> translated = _translator.ToDictionary(jObject);
+            IDictionary<string, string?> translated = _translator.ToDictionary(jObject);
 
             Assert.NotNull(translated);
             Assert.Equal(2, translated.Count);

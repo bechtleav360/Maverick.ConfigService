@@ -34,8 +34,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             domainObjectManager.Setup(
                                    m => m.CreateStructure(
                                        It.IsAny<StructureIdentifier>(),
-                                       It.IsAny<IDictionary<string, string>>(),
-                                       It.IsAny<IDictionary<string, string>>(),
+                                       It.IsAny<IDictionary<string, string?>>(),
+                                       It.IsAny<IDictionary<string, string?>>(),
                                        It.IsAny<CancellationToken>()))
                                .ReturnsAsync(Result.Success)
                                .Verifiable("Command was not passed to DomainObjectManager");
@@ -44,8 +44,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             IResult result = await store.Create(
                                  new StructureIdentifier("Foo", 42),
-                                 new Dictionary<string, string> { { "Foo", "Bar" } },
-                                 new Dictionary<string, string> { { "Bar", "Baz" } });
+                                 new Dictionary<string, string?> { { "Foo", "Bar" } },
+                                 new Dictionary<string, string?> { { "Bar", "Baz" } });
 
             Assert.False(result.IsError, "result.IsError");
 
@@ -86,7 +86,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             IResult<Page<StructureIdentifier>> result = await store.GetAvailable(QueryRange.All);
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -104,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             IResult<Page<StructureIdentifier>> result = await store.GetAvailable(QueryRange.All);
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.Empty(result.Data.Items);
+            Assert.Empty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -122,7 +122,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             IResult<Page<StructureIdentifier>> result = await store.GetAvailable(QueryRange.Make(1, 1));
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -147,7 +147,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             IResult<Page<int>> result = await store.GetAvailableVersions("Foo", QueryRange.All);
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.Equal(2, result.Data.Count);
+            Assert.Equal(2, result.CheckedData.Count);
 
             domainObjectManager.Verify();
         }
@@ -162,7 +162,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        Result.Success(
                                            new ConfigStructure(id)
                                            {
-                                               Keys = new Dictionary<string, string>
+                                               Keys = new Dictionary<string, string?>
                                                {
                                                    { "Foo", "Bar" }
                                                }
@@ -171,10 +171,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new StructureProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(new StructureIdentifier("Foo", 42), QueryRange.All);
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(new StructureIdentifier("Foo", 42), QueryRange.All);
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -189,7 +189,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        Result.Success(
                                            new ConfigStructure(id)
                                            {
-                                               Keys = new Dictionary<string, string>
+                                               Keys = new Dictionary<string, string?>
                                                {
                                                    { "Foo", "FooValue" },
                                                    { "Bar", "BarValue" },
@@ -200,12 +200,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new StructureProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(new StructureIdentifier("Foo", 42), QueryRange.Make(1, 1));
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(new StructureIdentifier("Foo", 42), QueryRange.Make(1, 1));
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
             // expect Baz, because the data is sorted before being returned
-            Assert.Equal(new KeyValuePair<string, string>("Baz", "BazValue"), result.Data.Items.First());
+            Assert.Equal(new KeyValuePair<string, string?>("Baz", "BazValue"), result.CheckedData.Items.First());
 
             domainObjectManager.Verify();
         }
@@ -220,16 +220,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        Result.Success(
                                            new ConfigStructure(id)
                                            {
-                                               Variables = new Dictionary<string, string> { { "Foo", "FooValue" } }
+                                               Variables = new Dictionary<string, string?> { { "Foo", "FooValue" } }
                                            }))
                                .Verifiable("Structure was not queried from DomainObjectManager");
 
             var store = new StructureProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetVariables(new StructureIdentifier("Foo", 42), QueryRange.All);
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetVariables(new StructureIdentifier("Foo", 42), QueryRange.All);
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -244,7 +244,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                        Result.Success(
                                            new ConfigStructure(id)
                                            {
-                                               Variables = new Dictionary<string, string>
+                                               Variables = new Dictionary<string, string?>
                                                {
                                                    { "Foo", "FooValue" },
                                                    { "Bar", "BarValue" },
@@ -255,12 +255,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new StructureProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetVariables(new StructureIdentifier("Foo", 42), QueryRange.Make(1, 1));
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetVariables(new StructureIdentifier("Foo", 42), QueryRange.Make(1, 1));
 
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
             // expect Baz, because the data is sorted before being returned
-            Assert.Equal(new KeyValuePair<string, string>("Baz", "BazValue"), result.Data.Items.First());
+            Assert.Equal(new KeyValuePair<string, string?>("Baz", "BazValue"), result.CheckedData.Items.First());
 
             domainObjectManager.Verify();
         }

@@ -118,7 +118,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -151,7 +151,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -184,7 +184,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -217,7 +217,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -243,7 +243,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -262,7 +262,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Empty(result.Data.Items);
+            Assert.Empty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -281,7 +281,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -314,7 +314,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -349,7 +349,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -372,17 +372,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new LayerProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<LayerIdentifier>
-                                                                     {
-                                                                         Identifier = new LayerIdentifier("Foo"),
-                                                                         Range = QueryRange.All,
-                                                                         TargetVersion = -1
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<LayerIdentifier>
+                                                                      {
+                                                                          Identifier = new LayerIdentifier("Foo"),
+                                                                          Range = QueryRange.All,
+                                                                          TargetVersion = -1
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -407,18 +407,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new LayerProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<LayerIdentifier>
-                                                                     {
-                                                                         Identifier = new LayerIdentifier("Foo"),
-                                                                         Range = QueryRange.Make(1, 1),
-                                                                         TargetVersion = -1
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<LayerIdentifier>
+                                                                      {
+                                                                          Identifier = new LayerIdentifier("Foo"),
+                                                                          Range = QueryRange.Make(1, 1),
+                                                                          TargetVersion = -1
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
-            Assert.Equal(new KeyValuePair<string, string>("Baz", "BazValue"), result.Data.Items.First());
+            Assert.Single(result.CheckedData.Items);
+            Assert.Equal(new KeyValuePair<string, string?>("Baz", "BazValue"), result.CheckedData.Items.First());
 
             domainObjectManager.Verify();
         }
@@ -443,19 +443,19 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new LayerProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<LayerIdentifier>
-                                                                     {
-                                                                         Identifier = new LayerIdentifier("Foo"),
-                                                                         Filter = "Foo/Ba",
-                                                                         PreferExactMatch = "Foo/Ba",
-                                                                         Range = QueryRange.All,
-                                                                         TargetVersion = -1
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<LayerIdentifier>
+                                                                      {
+                                                                          Identifier = new LayerIdentifier("Foo"),
+                                                                          Filter = "Foo/Ba",
+                                                                          PreferExactMatch = "Foo/Ba",
+                                                                          Range = QueryRange.All,
+                                                                          TargetVersion = -1
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -480,19 +480,19 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new LayerProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<LayerIdentifier>
-                                                                     {
-                                                                         Identifier = new LayerIdentifier("Foo"),
-                                                                         Filter = "Foo/",
-                                                                         RemoveRoot = "Foo",
-                                                                         Range = QueryRange.All,
-                                                                         TargetVersion = -1
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<LayerIdentifier>
+                                                                      {
+                                                                          Identifier = new LayerIdentifier("Foo"),
+                                                                          Filter = "Foo/",
+                                                                          RemoveRoot = "Foo",
+                                                                          Range = QueryRange.All,
+                                                                          TargetVersion = -1
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }

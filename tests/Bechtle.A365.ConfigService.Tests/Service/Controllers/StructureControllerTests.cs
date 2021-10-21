@@ -20,9 +20,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class StructureControllerTests : ControllerTests<StructureController>
     {
-        private readonly Mock<IProjectionStore> _projectionStore = new Mock<IProjectionStore>(MockBehavior.Strict);
+        private readonly Mock<IProjectionStore> _projectionStore = new(MockBehavior.Strict);
 
-        private readonly Mock<IJsonTranslator> _translator = new Mock<IJsonTranslator>(MockBehavior.Strict);
+        private readonly Mock<IJsonTranslator> _translator = new(MockBehavior.Strict);
 
         [Fact]
         public async Task AddStructure()
@@ -30,13 +30,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(
                                 s => s.Structures.Create(
                                     It.IsAny<StructureIdentifier>(),
-                                    It.IsAny<IDictionary<string, string>>(),
-                                    It.IsAny<IDictionary<string, string>>()))
+                                    It.IsAny<IDictionary<string, string?>>(),
+                                    It.IsAny<IDictionary<string, string?>>()))
                             .ReturnsAsync(Result.Success)
                             .Verifiable("structure not created");
 
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
-                       .Returns(() => new Dictionary<string, string> { { "Foo", "Bar" } })
+                       .Returns(() => new Dictionary<string, string?> { { "Foo", "Bar" } })
                        .Verifiable("keys / variables not translated to dict");
 
             var result = await TestAction<AcceptedAtActionResult>(
@@ -61,13 +61,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(
                                 s => s.Structures.Create(
                                     It.IsAny<StructureIdentifier>(),
-                                    It.IsAny<IDictionary<string, string>>(),
-                                    It.IsAny<IDictionary<string, string>>()))
+                                    It.IsAny<IDictionary<string, string?>>(),
+                                    It.IsAny<IDictionary<string, string?>>()))
                             .ReturnsAsync(Result.Success)
                             .Verifiable("structure not created");
 
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
-                       .Returns(() => new Dictionary<string, string> { { "0000", "Foo" }, { "0001", "Bar" } })
+                       .Returns(() => new Dictionary<string, string?> { { "0000", "Foo" }, { "0001", "Bar" } })
                        .Verifiable("keys / variables not translated to dict");
 
             var result = await TestAction<AcceptedAtActionResult>(
@@ -156,13 +156,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(
                                 s => s.Structures.Create(
                                     It.IsAny<StructureIdentifier>(),
-                                    It.IsAny<IDictionary<string, string>>(),
-                                    It.IsAny<IDictionary<string, string>>()))
+                                    It.IsAny<IDictionary<string, string?>>(),
+                                    It.IsAny<IDictionary<string, string?>>()))
                             .ReturnsAsync(() => Result.Error("something went wrong", ErrorCode.DbUpdateError))
                             .Verifiable("structure not created");
 
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
-                       .Returns(() => new Dictionary<string, string> { { "Foo", "Bar" } })
+                       .Returns(() => new Dictionary<string, string?> { { "Foo", "Bar" } })
                        .Verifiable("keys / variables not translated to dict");
 
             var result = await TestAction<ObjectResult>(
@@ -186,13 +186,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(
                                 s => s.Structures.Create(
                                     It.IsAny<StructureIdentifier>(),
-                                    It.IsAny<IDictionary<string, string>>(),
-                                    It.IsAny<IDictionary<string, string>>()))
+                                    It.IsAny<IDictionary<string, string?>>(),
+                                    It.IsAny<IDictionary<string, string?>>()))
                             .Throws<Exception>()
                             .Verifiable("structure not created");
 
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
-                       .Returns(() => new Dictionary<string, string> { { "Foo", "Bar" } })
+                       .Returns(() => new Dictionary<string, string?> { { "Foo", "Bar" } })
                        .Verifiable("keys / variables not translated to dict");
 
             var result = await TestAction<ObjectResult>(
@@ -219,7 +219,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     new Page<StructureIdentifier>(
                                         new List<StructureIdentifier>
                                         {
-                                            new StructureIdentifier("Foo", 42)
+                                            new("Foo", 42)
                                         })))
                             .Verifiable("available structures not retrieved");
 
@@ -263,14 +263,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
                             .Verifiable("structure keys not retrieved");
 
-            _translator.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string>>>()))
+            _translator.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string?>>>()))
                        .Returns(() => JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement)
                        .Verifiable("keys not translated to json");
 
@@ -305,7 +305,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetStructureJsonProviderError()
         {
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("structure keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetStructureJson("Foo", 42));
@@ -335,14 +335,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
                             .Verifiable("structure keys not retrieved");
 
-            _translator.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string>>>()))
+            _translator.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string?>>>()))
                        .Returns(() => JsonDocument.Parse("null").RootElement)
                        .Verifiable("keys not translated to json");
 
@@ -359,8 +359,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -397,7 +397,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetStructureKeysProviderError()
         {
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("structure keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetStructureKeys("Foo", 42));
@@ -430,8 +430,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -470,14 +470,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
                             .Verifiable("variables not retrieved");
 
-            _translator.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string>>>()))
+            _translator.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string?>>>()))
                        .Returns(() => JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement)
                        .Verifiable("keys not translated to json");
 
@@ -510,7 +510,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetVariablesJsonProviderError()
         {
             _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("variables not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetVariablesJson("Foo", 42));

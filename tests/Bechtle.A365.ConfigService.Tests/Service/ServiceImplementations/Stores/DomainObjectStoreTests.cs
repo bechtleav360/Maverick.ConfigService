@@ -22,14 +22,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 {
     public class DomainObjectStoreTests : IDisposable
     {
-        private readonly Mock<IDomainObjectFileStore> _domainObjectFileStore = new Mock<IDomainObjectFileStore>(MockBehavior.Strict);
+        private readonly Mock<IDomainObjectFileStore> _domainObjectFileStore = new(MockBehavior.Strict);
 
         private readonly Mock<IOptionsSnapshot<HistoryConfiguration>> _historyConfiguration =
-            new Mock<IOptionsSnapshot<HistoryConfiguration>>(MockBehavior.Strict);
+            new(MockBehavior.Strict);
 
         private readonly IDomainObjectStoreLocationProvider _locationProvider = new TestDomainObjectStoreLocationProvider();
 
-        private DomainObjectStore _objectStoreInstance;
+        private DomainObjectStore? _objectStoreInstance;
 
         private DomainObjectStore ObjectStore => _objectStoreInstance ??= new DomainObjectStore(
                                                      new NullLoggerFactory().CreateLogger<DomainObjectStore>(),
@@ -64,7 +64,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 CurrentVersion = 42,
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
-                    new EnvironmentLayerKeyPath("Foo")
+                    new("Foo")
                 }
             };
 
@@ -131,7 +131,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var items = new List<EnvironmentLayer>
             {
-                new EnvironmentLayer(new LayerIdentifier("Foo-1"))
+                new(new LayerIdentifier("Foo-1"))
                 {
                     Json = "{ \"Foo\": true }",
                     Keys = new Dictionary<string, EnvironmentLayerKey>
@@ -139,9 +139,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42) }
                     },
                     CurrentVersion = 42,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                    KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                 },
-                new EnvironmentLayer(new LayerIdentifier("Foo-2"))
+                new(new LayerIdentifier("Foo-2"))
                 {
                     Json = "{ \"Foo\": true }",
                     Keys = new Dictionary<string, EnvironmentLayerKey>
@@ -149,9 +149,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 43) }
                     },
                     CurrentVersion = 43,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                    KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                 },
-                new EnvironmentLayer(new LayerIdentifier("Foo-3"))
+                new(new LayerIdentifier("Foo-3"))
                 {
                     Json = "{ \"Foo\": true }",
                     Keys = new Dictionary<string, EnvironmentLayerKey>
@@ -159,7 +159,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 44) }
                     },
                     CurrentVersion = 44,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                    KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                 }
             };
 
@@ -172,7 +172,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                                         layer => layer.Name == "Foo-2",
                                                         QueryRange.All);
 
-            AssertPositiveResult(result, new List<LayerIdentifier> { new LayerIdentifier("Foo-2") });
+            AssertPositiveResult(result, new List<LayerIdentifier> { new("Foo-2") });
         }
 
         [Fact]
@@ -189,7 +189,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                       { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42) }
                                   },
                                   CurrentVersion = 42,
-                                  KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                                  KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                               })
                           .ToList();
 
@@ -224,7 +224,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                       { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42) }
                                   },
                                   CurrentVersion = 42,
-                                  KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                                  KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                               })
                           .ToList();
 
@@ -250,7 +250,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             var items = new List<EnvironmentLayer>
             {
-                new EnvironmentLayer(new LayerIdentifier("Foo-1"))
+                new(new LayerIdentifier("Foo-1"))
                 {
                     Json = "{ \"Foo\": true }",
                     Keys = new Dictionary<string, EnvironmentLayerKey>
@@ -258,9 +258,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 42) }
                     },
                     CurrentVersion = 42,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                    KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                 },
-                new EnvironmentLayer(new LayerIdentifier("Foo-2"))
+                new(new LayerIdentifier("Foo-2"))
                 {
                     Json = "{ \"Foo\": true }",
                     Keys = new Dictionary<string, EnvironmentLayerKey>
@@ -268,9 +268,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 43) }
                     },
                     CurrentVersion = 43,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                    KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                 },
-                new EnvironmentLayer(new LayerIdentifier("Foo-3"))
+                new(new LayerIdentifier("Foo-3"))
                 {
                     Json = "{ \"Foo\": true }",
                     Keys = new Dictionary<string, EnvironmentLayerKey>
@@ -278,7 +278,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                         { "Foo", new EnvironmentLayerKey("Foo", "true", string.Empty, string.Empty, 44) }
                     },
                     CurrentVersion = 44,
-                    KeyPaths = new List<EnvironmentLayerKeyPath> { new EnvironmentLayerKeyPath("Foo") }
+                    KeyPaths = new List<EnvironmentLayerKeyPath> { new("Foo") }
                 }
             };
 
@@ -293,9 +293,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 result,
                 new List<LayerIdentifier>
                 {
-                    new LayerIdentifier("Foo-1"),
-                    new LayerIdentifier("Foo-2"),
-                    new LayerIdentifier("Foo-3")
+                    new("Foo-1"),
+                    new("Foo-2"),
+                    new("Foo-3")
                 });
         }
 
@@ -312,7 +312,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 CurrentVersion = 42,
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
-                    new EnvironmentLayerKeyPath("Foo")
+                    new("Foo")
                 }
             };
 
@@ -340,7 +340,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 CurrentVersion = 42,
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
-                    new EnvironmentLayerKeyPath("Foo")
+                    new("Foo")
                 }
             };
 
@@ -378,7 +378,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 CurrentVersion = 42,
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
-                    new EnvironmentLayerKeyPath("Foo")
+                    new("Foo")
                 }
             };
 
@@ -422,7 +422,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                      CurrentVersion = 42,
                                      KeyPaths = new List<EnvironmentLayerKeyPath>
                                      {
-                                         new EnvironmentLayerKeyPath("Foo")
+                                         new("Foo")
                                      }
                                  });
 
@@ -442,7 +442,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 CurrentVersion = 42,
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
-                    new EnvironmentLayerKeyPath("Foo")
+                    new("Foo")
                 }
             };
 
@@ -480,7 +480,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 CurrentVersion = 42,
                 KeyPaths = new List<EnvironmentLayerKeyPath>
                 {
-                    new EnvironmentLayerKeyPath("Foo")
+                    new("Foo")
                 }
             };
 
@@ -513,7 +513,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         {
             Assert.NotNull(result);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Equal(expectedResult, result.Data.Items);
+            Assert.Equal(expectedResult, result.CheckedData.Items);
         }
 
         /// <summary>
@@ -524,7 +524,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             private readonly Guid _fileId = Guid.NewGuid();
 
             /// <inheritdoc />
-            public string Directory => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/cache/{_fileId:N}.db")).DirectoryName;
+            public string? Directory => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/cache/{_fileId:N}.db")).DirectoryName;
 
             /// <inheritdoc />
             public string FileName => new FileInfo(Path.Combine(Environment.CurrentDirectory, $"data/cache/{_fileId:N}.db")).FullName;

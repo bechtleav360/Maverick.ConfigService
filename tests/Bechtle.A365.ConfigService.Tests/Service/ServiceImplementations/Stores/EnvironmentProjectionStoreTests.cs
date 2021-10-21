@@ -81,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                                    (EnvironmentIdentifier id, CancellationToken _) => Result.Success(
                                        new ConfigEnvironment(id)
                                        {
-                                           Layers = new List<LayerIdentifier> { new LayerIdentifier("Foo") }
+                                           Layers = new List<LayerIdentifier> { new("Foo") }
                                        }))
                                .Verifiable("Environment was not queried from DomainObjectManager");
 
@@ -91,7 +91,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -124,7 +124,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -157,7 +157,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -193,7 +193,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -226,7 +226,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -245,7 +245,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -264,7 +264,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Empty(result.Data.Items);
+            Assert.Empty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -283,7 +283,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -317,7 +317,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -353,7 +353,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -378,16 +378,16 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<EnvironmentIdentifier>
-                                                                     {
-                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                                                         Range = QueryRange.All
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<EnvironmentIdentifier>
+                                                                      {
+                                                                          Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                          Range = QueryRange.All
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -412,17 +412,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<EnvironmentIdentifier>
-                                                                     {
-                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                                                         Range = QueryRange.Make(1, 1)
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<EnvironmentIdentifier>
+                                                                      {
+                                                                          Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                          Range = QueryRange.Make(1, 1)
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.Single(result.Data.Items);
-            Assert.Equal(new KeyValuePair<string, string>("Foo/Bar", "BarValue"), result.Data.Items.First());
+            Assert.Single(result.CheckedData.Items);
+            Assert.Equal(new KeyValuePair<string, string?>("Foo/Bar", "BarValue"), result.CheckedData.Items.First());
 
             domainObjectManager.Verify();
         }
@@ -447,18 +447,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<EnvironmentIdentifier>
-                                                                     {
-                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                                                         Filter = "Foo/Ba",
-                                                                         PreferExactMatch = "Foo/Ba",
-                                                                         Range = QueryRange.All
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<EnvironmentIdentifier>
+                                                                      {
+                                                                          Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                          Filter = "Foo/Ba",
+                                                                          PreferExactMatch = "Foo/Ba",
+                                                                          Range = QueryRange.All
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }
@@ -483,18 +483,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
 
             var store = new EnvironmentProjectionStore(_logger, domainObjectManager.Object);
 
-            IResult<Page<KeyValuePair<string, string>>> result = await store.GetKeys(
-                                                                     new KeyQueryParameters<EnvironmentIdentifier>
-                                                                     {
-                                                                         Identifier = new EnvironmentIdentifier("Foo", "Bar"),
-                                                                         Filter = "Foo/",
-                                                                         RemoveRoot = "Foo",
-                                                                         Range = QueryRange.All
-                                                                     });
+            IResult<Page<KeyValuePair<string, string?>>> result = await store.GetKeys(
+                                                                      new KeyQueryParameters<EnvironmentIdentifier>
+                                                                      {
+                                                                          Identifier = new EnvironmentIdentifier("Foo", "Bar"),
+                                                                          Filter = "Foo/",
+                                                                          RemoveRoot = "Foo",
+                                                                          Range = QueryRange.All
+                                                                      });
 
             Assert.Empty(result.Message);
             Assert.False(result.IsError, "result.IsError");
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
 
             domainObjectManager.Verify();
         }

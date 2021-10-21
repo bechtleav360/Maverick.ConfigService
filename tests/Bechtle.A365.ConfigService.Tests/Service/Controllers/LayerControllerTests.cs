@@ -27,18 +27,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         private readonly Mock<IProjectionStore> _projectionStoreMock;
         private readonly IServiceCollection _services;
 
-        public static IEnumerable<object[]> InvalidIdentifierParameters => new[]
+        public static IEnumerable<object?[]> InvalidIdentifierParameters => new[]
         {
-            new object[] { "" },
-            new object[] { null }
+            new object?[] { "" },
+            new object?[] { null }
         };
 
-        public static IEnumerable<object[]> InvalidKeyUpdateParameters => new[]
+        public static IEnumerable<object?[]> InvalidKeyUpdateParameters => new[]
         {
-            new object[] { null, Array.Empty<DtoConfigKey>() },
-            new object[] { "", Array.Empty<DtoConfigKey>() },
-            new object[] { "Foo", null },
-            new object[]
+            new object?[] { null, Array.Empty<DtoConfigKey>() },
+            new object?[] { "", Array.Empty<DtoConfigKey>() },
+            new object?[] { "Foo", null },
+            new object?[]
             {
                 "Foo", new[]
                 {
@@ -211,8 +211,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStoreMock.Setup(s => s.Layers.GetKeys(It.IsAny<KeyQueryParameters<LayerIdentifier>>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })))
@@ -232,14 +232,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStoreMock.Setup(s => s.Layers.GetKeys(It.IsAny<KeyQueryParameters<LayerIdentifier>>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })))
                                 .Verifiable("keys not queried");
 
-            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string>>()))
+            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string?>>()))
                                .Returns(() => JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement)
                                .Verifiable("keys not translated to json");
 
@@ -264,10 +264,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                             RemoveRoot = "removeRoot",
                                             TargetVersion = 4711
                                         }))
-                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string>>()))
+                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string?>>()))
                                 .Verifiable("keys not queried");
 
-            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string>>>()))
+            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string?>>>()))
                                .Returns(() => JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement)
                                .Verifiable("keys not translated to json");
 
@@ -281,7 +281,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetKeysAsJsonProviderError()
         {
             _projectionStoreMock.Setup(s => s.Layers.GetKeys(It.IsAny<KeyQueryParameters<LayerIdentifier>>()))
-                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("keys not queried");
 
             var result = await TestAction<ObjectResult>(c => c.GetKeysAsJson("Foo", "", "", ""));
@@ -311,14 +311,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStoreMock.Setup(s => s.Layers.GetKeys(It.IsAny<KeyQueryParameters<LayerIdentifier>>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })))
                                 .Verifiable("keys not queried");
 
-            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string>>>()))
+            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string?>>>()))
                                .Throws<Exception>()
                                .Verifiable("keys not translated to json");
 
@@ -415,7 +415,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                             RemoveRoot = "removeRoot",
                                             TargetVersion = 4711
                                         }))
-                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string>>()))
+                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string?>>()))
                                 .Verifiable("keys not queried");
 
             await TestAction<OkObjectResult>(c => c.GetKeys("Foo", "filter", "preferExactMatch", "removeRoot", 1, 2, 4711));
@@ -427,7 +427,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetKeysProviderError()
         {
             _projectionStoreMock.Setup(s => s.Layers.GetKeys(It.IsAny<KeyQueryParameters<LayerIdentifier>>()))
-                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("keys not queried");
 
             var result = await TestAction<ObjectResult>(c => c.GetKeys("Foo", "", "", ""));
@@ -455,7 +455,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetLayers()
         {
             _projectionStoreMock.Setup(s => s.Layers.GetAvailable(It.IsAny<QueryRange>(), It.IsAny<long>()))
-                                .ReturnsAsync(() => Result.Success(new Page<LayerIdentifier>(new List<LayerIdentifier> { new LayerIdentifier("Foo") })))
+                                .ReturnsAsync(() => Result.Success(new Page<LayerIdentifier>(new List<LayerIdentifier> { new("Foo") })))
                                 .Verifiable("environments not queried");
 
             var result = await TestAction<OkObjectResult>(c => c.GetAvailableLayers());
@@ -470,7 +470,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetLayersParametersForwarded()
         {
             _projectionStoreMock.Setup(s => s.Layers.GetAvailable(QueryRange.Make(1, 2), 4711))
-                                .ReturnsAsync(() => Result.Success(new Page<LayerIdentifier>(new List<LayerIdentifier> { new LayerIdentifier("Foo") })))
+                                .ReturnsAsync(() => Result.Success(new Page<LayerIdentifier>(new List<LayerIdentifier> { new("Foo") })))
                                 .Verifiable("environments not queried");
 
             await TestAction<OkObjectResult>(c => c.GetAvailableLayers(1, 2, 4711));

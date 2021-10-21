@@ -20,8 +20,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             () => BuildProviderWithConfig(
                 new[]
                 {
-                    new KeyValuePair<string, string>("Secrets", null),
-                    new KeyValuePair<string, string>("Secrets:Answer:Everything", "42")
+                    new KeyValuePair<string, string?>("Secrets", null),
+                    new KeyValuePair<string, string?>("Secrets:Answer:Everything", "42")
                 }));
 
         /// <summary>
@@ -32,8 +32,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             BuildProviderWithConfig(
                 new[]
                 {
-                    new KeyValuePair<string, string>("Secrets", null),
-                    new KeyValuePair<string, string>("Secrets:Answer/Everything", "42")
+                    new KeyValuePair<string, string?>("Secrets", null),
+                    new KeyValuePair<string, string?>("Secrets:Answer/Everything", "42")
                 }));
 
         /// <summary>
@@ -45,8 +45,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             ISecretConfigValueProvider provider = BuildProviderWithConfig(
                 new[]
                 {
-                    new KeyValuePair<string, string>("Secrets", null),
-                    new KeyValuePair<string, string>("Secrets:Answer/Everything", "42")
+                    new KeyValuePair<string, string?>("Secrets", null),
+                    new KeyValuePair<string, string?>("Secrets:Answer/Everything", "42")
                 });
 
             Assert.NotNull(provider.TryGetValue("Answer:Everything"));
@@ -61,14 +61,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
             ISecretConfigValueProvider provider = BuildProviderWithConfig(
                 new[]
                 {
-                    new KeyValuePair<string, string>("Secrets", null),
-                    new KeyValuePair<string, string>("Secrets:Answer/Everything", "42")
+                    new KeyValuePair<string, string?>("Secrets", null),
+                    new KeyValuePair<string, string?>("Secrets:Answer/Everything", "42")
                 });
 
             Assert.NotNull(provider.TryGetValue("Answer/Everything"));
         }
 
-        private static ISecretConfigValueProvider BuildProviderWithConfig(IEnumerable<KeyValuePair<string, string>> data)
+        private static ISecretConfigValueProvider BuildProviderWithConfig(IEnumerable<KeyValuePair<string, string?>> data)
         {
             IConfigurationRoot configuration = new ConfigurationBuilder().AddInMemoryCollection(data).Build();
 

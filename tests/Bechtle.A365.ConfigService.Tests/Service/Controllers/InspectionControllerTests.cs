@@ -24,10 +24,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class InspectionControllerTests : ControllerTests<InspectionController>
     {
-        private readonly Mock<IConfigurationCompiler> _compiler = new Mock<IConfigurationCompiler>(MockBehavior.Strict);
-        private readonly Mock<IConfigurationParser> _parser = new Mock<IConfigurationParser>(MockBehavior.Strict);
-        private readonly Mock<IProjectionStore> _projectionStore = new Mock<IProjectionStore>(MockBehavior.Strict);
-        private readonly Mock<IJsonTranslator> _translator = new Mock<IJsonTranslator>(MockBehavior.Strict);
+        private readonly Mock<IConfigurationCompiler> _compiler = new(MockBehavior.Strict);
+        private readonly Mock<IConfigurationParser> _parser = new(MockBehavior.Strict);
+        private readonly Mock<IProjectionStore> _projectionStore = new(MockBehavior.Strict);
+        private readonly Mock<IJsonTranslator> _translator = new(MockBehavior.Strict);
 
         [Fact]
         public async Task GetUsedKeysPerStructureAll()
@@ -35,8 +35,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -52,7 +52,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     new Page<ConfigurationIdentifier>(
                                         new List<ConfigurationIdentifier>
                                         {
-                                            new ConfigurationIdentifier(
+                                            new(
                                                 new EnvironmentIdentifier("Foo", "Bar"),
                                                 new StructureIdentifier("Foo", 42),
                                                 0)
@@ -79,8 +79,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -104,7 +104,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetUsedKeysPerStructureAllEnvironmentProviderError()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetUsedKeysPerStructureAll("Foo", "Bar"));
@@ -135,8 +135,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -179,8 +179,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -204,7 +204,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetUsedKeysPerStructureLatestEnvironmentProviderError()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetUsedKeysPerStructureLatest("Foo", "Bar"));
@@ -235,8 +235,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -245,8 +245,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -255,8 +255,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -265,7 +265,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(), It.IsAny<StructureCompilationInfo>(), It.IsAny<IConfigurationParser>()))
                      .Returns(
                          () => new CompilationResult(
-                             new Dictionary<string, string>
+                             new Dictionary<string, string?>
                              {
                                  { "Foo", "Bar" }
                              },
@@ -297,8 +297,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -307,8 +307,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -317,8 +317,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -341,7 +341,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task InspectStructureEnvProviderFails()
         {
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.InspectStructure("Foo", "Bar", "Foo", 42));
@@ -390,8 +390,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -402,28 +402,28 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                 _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })))
                                 .Verifiable("structure keys not retrieved");
 
                 _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("structure variables not retrieved");
             }
             else if (version == 2)
             {
                 _projectionStore.Setup(s => s.Structures.GetKeys(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
-                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("structure keys not retrieved");
 
                 _projectionStore.Setup(s => s.Structures.GetVariables(It.IsAny<StructureIdentifier>(), It.IsAny<QueryRange>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })));
@@ -441,8 +441,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -463,7 +463,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
                        .Returns(
-                           () => new Dictionary<string, string>
+                           () => new Dictionary<string, string?>
                            {
                                { "Foo", "Bar" }
                            })
@@ -472,8 +472,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -482,7 +482,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _compiler.Setup(c => c.Compile(It.IsAny<EnvironmentCompilationInfo>(), It.IsAny<StructureCompilationInfo>(), It.IsAny<IConfigurationParser>()))
                      .Returns(
                          () => new CompilationResult(
-                             new Dictionary<string, string>
+                             new Dictionary<string, string?>
                              {
                                  { "Foo", "Bar" }
                              },
@@ -523,7 +523,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
                        .Returns(
-                           () => new Dictionary<string, string>
+                           () => new Dictionary<string, string?>
                            {
                                { "Foo", "Bar" }
                            })
@@ -532,8 +532,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -585,14 +585,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>()))
                        .Returns(
-                           () => new Dictionary<string, string>
+                           () => new Dictionary<string, string?>
                            {
                                { "Foo", "Bar" }
                            })
                        .Verifiable("structure not translated");
 
             _projectionStore.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("environment keys not retrieved");
 
             var result = await TestAction<ObjectResult>(

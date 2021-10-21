@@ -20,7 +20,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileExpandObject()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A/A", "A" },
                     { "A/B", "B" },
@@ -28,12 +28,12 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     { "A/D", "D" },
                     { "A/E", "E" }
                 },
-                new Dictionary<string, string> { { "A", "{{A/*}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "A", "{{A/*}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.Equal("A", compiled["A/A"]);
@@ -50,7 +50,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileExpandObjectFilterKeys()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A/A", "A" },
                     { "A/B", "B" },
@@ -58,12 +58,12 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     { "A/D", "D" },
                     { "A/E", "E" }
                 },
-                new Dictionary<string, string> { { "A", "{{A*}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "A", "{{A*}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     // actually not sure if this is what we want...
@@ -81,7 +81,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileExpandObjectWrongSyntax()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A/A", "A" },
                     { "A/B", "B" },
@@ -89,12 +89,12 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     { "A/D", "D" },
                     { "A/E", "E" }
                 },
-                new Dictionary<string, string> { { "A", "{{A}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "A", "{{A}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.Single(compiled);
@@ -107,17 +107,17 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileInfiniteRecursion()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A", "{{B}}" },
                     { "B", "{{A}}" }
                 },
-                new Dictionary<string, string> { { "A", "{{A}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "A", "{{A}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.NotEmpty(compiled);
@@ -125,7 +125,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                 },
                 (compiler, parser, env, structure) =>
                 {
-                    CompilationResult r = null;
+                    CompilationResult? r = null;
 
                     var thread = new Thread(() => { r = compiler.Compile(env, structure, parser); });
 
@@ -138,7 +138,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     // r will be set if compilation was successful
                     Assert.NotNull(r);
 
-                    return r;
+                    return r!;
                 });
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileRecursiveReference()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A", "{{B}}" },
                     { "B", "{{C}}" },
@@ -155,7 +155,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     { "D", "{{E}}" },
                     { "E", "ResolvedValue" }
                 },
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A", "{{A}}" },
                     { "B", "{{B}}" },
@@ -163,11 +163,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     { "D", "{{D}}" },
                     { "E", "{{E}}" }
                 },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.Equal(5, compiled.Count);
@@ -184,13 +184,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileReferenceWithPath()
             => CheckCompilationResult(
-                new Dictionary<string, string> { { "Key/With/Path", "ResolvedValue" } },
-                new Dictionary<string, string> { { "A", "{{Key/With/Path}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "Key/With/Path", "ResolvedValue" } },
+                new Dictionary<string, string?> { { "A", "{{Key/With/Path}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.Equal(1, compiled.Count);
@@ -202,13 +202,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         /// </summary>
         [Fact]
         public void CompileSecrets() => CheckCompilationResult(
-            new Dictionary<string, string>(),
-            new Dictionary<string, string> { { "Foo", "{{$secret/Bar}}" } },
-            new Dictionary<string, string>(),
-            new Dictionary<string, string> { { "Bar", "Secret" } },
+            new Dictionary<string, string?>(),
+            new Dictionary<string, string?> { { "Foo", "{{$secret/Bar}}" } },
+            new Dictionary<string, string?>(),
+            new Dictionary<string, string?> { { "Bar", "Secret" } },
             result =>
             {
-                IDictionary<string, string> compiled = result.CompiledConfiguration;
+                IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                 Assert.Equal("Secret", compiled["Foo"]);
             });
@@ -219,18 +219,18 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileSimpleReference()
             => CheckCompilationResult(
-                new Dictionary<string, string> { { "C", "CV" } },
-                new Dictionary<string, string>
+                new Dictionary<string, string?> { { "C", "CV" } },
+                new Dictionary<string, string?>
                 {
                     { "A", "AV" },
                     { "B", "BV" },
                     { "C", "{{C}}" }
                 },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
 
@@ -246,13 +246,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileVariableRefFromEnvironment()
             => CheckCompilationResult(
-                new Dictionary<string, string> { { "E", "{{$struct/S}}" } },
-                new Dictionary<string, string> { { "S", "{{E}}" } },
-                new Dictionary<string, string> { { "S", "SV" } },
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "E", "{{$struct/S}}" } },
+                new Dictionary<string, string?> { { "S", "{{E}}" } },
+                new Dictionary<string, string?> { { "S", "SV" } },
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.NotEmpty(compiled);
@@ -265,13 +265,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void CompileVariableRefFromStructure()
             => CheckCompilationResult(
-                new Dictionary<string, string> { { "", "" } },
-                new Dictionary<string, string> { { "S", "{{$struct/S}}" } },
-                new Dictionary<string, string> { { "S", "SV" } },
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "", "" } },
+                new Dictionary<string, string?> { { "S", "{{$struct/S}}" } },
+                new Dictionary<string, string?> { { "S", "SV" } },
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.NotEmpty(compiled);
@@ -284,14 +284,14 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void DereferenceThis()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A", "{{$this/B}}" },
                     { "B", "true" }
                 },
-                new Dictionary<string, string> { { "A", "{{A}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "A", "{{A}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result => Assert.Equal("true", result.CompiledConfiguration["A"]));
 
         /// <summary>
@@ -300,16 +300,16 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void DereferenceThisIndirect()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A/B/C", "{{$this/D}}" },
                     { "A/B/D", "true" },
                     { "A/D", "false" },
                     { "D", "false" }
                 },
-                new Dictionary<string, string> { { "A", "{{A/B/C}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "A", "{{A/B/C}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result => Assert.Equal("true", result.CompiledConfiguration["A"]));
 
         /// <summary>
@@ -318,21 +318,21 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void DirectReferenceErasesNull()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "C", null },
                     { "D", "" }
                 },
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A", "{{C}}" },
                     { "B", "{{D}}" }
                 },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
 
@@ -344,7 +344,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void IntermediateReferenceSections()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "NamedEndpoints/IdentityService-External", "{{$this/IdentityService/*}}" },
                     { "NamedEndpoints/IdentityService/Address", "identity.foo.bar" },
@@ -354,15 +354,15 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     { "NamedEndpoints/IdentityService/RootPath", "" },
                     { "NamedEndpoints/IdentityService/Uri", "{{$this/Protocol}}://{{$this/Address}}:{{$this/Port}}{{$this/RootPath}}" }
                 },
-                new Dictionary<string, string> { { "IdentityService", "{{NamedEndpoints/IdentityService-External/Uri}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "IdentityService", "{{NamedEndpoints/IdentityService-External/Uri}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result => Assert.Equal("https://identity.foo.bar:443", result.CompiledConfiguration["IdentityService"]));
 
         [Fact]
         public void LongCyclicReference()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A", "{{B}}" },
                     { "B", "{{C}}" },
@@ -373,9 +373,11 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                     { "G", "{{H}}" },
                     { "H", "{{A}}" }
                 },
-                new Dictionary<string, string> { { "A", "{{A}}" } },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?> { { "A", "{{A}}" } },
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
+                // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+                // no shit I only use this for pre-condition-tests, in a UNIT-TEST
                 result => { Assert.Equal("", result.CompiledConfiguration["A"]); });
 
         /// <summary>
@@ -384,13 +386,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void NoCompilationNeeded()
             => CheckCompilationResult(
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
                     Assert.Empty(compiled);
@@ -402,22 +404,22 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void SectionCompilationPreservesNull()
             => CheckCompilationResult(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "SectionWithNull/First", null },
                     { "SectionWithNull/Second", null },
                     { "D", "" }
                 },
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "A", "{{SectionWithNull/*}}" },
                     { "B", "{{D}}" }
                 },
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
+                new Dictionary<string, string?>(),
+                new Dictionary<string, string?>(),
                 result =>
                 {
-                    IDictionary<string, string> compiled = result.CompiledConfiguration;
+                    IDictionary<string, string?> compiled = result.CompiledConfiguration;
 
                     Assert.NotNull(compiled);
 
@@ -428,13 +430,13 @@ namespace Bechtle.A365.ConfigService.Tests.Common
                 });
 
         private void CheckCompilationResult(
-            IDictionary<string, string> keys,
-            IDictionary<string, string> structKeys,
-            IDictionary<string, string> structVars,
-            IDictionary<string, string> secrets,
+            IDictionary<string, string?> keys,
+            IDictionary<string, string?> structKeys,
+            IDictionary<string, string?> structVars,
+            IDictionary<string, string?> secrets,
             Action<CompilationResult> assertions,
-            Func<IConfigurationCompiler, IConfigurationParser, EnvironmentCompilationInfo, StructureCompilationInfo, CompilationResult> compileFunc = null,
-            [CallerMemberName] string testName = null)
+            Func<IConfigurationCompiler, IConfigurationParser, EnvironmentCompilationInfo, StructureCompilationInfo, CompilationResult>? compileFunc = null,
+            [CallerMemberName] string? testName = null)
         {
             ServiceProvider provider = new ServiceCollection().AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Warning))
                                                               .AddTransient<ISecretConfigValueProvider, TestSecretProvider>(
@@ -450,14 +452,14 @@ namespace Bechtle.A365.ConfigService.Tests.Common
 
             var env = new EnvironmentCompilationInfo
             {
-                Keys = new ReadOnlyDictionary<string, string>(keys),
+                Keys = new ReadOnlyDictionary<string, string?>(keys),
                 Name = $"{testName}-Environment"
             };
 
             var structure = new StructureCompilationInfo
             {
-                Keys = new ReadOnlyDictionary<string, string>(structKeys),
-                Variables = new ReadOnlyDictionary<string, string>(structVars),
+                Keys = new ReadOnlyDictionary<string, string?>(structKeys),
+                Variables = new ReadOnlyDictionary<string, string?>(structVars),
                 Name = $"{testName}-Structure"
             };
 
@@ -469,7 +471,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         private class TestSecretProvider : DictionaryValueProvider, ISecretConfigValueProvider
         {
             /// <inheritdoc />
-            public TestSecretProvider(IDictionary<string, string> repository)
+            public TestSecretProvider(IDictionary<string, string?> repository)
                 : base(repository, "Test-Secrets")
             {
             }

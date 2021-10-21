@@ -18,14 +18,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class TemporaryKeyControllerTests : ControllerTests<TemporaryKeyController>
     {
-        private readonly Mock<IEventBus> _eventBus = new Mock<IEventBus>(MockBehavior.Strict);
-        private readonly Mock<ITemporaryKeyStore> _keyStore = new Mock<ITemporaryKeyStore>(MockBehavior.Strict);
+        private readonly Mock<IEventBus> _eventBus = new(MockBehavior.Strict);
+        private readonly Mock<ITemporaryKeyStore> _keyStore = new(MockBehavior.Strict);
 
         [Fact]
         public async Task Get()
         {
             _keyStore.Setup(s => s.Get(It.IsAny<string>(), It.IsAny<string>()))
-                     .ReturnsAsync(() => Result.Success("Foo"))
+                     .ReturnsAsync(() => Result.Success<string?>("Foo"))
                      .Verifiable("temporary key not retrieved");
 
             var result = await TestAction<OkObjectResult>(c => c.Get("Foo", 42, "Bar"));
@@ -39,8 +39,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         {
             _keyStore.Setup(s => s.GetAll(It.IsAny<string>()))
                      .ReturnsAsync(
-                         () => Result.Success<IDictionary<string, string>>(
-                             new Dictionary<string, string>
+                         () => Result.Success<IDictionary<string, string?>>(
+                             new Dictionary<string, string?>
                              {
                                  { "Foo", "Bar" }
                              }))
@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetAllRegionNotFound()
         {
             _keyStore.Setup(s => s.GetAll(It.IsAny<string>()))
-                     .ReturnsAsync(() => Result.Error<IDictionary<string, string>>("something went wrong", ErrorCode.NotFound))
+                     .ReturnsAsync(() => Result.Error<IDictionary<string, string?>>("something went wrong", ErrorCode.NotFound))
                      .Verifiable("temporary key not retrieved");
 
             var result = await TestAction<OkObjectResult>(c => c.GetAll("Foo", 42));
@@ -318,7 +318,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task Set()
         {
-            _keyStore.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<TimeSpan>()))
+            _keyStore.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<IDictionary<string, string?>>(), It.IsAny<TimeSpan>()))
                      .ReturnsAsync(Result.Success)
                      .Verifiable("keys not set");
 
@@ -404,7 +404,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task SetProviderError()
         {
-            _keyStore.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<TimeSpan>()))
+            _keyStore.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<IDictionary<string, string?>>(), It.IsAny<TimeSpan>()))
                      .ReturnsAsync(() => Result.Error("something went wrong", ErrorCode.DbUpdateError))
                      .Verifiable("keys not set");
 
@@ -431,7 +431,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public async Task SetStoreThrows()
         {
-            _keyStore.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<TimeSpan>()))
+            _keyStore.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<IDictionary<string, string?>>(), It.IsAny<TimeSpan>()))
                      .Throws<Exception>()
                      .Verifiable("keys not set");
 

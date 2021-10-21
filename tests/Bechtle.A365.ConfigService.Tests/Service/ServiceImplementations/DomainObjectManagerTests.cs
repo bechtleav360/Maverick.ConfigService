@@ -23,18 +23,17 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 {
     public class DomainObjectManagerTests
     {
-        private readonly Mock<IOptionsSnapshot<EventStoreConnectionConfiguration>> _configuration =
-            new Mock<IOptionsSnapshot<EventStoreConnectionConfiguration>>(MockBehavior.Strict);
+        private readonly Mock<IOptionsSnapshot<EventStoreConnectionConfiguration>> _configuration = new(MockBehavior.Strict);
 
-        private readonly Mock<IEventStore> _eventStore = new Mock<IEventStore>(MockBehavior.Strict);
+        private readonly Mock<IEventStore> _eventStore = new(MockBehavior.Strict);
 
         private readonly ILogger<DomainObjectManager> _logger = new NullLogger<DomainObjectManager>();
 
-        private readonly Mock<IDomainObjectStore> _objectStore = new Mock<IDomainObjectStore>(MockBehavior.Strict);
+        private readonly Mock<IDomainObjectStore> _objectStore = new(MockBehavior.Strict);
 
         private readonly IEnumerable<ICommandValidator> _validators = new List<ICommandValidator>();
 
-        private readonly Mock<IEventStoreOptionsProvider> _optionsProvider = new Mock<IEventStoreOptionsProvider>(MockBehavior.Strict);
+        private readonly Mock<IEventStoreOptionsProvider> _optionsProvider = new(MockBehavior.Strict);
 
         public DomainObjectManagerTests()
         {
@@ -56,8 +55,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                         new EnvironmentIdentifier("Foo", "Bar"),
                                         new List<LayerIdentifier>
                                         {
-                                            new LayerIdentifier("Foo"),
-                                            new LayerIdentifier("Bar")
+                                            new("Foo"),
+                                            new("Bar")
                                         },
                                         CancellationToken.None),
                    new ConfigEnvironment(new EnvironmentIdentifier("Foo", "Bar")));
@@ -97,8 +96,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             => await TestObjectCreation<ConfigStructure, StructureIdentifier, StructureCreated>(
                    async manager => await manager.CreateStructure(
                                         new StructureIdentifier("Foo", 42),
-                                        new Dictionary<string, string> { { "Foo", "Bar" } },
-                                        new Dictionary<string, string> { { "Bar", "Baz" } },
+                                        new Dictionary<string, string?> { { "Foo", "Bar" } },
+                                        new Dictionary<string, string?> { { "Bar", "Baz" } },
                                         CancellationToken.None));
 
         [Fact]
@@ -141,7 +140,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -192,7 +191,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -226,7 +225,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -265,7 +264,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -304,7 +303,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -352,8 +351,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.Single(result.Data.Items);
-            Assert.Equal(staleConfigId, result.Data.Items.First());
+            Assert.Single(result.CheckedData.Items);
+            Assert.Equal(staleConfigId, result.CheckedData.Items.First());
         }
 
         [Fact]
@@ -392,7 +391,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.NotEmpty(result.Data.Items);
+            Assert.NotEmpty(result.CheckedData.Items);
         }
 
         [Fact]
@@ -410,7 +409,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
             VerifySetups();
             AssertPositiveResult(result);
-            Assert.Single(result.Data.Items);
+            Assert.Single(result.CheckedData.Items);
         }
 
         [Fact]
@@ -434,8 +433,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                  new LayerIdentifier("Foo"),
                                  new List<EnvironmentLayerKey>
                                  {
-                                     new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 42),
-                                     new EnvironmentLayerKey("Bar", "Baz", string.Empty, string.Empty, 42)
+                                     new("Foo", "Bar", string.Empty, string.Empty, 42),
+                                     new("Bar", "Baz", string.Empty, string.Empty, 42)
                                  },
                                  CancellationToken.None);
 
@@ -474,8 +473,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                  new LayerIdentifier("Foo"),
                                  new List<EnvironmentLayerKey>
                                  {
-                                     new EnvironmentLayerKey("Foo", "Bar", string.Empty, string.Empty, 42),
-                                     new EnvironmentLayerKey("Bar", "Baz", string.Empty, string.Empty, 42)
+                                     new("Foo", "Bar", string.Empty, string.Empty, 42),
+                                     new("Bar", "Baz", string.Empty, string.Empty, 42)
                                  },
                                  CancellationToken.None);
 
@@ -594,12 +593,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                                         CancellationToken.None),
                    new ConfigStructure(new StructureIdentifier("Foo", 42))
                    {
-                       Keys = new Dictionary<string, string>
+                       Keys = new Dictionary<string, string?>
                        {
                            { "Foo", "FooValue" },
                            { "Bar", "BarValue" }
                        },
-                       Variables = new Dictionary<string, string>
+                       Variables = new Dictionary<string, string?>
                        {
                            { "Foo", "FooValue" },
                            { "Bar", "BarValue" }
@@ -658,7 +657,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                             .Returns(long.MaxValue);
         }
 
-        private DomainObjectManager CreateTestObject() => new DomainObjectManager(
+        private DomainObjectManager CreateTestObject() => new(
             _objectStore.Object,
             _eventStore.Object,
             _optionsProvider.Object,

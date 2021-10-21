@@ -4,6 +4,7 @@
         <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <IsPackable>false</IsPackable>
+        <Nullable>enable</Nullable>
         <LangVersion>9.0</LangVersion>
     </PropertyGroup>
 

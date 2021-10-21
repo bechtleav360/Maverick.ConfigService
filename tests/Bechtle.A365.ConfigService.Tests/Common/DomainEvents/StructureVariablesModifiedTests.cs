@@ -11,14 +11,6 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] { null, 0, Array.Empty<ConfigKeyAction>() },
-            new object[] { null, 0, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
-            new object[] { null, 0, new[] { ConfigKeyAction.Delete("Boo") } },
-            new object[] { null, 0, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
-            new object[] { null, int.MinValue, Array.Empty<ConfigKeyAction>() },
-            new object[] { null, int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
-            new object[] { null, int.MinValue, new[] { ConfigKeyAction.Delete("Boo") } },
-            new object[] { null, int.MinValue, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?"), ConfigKeyAction.Delete("Boo") } },
             new object[] { "", 0, Array.Empty<ConfigKeyAction>() },
             new object[] { "", 0, new[] { ConfigKeyAction.Set("Foo", "Bar", "Baz", "Que?") } },
             new object[] { "", 0, new[] { ConfigKeyAction.Delete("Boo") } },

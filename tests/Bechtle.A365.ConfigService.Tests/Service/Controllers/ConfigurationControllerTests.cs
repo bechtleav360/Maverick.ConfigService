@@ -22,8 +22,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class ConfigurationControllerTests : ControllerTests<ConfigurationController>
     {
-        private readonly Mock<IEventBus> _eventBus = new Mock<IEventBus>(MockBehavior.Strict);
-        private readonly Mock<IProjectionStore> _projectionStore = new Mock<IProjectionStore>(MockBehavior.Strict);
+        private readonly Mock<IEventBus> _eventBus = new(MockBehavior.Strict);
+        private readonly Mock<IProjectionStore> _projectionStore = new(MockBehavior.Strict);
 
         [Fact]
         public async Task BuildConfiguration()
@@ -285,7 +285,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     new Page<ConfigurationIdentifier>(
                                         new List<ConfigurationIdentifier>
                                         {
-                                            new ConfigurationIdentifier(
+                                            new(
                                                 new EnvironmentIdentifier("Foo", "Bar"),
                                                 new StructureIdentifier("Foo", 42),
                                                 0)
@@ -339,8 +339,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -459,7 +459,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     It.IsAny<ConfigurationIdentifier>(),
                                     It.IsAny<DateTime>(),
                                     It.IsAny<QueryRange>()))
-                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                            .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                             .Verifiable("configuration not retrieved");
 
             var result = await TestAction<ObjectResult>(c => c.GetConfiguration("Foo", "Bar", "Foo", 42, DateTime.Now));
@@ -494,8 +494,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     It.IsAny<QueryRange>()))
                             .ReturnsAsync(
                                 () => Result.Success(
-                                    new Page<KeyValuePair<string, string>>(
-                                        new Dictionary<string, string>
+                                    new Page<KeyValuePair<string, string?>>(
+                                        new Dictionary<string, string?>
                                         {
                                             { "Foo", "Bar" }
                                         })))
@@ -523,7 +523,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     new Page<ConfigurationIdentifier>(
                                         new List<ConfigurationIdentifier>
                                         {
-                                            new ConfigurationIdentifier(
+                                            new(
                                                 new EnvironmentIdentifier("Foo", "Bar"),
                                                 new StructureIdentifier("Foo", 42),
                                                 0)

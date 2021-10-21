@@ -14,18 +14,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class ConversionControllerTests : ControllerTests<ConversionController>
     {
-        private readonly Mock<IJsonTranslator> _translator = new Mock<IJsonTranslator>(MockBehavior.Strict);
+        private readonly Mock<IJsonTranslator> _translator = new(MockBehavior.Strict);
 
         [Fact]
         public void DictionaryToJson()
         {
-            _translator.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string>>(), It.IsAny<string>()))
+            _translator.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string?>>(), It.IsAny<string>()))
                        .Returns(JsonDocument.Parse("{}").RootElement)
                        .Verifiable("dictionary not translated");
 
             var result = TestAction<OkObjectResult>(
                 c => c.DictionaryToJson(
-                    new Dictionary<string, string>
+                    new Dictionary<string, string?>
                     {
                         { "Foo:Bar", "Baz" }
                     },
@@ -46,13 +46,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         [Fact]
         public void DictionaryToJsonThrows()
         {
-            _translator.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string>>(), It.IsAny<string>()))
+            _translator.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string?>>(), It.IsAny<string>()))
                        .Throws<Exception>()
                        .Verifiable("dictionary not translated");
 
             var result = TestAction<ObjectResult>(
                 c => c.DictionaryToJson(
-                    new Dictionary<string, string>
+                    new Dictionary<string, string?>
                     {
                         { "Foo:Bar", "Baz" }
                     },
@@ -66,7 +66,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public void JsonToDictionary()
         {
             _translator.Setup(t => t.ToDictionary(It.IsAny<JsonElement>(), It.IsAny<string>()))
-                       .Returns(() => new Dictionary<string, string> { { "Foo", "Bar" } })
+                       .Returns(() => new Dictionary<string, string?> { { "Foo", "Bar" } })
                        .Verifiable("json not translated to dictionary");
 
             var result = TestAction<OkObjectResult>(c => c.JsonToDictionary(JsonDocument.Parse("{\"Foo\": \"Bar\"}").RootElement));

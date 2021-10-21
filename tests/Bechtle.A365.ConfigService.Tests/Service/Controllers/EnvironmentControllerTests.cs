@@ -27,12 +27,12 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         private readonly Mock<IProjectionStore> _projectionStoreMock;
         private readonly IServiceCollection _services;
 
-        public static IEnumerable<object[]> InvalidIdentifierParameters => new[]
+        public static IEnumerable<object?[]> InvalidIdentifierParameters => new[]
         {
-            new object[] { "", "" },
-            new object[] { null, null },
-            new object[] { "Foo", null },
-            new object[] { null, "Bar" }
+            new object?[] { "", "" },
+            new object?[] { null, null },
+            new object?[] { "Foo", null },
+            new object?[] { null, "Bar" }
         };
 
         public EnvironmentControllerTests()
@@ -87,9 +87,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 
         [Theory]
         [MemberData(nameof(InvalidIdentifierParameters))]
-        public async Task AddEnvironmentWithoutParameters(string category, string name)
+        public async Task AddEnvironmentWithoutParameters(string? category, string? name)
         {
-            var result = await TestAction<BadRequestObjectResult>(c => c.AddEnvironment(category, name));
+            var result = await TestAction<BadRequestObjectResult>(c => c.AddEnvironment(category!, name!));
 
             Assert.NotNull(result.Value);
         }
@@ -201,8 +201,8 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })))
@@ -222,14 +222,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })))
                                 .Verifiable("keys not queried");
 
-            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string>>()))
+            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<IDictionary<string, string?>>()))
                                .Returns(() => JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement)
                                .Verifiable("keys not translated to json");
 
@@ -254,10 +254,10 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                             RemoveRoot = "removeRoot",
                                             TargetVersion = 4711
                                         }))
-                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string>>()))
+                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string?>>()))
                                 .Verifiable("keys not queried");
 
-            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string>>>()))
+            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string?>>>()))
                                .Returns(() => JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement)
                                .Verifiable("keys not translated to json");
 
@@ -271,7 +271,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetKeysAsJsonProviderError()
         {
             _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("keys not queried");
 
             var result = await TestAction<ObjectResult>(c => c.GetKeysAsJson("Foo", "Bar", "", "", ""));
@@ -301,14 +301,14 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
             _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
                                 .ReturnsAsync(
                                     () => Result.Success(
-                                        new Page<KeyValuePair<string, string>>(
-                                            new Dictionary<string, string>
+                                        new Page<KeyValuePair<string, string?>>(
+                                            new Dictionary<string, string?>
                                             {
                                                 { "Foo", "Bar" }
                                             })))
                                 .Verifiable("keys not queried");
 
-            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string>>>()))
+            _jsonTranslatorMock.Setup(t => t.ToJson(It.IsAny<ICollection<KeyValuePair<string, string?>>>()))
                                .Throws<Exception>()
                                .Verifiable("keys not translated to json");
 
@@ -405,7 +405,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                             RemoveRoot = "removeRoot",
                                             TargetVersion = 4711
                                         }))
-                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string>>()))
+                                .ReturnsAsync(() => Result.Success(new Page<KeyValuePair<string, string?>>()))
                                 .Verifiable("keys not queried");
 
             await TestAction<OkObjectResult>(c => c.GetKeys("Foo", "Bar", "filter", "preferExactMatch", "removeRoot", 1, 2, 4711));
@@ -417,7 +417,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
         public async Task GetKeysProviderError()
         {
             _projectionStoreMock.Setup(s => s.Environments.GetKeys(It.IsAny<KeyQueryParameters<EnvironmentIdentifier>>()))
-                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string>>>("something went wrong", ErrorCode.DbQueryError))
+                                .ReturnsAsync(() => Result.Error<Page<KeyValuePair<string, string?>>>("something went wrong", ErrorCode.DbQueryError))
                                 .Verifiable("keys not queried");
 
             var result = await TestAction<ObjectResult>(c => c.GetKeys("Foo", "Bar", "", "", ""));

@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
 {
     public class SearchControllerTests : ControllerTests<SearchController>
     {
-        private readonly Mock<IProjectionStore> _projectionStore = new Mock<IProjectionStore>();
+        private readonly Mock<IProjectionStore> _projectionStore = new();
 
         [Fact]
         public async Task GetEnvAutocomplete()
@@ -34,13 +34,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     new Page<DtoConfigKeyCompletion>(
                                         new List<DtoConfigKeyCompletion>
                                         {
-                                            new DtoConfigKeyCompletion
+                                            new()
                                             {
                                                 FullPath = "Foo/Bar",
                                                 Completion = "Baz",
                                                 HasChildren = false
                                             },
-                                            new DtoConfigKeyCompletion
+                                            new()
                                             {
                                                 FullPath = "Foo/Bar",
                                                 Completion = "Que",
@@ -154,13 +154,13 @@ namespace Bechtle.A365.ConfigService.Tests.Service.Controllers
                                     new Page<DtoConfigKeyCompletion>(
                                         new List<DtoConfigKeyCompletion>
                                         {
-                                            new DtoConfigKeyCompletion
+                                            new()
                                             {
                                                 FullPath = "Foo/Bar",
                                                 Completion = "Baz",
                                                 HasChildren = false
                                             },
-                                            new DtoConfigKeyCompletion
+                                            new()
                                             {
                                                 FullPath = "Foo/Bar",
                                                 Completion = "Que",

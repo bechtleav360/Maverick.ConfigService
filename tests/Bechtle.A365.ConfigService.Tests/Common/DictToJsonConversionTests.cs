@@ -18,7 +18,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void DeepObject()
         {
             JsonElement translated = _translator.ToJson(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "Foo/Bar/Baz", "4711" }
                 });
@@ -33,7 +33,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         [Fact]
         public void EmptyObject()
         {
-            JsonElement translated = _translator.ToJson(new Dictionary<string, string>());
+            JsonElement translated = _translator.ToJson(new Dictionary<string, string?>());
 
             Assert.IsType<JsonElement>(translated);
             Assert.Empty(translated.EnumerateObject());
@@ -43,7 +43,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void SimpleArray()
         {
             JsonElement translated = _translator.ToJson(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "0000", "42" },
                     { "0001", "4711" }
@@ -58,7 +58,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void SimpleObject()
         {
             JsonElement translated = _translator.ToJson(
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     { "Foo", "Bar" }
                 });

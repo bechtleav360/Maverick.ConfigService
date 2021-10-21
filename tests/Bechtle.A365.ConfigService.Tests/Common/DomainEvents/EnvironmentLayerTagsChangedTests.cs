@@ -9,7 +9,6 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
     {
         public static IEnumerable<object[]> EventData => new[]
         {
-            new object[] { null },
             new object[] { "" },
             new object[] { "Foo" }
         };
