@@ -3,7 +3,7 @@
     /// <summary>
     ///     completion-data for a searched path
     /// </summary>
-    public class DtoConfigKeyCompletion
+    public record DtoConfigKeyCompletion
     {
         /// <summary>
         ///     next part in the searched path

@@ -10,17 +10,22 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class StructureCreated : DomainEvent, IEquatable<StructureCreated>
     {
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Identifier { get; }
+        public StructureIdentifier Identifier { get; init; } = StructureIdentifier.Empty();
 
         /// <summary>
         ///     keys that make up this Structure
         /// </summary>
-        public Dictionary<string, string?> Keys { get; }
+        public Dictionary<string, string?> Keys { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         ///     variables that may be referenced from Environment or Keys
         /// </summary>
-        public Dictionary<string, string?> Variables { get; }
+        public Dictionary<string, string?> Variables { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <inheritdoc />
+        public StructureCreated()
+        {
+        }
 
         /// <inheritdoc />
         public StructureCreated(

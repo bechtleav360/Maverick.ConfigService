@@ -1,5 +1,4 @@
-﻿using System;
-using Bechtle.A365.ConfigService.Common.DomainEvents;
+﻿using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Xunit;
 

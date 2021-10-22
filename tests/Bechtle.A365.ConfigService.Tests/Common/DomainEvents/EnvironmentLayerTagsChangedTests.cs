@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using AutoFixture.Xunit2;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Xunit;
 
@@ -7,28 +8,26 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
 {
     public class EnvironmentLayerTagsChangedTests
     {
-        public static IEnumerable<object[]> EventData => new[]
-        {
-            new object[] { "" },
-            new object[] { "Foo" }
-        };
-
         [Theory]
-        [MemberData(nameof(EventData))]
+        [AutoData]
         public void Equality(string name)
         {
-            var left = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
-            var right = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
+            var left = new EnvironmentLayerTagsChanged(
+                new LayerIdentifier(name),
+                new List<string> { "Foo" },
+                new List<string> { "Bar" });
+            var right = new EnvironmentLayerTagsChanged(
+                new LayerIdentifier(name),
+                new List<string> { "Foo" },
+                new List<string> { "Bar" });
 
             Assert.True(left.Equals(right), "left.Equals(right)");
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
-        public void GetHashCodeStable(string name)
+        [AutoData]
+        public void GetHashCodeStable(EnvironmentLayerTagsChanged domainEvent)
         {
-            var domainEvent = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
-
             List<int> hashes = Enumerable.Range(0, 1000)
                                          .Select(_ => domainEvent.GetHashCode())
                                          .ToList();
@@ -39,18 +38,16 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
-        public void MetadataFilled(string name)
+        [AutoData]
+        public void MetadataFilled(EnvironmentLayerTagsChanged domainEvent)
         {
-            var domainEvent = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
-
             DomainEventMetadata metadata = domainEvent.GetMetadata();
 
             Assert.NotEmpty(metadata.Filters);
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
+        [AutoData]
         public void NullCheckOperator(string name)
         {
             var left = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
@@ -60,13 +57,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
-        public void NullCheckOperatorNegated(string name)
+        [AutoData]
+        public void NullCheckOperatorNegated(EnvironmentLayerTagsChanged left, EnvironmentLayerTagsChanged right)
         {
-            var left = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
-            var right = new EnvironmentLayerTagsChanged(new LayerIdentifier(name), new List<string>(), new List<string>());
-
-            Assert.False(left != right, "left != right");
+            Assert.True(left != right, "left != right");
         }
     }
 }

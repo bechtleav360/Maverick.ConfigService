@@ -8,10 +8,15 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public sealed class EnvironmentLayerCopied : DomainEvent, IEquatable<EnvironmentLayerCopied>
     {
         /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier SourceIdentifier { get; }
+        public LayerIdentifier SourceIdentifier { get; init; } = LayerIdentifier.Empty();
 
         /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier TargetIdentifier { get; }
+        public LayerIdentifier TargetIdentifier { get; init; } = LayerIdentifier.Empty();
+
+        /// <inheritdoc />
+        public EnvironmentLayerCopied()
+        {
+        }
 
         /// <inheritdoc />
         public EnvironmentLayerCopied(LayerIdentifier sourceIdentifier, LayerIdentifier targetIdentifier)

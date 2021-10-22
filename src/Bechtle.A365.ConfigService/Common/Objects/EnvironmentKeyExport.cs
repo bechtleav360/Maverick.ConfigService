@@ -3,7 +3,7 @@
     /// <summary>
     ///     transfer-object defining a Configuration-Key with additional metadata
     /// </summary>
-    public class EnvironmentKeyExport
+    public record EnvironmentKeyExport
     {
         /// <summary>
         ///     short description of this keys value

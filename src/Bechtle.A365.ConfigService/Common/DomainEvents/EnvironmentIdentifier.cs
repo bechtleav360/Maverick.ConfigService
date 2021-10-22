@@ -46,6 +46,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
                    && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        ///     Ease-of-Use method for <see cref="Identifier.Empty{T}" />
+        /// </summary>
+        public static EnvironmentIdentifier Empty() => Empty<EnvironmentIdentifier>();
+
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {

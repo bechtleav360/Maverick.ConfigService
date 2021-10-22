@@ -44,6 +44,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        ///     Ease-of-Use method for <see cref="Identifier.Empty{T}" />
+        /// </summary>
+        public static LayerIdentifier Empty() => Empty<LayerIdentifier>();
+
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {

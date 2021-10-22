@@ -7,6 +7,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     /// </summary>
     public class StructureIdentifier : Identifier, IEquatable<StructureIdentifier>
     {
+        /// <summary>
+        ///     name of this structure, indicates uses the Configuration built from this and <see cref="StructureIdentifier" />
+        /// </summary>
+        public string Name { get; init; }
+
+        /// <summary>
+        ///     unique version of this Structure
+        /// </summary>
+        public int Version { get; init; }
+
         /// <inheritdoc />
         public StructureIdentifier() : this(string.Empty, 0)
         {
@@ -19,41 +29,56 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             Version = version;
         }
 
-        /// <summary>
-        ///     name of this structure, indicates uses the Configuration built from this and <see cref="StructureIdentifier" />
-        /// </summary>
-        public string Name { get; init; }
+        /// <inheritdoc />
+        public virtual bool Equals(StructureIdentifier? other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Version == other.Version;
+        }
 
         /// <summary>
-        ///     unique version of this Structure
+        ///     Ease-of-Use method for <see cref="Identifier.Empty{T}" />
         /// </summary>
-        public int Version { get; init; }
+        public static StructureIdentifier Empty() => Empty<StructureIdentifier>();
+
+        /// <inheritdoc />
+        public override bool Equals(object? obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != GetType())
+            {
+                return false;
+            }
+
+            return Equals((StructureIdentifier)obj);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode() => HashCode.Combine(Name, Version);
 
         /// <inheritdoc cref="operator ==" />
         public static bool operator ==(StructureIdentifier? left, StructureIdentifier? right) => Equals(left, right);
 
         /// <inheritdoc cref="operator !=" />
         public static bool operator !=(StructureIdentifier? left, StructureIdentifier? right) => !Equals(left, right);
-
-        /// <inheritdoc />
-        public override bool Equals(object? obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((StructureIdentifier) obj);
-        }
-
-        /// <inheritdoc />
-        public virtual bool Equals(StructureIdentifier? other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Version == other.Version;
-        }
-
-        /// <inheritdoc />
-        public override int GetHashCode() => HashCode.Combine(Name, Version);
 
         /// <inheritdoc />
         public override string ToString() => $"[{nameof(StructureIdentifier)}; {nameof(Name)}: '{Name}'; {nameof(Version)}: '{Version}']";

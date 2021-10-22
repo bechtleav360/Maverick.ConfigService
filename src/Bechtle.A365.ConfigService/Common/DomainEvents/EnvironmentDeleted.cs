@@ -8,7 +8,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentDeleted : DomainEvent, IEquatable<EnvironmentDeleted>
     {
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; }
+        public EnvironmentIdentifier Identifier { get; init; } = EnvironmentIdentifier.Empty();
+
+        /// <inheritdoc />
+        public EnvironmentDeleted()
+        {
+        }
 
         /// <inheritdoc />
         public EnvironmentDeleted(EnvironmentIdentifier identifier)

@@ -12,15 +12,20 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     List of tags that were newly assigned to this Layer
         /// </summary>
-        public List<string> AddedTags { get; }
+        public List<string> AddedTags { get; init; } = new();
 
         /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier Identifier { get; }
+        public LayerIdentifier Identifier { get; init; } = LayerIdentifier.Empty();
 
         /// <summary>
         ///     List of tags that were removed from this Layer
         /// </summary>
-        public List<string> RemovedTags { get; }
+        public List<string> RemovedTags { get; init; } = new();
+
+        /// <inheritdoc />
+        public EnvironmentLayerTagsChanged()
+        {
+        }
 
         /// <inheritdoc />
         public EnvironmentLayerTagsChanged(LayerIdentifier identifier, List<string> addedTags, List<string> removedTags)

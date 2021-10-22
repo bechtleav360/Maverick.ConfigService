@@ -8,7 +8,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentLayerDeleted : DomainEvent, IEquatable<EnvironmentLayerDeleted>
     {
         /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier Identifier { get; }
+        public LayerIdentifier Identifier { get; init; } = LayerIdentifier.Empty();
+
+        /// <inheritdoc />
+        public EnvironmentLayerDeleted()
+        {
+        }
 
         /// <inheritdoc />
         public EnvironmentLayerDeleted(LayerIdentifier identifier)

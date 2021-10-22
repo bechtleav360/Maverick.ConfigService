@@ -9,12 +9,17 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class StructureVariablesModified : DomainEvent, IEquatable<StructureVariablesModified>
     {
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Identifier { get; }
+        public StructureIdentifier Identifier { get; init; } = StructureIdentifier.Empty();
 
         /// <summary>
         ///     list of actions that have been applied to the variables
         /// </summary>
-        public ConfigKeyAction[] ModifiedKeys { get; }
+        public ConfigKeyAction[] ModifiedKeys { get; init; } = Array.Empty<ConfigKeyAction>();
+
+        /// <inheritdoc />
+        public StructureVariablesModified()
+        {
+        }
 
         /// <inheritdoc />
         public StructureVariablesModified(StructureIdentifier identifier, ConfigKeyAction[] modifiedKeys)

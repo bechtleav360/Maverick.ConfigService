@@ -51,6 +51,11 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
             return Equals(Environment, other.Environment) && Equals(Structure, other.Structure) && Version == other.Version;
         }
 
+        /// <summary>
+        ///     Ease-of-Use method for <see cref="Identifier.Empty{T}" />
+        /// </summary>
+        public static ConfigurationIdentifier Empty() => Empty<ConfigurationIdentifier>();
+
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {

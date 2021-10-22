@@ -8,7 +8,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class StructureDeleted : DomainEvent, IEquatable<StructureDeleted>
     {
         /// <inheritdoc cref="StructureIdentifier" />
-        public StructureIdentifier Identifier { get; }
+        public StructureIdentifier Identifier { get; init; } = StructureIdentifier.Empty();
+
+        /// <inheritdoc />
+        public StructureDeleted()
+        {
+        }
 
         /// <inheritdoc />
         public StructureDeleted(StructureIdentifier identifier)

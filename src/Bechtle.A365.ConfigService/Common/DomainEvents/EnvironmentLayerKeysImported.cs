@@ -10,12 +10,17 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentLayerKeysImported : DomainEvent, IEquatable<EnvironmentLayerKeysImported>
     {
         /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier Identifier { get; }
+        public LayerIdentifier Identifier { get; init; } = LayerIdentifier.Empty();
 
         /// <summary>
         ///     list of Actions that have been applied to the keys
         /// </summary>
-        public ConfigKeyAction[] ModifiedKeys { get; }
+        public ConfigKeyAction[] ModifiedKeys { get; } = Array.Empty<ConfigKeyAction>();
+
+        /// <inheritdoc />
+        public EnvironmentLayerKeysImported()
+        {
+        }
 
         /// <inheritdoc />
         public EnvironmentLayerKeysImported(LayerIdentifier identifier, ConfigKeyAction[] modifiedKeys)

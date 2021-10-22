@@ -30,19 +30,21 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public async Task<IResult<ConfigExport>> Export(ExportDefinition definition)
         {
-            var result = new ConfigExport();
+            EnvironmentExport[] exportedEnvironments =
+                definition.Environments.Any()
+                    ? await ExportInternal(definition.Environments)
+                    : Array.Empty<EnvironmentExport>();
 
-            if (definition.Environments.Any())
-            {
-                result.Environments = await ExportInternal(definition.Environments);
-            }
+            LayerExport[] exportedLayers = definition.Layers.Any()
+                                               ? await ExportInternal(definition.Layers)
+                                               : Array.Empty<LayerExport>();
 
-            if (definition.Layers.Any())
-            {
-                result.Layers = await ExportInternal(definition.Layers);
-            }
-
-            return Result.Success(result);
+            return Result.Success(
+                new ConfigExport
+                {
+                    Environments = exportedEnvironments,
+                    Layers = exportedLayers
+                });
         }
 
         private async Task<LayerExport[]> ExportInternal(IEnumerable<LayerIdentifier> layers)

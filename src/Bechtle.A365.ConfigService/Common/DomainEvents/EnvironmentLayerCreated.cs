@@ -8,7 +8,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class EnvironmentLayerCreated : DomainEvent, IEquatable<EnvironmentLayerCreated>
     {
         /// <inheritdoc cref="LayerIdentifier" />
-        public LayerIdentifier Identifier { get; }
+        public LayerIdentifier Identifier { get; init; } = LayerIdentifier.Empty();
+
+        /// <inheritdoc />
+        public EnvironmentLayerCreated()
+        {
+        }
 
         /// <inheritdoc />
         public EnvironmentLayerCreated(LayerIdentifier identifier)

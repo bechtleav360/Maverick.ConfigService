@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AutoFixture.Xunit2;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Xunit;
 
@@ -8,16 +9,8 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
 {
     public class ConfigurationBuiltTests
     {
-        public static IEnumerable<object?[]> EventData => new[]
-        {
-            new object?[] { "", "", "", 0, 0, new DateTime(2000, 1, 2, 3, 4, 5, 678), new DateTime(2020, 1, 2, 3, 4, 5, 678) },
-            new object?[] { "", "", "", 0, 0, new DateTime(), new DateTime() },
-            new object?[] { "Foo", "Bar", "Baz", 42, 4711, new DateTime(), new DateTime() },
-            new object?[] { "Foo", "Bar", "Baz", 42, 4711, null, null }
-        };
-
         [Theory]
-        [MemberData(nameof(EventData))]
+        [AutoData]
         public void Equality(
             string envCategory,
             string envName,
@@ -47,24 +40,9 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
-        public void GetHashCodeStable(
-            string envCategory,
-            string envName,
-            string structName,
-            int structVersion,
-            int version,
-            DateTime? start,
-            DateTime? end)
+        [AutoData]
+        public void GetHashCodeStable(ConfigurationBuilt domainEvent)
         {
-            var domainEvent = new ConfigurationBuilt(
-                new ConfigurationIdentifier(
-                    new EnvironmentIdentifier(envCategory, envName),
-                    new StructureIdentifier(structName, structVersion),
-                    version),
-                start,
-                end);
-
             List<int> hashes = Enumerable.Range(0, 1000)
                                          .Select(_ => domainEvent.GetHashCode())
                                          .ToList();
@@ -75,7 +53,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
+        [AutoData]
         public void MetadataFilled(
             string envCategory,
             string envName,
@@ -99,7 +77,7 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
+        [AutoData]
         public void NullCheckOperator(
             string envCategory,
             string envName,
@@ -129,33 +107,10 @@ namespace Bechtle.A365.ConfigService.Tests.Common.DomainEvents
         }
 
         [Theory]
-        [MemberData(nameof(EventData))]
-        public void NullCheckOperatorNegated(
-            string envCategory,
-            string envName,
-            string structName,
-            int structVersion,
-            int version,
-            DateTime? start,
-            DateTime? end)
+        [AutoData]
+        public void NullCheckOperatorNegated(ConfigurationBuilt left, ConfigurationBuilt right)
         {
-            var left = new ConfigurationBuilt(
-                new ConfigurationIdentifier(
-                    new EnvironmentIdentifier(envCategory, envName),
-                    new StructureIdentifier(structName, structVersion),
-                    version),
-                start,
-                end);
-
-            var right = new ConfigurationBuilt(
-                new ConfigurationIdentifier(
-                    new EnvironmentIdentifier(envCategory, envName),
-                    new StructureIdentifier(structName, structVersion),
-                    version),
-                start,
-                end);
-
-            Assert.False(left != right, "left != right");
+            Assert.True(left != right, "left != right");
         }
     }
 }

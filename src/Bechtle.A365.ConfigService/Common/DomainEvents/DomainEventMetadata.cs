@@ -11,7 +11,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     List of Filters applicable to the accompanying DomainEvent
         /// </summary>
-        public Dictionary<string, string> Filters { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> Filters { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         ///     Shorthand to get the Value of the a Filter, or <see cref="string.Empty" /> if the Filter doesn't exist

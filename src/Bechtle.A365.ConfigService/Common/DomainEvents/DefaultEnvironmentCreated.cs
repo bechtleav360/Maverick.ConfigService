@@ -8,7 +8,12 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class DefaultEnvironmentCreated : DomainEvent, IEquatable<DefaultEnvironmentCreated>
     {
         /// <inheritdoc cref="EnvironmentIdentifier" />
-        public EnvironmentIdentifier Identifier { get; }
+        public EnvironmentIdentifier Identifier { get; init; } = EnvironmentIdentifier.Empty();
+
+        /// <inheritdoc />
+        public DefaultEnvironmentCreated()
+        {
+        }
 
         /// <inheritdoc />
         public DefaultEnvironmentCreated(EnvironmentIdentifier identifier)

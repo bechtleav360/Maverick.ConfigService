@@ -5,7 +5,7 @@ namespace Bechtle.A365.ConfigService.Common.Objects
     /// <summary>
     ///     Options regarding how a Configuration is Built and how it is available after that
     /// </summary>
-    public class ConfigurationBuildOptions
+    public record ConfigurationBuildOptions
     {
         /// <summary>
         ///     Available from this point in time, or 'always available' if null

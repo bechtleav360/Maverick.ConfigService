@@ -8,17 +8,22 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
     public class ConfigurationBuilt : DomainEvent, IEquatable<ConfigurationBuilt>
     {
         /// <inheritdoc cref="ConfigurationIdentifier" />
-        public ConfigurationIdentifier Identifier { get; }
+        public ConfigurationIdentifier Identifier { get; init; } = ConfigurationIdentifier.Empty();
 
         /// <summary>
         ///     This Configuration is to be Valid from the given point in time, or always if null
         /// </summary>
-        public DateTime? ValidFrom { get; }
+        public DateTime? ValidFrom { get; init; }
 
         /// <summary>
         ///     This Configuration is to be Valid up to the given point in time, or indefinitely if null
         /// </summary>
-        public DateTime? ValidTo { get; }
+        public DateTime? ValidTo { get; init; }
+
+        /// <inheritdoc />
+        public ConfigurationBuilt()
+        {
+        }
 
         /// <inheritdoc />
         public ConfigurationBuilt(
