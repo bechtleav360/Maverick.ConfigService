@@ -66,15 +66,7 @@ namespace Bechtle.A365.ConfigService
             AppConfigContainer appConfiguration = app.StartTweakingWith(Configuration, _logger);
 
             appConfiguration.Tweak(
-                a => a.UseCorrelationIds(
-                    new CorrelationCoercionOptions
-                    {
-                        PossibleHeaders = new List<string>
-                        {
-                            "x-correlation-id",
-                            "X-FOOBAR-ID"
-                        }
-                    }),
+                a => a.UseCorrelationIds(new CorrelationCoercionOptions { PossibleHeaders = new List<string> { "x-correlation-id", } }),
                 "using legacy correlation-ids");
 
             // basic Asp.NetCore 3.X stuff
