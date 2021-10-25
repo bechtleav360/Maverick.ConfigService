@@ -8,6 +8,7 @@ using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
 using Bechtle.A365.ConfigService.Implementations;
+using Bechtle.A365.ConfigService.Implementations.Health;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Models.V1;
@@ -663,6 +664,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             _optionsProvider.Object,
             _configuration.Object,
             _validators,
+            new ProjectionStatusCheck(new Mock<ILogger<ProjectionStatusCheck>>().Object),
             _logger);
 
         /// <summary>

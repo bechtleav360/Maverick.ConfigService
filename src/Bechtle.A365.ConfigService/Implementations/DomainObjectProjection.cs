@@ -30,6 +30,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     public class DomainObjectProjection : EventSubscriptionBase
     {
         private readonly ProjectionCacheCompatibleCheck _cacheHealthCheck;
+        private readonly ProjectionStatusCheck _projectionStatus;
         private readonly IOptions<EventStoreConnectionConfiguration> _configuration;
         private readonly ILogger<DomainObjectProjection> _logger;
         private readonly IDomainObjectStore _objectStore;
@@ -55,6 +56,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             IOptions<EventStoreConnectionConfiguration> configuration,
             DomainEventProjectionCheck projectionHealthCheck,
             ProjectionCacheCompatibleCheck cacheHealthCheck,
+            ProjectionStatusCheck projectionStatus,
             ILogger<DomainObjectProjection> logger) : base(eventStore)
         {
             _objectStore = objectStore;
@@ -62,6 +64,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             _configuration = configuration;
             _projectionHealthCheck = projectionHealthCheck;
             _cacheHealthCheck = cacheHealthCheck;
+            _projectionStatus = projectionStatus;
             _logger = logger;
         }
 
@@ -139,6 +142,8 @@ namespace Bechtle.A365.ConfigService.Implementations
                     eventHeader.EventId,
                     eventHeader.EventType);
 
+                _projectionStatus.SetCurrentlyProjecting(eventHeader);
+
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
 
@@ -180,6 +185,8 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                 stopwatch.Stop();
 
+                _projectionStatus.SetDoneProjecting(eventHeader);
+
                 KnownMetrics.ProjectionTime
                             .WithLabels(eventHeader.EventType)
                             .Observe(stopwatch.Elapsed.TotalSeconds);
@@ -196,6 +203,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                     eventHeader?.EventId,
                     eventHeader?.EventNumber,
                     eventHeader?.EventType);
+                _projectionStatus.SetErrorWhileProjecting(eventHeader, e);
                 throw;
             }
         }

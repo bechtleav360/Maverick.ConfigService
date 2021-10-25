@@ -7,6 +7,7 @@ using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.DomainEvents;
 using Bechtle.A365.ConfigService.Configuration;
 using Bechtle.A365.ConfigService.DomainObjects;
+using Bechtle.A365.ConfigService.Implementations.Health;
 using Bechtle.A365.ConfigService.Interfaces;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.ConfigService.Models.V1;
@@ -25,6 +26,7 @@ namespace Bechtle.A365.ConfigService.Implementations
     {
         private readonly IEventStore _eventStore;
         private readonly IEventStoreOptionsProvider _optionsProvider;
+        private readonly ProjectionStatusCheck _projectionStatus;
         private readonly EventStoreConnectionConfiguration _eventStoreConfiguration;
         private readonly ILogger<DomainObjectManager> _logger;
         private readonly IDomainObjectStore _objectStore;
@@ -38,6 +40,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <param name="optionsProvider"></param>
         /// <param name="eventStoreConfiguration">eventStore-configuration</param>
         /// <param name="validators">list of domain-event-validators, to use for validating generated Domain-Events</param>
+        /// <param name="projectionStatus">status-check that show if we're currently projecting events</param>
         /// <param name="logger"></param>
         public DomainObjectManager(
             IDomainObjectStore objectStore,
@@ -45,11 +48,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             IEventStoreOptionsProvider optionsProvider,
             IOptionsSnapshot<EventStoreConnectionConfiguration> eventStoreConfiguration,
             IEnumerable<ICommandValidator> validators,
+            ProjectionStatusCheck projectionStatus,
             ILogger<DomainObjectManager> logger)
         {
             _objectStore = objectStore;
             _eventStore = eventStore;
             _optionsProvider = optionsProvider;
+            _projectionStatus = projectionStatus;
             _eventStoreConfiguration = eventStoreConfiguration.Value;
             _validators = validators.ToList();
             _logger = logger;
@@ -629,6 +634,25 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IResult> WriteEventsInternal(IList<DomainEvent> events)
         {
+            // if we're currently projecting events, wait a little
+            // this is for backwards compatibility -> ideally this would be a user-/client-issue,
+            // and be solved using OCC / ETags or something along those lines
+            // ---
+            // this is technically the wrong thing to do, because the write relies on assumptions that may or may not
+            // be valid anymore, because the current projection may change data this write is relying on.
+            // we're doing it this way, because of the way this service is being used:
+            // - many reads & few writes
+            // - used primarily by technical admins
+            //   - this should be re-evaluated once subject-admins can change stuff using a streamlined Config-UI / Admin-UI
+            // - technical admins only write during setup / maintenance
+            DateTime waitUntil = DateTime.Now + TimeSpan.FromSeconds(5);
+            while (_projectionStatus.IsCurrentlyProjecting()
+                   && DateTime.Now < waitUntil)
+            {
+                _logger.LogDebug("projection is currently processing events, delaying write-action");
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+            }
+
             // do this as early as possible, so we can detect if changes are made while we get ES-config and split events
             IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
             if (lastProjectedEventResult.IsError)
@@ -647,52 +671,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             // convert *our*-type of DomainEvent to the generic late-binding one
-            /*IList<IDomainEvent> domainEvents = events.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
-                                                     .ToList();*/
-            var options = new JsonSerializerSettings
+            IResult<IList<IDomainEvent>> splitEvents = ConvertAndSplitEvents(events, maxEventSize);
+            if (splitEvents.IsError)
             {
-                Formatting = Formatting.Indented,
-                DateFormatHandling = DateFormatHandling.IsoDateFormat,
-                Converters = new List<JsonConverter> { new StringEnumConverter() }
-            };
-            IList<IDomainEvent> domainEvents = new List<IDomainEvent>();
-            try
-            {
-                // this is *the* most resource-heavy way i could think of, but it's the easiest way of knowing if
-                // the written events will fit into the size-constraints of ES
-                var eventStack = new Stack<DomainEvent>(events.Reverse());
-                while (eventStack.TryPop(out DomainEvent item))
-                {
-                    var domainEvent = new LateBindingDomainEvent<DomainEvent>("Anonymous", item);
-
-                    // 1048576
-                    int jsonLength = JsonConvert.SerializeObject(domainEvent, options).Length;
-
-                    if (jsonLength < maxEventSize)
-                    {
-                        domainEvents.Add(domainEvent);
-                        continue;
-                    }
-
-                    IList<DomainEvent> smallerEvents = item.Split().Reverse().ToList();
-                    if (smallerEvents.Count == 1)
-                    {
-                        return Result.Error(
-                            "domainEvents exceed maximum size supported by EventStore, and cannot be resized",
-                            ErrorCode.PrerequisiteFailed);
-                    }
-
-                    foreach (DomainEvent smallerItem in smallerEvents)
-                    {
-                        eventStack.Push(smallerItem);
-                    }
-                }
+                return splitEvents;
             }
-            catch (JsonException e)
-            {
-                _logger.LogWarning(e, "unable to approximate size of DomainEvents to be written");
-                return Result.Error("unable to approximate size of DomainEvents", ErrorCode.PrerequisiteFailed);
-            }
+
+            IList<IDomainEvent> domainEvents = splitEvents.Data;
 
             // write all events one-by-one, because ES writes all events in a single message
             // ---
@@ -724,6 +709,58 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             return Result.Success();
+        }
+
+        private IResult<IList<IDomainEvent>> ConvertAndSplitEvents(IList<DomainEvent> events, long maxEventSize)
+        {
+            var options = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                Converters = new List<JsonConverter> { new StringEnumConverter() }
+            };
+
+            IList<IDomainEvent> domainEvents = new List<IDomainEvent>();
+
+            try
+            {
+                // this is *the* most resource-heavy way i could think of, but it's the easiest way of knowing if
+                // the written events will fit into the size-constraints of ES
+                var eventStack = new Stack<DomainEvent>(events.Reverse());
+                while (eventStack.TryPop(out DomainEvent item))
+                {
+                    var domainEvent = new LateBindingDomainEvent<DomainEvent>("Anonymous", item);
+
+                    // 1048576
+                    int jsonLength = JsonConvert.SerializeObject(domainEvent, options).Length;
+
+                    if (jsonLength < maxEventSize)
+                    {
+                        domainEvents.Add(domainEvent);
+                        continue;
+                    }
+
+                    IList<DomainEvent> smallerEvents = item.Split().Reverse().ToList();
+                    if (smallerEvents.Count == 1)
+                    {
+                        return Result.Error<IList<IDomainEvent>>(
+                            "domainEvents exceed maximum size supported by EventStore, and cannot be resized",
+                            ErrorCode.PrerequisiteFailed);
+                    }
+
+                    foreach (DomainEvent smallerItem in smallerEvents)
+                    {
+                        eventStack.Push(smallerItem);
+                    }
+                }
+            }
+            catch (JsonException e)
+            {
+                _logger.LogWarning(e, "unable to approximate size of DomainEvents to be written");
+                return Result.Error<IList<IDomainEvent>>("unable to approximate size of DomainEvents", ErrorCode.PrerequisiteFailed);
+            }
+
+            return Result.Success(domainEvents);
         }
     }
 }

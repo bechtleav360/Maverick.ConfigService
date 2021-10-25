@@ -50,6 +50,7 @@ namespace Bechtle.A365.ConfigService
     {
         private const string Liveness = "Liveness";
         private const string Readiness = "Readiness";
+        private const string Status = "Status";
         private ILogger<Startup> _logger;
 
         /// <inheritdoc cref="Startup" />
@@ -152,7 +153,17 @@ namespace Bechtle.A365.ConfigService
                                             Predicate = check => check.Tags.Contains(Liveness),
                                             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
                                         })),
-                                "adding /health/live endpoint");
+                                "adding /health/live endpoint")
+                            .Tweak(
+                                a => a.UseEndpoints(
+                                    builder => builder.MapHealthChecks(
+                                        "/health/status",
+                                        new HealthCheckOptions
+                                        {
+                                            Predicate = check => check.Tags.Contains(Status),
+                                            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                                        })),
+                                "adding /health/status endpoint");
 
             // re-load configuration when possible
             appConfiguration.Tweak(
@@ -329,6 +340,7 @@ namespace Bechtle.A365.ConfigService
             services.AddSingleton<EventStoreConnectionCheck>();
             services.AddSingleton<DomainEventProjectionCheck>();
             services.AddSingleton<ProjectionCacheCompatibleCheck>();
+            services.AddSingleton<ProjectionStatusCheck>();
             services.AddHealthChecks()
                     .AddCheck<EventStoreClusterCheck>(
                         "EventStore-ConnectionType",
@@ -354,6 +366,11 @@ namespace Bechtle.A365.ConfigService
                         "ProjectionCache-Compatibility",
                         HealthStatus.Unhealthy,
                         new[] { Readiness },
+                        TimeSpan.FromSeconds(1))
+                    .AddCheck<ProjectionStatusCheck>(
+                        "Projection-Status",
+                        HealthStatus.Healthy,
+                        new[] { Status },
                         TimeSpan.FromSeconds(1))
                     .AddRedis(
                         Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>(),
