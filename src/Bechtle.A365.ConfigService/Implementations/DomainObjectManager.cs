@@ -629,13 +629,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IResult> WriteEventsInternal(IList<DomainEvent> events)
         {
-            long maxEventSize;
-            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
-            {
-                await _optionsProvider.LoadConfiguration(cts.Token);
-                maxEventSize = _optionsProvider.EventSizeLimited ? _optionsProvider.MaxEventSizeInBytes : long.MaxValue;
-            }
-
+            // do this as early as possible, so we can detect if changes are made while we get ES-config and split events
             IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
             if (lastProjectedEventResult.IsError)
             {
@@ -644,6 +638,13 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             long lastProjectedEvent = lastProjectedEventResult.Data;
+
+            long maxEventSize;
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+            {
+                await _optionsProvider.LoadConfiguration(cts.Token);
+                maxEventSize = _optionsProvider.EventSizeLimited ? _optionsProvider.MaxEventSizeInBytes : long.MaxValue;
+            }
 
             // convert *our*-type of DomainEvent to the generic late-binding one
             /*IList<IDomainEvent> domainEvents = events.Select(e => (IDomainEvent)new LateBindingDomainEvent<DomainEvent>("Anonymous", e))
