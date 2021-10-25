@@ -15,7 +15,7 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <summary>
         ///     list of Actions that have been applied to the keys
         /// </summary>
-        public ConfigKeyAction[] ModifiedKeys { get; } = Array.Empty<ConfigKeyAction>();
+        public ConfigKeyAction[] ModifiedKeys { get; init; } = Array.Empty<ConfigKeyAction>();
 
         /// <inheritdoc />
         public EnvironmentLayerKeysModified()
