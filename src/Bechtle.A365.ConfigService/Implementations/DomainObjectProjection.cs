@@ -48,6 +48,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <param name="cacheHealthCheck">
         ///     health-check associated with <see cref="ProjectionCacheCleanupService" />. This Service will wait until the health-check is ready
         /// </param>
+        /// <param name="projectionStatus">associated Status-Check that reports the current status of this component</param>
         /// <param name="logger">logger to write information to</param>
         public DomainObjectProjection(
             IEventStore eventStore,
