@@ -677,7 +677,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return splitEvents;
             }
 
-            IList<IDomainEvent> domainEvents = splitEvents.Data;
+            IList<IDomainEvent> domainEvents = splitEvents.CheckedData;
 
             // write all events one-by-one, because ES writes all events in a single message
             // ---

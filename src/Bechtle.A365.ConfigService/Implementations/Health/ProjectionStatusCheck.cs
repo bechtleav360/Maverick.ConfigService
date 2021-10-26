@@ -47,7 +47,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
 
             return Task.FromResult(
                 HealthCheckResult.Healthy(
-                    data: new Dictionary<string, object>
+                    data: new Dictionary<string, object?>
                     {
                         { "EventId", copiedStatus.EventId },
                         { "EventType", copiedStatus.EventType },
