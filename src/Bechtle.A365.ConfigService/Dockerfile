@@ -5,7 +5,7 @@ ARG nugetfeed=https://pkgs.dev.azure.com/av360/_packaging/A365/nuget/v3/index.js
 FROM mcr.microsoft.com/dotnet/aspnet:3.1 AS base
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 ARG SERVICENAME
 ARG pat
 ARG nugetfeed
