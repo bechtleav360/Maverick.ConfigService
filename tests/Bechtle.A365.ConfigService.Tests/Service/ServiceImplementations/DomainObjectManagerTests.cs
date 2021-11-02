@@ -108,9 +108,18 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
 
         [Fact]
         public async Task DeleteLayer()
-            => await TestObjectDeletion<EnvironmentLayer, LayerIdentifier, EnvironmentLayerDeleted>(
-                   async manager => await manager.DeleteLayer(new LayerIdentifier("Foo"), CancellationToken.None),
-                   new EnvironmentLayer(new LayerIdentifier("Foo")));
+        {
+            _objectStore.Setup(
+                            s => s.ListAll<ConfigEnvironment, EnvironmentIdentifier>(
+                                It.IsAny<Func<EnvironmentIdentifier, bool>>(),
+                                It.IsAny<QueryRange>()))
+                        .ReturnsAsync(Result.Success(new Page<EnvironmentIdentifier>()))
+                        .Verifiable("no checks for assignment in environments");
+
+            await TestObjectDeletion<EnvironmentLayer, LayerIdentifier, EnvironmentLayerDeleted>(
+                async manager => await manager.DeleteLayer(new LayerIdentifier("Foo"), CancellationToken.None),
+                new EnvironmentLayer(new LayerIdentifier("Foo")));
+        }
 
         [Fact]
         public async Task GetAllConfigurations()
