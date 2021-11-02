@@ -136,7 +136,7 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         public async Task<IResult> DeleteLayer(LayerIdentifier identifier, CancellationToken cancellationToken)
         {
-            // everything from here to 'return await ...' is to prevent deleting layers that are still assigned
+            // most of this functions prevents against deleting layers that are still assigned
             IResult<Page<EnvironmentIdentifier>> environmentResult =
                 await ListObjects<ConfigEnvironment, EnvironmentIdentifier>(
                     QueryRange.All,
@@ -150,6 +150,7 @@ namespace Bechtle.A365.ConfigService.Implementations
                 return environmentResult;
             }
 
+            List<EnvironmentIdentifier> assignedLayers = new();
             Page<EnvironmentIdentifier> environments = environmentResult.CheckedData;
 
             foreach (EnvironmentIdentifier envId in environments.Items)
@@ -168,27 +169,35 @@ namespace Bechtle.A365.ConfigService.Implementations
                     return envResult;
                 }
 
-                ConfigEnvironment environment = envResult.CheckedData;
-
-                if (environment.Layers.All(l => l != identifier))
+                if (envResult.CheckedData.Layers.Any(l => l == identifier))
                 {
-                    continue;
+                    assignedLayers.Add(envId);
                 }
-
-                _logger.LogWarning(
-                    "unable to delete layer {Layer}, because it's currently assigned to {Environment}",
-                    identifier,
-                    envId);
-                return Result.Error(
-                    $"layer {identifier} is still assigned to {envId}, cannot delete",
-                    ErrorCode.LayerStillAssigned);
             }
 
             // layer isn't assigned - delete it
-            return await DeleteObject<EnvironmentLayer, LayerIdentifier>(
-                       identifier,
-                       new List<DomainEvent> { new EnvironmentLayerDeleted(identifier) },
-                       cancellationToken);
+            if (!assignedLayers.Any())
+            {
+                return await DeleteObject<EnvironmentLayer, LayerIdentifier>(
+                           identifier,
+                           new List<DomainEvent> { new EnvironmentLayerDeleted(identifier) },
+                           cancellationToken);
+            }
+
+            // layer is still assigned to 1..n environments
+            _logger.LogWarning(
+                "unable to delete layer {Layer}, "
+                + "because it's currently assigned to {NumEnvironments} environments; {Environments}",
+                identifier,
+                assignedLayers.Count,
+                string.Join(", ", assignedLayers.Select(id => id.ToString())));
+
+            string envIdList = string.Join('\n', assignedLayers.Select(id => $"- {id}"));
+
+            return Result.Error(
+                $"cannot delete layer {identifier} because it's still "
+                + $"assigned to {assignedLayers.Count} environments;\n{envIdList}",
+                ErrorCode.LayerStillAssigned);
         }
 
         /// <inheritdoc />
