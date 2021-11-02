@@ -13,6 +13,16 @@ namespace Bechtle.A365.ConfigService.Common.DomainEvents
         /// <inheritdoc cref="Type" />
         public override string Type => Payload is null ? typeof(TEventBase).Name : Payload.GetType().Name;
 
+        /// <summary>
+        ///     DO NOT USE - this is meant to be used by a serialization-library.
+        ///     Create a new instance of <see cref="LateBindingDomainEvent{TEventBase}"/>
+        /// </summary>
+        public LateBindingDomainEvent()
+        {
+            EventOwner = string.Empty;
+            Payload = default!;
+        }
+
         /// <inheritdoc />
         public LateBindingDomainEvent(string eventOwner, TEventBase payload) : base(eventOwner, payload)
         {

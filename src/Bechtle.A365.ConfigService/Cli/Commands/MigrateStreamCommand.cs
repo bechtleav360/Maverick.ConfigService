@@ -430,7 +430,7 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
                             json,
                             new JsonSerializerSettings
                             {
-                                TypeNameHandling = TypeNameHandling.All
+                                TypeNameHandling = TypeNameHandling.Auto
                             }) is { } deserialized)
                     {
                         state = deserialized;
