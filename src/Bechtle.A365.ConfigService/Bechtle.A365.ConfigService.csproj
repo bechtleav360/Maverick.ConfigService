@@ -2,7 +2,7 @@
 
   <!-- Global Stuff -->
   <PropertyGroup>
-    <Version>2.7.0</Version>
+    <Version>2.7.1</Version>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <LangVersion>9.0</LangVersion>
@@ -12,13 +12,6 @@
   <!-- AspNetCore Hosting / Use OOP hosting explicitly to maintain Linux-Compatibility -->
   <PropertyGroup>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
-  </PropertyGroup>
-
-  <!-- Docker Stuff -->
-  <PropertyGroup>
-    <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
-    <DockerTargetOS>Linux</DockerTargetOS>
-    <UserSecretsId>2b826f2b-63ef-4c6e-8ada-31dda61c5e2d</UserSecretsId>
   </PropertyGroup>
 
   <!-- Config-Dependent Metadata -->
