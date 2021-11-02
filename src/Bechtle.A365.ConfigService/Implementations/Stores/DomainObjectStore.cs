@@ -228,16 +228,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             try
             {
                 ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
-                List<long> possibleVersions = itemInfo.Versions
-                                                      .Where(kvp => !kvp.Value.IsMarkedDeleted)
-                                                      .OrderByDescending(kvp => kvp.Key)
-                                                      .Select(kvp => kvp.Key)
-                                                      .ToList();
-                long maxExistingVersion = possibleVersions.Any()
-                                              ? possibleVersions.FirstOrDefault()
-                                              : -1;
 
-                if (maxExistingVersion >= 0)
+                (long maxExistingVersion, ObjectLookupInfo objectStatus) =
+                    itemInfo.Versions
+                            .OrderByDescending(kvp => kvp.Key)
+                            .FirstOrDefault();
+
+                if (maxExistingVersion >= 0 && !objectStatus.IsMarkedDeleted)
                 {
                     IResult<TObject> result = await _fileStore.LoadObject<TObject, TIdentifier>(itemInfo.FileId, maxExistingVersion);
                     if (result.IsError)

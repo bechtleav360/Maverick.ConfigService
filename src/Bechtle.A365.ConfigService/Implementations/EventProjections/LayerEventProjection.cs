@@ -139,8 +139,8 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
             };
             // ReSharper restore ArrangeObjectCreationWhenTypeNotEvident
 
-            await OnLayerKeysChanged(removedLayer, impliedActions, _translator);
             await _objectStore.Remove<EnvironmentLayer, LayerIdentifier>(domainEvent.Payload.Identifier);
+            await OnLayerKeysChanged(removedLayer, impliedActions, _translator);
         }
 
         /// <inheritdoc />
@@ -208,8 +208,8 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
                 KeyPaths = GenerateKeyPaths(importedLayerKeys)
             };
 
-            await OnLayerKeysChanged(importedLayer, domainEvent.Payload.ModifiedKeys, _translator);
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(importedLayer);
+            await OnLayerKeysChanged(importedLayer, domainEvent.Payload.ModifiedKeys, _translator);
         }
 
         /// <inheritdoc />
@@ -282,8 +282,8 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
                 KeyPaths = GenerateKeyPaths(modifiedKeys)
             };
 
-            await OnLayerKeysChanged(modifiedLayer, domainEvent.Payload.ModifiedKeys, _translator);
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(modifiedLayer);
+            await OnLayerKeysChanged(modifiedLayer, domainEvent.Payload.ModifiedKeys, _translator);
         }
 
         /// <inheritdoc />

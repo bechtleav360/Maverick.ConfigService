@@ -79,8 +79,14 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
             foreach (LayerIdentifier layerId in layerIds)
             {
                 IResult<EnvironmentLayer> layerResult = await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layerId);
+
                 if (layerResult.IsError)
                 {
+                    if (layerResult.Code == ErrorCode.NotFound)
+                    {
+                        continue;
+                    }
+
                     return Result.Error<Dictionary<string, EnvironmentLayerKey>>(layerResult.Message, layerResult.Code);
                 }
 
