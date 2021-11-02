@@ -85,5 +85,10 @@
         ///     Pre-Requisite for an Operation was not met.
         /// </summary>
         PrerequisiteFailed = 15,
+
+        /// <summary>
+        ///     A given Layer is still assigned to one or more Environments, and cannot be deleted
+        /// </summary>
+        LayerStillAssigned = 16,
     }
 }
