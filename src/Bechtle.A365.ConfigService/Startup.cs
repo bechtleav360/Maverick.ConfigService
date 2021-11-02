@@ -325,7 +325,8 @@ namespace Bechtle.A365.ConfigService
                     .AddHostedService<GracefulShutdownService>()
                     .AddHostedService<TemporaryKeyCleanupService>()
                     .AddHostedService<DomainObjectProjection>()
-                    .AddHostedService<ProjectionCacheCleanupService>();
+                    .AddHostedService<ProjectionCacheCleanupService>()
+                    .AddHostedService<StreamHeadRetrieverService>();
         }
 
         private void RegisterEventProjection(IServiceCollection services)
@@ -385,7 +386,7 @@ namespace Bechtle.A365.ConfigService
                     .AddCheck<ProjectionStatusCheck>(
                         "Projection-Status",
                         HealthStatus.Healthy,
-                        new[] { Status },
+                        new[] { Readiness, Status },
                         TimeSpan.FromSeconds(1))
                     .AddRedis(
                         Configuration.GetSection("MemoryCache:Redis:ConnectionString").Get<string>(),

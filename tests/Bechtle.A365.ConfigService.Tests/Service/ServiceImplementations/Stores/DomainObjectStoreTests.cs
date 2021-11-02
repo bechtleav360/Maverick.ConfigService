@@ -90,22 +90,21 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
         [Fact]
         public async Task GetProjectedVersion_NoEventsProjected()
         {
-            IResult<long> result = await ObjectStore.GetProjectedVersion();
+            IResult<(Guid, long)> result = await ObjectStore.GetProjectedVersion();
 
-            AssertPositiveResult(result, -1);
+            AssertPositiveResult(result, (Guid.Empty, -1));
         }
 
         [Fact]
         public async Task GetProjectedVersion_VersionSetOnce()
         {
-            await ObjectStore.SetProjectedVersion(
-                Guid.NewGuid().ToString("D"),
-                42,
-                "Fake-Event");
+            var eventId = Guid.NewGuid();
 
-            IResult<long> result = await ObjectStore.GetProjectedVersion();
+            await ObjectStore.SetProjectedVersion(eventId.ToString("D"), 42, "Fake-Event");
 
-            AssertPositiveResult(result, 42);
+            IResult<(Guid, long)> result = await ObjectStore.GetProjectedVersion();
+
+            AssertPositiveResult(result, (eventId, 42));
         }
 
         [Fact]
@@ -116,14 +115,15 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations.Stores
                 42,
                 "Fake-Event");
 
+            var eventId = Guid.NewGuid();
             await ObjectStore.SetProjectedVersion(
-                Guid.NewGuid().ToString("D"),
+                eventId.ToString("D"),
                 43,
                 "Fake-Event");
 
-            IResult<long> result = await ObjectStore.GetProjectedVersion();
+            IResult<(Guid, long)> result = await ObjectStore.GetProjectedVersion();
 
-            AssertPositiveResult(result, 43);
+            AssertPositiveResult(result, (eventId, 43));
         }
 
         [Fact]

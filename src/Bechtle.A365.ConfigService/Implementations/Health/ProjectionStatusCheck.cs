@@ -13,9 +13,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
     /// </summary>
     public class ProjectionStatusCheck : IHealthCheck
     {
-        private static readonly object _statusLock = new object();
+        private static readonly object _statusLock = new();
         private static bool CurrentlyProjecting;
-        private static ProjectionStatus CurrentStatus;
+        private static ProjectionStatus? CurrentStatus;
+        private static StreamHead? CurrentStreamHead;
+
+        /// <summary>
+        ///     Shows if the internal projection has, at one point, caught up to the current stream-head.
+        ///     If it fell behind at any point after that (other instance writes new events),
+        ///     it's still considered "caught-up"
+        /// </summary>
+        private static bool HasCaughtUp;
 
         private readonly ILogger<ProjectionStatusCheck> _logger;
 
@@ -29,33 +37,54 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
         }
 
         /// <inheritdoc />
-        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
+        public Task<HealthCheckResult> CheckHealthAsync(
+            HealthCheckContext context,
+            CancellationToken cancellationToken = new())
         {
             ProjectionStatus copiedStatus;
+            StreamHead copiedHead;
 
             lock (_statusLock)
             {
                 copiedStatus = new ProjectionStatus(
-                    CurrentStatus.EventId,
-                    CurrentStatus.EventType,
-                    CurrentStatus.EventNumber,
-                    CurrentStatus.StartedAt,
-                    CurrentStatus.FinishedAt,
-                    CurrentStatus.Error
+                    CurrentStatus?.EventId ?? Guid.Empty,
+                    CurrentStatus?.EventType ?? string.Empty,
+                    CurrentStatus?.EventNumber ?? 0,
+                    CurrentStatus?.StartedAt ?? DateTime.UnixEpoch,
+                    CurrentStatus?.FinishedAt ?? DateTime.UnixEpoch,
+                    CurrentStatus?.Error ?? string.Empty
                 );
+
+                copiedHead = new StreamHead(
+                    CurrentStreamHead?.EventId ?? Guid.Empty,
+                    CurrentStreamHead?.EventType ?? string.Empty,
+                    CurrentStreamHead?.EventNumber ?? 0);
+            }
+
+            var projectionStatusInfo = new Dictionary<string, object?>
+            {
+                { "HeadEventId", copiedHead.EventId },
+                { "HeadEventType", copiedHead.EventType },
+                { "HeadEventNumber", copiedHead.EventNumber },
+                { "EventId", copiedStatus.EventId },
+                { "EventType", copiedStatus.EventType },
+                { "EventNumber", copiedStatus.EventNumber },
+                { "StartedAt", copiedStatus.StartedAt },
+                { "FinishedAt", copiedStatus.FinishedAt },
+                { "Error", copiedStatus.Error },
+            };
+
+            if (HasCaughtUp)
+            {
+                return Task.FromResult(
+                    HealthCheckResult.Healthy(
+                        data: projectionStatusInfo));
             }
 
             return Task.FromResult(
-                HealthCheckResult.Healthy(
-                    data: new Dictionary<string, object?>
-                    {
-                        { "EventId", copiedStatus.EventId },
-                        { "EventType", copiedStatus.EventType },
-                        { "EventNumber", copiedStatus.EventNumber },
-                        { "StartedAt", copiedStatus.StartedAt },
-                        { "FinishedAt", copiedStatus.FinishedAt },
-                        { "Error", copiedStatus.Error }
-                    }));
+                HealthCheckResult.Unhealthy(
+                    "projection has not caught up to stream-head yet.",
+                    data: projectionStatusInfo));
         }
 
         /// <summary>
@@ -82,6 +111,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
 
                 CurrentlyProjecting = true;
 
+                // set to true when possible
+                // don't reset this flag - see CurrentStreamHead for more info
+                if (CurrentStreamHead?.EventId == CurrentStatus?.EventId)
+                {
+                    HasCaughtUp = true;
+                }
+
                 _logger.LogDebug(
                     "set status to currently processing event {EventId:D}#{EventNumber}-{EventType}",
                     eventHeader.EventId,
@@ -98,13 +134,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
         {
             lock (_statusLock)
             {
-                if (CurrentStatus.EventId == eventHeader.EventId)
+                if (CurrentStatus?.EventId == eventHeader.EventId)
                 {
                     CurrentStatus = new ProjectionStatus(
                         eventHeader.EventId,
                         eventHeader.EventType,
                         eventHeader.EventNumber,
-                        CurrentStatus.StartedAt,
+                        CurrentStatus?.StartedAt ?? DateTime.UnixEpoch,
                         DateTime.UtcNow,
                         string.Empty);
 
@@ -128,13 +164,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
         {
             lock (_statusLock)
             {
-                if (CurrentStatus.EventId == eventHeader.EventId)
+                if (CurrentStatus?.EventId == eventHeader.EventId)
                 {
                     CurrentStatus = new ProjectionStatus(
                         eventHeader.EventId,
                         eventHeader.EventType,
                         eventHeader.EventNumber,
-                        CurrentStatus.StartedAt,
+                        CurrentStatus?.StartedAt ?? DateTime.UnixEpoch,
                         DateTime.UtcNow,
                         exception.Message);
 
@@ -150,7 +186,38 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
         }
 
         /// <summary>
-        ///     actual status-data with <see cref="HealthCheckResult"/>
+        ///     Sets the currently latest event in the configured Stream
+        /// </summary>
+        /// <param name="eventHeader">metadata for the last event in the stream</param>
+        public void SetHeadEvent(StreamedEventHeader eventHeader)
+        {
+            lock (_statusLock)
+            {
+                CurrentStreamHead = new StreamHead(
+                    eventHeader.EventId,
+                    eventHeader.EventType,
+                    eventHeader.EventNumber);
+
+                // this is for the case when:
+                // 1. the service starts with an up-to-date cache
+                // 2. the projection starts at the head-event (CurrentStatus)
+                // 3. the Head is set to the same event (CurrentStreamHead)
+                // usually 2. and 3. are switched because the service is catching up
+                if (CurrentStreamHead?.EventId == CurrentStatus?.EventId)
+                {
+                    HasCaughtUp = true;
+                }
+
+                _logger.LogDebug(
+                    "set head to event {EventId:D}#{EventNumber}-{EventType}",
+                    eventHeader.EventId,
+                    eventHeader.EventNumber,
+                    eventHeader.EventType);
+            }
+        }
+
+        /// <summary>
+        ///     actual status-data with <see cref="HealthCheckResult" />
         /// </summary>
         private readonly struct ProjectionStatus
         {
@@ -175,6 +242,26 @@ namespace Bechtle.A365.ConfigService.Implementations.Health
                 StartedAt = startedAt;
                 FinishedAt = finishedAt;
                 Error = error;
+            }
+        }
+
+        /// <summary>
+        ///     information for the current head-event in the configured config-stream
+        /// </summary>
+        private readonly struct StreamHead
+        {
+            public readonly Guid EventId;
+            public readonly string EventType;
+            public readonly ulong EventNumber;
+
+            public StreamHead(
+                Guid eventId,
+                string eventType,
+                ulong eventNumber)
+            {
+                EventId = eventId;
+                EventType = eventType;
+                EventNumber = eventNumber;
             }
         }
     }

@@ -714,14 +714,14 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             // do this as early as possible, so we can detect if changes are made while we get ES-config and split events
-            IResult<long> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
+            IResult<(Guid, long)> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
             if (lastProjectedEventResult.IsError)
             {
                 _logger.LogWarning("unable to determine which event was last projected to write safely into stream");
                 return lastProjectedEventResult;
             }
 
-            long lastProjectedEvent = lastProjectedEventResult.Data;
+            (Guid _, long lastProjectedEvent) = lastProjectedEventResult.Data;
 
             long maxEventSize;
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))

@@ -425,7 +425,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         public async Task ImportExistingLayer()
         {
             AssertLoadsObjectSuccessfully<EnvironmentLayer, LayerIdentifier>(new EnvironmentLayer(new LayerIdentifier("Foo")));
-            AssertGetsProjectedVersion();
+            AssertGetsProjectedVersion(Guid.NewGuid());
             AssertEventStoreOptionsLoaded();
             _eventStore.Setup(
                            e => e.WriteEventsAsync(
@@ -455,7 +455,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
         public async Task ImportNewLayer()
         {
             AssertLoadsObject<EnvironmentLayer, LayerIdentifier>();
-            AssertGetsProjectedVersion();
+            AssertGetsProjectedVersion(Guid.NewGuid());
             AssertEventStoreOptionsLoaded();
             _eventStore.Setup(
                            e => e.WriteEventsAsync(
@@ -500,7 +500,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                 69);
 
             AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
-            AssertGetsProjectedVersion();
+            AssertGetsProjectedVersion(Guid.NewGuid());
 
             _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
                         .ReturnsAsync(
@@ -527,7 +527,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                 69);
 
             AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
-            AssertGetsProjectedVersion();
+            AssertGetsProjectedVersion(Guid.NewGuid());
 
             _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
                         .ReturnsAsync(
@@ -554,7 +554,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                 69);
 
             AssertLoadsObjectSuccessfully<PreparedConfiguration, ConfigurationIdentifier>(new PreparedConfiguration(configId));
-            AssertGetsProjectedVersion();
+            AssertGetsProjectedVersion(Guid.NewGuid());
 
             _objectStore.Setup(m => m.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(It.IsAny<ConfigurationIdentifier>()))
                         .ReturnsAsync(
@@ -614,9 +614,9 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
                        }
                    });
 
-        private void AssertGetsProjectedVersion(long version = 4711)
+        private void AssertGetsProjectedVersion(Guid id, long version = 4711)
             => _objectStore.Setup(m => m.GetProjectedVersion())
-                           .ReturnsAsync(Result.Success(version))
+                           .ReturnsAsync(Result.Success((id, version)))
                            .Verifiable("current event-version was not queried - writes are likely not safe");
 
         private void AssertLoadsObject<TDomainObject, TIdentifier>()
@@ -689,7 +689,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             where TIdentifier : Identifier
         {
             AssertLoadsObject<TDomainObject, TIdentifier>();
-            AssertGetsProjectedVersion();
+            AssertGetsProjectedVersion(Guid.NewGuid());
             AssertWritesOneEvent<TEvent>();
             AssertEventStoreOptionsLoaded();
 
@@ -714,7 +714,7 @@ namespace Bechtle.A365.ConfigService.Tests.Service.ServiceImplementations
             where TIdentifier : Identifier
         {
             AssertLoadsObjectSuccessfully<TDomainObject, TIdentifier>(domainObject);
-            AssertGetsProjectedVersion();
+            AssertGetsProjectedVersion(Guid.NewGuid());
             AssertWritesOneEvent<TEvent>();
             AssertEventStoreOptionsLoaded();
 

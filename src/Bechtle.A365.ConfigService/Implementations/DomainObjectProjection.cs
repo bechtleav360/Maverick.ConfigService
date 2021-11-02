@@ -67,18 +67,21 @@ namespace Bechtle.A365.ConfigService.Implementations
         /// <inheritdoc />
         protected override void ConfigureStreamSubscription(IStreamSubscriptionBuilder subscriptionBuilder)
         {
-            long lastProjectedEvent = -1;
+            var lastProjectedEventId = Guid.Empty;
+            long lastProjectedEventNumber = -1;
             try
             {
-                IResult<long> result = _objectStore.GetProjectedVersion().Result;
+                IResult<(Guid, long)> result = _objectStore.GetProjectedVersion().Result;
                 if (result.IsError)
                 {
                     _logger.LogWarning("unable to tell which event was last projected, starting from scratch");
                 }
                 else
                 {
-                    _logger.LogInformation("starting DomainEvent-Projection at event {LastProjectedEvent}", lastProjectedEvent);
-                    lastProjectedEvent = result.Data;
+                    _logger.LogInformation(
+                        "starting DomainEvent-Projection at event {LastProjectedEvent}",
+                        lastProjectedEventNumber);
+                    (lastProjectedEventId, lastProjectedEventNumber) = result.Data;
                 }
             }
             catch (Exception e)
@@ -89,7 +92,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             subscriptionBuilder.ToStream(_configuration.Value.Stream);
 
             // having projected event-0 is a valid possibility
-            if (lastProjectedEvent < 0)
+            if (lastProjectedEventNumber < 0)
             {
                 subscriptionBuilder.FromStart();
             }
@@ -98,8 +101,19 @@ namespace Bechtle.A365.ConfigService.Implementations
                 // we're losing half the amount of events we could be projecting
                 // but the ConfigService isn't meant to handle either
                 // 18.446.744.073.709.551.615 or 9.223.372.036.854.775.807 events, so cutting off half our range seems fine
-                subscriptionBuilder.FromEvent((ulong)lastProjectedEvent);
+                subscriptionBuilder.FromEvent((ulong)lastProjectedEventNumber);
             }
+
+            _projectionStatus.SetCurrentlyProjecting(
+                new StreamedEventHeader
+                {
+                    Created = DateTime.UnixEpoch,
+                    EventId = lastProjectedEventId,
+                    EventNumber = (ulong)lastProjectedEventNumber,
+                    EventStreamId = string.Empty,
+                    EventType = string.Empty,
+                    StreamId = string.Empty
+                });
 
             _projectionHealthCheck.SetReady();
         }

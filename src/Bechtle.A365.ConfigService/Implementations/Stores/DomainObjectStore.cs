@@ -88,7 +88,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         }
 
         /// <inheritdoc />
-        public Task<IResult<long>> GetProjectedVersion()
+        public Task<IResult<(Guid, long)>> GetProjectedVersion()
         {
             try
             {
@@ -100,15 +100,22 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 if (lastEntry is null)
                 {
                     _logger.LogInformation("no record of any projected events found, returning -1 as marker-value");
-                    return Task.FromResult(Result.Success<long>(-1));
+                    return Task.FromResult(
+                        Result.Success(
+                            (Guid.Empty, (long)-1)));
                 }
 
-                return Task.FromResult(Result.Success(lastEntry.LastWrittenEvent));
+                return Task.FromResult(
+                    Result.Success(
+                        (Guid.Parse(lastEntry.LastWrittenEventId), lastEntry.LastWrittenEvent)));
             }
             catch (Exception e)
             {
                 _logger.LogWarning(e, "unable to read latest projected event");
-                return Task.FromResult(Result.Error<long>("unable to read latest projected event", ErrorCode.DbQueryError));
+                return Task.FromResult(
+                    Result.Error<(Guid, long)>(
+                        "unable to read latest projected event",
+                        ErrorCode.DbQueryError));
             }
         }
 

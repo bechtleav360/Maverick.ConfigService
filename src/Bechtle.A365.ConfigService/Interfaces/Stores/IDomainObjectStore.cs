@@ -16,8 +16,8 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
         /// <summary>
         ///     Check the store for the highest projected version (using <see cref="DomainObject{T}.CurrentVersion" />)
         /// </summary>
-        /// <returns>the last event-number that was projected, or a failed result</returns>
-        Task<IResult<long>> GetProjectedVersion();
+        /// <returns>Tuple of the last Id and Number of the last event that was projected, or a failed result</returns>
+        Task<IResult<(Guid, long)>> GetProjectedVersion();
 
         /// <summary>
         ///     List all objects of type <typeparamref name="TObject" />
