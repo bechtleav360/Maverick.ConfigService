@@ -89,52 +89,6 @@ namespace Bechtle.A365.ConfigService.Cli.Commands
             CommandOptionType.NoValue)]
         public bool UseLocalData { get; set; } = false;
 
-        /// <summary>
-        ///     Accuracy with which the app should migrate the data
-        /// </summary>
-        public enum MigrationAccuracy
-        {
-            /// <summary>
-            ///     only the latest relevant state is migrated from one version to another.
-            ///     certain Events will be cut from the migrated stream, because it is expected to be recreated (Structures / Configurations).
-            /// </summary>
-            Lossy,
-
-            /// <summary>
-            ///     the complete state will be migrated from one version to another, re-creating all events with equivalent events of the newer version
-            /// </summary>
-            Lossless
-        }
-
-        /// <summary>
-        ///     Named versions of EventStore-Streams
-        /// </summary>
-        public enum StreamVersion
-        {
-            /// <summary>
-            ///     Version is not defined - default-value to catch errors
-            /// </summary>
-            Undefined = 0,
-
-            /// <summary>
-            ///     First version of DomainEvents that can be migrated.
-            ///     This is the Version where Environments were modified directly
-            /// </summary>
-            Initial = 1,
-
-            /// <summary>
-            ///     Second version of DomainEvents.
-            ///     This is the version that split Environments into Layers that can be assigned and modified
-            /// </summary>
-            LayeredEnvironments = 2,
-
-            /// <summary>
-            ///     Third version of DomainEvents.
-            ///     This is the version that wrapped all DomainEvents in the IDomainEvent shell provided by ServiceBase.
-            /// </summary>
-            ServiceBased = 3
-        }
-
         /// <inheritdoc />
         public MigrateStreamCommand(IOutput output) : base(output)
         {
