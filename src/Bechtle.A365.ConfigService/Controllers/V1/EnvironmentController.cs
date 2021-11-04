@@ -66,7 +66,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to add new environment at ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                Logger.LogError(
+                    e,
+                    "failed to add new environment at (Category='{Category}'; Name='{Name}')",
+                    category,
+                    name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to add new environment");
             }
         }
@@ -101,7 +105,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to assign Layers to Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                Logger.LogError(
+                    e,
+                    "failed to assign Layers to Environment (Category='{category}'; Name='{Name}')",
+                    category,
+                    name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to assign layers to environment");
             }
         }
@@ -135,7 +143,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to delete environment at ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                Logger.LogError(
+                    e,
+                    "failed to delete environment at (Category='{Category}'; Name='{Name}')",
+                    category,
+                    name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to delete environment");
             }
         }
@@ -165,7 +177,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to retrieve assigned Layers for Environment ({nameof(category)}: {category}; {nameof(name)}: {name})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve assigned Layers for Environment (Category='{Category}'; Name='{Name}')",
+                    category,
+                    name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve assigned layers for environment");
             }
         }
@@ -220,10 +236,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve available Environments ("
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
+                    "failed to retrieve available Environments "
+                    + "(Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available environments");
             }
         }
@@ -254,10 +271,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve available Environments ("
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
+                    "failed to retrieve available Environments "
+                    + "(Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available environments");
             }
         }
@@ -313,14 +331,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve Environment-Keys ("
-                    + $"{nameof(category)}: {category}; "
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
+                    + "Category='{Category}'; Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    category,
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
             }
         }
@@ -373,14 +394,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve Environment-Keys ("
-                    + $"{nameof(category)}: {category}; "
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
+                    + "Category='{Category}'; Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    category,
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
             }
         }
@@ -434,13 +458,16 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve Environment-Keys ("
-                    + $"{nameof(category)}: {category}; "
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
+                    "failed to retrieve Environment-Json ("
+                    + "Category='{Category}'; Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "TargetVersion='{TargetVersion}')",
+                    category,
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment as json");
             }
         }
@@ -497,16 +524,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve Environment-Keys ("
-                    + $"{nameof(category)}: {category}; "
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
+                    "failed to retrieve Environment-Metadata ("
+                    + "Category='{Category}'; Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    category,
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-metadata");
             }
         }
 
@@ -562,16 +592,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve Environment-Keys ("
-                    + $"{nameof(category)}: {category}; "
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-keys");
+                    "failed to retrieve Environment-Key-Objects ("
+                    + "Category='{Category}'; Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    category,
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-key-objects");
             }
         }
 
@@ -598,7 +631,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to retrieve Environment-Metadata (" + $"{nameof(category)}: {category}; " + $"{nameof(name)}: {name})");
+                Logger.LogError(
+                    e,
+                    "failed to retrieve Environment-Metadata (Category='{Category}'; Name='{Name}')",
+                    category,
+                    name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve environment-metadata");
             }
         }

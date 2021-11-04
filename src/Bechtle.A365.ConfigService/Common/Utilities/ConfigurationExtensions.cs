@@ -26,11 +26,12 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             {
                 logger?.LogInformation("Configuration has been reloaded - applying LoggingConfiguration");
 
-                var nLogSection = configuration.GetSection("LoggingConfiguration")?.GetSection("NLog");
+                IConfigurationSection? nLogSection = configuration.GetSection("LoggingConfiguration")
+                                                                  ?.GetSection("NLog");
 
                 if (nLogSection is null)
                 {
-                    logger?.LogInformation("Section JsonLoggingConfiguration:NLog not found; skipping reconfiguration");
+                    logger?.LogInformation("Section LoggingConfiguration:NLog not found; skipping reconfiguration");
                     return configuration;
                 }
 
@@ -40,7 +41,7 @@ namespace Bechtle.A365.ConfigService.Common.Utilities
             }
             catch (Exception e)
             {
-                logger?.LogWarning($"new LoggingConfiguration could not be applied: {e}");
+                logger?.LogWarning(e, "new LoggingConfiguration could not be applied");
             }
 
             return configuration;

@@ -99,8 +99,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     export.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
 
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to import '{export.Environments.Length}' environments ({targetEnvironments})");
-                return StatusCode(HttpStatusCode.InternalServerError, $"failed to import environments '{targetEnvironments}'");
+                Logger.LogError(
+                    e,
+                    "failed to import '{NumEnvironments}' environments ({Environments})",
+                    export.Environments.Length,
+                    targetEnvironments);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    $"failed to import environments '{targetEnvironments}'");
             }
         }
     }

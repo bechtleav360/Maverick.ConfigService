@@ -164,7 +164,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                _logger.LogDebug($"retrieving stale configurations, range={range}");
+                _logger.LogDebug("retrieving stale configurations, range={Range}", range);
                 return await _domainObjectManager.GetStaleConfigurations(range, CancellationToken.None);
             }
             catch (Exception e)
@@ -227,10 +227,10 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         public async Task<IResult<string>> GetVersion(ConfigurationIdentifier identifier, DateTime when)
         {
             var formattedParams = "("
-                                  + $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Category)}: {identifier.Environment.Category}; "
-                                  + $"{nameof(identifier.Environment)}{nameof(identifier.Environment.Name)}: {identifier.Environment.Name}; "
-                                  + $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Name)}: {identifier.Structure.Name}; "
-                                  + $"{nameof(identifier.Structure)}{nameof(identifier.Structure.Version)}: {identifier.Structure.Version}"
+                                  + $"Environment.Category: {identifier.Environment.Category}; "
+                                  + $"Environment.Name: {identifier.Environment.Name}; "
+                                  + $"Structure.Name: {identifier.Structure.Name}; "
+                                  + $"Structure.Version: {identifier.Structure.Version}"
                                   + ")";
 
             try
@@ -249,7 +249,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"failed to retrieve used environment keys for id: {formattedParams}");
+                _logger.LogError(e, "failed to retrieve used environment keys for id: {Configuration}", identifier);
                 return Result.Error<string>(
                     $"failed to retrieve used environment keys for id: {formattedParams}: {e}",
                     ErrorCode.DbQueryError);

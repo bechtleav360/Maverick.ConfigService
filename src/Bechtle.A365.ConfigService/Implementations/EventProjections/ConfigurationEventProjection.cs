@@ -59,7 +59,7 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
             StreamedEventHeader eventHeader,
             IDomainEvent<ConfigurationBuilt> domainEvent)
         {
-            _logger.LogDebug($"version used during compilation: {eventHeader.EventNumber}");
+            _logger.LogDebug("version used during compilation: {ConfigurationVersion}", eventHeader.EventNumber);
 
             ConfigurationIdentifier configId = domainEvent.Payload.Identifier;
 

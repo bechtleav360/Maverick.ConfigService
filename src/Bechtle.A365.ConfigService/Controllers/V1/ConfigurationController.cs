@@ -112,7 +112,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             else
             {
-                Logger.LogInformation($"request for new Configuration ({configId}) denied due to it not being stale");
+                Logger.LogInformation(
+                    "request for new Configuration ({Configuration}) denied due to it not being stale",
+                    configId);
                 requestApproved = false;
             }
 
@@ -231,14 +233,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at ("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
-                    + $"{nameof(environmentName)}: {environmentName}; "
-                    + $"{nameof(structureName)}: {structureName}; "
-                    + $"{nameof(structureVersion)}: {structureVersion}; "
-                    + $"{nameof(when)}: {when}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length})");
+                    "failed to get keys for configuration ("
+                    + "EnvCategory='{EnvCategory}'; EnvName='{EnvName}'; "
+                    + "StructName='{StructName}'; StructVersion='{StructVersion}'; "
+                    + "When='{When}'; Offset='{Offset}'; Length='{Length}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion,
+                    when,
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
             }
         }
@@ -295,14 +300,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at ("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
-                    + $"{nameof(environmentName)}: {environmentName}; "
-                    + $"{nameof(structureName)}: {structureName}; "
-                    + $"{nameof(structureVersion)}: {structureVersion}; "
-                    + $"{nameof(when)}: {when}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length})");
+                    "failed to get keys for configuration ("
+                    + "EnvCategory='{EnvCategory}'; EnvName='{EnvName}'; "
+                    + "StructName='{StructName}'; StructVersion='{StructVersion}'; "
+                    + "When='{When}'; Offset='{Offset}'; Length='{Length}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion,
+                    when,
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
             }
         }
@@ -357,14 +365,18 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
+                KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve configuration for ("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}, "
-                    + $"{nameof(environmentName)}: {environmentName}, "
-                    + $"{nameof(structureName)}: {structureName}, "
-                    + $"{nameof(structureVersion)}: {structureVersion}, "
-                    + $"{nameof(when)}: {when:O})");
+                    "failed to get keys for configuration ("
+                    + "EnvCategory='{EnvCategory}'; EnvName='{EnvName}'; "
+                    + "StructName='{StructName}'; StructVersion='{StructVersion}'; "
+                    + "When='{When}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion,
+                    when);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration");
             }
         }
@@ -399,7 +411,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at (" + $"{nameof(when)}: {when}; " + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
+                    "failed to get configurations (When='{When}'; Offset='{Offset}'; Length='{Length})",
+                    when,
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available configurations");
             }
         }
@@ -429,7 +444,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at (" + $"{nameof(when)}: {when}; " + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
+                    "failed to get configurations (When='{When}'; Offset='{Offset}'; Length='{Length})",
+                    when,
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available configurations");
             }
         }
@@ -458,7 +476,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
+                Logger.LogError(
+                    e,
+                    "failed to get stale configurations (Offset='{Offset}'; Length='{Length})",
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve stale configurations");
             }
         }
@@ -482,7 +504,11 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add new environment at (" + $"{nameof(offset)}: {offset}; " + $"{nameof(length)}: {length})");
+                Logger.LogError(
+                    e,
+                    "failed to get stale configurations (Offset='{Offset}'; Length='{Length})",
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve stale configurations");
             }
         }
@@ -534,14 +560,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at ("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
-                    + $"{nameof(environmentName)}: {environmentName}; "
-                    + $"{nameof(structureName)}: {structureName}; "
-                    + $"{nameof(structureVersion)}: {structureVersion}; "
-                    + $"{nameof(when)}: {when}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length})");
+                    "failed to get used keys for configuration ("
+                    + "EnvCategory='{EnvCategory}'; EnvName='{EnvName}'; "
+                    + "StructName='{StructName}'; StructVersion='{StructVersion}'; "
+                    + "When='{When}'; Offset='{Offset}'; Length='{Length}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion,
+                    when,
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve used keys in configuration");
             }
         }
@@ -591,14 +620,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at ("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
-                    + $"{nameof(environmentName)}: {environmentName}; "
-                    + $"{nameof(structureName)}: {structureName}; "
-                    + $"{nameof(structureVersion)}: {structureVersion}; "
-                    + $"{nameof(when)}: {when}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length})");
+                    "failed to get used keys for configuration ("
+                    + "EnvCategory='{EnvCategory}'; EnvName='{EnvName}'; "
+                    + "StructName='{StructName}'; StructVersion='{StructVersion}'; "
+                    + "When='{When}'; Offset='{Offset}'; Length='{Length}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion,
+                    when,
+                    offset,
+                    length);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve used keys in configuration");
             }
         }
@@ -646,12 +678,15 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at ("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
-                    + $"{nameof(environmentName)}: {environmentName}; "
-                    + $"{nameof(structureName)}: {structureName}; "
-                    + $"{nameof(structureVersion)}: {structureVersion}; "
-                    + $"{nameof(when)}: {when})");
+                    "failed to get version for configuration ("
+                    + "EnvCategory='{EnvCategory}'; EnvName='{EnvName}'; "
+                    + "StructName='{StructName}'; StructVersion='{StructVersion}'; "
+                    + "When='{When}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion,
+                    when);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration-version");
             }
         }
@@ -689,11 +724,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to read metadata for configuration("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
-                    + $"{nameof(environmentName)}: {environmentName}; "
-                    + $"{nameof(structureName)}: {structureName}; "
-                    + $"{nameof(structureVersion)}: {structureVersion})");
+                    "failed to get metadata for configuration ("
+                    + "EnvCategory='{EnvCategory}'; EnvName='{EnvName}'; "
+                    + "StructName='{StructName}'; StructVersion='{StructVersion}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve configuration-metadata");
             }
         }

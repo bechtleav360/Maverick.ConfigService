@@ -121,11 +121,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to add new environment at ("
-                    + $"{nameof(environmentCategory)}: {environmentCategory}; "
-                    + $"{nameof(environmentName)}: {environmentName}; "
-                    + $"{nameof(structureName)}: {structureName}; "
-                    + $"{nameof(structureVersion)}: {structureVersion})");
+                    "failed to preview configuration for ("
+                    + "EnvironmentCategory='{EnvironmentCategory}'; EnvironmentName='{EnvironmentName}'; "
+                    + "StructureName='{StructureName}'; StructureVersion='{StructureVersion}')",
+                    environmentCategory,
+                    environmentName,
+                    structureName,
+                    structureVersion);
                 return Ok(JsonDocument.Parse("{}").RootElement);
             }
         }
@@ -299,7 +301,10 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return new Dictionary<string, string?>(result.CheckedData.Items);
                 }
 
-                Logger.LogWarning($"could not retrieve referenced environment '{id}' for preview: {result.Message}");
+                Logger.LogWarning(
+                    "could not retrieve referenced environment '{Environment}' for preview: {ErrorMessage}",
+                    id,
+                    result.Message);
             }
 
             // if no reference or couldn't retrieve keys - fall back to custom-keys
@@ -323,8 +328,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 }
 
                 Logger.LogWarning(
-                    $"could not retrieve referenced structure / variables '{id}' for preview: "
-                    + $"{(structResult.IsError ? structResult.Message : variableResult.Message)}");
+                    "could not retrieve referenced structure / variables '{Structure}' for preview: {ErrorMessage}",
+                    id,
+                    structResult.IsError ? structResult.Message : variableResult.Message);
             }
 
             return (Structure: structure.Keys.ToDictionary(

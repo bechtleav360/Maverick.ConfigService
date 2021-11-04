@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bechtle.A365.ConfigService.Common;
 using Bechtle.A365.ConfigService.Common.Events;
 using Bechtle.A365.ConfigService.Interfaces.Stores;
 using Bechtle.A365.Core.EventBus.Abstraction;
@@ -71,14 +72,14 @@ namespace Bechtle.A365.ConfigService.Implementations
             var tempStore = scope.ServiceProvider.GetRequiredService<ITemporaryKeyStore>();
             var eventBus = scope.ServiceProvider.GetRequiredService<IEventBus>();
 
-            var result = await tempStore.GetAll();
+            IResult<IDictionary<string, IDictionary<string, string?>>> result = await tempStore.GetAll();
 
             if (cancellationToken.IsCancellationRequested)
                 return;
 
             if (result.IsError)
             {
-                _logger.LogWarning($"could not retrieve keys from '{nameof(ITemporaryKeyStore)}', will probably try again soon");
+                _logger.LogWarning("could not retrieve keys from '{KeyStore}', will probably try again soon", nameof(ITemporaryKeyStore));
                 return;
             }
 
@@ -87,24 +88,34 @@ namespace Bechtle.A365.ConfigService.Implementations
                 if (cancellationToken.IsCancellationRequested)
                     return;
 
-                _logger.LogDebug($"searching through region '{region}' for keys to clean up");
+                _logger.LogDebug("searching through region '{TempKeyRegion}' for keys to clean up", region);
                 var keysToExpire = new List<string>();
 
-                var lastDotIndex = region.LastIndexOf('.');
-                var structure = region.Substring(0, lastDotIndex);
-                var version = int.Parse(region.Substring(lastDotIndex + 1));
+                int lastDotIndex = region.LastIndexOf('.');
+                string structure = region[..lastDotIndex];
+                int version = int.Parse(region[(lastDotIndex + 1)..]);
 
-                _logger.LogDebug($"extracted Structure: '{structure}'; Version: '{version}' from region '{region}'");
+                _logger.LogDebug(
+                    "extracted Structure: '{Structure}'; Version: '{Version}' from region '{TempKeyRegion}'",
+                    structure,
+                    version,
+                    region);
 
                 _logger.LogTrace("searching for expired keys");
-                foreach (var (key, value) in data)
+                foreach ((string key, string? value) in data)
                     if (string.IsNullOrWhiteSpace(value))
                         keysToExpire.Add(key);
 
-                _logger.LogDebug($"found '{keysToExpire.Count}' keys in '{region}' that will be removed");
+                _logger.LogDebug(
+                    "found '{ExpiredKeyCount}' keys in '{TempKeyRegion}' that will be removed",
+                    keysToExpire.Count,
+                    region);
 
-                if (keysToExpire.Any() && _logger.IsEnabled(LogLevel.Trace))
-                    _logger.LogTrace($"expired keys that will be removed from region '{region}': {string.Join("; ", keysToExpire)}");
+                if (keysToExpire.Any())
+                    _logger.LogTrace(
+                        "expired keys that will be removed from region '{TempKeyRegion}': {ExpiredKeys}",
+                        region,
+                        string.Join("; ", keysToExpire));
 
                 if (cancellationToken.IsCancellationRequested)
                     return;

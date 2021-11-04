@@ -65,7 +65,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to add new layer ({nameof(name)}: {name})");
+                Logger.LogError(e, "failed to add new layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to add new layer");
             }
         }
@@ -100,7 +100,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to clone layer ({nameof(name)}: {name}, {nameof(cloneName)}: {cloneName})");
+                Logger.LogError(e, "failed to clone layer (Name='{Name}'; CloneName='{CloneName}')", name, cloneName);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to clone layer");
             }
         }
@@ -130,7 +130,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to delete layer ({nameof(name)}: {name})");
+                Logger.LogError(e, "failed to delete layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to delete layer");
             }
         }
@@ -165,11 +165,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve available Layers ("
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available layers");
+                    "failed to retrieve available Layers "
+                    + "(Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion})",
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "failed to retrieve available layers");
             }
         }
 
@@ -199,11 +202,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve available Layers ("
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve available layers");
+                    "failed to retrieve available Layers "
+                    + "(Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "failed to retrieve available layers");
             }
         }
 
@@ -256,14 +262,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve Layer-Keys ("
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
+                    + "Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "failed to retrieve layer-keys");
             }
         }
 
@@ -313,14 +324,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve Layer-Keys ("
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
+                    + "Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "failed to retrieve layer-keys");
             }
         }
 
@@ -371,13 +387,18 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve Layer-Keys ("
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer as json");
+                    "failed to retrieve Layer-Json ("
+                    + "Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "TargetVersion='{TargetVersion}')",
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    targetVersion);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "failed to retrieve layer as json");
             }
         }
 
@@ -431,15 +452,20 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve Layer-Keys ("
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
+                    "failed to retrieve Layer-Key-Objects ("
+                    + "Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "failed to retrieve layer-key-objects");
             }
         }
 
@@ -493,15 +519,20 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
                 Logger.LogError(
                     e,
-                    "failed to retrieve Layer-Keys ("
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(filter)}: {filter}; "
-                    + $"{nameof(preferExactMatch)}: {preferExactMatch}; "
-                    + $"{nameof(root)}: {root}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion})");
-                return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-keys");
+                    "failed to retrieve Layer-Key-Objects ("
+                    + "Name='{Name}'; "
+                    + "Filter='{Filter}'; PreferExactMatch='{PreferExactMatch}'; Root='{Root}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    name,
+                    filter,
+                    preferExactMatch,
+                    root,
+                    offset,
+                    length,
+                    targetVersion);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "failed to retrieve layer-key-objects");
             }
         }
 
@@ -539,7 +570,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to delete keys from Layer ({nameof(name)}: {name})");
+                Logger.LogError(e, "failed to delete keys from Layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to delete keys");
             }
         }
@@ -588,7 +619,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Logger.LogError(e, $"failed to update keys of Layer ({nameof(name)}: {name})");
+                Logger.LogError(e, "failed to update keys of Layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to update keys");
             }
         }
@@ -613,7 +644,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to read metadata for layer({Name})", name);
+                Logger.LogError(e, "failed to read metadata for layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-metadata");
             }
         }
@@ -640,7 +671,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to read metadata for layer({Name})", name);
+                Logger.LogError(e, "failed to read metadata for layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-metadata");
             }
         }
@@ -683,7 +714,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to read metadata for layer({Name})", name);
+                Logger.LogError(e, "failed to read metadata for layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve layer-metadata");
             }
         }
@@ -721,7 +752,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to add tag to layer({Name})", name);
+                Logger.LogError(e, "failed to add tag to layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to add tag to layer");
             }
         }
@@ -759,7 +790,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             catch (Exception e)
             {
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, "failed to remove tag from layer({Name})", name);
+                Logger.LogError(e, "failed to remove tag from layer (Name='{Name}')", name);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to remove tag from layer");
             }
         }

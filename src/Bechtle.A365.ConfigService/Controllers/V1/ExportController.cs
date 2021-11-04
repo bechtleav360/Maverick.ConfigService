@@ -21,8 +21,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IDataExporter _exporter;
 
         /// <inheritdoc />
-        public ExportController(ILogger<ExportController> logger,
-                                IDataExporter exporter)
+        public ExportController(
+            ILogger<ExportController> logger,
+            IDataExporter exporter)
             : base(logger)
         {
             _exporter = exporter;
@@ -54,18 +55,24 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return File(
                     new MemoryStream(
                         Encoding.UTF8.GetBytes(
-                            JsonSerializer.Serialize(result.Data, new JsonSerializerOptions {WriteIndented = true}))),
+                            JsonSerializer.Serialize(result.Data, new JsonSerializerOptions { WriteIndented = true }))),
                     "application/octet-stream",
                     "export.json");
             }
             catch (Exception e)
             {
-                var targetEnvironments = string.Join(", ", definition.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
-                var targetLayers = string.Join(", ", definition.Layers.Select(l => l.Name));
+                string targetEnvironments = string.Join(", ", definition.Environments.Select(eid => $"{eid.Category}/{eid.Name}"));
+                string targetLayers = string.Join(", ", definition.Layers.Select(l => l.Name));
 
                 KnownMetrics.Exception.WithLabels(e.GetType().Name).Inc();
-                Logger.LogError(e, $"failed to export environments ({targetEnvironments}), and layers ({targetLayers})");
-                return StatusCode(HttpStatusCode.InternalServerError, $"failed to export environments ({targetEnvironments}), and layers ({targetLayers})");
+                Logger.LogError(
+                    e,
+                    "failed to export environments ({TargetEnvironments}), and layers ({TargetLayers})",
+                    targetEnvironments,
+                    targetLayers);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    $"failed to export environments ({targetEnvironments}), and layers ({targetLayers})");
             }
         }
     }

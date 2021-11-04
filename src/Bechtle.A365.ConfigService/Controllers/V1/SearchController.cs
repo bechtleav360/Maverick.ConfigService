@@ -66,12 +66,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve autocomplete-data ("
-                    + $"{nameof(category)}: {category}; "
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(query)}: {query}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion};)");
+                    + "Category='{Category}'; Name='{Name}'; Query='{Query}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    category,
+                    name,
+                    query,
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve autocomplete-data");
             }
         }
@@ -112,12 +114,14 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve autocomplete-data ("
-                    + $"{nameof(category)}: {category}; "
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(query)}: {query}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion};)");
+                    + "Category='{Category}'; Name='{Name}'; Query='{Query}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    category,
+                    name,
+                    query,
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve autocomplete-data");
             }
         }
@@ -159,11 +163,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve autocomplete-data ("
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(query)}: {query}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion};)");
+                    + "Name='{Name}'; Query='{Query}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    name,
+                    query,
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve autocomplete-data");
             }
         }
@@ -202,11 +208,13 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 Logger.LogError(
                     e,
                     "failed to retrieve autocomplete-data ("
-                    + $"{nameof(name)}: {name}; "
-                    + $"{nameof(query)}: {query}; "
-                    + $"{nameof(offset)}: {offset}; "
-                    + $"{nameof(length)}: {length}; "
-                    + $"{nameof(targetVersion)}: {targetVersion};)");
+                    + "Name='{Name}'; Query='{Query}'; "
+                    + "Offset='{Offset}'; Length='{Length}'; TargetVersion='{TargetVersion}')",
+                    name,
+                    query,
+                    offset,
+                    length,
+                    targetVersion);
                 return StatusCode(HttpStatusCode.InternalServerError, "failed to retrieve autocomplete-data");
             }
         }

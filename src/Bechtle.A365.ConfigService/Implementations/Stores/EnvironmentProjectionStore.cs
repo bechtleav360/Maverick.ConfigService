@@ -160,7 +160,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 _logger.LogDebug("removing escape-sequences from key");
                 key = Uri.UnescapeDataString(key ?? string.Empty);
-                _logger.LogDebug($"using new key='{key}'");
+                _logger.LogDebug("using new key='{Key}'", key);
 
                 var environmentResult = await _domainObjectManager.GetEnvironment(identifier, version, CancellationToken.None);
                 if (environmentResult.IsError)
@@ -208,7 +208,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 string rootPart = parts.Dequeue();
 
-                _logger.LogDebug($"starting with path '{rootPart}'");
+                _logger.LogDebug("starting with path '{Path}'", rootPart);
 
                 // if the user is searching within the roots
                 if (!parts.Any())
@@ -264,7 +264,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 if (root is null)
                 {
-                    _logger.LogDebug($"no path found that matches '{rootPart}'");
+                    _logger.LogDebug("no path found that matches '{Path}'", rootPart);
                     return Result.Error<Page<DtoConfigKeyCompletion>>(
                         $"key '{key}' is ambiguous, root does not match anything",
                         ErrorCode.NotFound);
@@ -291,7 +291,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult<Page<DtoConfigKey>>> GetKeyObjects(KeyQueryParameters<EnvironmentIdentifier> parameters)
         {
-            _logger.LogDebug($"retrieving keys for {parameters.Identifier} to return as objects");
+            _logger.LogDebug("retrieving keys for {Environment} to return as objects", parameters.Identifier);
 
             var result = await GetKeysInternal(
                              parameters,
@@ -308,7 +308,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (result.IsError)
                 return result;
 
-            _logger.LogDebug($"got {result.CheckedData.Count} keys as objects");
+            _logger.LogDebug("got {KeyCount} keys as objects", result.CheckedData.Count);
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
                 return RemoveRoot(result.CheckedData, parameters.RemoveRoot);
@@ -319,7 +319,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         /// <inheritdoc />
         public async Task<IResult<Page<KeyValuePair<string, string?>>>> GetKeys(KeyQueryParameters<EnvironmentIdentifier> parameters)
         {
-            _logger.LogDebug($"retrieving keys of environment '{parameters.Identifier}'");
+            _logger.LogDebug("retrieving keys of environment '{Environment}'", parameters.Identifier);
 
             IResult<Page<KeyValuePair<string, string?>>> result =
                 await GetKeysInternal(
@@ -331,7 +331,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             if (result.IsError)
                 return result;
 
-            _logger.LogDebug($"got {result.CheckedData.Count} keys for '{parameters.Identifier}'");
+            _logger.LogDebug("got {KeyCount} keys for '{Environment}'", result.CheckedData.Count, parameters.Identifier);
 
             if (!string.IsNullOrWhiteSpace(parameters.RemoveRoot))
                 return RemoveRoot(result.CheckedData, parameters.RemoveRoot);
@@ -401,15 +401,20 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             string preferredMatch)
             where TItem : class
         {
-            _logger.LogDebug($"applying PreferredMatch filter to '{items.Count}' items, using {nameof(preferredMatch)}='{preferredMatch}'");
+            _logger.LogDebug(
+                "applying PreferredMatch filter to '{ItemCount}' items, using preferredMatch='{PreferredMatch}'",
+                items.Count,
+                preferredMatch);
 
             var exactMatch = items.FirstOrDefault(item => keySelector(item).Equals(preferredMatch));
 
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug(
                     exactMatch is null
-                        ? $"no exact match found in '{items.Count}' items for query '{preferredMatch}'"
-                        : $"preferred match found in '{items.Count}' items for query '{preferredMatch}'");
+                        ? "no exact match found in '{ItemCount}' items for query '{PreferredMatch}'"
+                        : "preferred match found in '{ItemsCount}' items for query '{PreferredMatch}'",
+                    items.Count,
+                    preferredMatch);
 
             return exactMatch is null
                        ? items
@@ -428,7 +433,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             ICollection<string> parts,
             QueryRange range)
         {
-            _logger.LogDebug($"walking path from '{root.FullPath}' using ({string.Join(",", parts)}), range={range}");
+            _logger.LogDebug(
+                "walking path from '{Root}' using ({Parts}), range={Range}",
+                root.FullPath,
+                string.Join(",", parts),
+                range);
 
             var current = root;
             var result = new List<EnvironmentLayerKeyPath>();
@@ -438,11 +447,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             // try walking the given path to the deepest part, and return all options the user can take from here
             while (queue.TryDequeue(out var part))
             {
-                _logger.LogTrace($"try walking down '{part}'");
+                _logger.LogTrace("try walking down '{Part}'", part);
 
                 if (string.IsNullOrWhiteSpace(part))
                 {
-                    _logger.LogDebug($"next part is empty, returning '{current.Children.Count}' children");
+                    _logger.LogDebug("next part is empty, returning '{ItemCount}' children", current.Children.Count);
                     result = current.Children;
                     break;
                 }
@@ -451,7 +460,11 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 if (!(match is null))
                 {
-                    _logger.LogDebug($"match for '{part}' found, continuing at '{match.FullPath}' with '{match.Children.Count}' children");
+                    _logger.LogDebug(
+                        "match for '{Part}' found, continuing at '{MatchPart}' with '{MatchChildren}' children",
+                        part,
+                        match.FullPath,
+                        match.Children.Count);
                     walkedPath.Add(current.Path);
                     current = match;
                     result = match.Children;
@@ -522,11 +535,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 _logger.LogDebug(
                     "retrieving keys using parameters:"
-                    + $"{nameof(parameters.Identifier)}: {parameters.Identifier}, "
-                    + $"{nameof(parameters.Filter)}: {parameters.Filter}, "
-                    + $"{nameof(parameters.PreferExactMatch)}: {parameters.PreferExactMatch}, "
-                    + $"{nameof(parameters.Range)}: {parameters.Range}, "
-                    + $"{nameof(parameters.RemoveRoot)}: {parameters.RemoveRoot}");
+                    + "Identifier='{Identifier}', Filter='{Filter}', PreferExactMatch='{PreferExactMatch}', "
+                    + "Range='{Range}', RemoveRoot='{RemoveRoot}'",
+                    parameters.Identifier,
+                    parameters.Filter,
+                    parameters.PreferExactMatch,
+                    parameters.Range,
+                    parameters.RemoveRoot);
 
                 IResult<ConfigEnvironment> envResult = await _domainObjectManager.GetEnvironment(parameters.Identifier, CancellationToken.None);
                 if (envResult.IsError)
@@ -584,7 +599,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
         {
             try
             {
-                _logger.LogDebug($"attempting to remove root '{root}' from '{page.Items.Count}' items");
+                _logger.LogDebug("attempting to remove root '{Root}' from '{ItemCount}' items", root, page.Items.Count);
 
                 if (!root.EndsWith('/'))
                 {
@@ -596,21 +611,21 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 // project each item into a new dict with the modified Key
                 if (page.Items.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
-                    _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
+                    _logger.LogDebug("all keys start with given root '{Root}', re-rooting possible", root);
                     page.Items = page.Items
                                      .Select(kvp => new KeyValuePair<string, string?>(kvp.Key[root.Length..], kvp.Value))
                                      .ToList();
                     return Result.Success(page);
                 }
 
-                _logger.LogDebug($"could not remove root '{root}' from all entries - not all items share same root");
+                _logger.LogDebug("could not remove root '{Root}' from all entries - not all items share same root", root);
                 return Result.Error<Page<KeyValuePair<string, string?>>>(
                     $"could not remove root '{root}' from all entries - not all items share same root",
                     ErrorCode.InvalidData);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"could not remove root '{root}' from all entries");
+                _logger.LogError(e, "could not remove root '{Root}' from all entries", root);
                 return Result.Error<Page<KeyValuePair<string, string?>>>($"could not remove root '{root}' from all entries", ErrorCode.Undefined);
             }
         }
@@ -633,7 +648,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 // modify the .Key property and put the entries into a new list that we return
                 if (page.Items.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
-                    _logger.LogDebug($"all keys start with given root '{root}', re-rooting possible");
+                    _logger.LogDebug("all keys start with given root '{Root}', re-rooting possible", root);
                     page.Items = page.Items.Select(
                                          entry =>
                                          {
@@ -644,14 +659,14 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Success(page);
                 }
 
-                _logger.LogDebug($"could not remove root '{root}' from all ConfigKeys - not all items share same root");
+                _logger.LogDebug("could not remove root '{Root}' from all ConfigKeys - not all items share same root", root);
                 return Result.Error<Page<DtoConfigKey>>(
                     $"could not remove root '{root}' from all ConfigKeys - not all items share same root",
                     ErrorCode.InvalidData);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"could not remove root '{root}' from all ConfigKeys");
+                _logger.LogError(e, "could not remove root '{Root}' from all ConfigKeys", root);
                 return Result.Error<Page<DtoConfigKey>>($"could not remove root '{root}' from all ConfigKeys", ErrorCode.Undefined);
             }
         }

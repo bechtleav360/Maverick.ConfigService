@@ -68,7 +68,7 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (dataResult.IsError)
             {
-                _logger.LogWarning($"could not export key-data for layer {layer}");
+                _logger.LogWarning("could not export key-data for layer {Layer}", layer);
                 return new LayerExport
                 {
                     Name = layer.Name,
@@ -109,7 +109,12 @@ namespace Bechtle.A365.ConfigService.Implementations
 
             if (env.IsError)
             {
-                _logger.LogWarning($"could not export assigned layers for environment '{id.Category}/{id.Name}'; {env.Code} {env.Message}");
+                _logger.LogWarning(
+                    "could not export assigned layers for environment '{Category}/{Name}'; {Code} {Message}",
+                    id.Category,
+                    id.Name,
+                    env.Code,
+                    env.Message);
                 return new EnvironmentExport
                 {
                     Category = id.Category,

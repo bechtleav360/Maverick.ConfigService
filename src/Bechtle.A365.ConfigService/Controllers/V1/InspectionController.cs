@@ -219,7 +219,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Logger.LogWarning(e, $"structure could not be inspected in context of '{envId}'; compilation failed");
+                Logger.LogWarning(e, "structure could not be inspected in context of '{Environment}'; compilation failed", envId);
                 return Ok(
                     new StructureInspectionResult
                     {
@@ -320,7 +320,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (Exception e)
             {
-                Logger.LogWarning(e, $"structure could not be inspected in context of '{envId}'; compilation failed");
+                Logger.LogWarning(e, "structure could not be inspected in context of '{Environment}'; compilation failed", envId);
                 return Ok(
                     new StructureInspectionResult
                     {

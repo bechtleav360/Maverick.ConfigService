@@ -57,7 +57,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
             catch (RequestFailedException e)
             {
-                _logger.LogDebug(e, $"secret '{path}' not found in azure-key-vault");
+                _logger.LogDebug(e, "secret '{Path}' not found in azure-key-vault", path);
                 return Result.Error<string?>($"secret '{path}' not found in azure-key-vault", ErrorCode.DbQueryError);
             }
         }

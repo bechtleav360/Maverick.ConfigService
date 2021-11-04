@@ -22,8 +22,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
         private readonly IJsonTranslator _translator;
 
         /// <inheritdoc />
-        public SelfConfigurationController(ILogger<SelfConfigurationController> logger,
-                                           IJsonTranslator translator)
+        public SelfConfigurationController(
+            ILogger<SelfConfigurationController> logger,
+            IJsonTranslator translator)
             : base(logger)
         {
             _translator = translator;
@@ -68,18 +69,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (IOException e)
             {
-                Logger.LogWarning(e, $"IO-Error while reading file '{ConfigFileLocation}'");
+                Logger.LogWarning(e, "IO-Error while reading file '{File}'", ConfigFileLocation);
                 return StatusCode(HttpStatusCode.InternalServerError, "internal error while reading configuration from disk");
             }
             catch (JsonException e)
             {
-                Logger.LogWarning(e, $"could not deserialize configuration from '{ConfigFileLocation}'");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  "deserialization error while reading configuration, try overwriting it");
+                Logger.LogWarning(e, "could not deserialize configuration from '{File}'", ConfigFileLocation);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "deserialization error while reading configuration, try overwriting it");
             }
             catch (Exception e)
             {
-                Logger.LogWarning(e, $"dump configuration from '{ConfigFileLocation}'");
+                Logger.LogWarning(e, "dump configuration from '{File}'", ConfigFileLocation);
                 return StatusCode(HttpStatusCode.InternalServerError, "unidentified error occured");
             }
 
@@ -98,22 +100,23 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 await System.IO.File.WriteAllBytesAsync(
                     ConfigFileLocation,
-                    JsonSerializer.SerializeToUtf8Bytes(resultJson,
-                                                        new JsonSerializerOptions
-                                                        {
-                                                            WriteIndented = true,
-                                                            Converters =
-                                                            {
-                                                                new JsonStringEnumConverter(),
-                                                                new JsonIsoDateConverter()
-                                                            }
-                                                        }));
+                    JsonSerializer.SerializeToUtf8Bytes(
+                        resultJson,
+                        new JsonSerializerOptions
+                        {
+                            WriteIndented = true,
+                            Converters =
+                            {
+                                new JsonStringEnumConverter(),
+                                new JsonIsoDateConverter()
+                            }
+                        }));
 
                 return Ok();
             }
             catch (IOException e)
             {
-                Logger.LogWarning(e, $"IO-Error while writing file '{ConfigFileLocation}'");
+                Logger.LogWarning(e, "IO-Error while writing file '{File}'", ConfigFileLocation);
                 return StatusCode(HttpStatusCode.InternalServerError, "could not write configuration back to disk");
             }
         }
@@ -150,18 +153,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (IOException e)
             {
-                Logger.LogWarning(e, $"IO-Error while reading file '{ConfigFileLocation}'");
+                Logger.LogWarning(e, "IO-Error while reading file '{File}'", ConfigFileLocation);
                 return StatusCode(HttpStatusCode.InternalServerError, "internal error while reading configuration from disk");
             }
             catch (JsonException e)
             {
-                Logger.LogWarning(e, $"could not deserialize configuration from '{ConfigFileLocation}'");
-                return StatusCode(HttpStatusCode.InternalServerError,
-                                  "deserialization error while reading configuration, try overwriting it");
+                Logger.LogWarning(e, "could not deserialize configuration from '{File}'", ConfigFileLocation);
+                return StatusCode(
+                    HttpStatusCode.InternalServerError,
+                    "deserialization error while reading configuration, try overwriting it");
             }
             catch (Exception e)
             {
-                Logger.LogWarning(e, $"dump configuration from '{ConfigFileLocation}'");
+                Logger.LogWarning(e, "dump configuration from '{File}'", ConfigFileLocation);
                 return StatusCode(HttpStatusCode.InternalServerError, "unidentified error occured");
             }
         }
@@ -185,15 +189,17 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 await System.IO.File.WriteAllBytesAsync(
                     ConfigFileLocation,
-                    JsonSerializer.SerializeToUtf8Bytes(json, new JsonSerializerOptions
-                    {
-                        WriteIndented = true,
-                        Converters =
+                    JsonSerializer.SerializeToUtf8Bytes(
+                        json,
+                        new JsonSerializerOptions
                         {
-                            new JsonStringEnumConverter(),
-                            new JsonIsoDateConverter()
-                        }
-                    }));
+                            WriteIndented = true,
+                            Converters =
+                            {
+                                new JsonStringEnumConverter(),
+                                new JsonIsoDateConverter()
+                            }
+                        }));
 
                 return Ok();
             }
@@ -204,7 +210,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (IOException e)
             {
-                Logger.LogWarning(e, $"IO-Error while writing file '{ConfigFileLocation}'");
+                Logger.LogWarning(e, "IO-Error while writing file '{File}'", ConfigFileLocation);
                 return StatusCode(HttpStatusCode.InternalServerError, "could not write configuration back to disk");
             }
         }
