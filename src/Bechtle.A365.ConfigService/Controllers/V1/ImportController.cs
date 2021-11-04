@@ -76,7 +76,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
             catch (JsonException e)
             {
-                Logger.LogWarning($"uploaded file can't be deserialized to '{nameof(ConfigExport)}': {e}");
+                Logger.LogWarning(e, "uploaded file can't be deserialized to 'ConfigExport'");
                 return BadRequest("uploaded file can't be mapped to object");
             }
 
