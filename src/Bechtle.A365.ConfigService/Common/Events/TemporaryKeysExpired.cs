@@ -10,17 +10,9 @@ namespace Bechtle.A365.ConfigService.Common.Events
     public class TemporaryKeysExpired : IA365Event
     {
         /// <summary>
-        ///     Creates a new instance of <see cref="TemporaryKeysExpired"/>
+        ///     list of keys that have expired
         /// </summary>
-        /// <param name="structure">structure, for which the temp-keys expired</param>
-        /// <param name="version">version of the structure</param>
-        /// <param name="keys">keys that have expired</param>
-        public TemporaryKeysExpired(string structure, int version, IEnumerable<string> keys)
-        {
-            Structure = structure;
-            Version = version;
-            Keys = keys.ToList();
-        }
+        public List<string> Keys { get; set; }
 
         /// <summary>
         ///     name of target structure
@@ -33,9 +25,17 @@ namespace Bechtle.A365.ConfigService.Common.Events
         public int Version { get; set; }
 
         /// <summary>
-        ///     list of keys that have expired
+        ///     Creates a new instance of <see cref="TemporaryKeysExpired" />
         /// </summary>
-        public List<string> Keys { get; set; }
+        /// <param name="structure">structure, for which the temp-keys expired</param>
+        /// <param name="version">version of the structure</param>
+        /// <param name="keys">keys that have expired</param>
+        public TemporaryKeysExpired(string structure, int version, IEnumerable<string> keys)
+        {
+            Structure = structure;
+            Version = version;
+            Keys = keys.ToList();
+        }
 
         /// <inheritdoc />
         public string EventName => nameof(TemporaryKeysExpired);
