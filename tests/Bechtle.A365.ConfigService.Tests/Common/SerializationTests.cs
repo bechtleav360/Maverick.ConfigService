@@ -62,28 +62,6 @@ namespace Bechtle.A365.ConfigService.Tests.Common
         public void Deserialize_DtoConfigKeyCompletion_System(DtoConfigKeyCompletion obj)
             => TestDeserialization_System(obj);
 
-        // This test cannot work, because DtoStructure uses a JsonElement as Property
-        // JsonElement is a System.Text.Json-native type, and cannot be serialized without explicit handling
-        /*
-        [Fact]
-        public void Deserialize_DtoStructure_Newtonsoft()
-        {
-            var fixture = new Fixture();
-            fixture.Customizations.Add(
-                new SpecimenFactory<DtoStructure>(
-                    () => new DtoStructure
-                    {
-                        Name = "Foo",
-                        Version = 42,
-                        Structure = JsonDocument.Parse("{\"Foo\":\"Bar\"}").RootElement,
-                        Variables = new Dictionary<string, object>()
-                    }));
-            var obj = fixture.Create<DtoStructure>();
-
-            TestDeserialization_Newtonsoft(obj);
-        }
-        */
-
         [Fact]
         public void Deserialize_DtoStructure_System()
         {
