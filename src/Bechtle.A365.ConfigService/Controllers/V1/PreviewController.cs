@@ -308,7 +308,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
             }
 
             // if no reference or couldn't retrieve keys - fall back to custom-keys
-            return environment.Keys;
+            return environment.Keys ?? new Dictionary<string, string?>();
         }
 
         private async Task<(IDictionary<string, string?> Structure, IDictionary<string, string?> Variables)> ResolveStructurePreview(StructurePreview structure)
@@ -333,12 +333,19 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     structResult.IsError ? structResult.Message : variableResult.Message);
             }
 
-            return (Structure: structure.Keys.ToDictionary(
-                           pair => pair.Key,
-                           pair => pair.Value.ToString()),
-                       Variables: structure.Variables.ToDictionary(
-                           pair => pair.Key,
-                           pair => pair.Value.ToString()));
+            Dictionary<string, string?> resolvedStructure =
+                structure.Keys?.ToDictionary(
+                    pair => pair.Key,
+                    pair => pair.Value.ToString())
+                ?? new Dictionary<string, string?>();
+
+            Dictionary<string, string?> resolvedVariables =
+                structure.Variables?.ToDictionary(
+                    pair => pair.Key,
+                    pair => pair.Value.ToString())
+                ?? new Dictionary<string, string?>();
+
+            return (Structure: resolvedStructure, Variables: resolvedVariables);
         }
     }
 }
