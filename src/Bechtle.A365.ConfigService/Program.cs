@@ -56,6 +56,7 @@ namespace Bechtle.A365.ConfigService
                    .AddJsonFile("appsettings.logging.json", true, true)
                    .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true, true)
                    .AddEnvironmentVariables()
+                   .AddEnvironmentVariables("ASPNETCORE_")
                    .AddEnvironmentVariables("MAV_CONFIG_")
                    .AddCommandLine(args)
                    .AddJsonFile("data/configuration/appsettings.json", true, true);
