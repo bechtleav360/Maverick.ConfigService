@@ -61,6 +61,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 case ErrorCode.NotFound:
                     return StatusCode(HttpStatusCode.NotFound, result.Message);
 
+                case ErrorCode.LayerStillAssigned:
+                    return StatusCode(HttpStatusCode.PreconditionFailed, result.Message);
+
                 default:
                     return StatusCode(HttpStatusCode.InternalServerError, result.Message);
             }
