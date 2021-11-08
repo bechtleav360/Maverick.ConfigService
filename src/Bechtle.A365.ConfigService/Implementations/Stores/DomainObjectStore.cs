@@ -236,12 +236,17 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             {
                 ObjectLookup<TIdentifier> itemInfo = await GetObjectInfo(identifier);
 
-                (long maxExistingVersion, ObjectLookupInfo objectStatus) =
+                (long maxExistingVersion, ObjectLookupInfo? objectStatus) =
                     itemInfo.Versions
                             .OrderByDescending(kvp => kvp.Key)
                             .FirstOrDefault();
 
-                if (maxExistingVersion >= 0 && !objectStatus.IsMarkedDeleted)
+                // YES! objectStatus CAN be null when the previous .FirstOrDefault returns 'OrDefault'
+                // In this case OrDefault means a new & empty KeyValuePair<TKey, TValue>,
+                // which means default of ObjectLookupInfo,
+                // which means fucking 'null'
+                // ReSharper disable once ConstantConditionalAccessQualifier
+                if (maxExistingVersion >= 0 && objectStatus?.IsMarkedDeleted == false)
                 {
                     IResult<TObject> result = await _fileStore.LoadObject<TObject, TIdentifier>(itemInfo.FileId, maxExistingVersion);
                     if (result.IsError)
