@@ -33,6 +33,13 @@ namespace Bechtle.A365.ConfigService.Implementations
         private readonly IList<ICommandValidator> _validators;
 
         /// <summary>
+        ///     Lock used, so only one request can write at a time.
+        ///     This is a patch to prevent all service-users to require some sort of OCC.
+        ///     Once OCC is implemented, and this is the responsibility of our users, this lock can be removed
+        /// </summary>
+        private static readonly SemaphoreSlim _writeLock = new(1);
+
+        /// <summary>
         ///     Create a new instance of <see cref="DomainObjectManager" />
         /// </summary>
         /// <param name="objectStore">instance to store/load DomainObjects to/from</param>
@@ -694,6 +701,20 @@ namespace Bechtle.A365.ConfigService.Implementations
 
         private async Task<IResult> WriteEventsInternal(IList<DomainEvent> events)
         {
+            // make sure only one write is happening at the same time
+            try
+            {
+                await _writeLock.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+            catch (TaskCanceledException e)
+            {
+                _logger.LogWarning(e, "timeout while waiting for other writes to complete");
+                return Result.Error("timeout while waiting for other writes to complete", ErrorCode.DbUpdateError);
+            }
+
+            // Make sure any lingering writes have time to be forwarded to Projection
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+
             // if we're currently projecting events, wait a little
             // this is for backwards compatibility -> ideally this would be a user-/client-issue,
             // and be solved using OCC / ETags or something along those lines
@@ -758,6 +779,11 @@ namespace Bechtle.A365.ConfigService.Implementations
 
                     ++offset;
                 }
+
+                // same as above, make sure what we just sent out has time to be forwarded to Projection
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+                return Result.Success();
             }
             catch (Exception e)
             {
@@ -767,8 +793,10 @@ namespace Bechtle.A365.ConfigService.Implementations
                     domainEvents.Count);
                 return Result.Error("unable to write events to EventStore", ErrorCode.DbUpdateError);
             }
-
-            return Result.Success();
+            finally
+            {
+                _writeLock.Release();
+            }
         }
 
         private IResult<IList<IDomainEvent>> ConvertAndSplitEvents(IList<DomainEvent> events, long maxEventSize)
