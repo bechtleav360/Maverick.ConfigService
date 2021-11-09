@@ -24,20 +24,20 @@ namespace Bechtle.A365.ConfigService.Implementations
     /// </summary>
     public class DomainObjectManager : IDomainObjectManager
     {
-        private readonly IEventStore _eventStore;
-        private readonly IEventStoreOptionsProvider _optionsProvider;
-        private readonly ProjectionStatusCheck _projectionStatus;
-        private readonly EventStoreConnectionConfiguration _eventStoreConfiguration;
-        private readonly ILogger<DomainObjectManager> _logger;
-        private readonly IDomainObjectStore _objectStore;
-        private readonly IList<ICommandValidator> _validators;
-
         /// <summary>
         ///     Lock used, so only one request can write at a time.
         ///     This is a patch to prevent all service-users to require some sort of OCC.
         ///     Once OCC is implemented, and this is the responsibility of our users, this lock can be removed
         /// </summary>
         private static readonly SemaphoreSlim _writeLock = new(1);
+
+        private readonly IEventStore _eventStore;
+        private readonly EventStoreConnectionConfiguration _eventStoreConfiguration;
+        private readonly ILogger<DomainObjectManager> _logger;
+        private readonly IDomainObjectStore _objectStore;
+        private readonly IEventStoreOptionsProvider _optionsProvider;
+        private readonly ProjectionStatusCheck _projectionStatus;
+        private readonly IList<ICommandValidator> _validators;
 
         /// <summary>
         ///     Create a new instance of <see cref="DomainObjectManager" />
@@ -450,6 +450,58 @@ namespace Bechtle.A365.ConfigService.Implementations
                 new List<DomainEvent> { new EnvironmentLayerTagsChanged(identifier, addedTags.ToList(), removedTags.ToList()) },
                 cancellationToken);
 
+        private IResult<IList<IDomainEvent>> ConvertAndSplitEvents(IList<DomainEvent> events, long maxEventSize)
+        {
+            var options = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                Converters = new List<JsonConverter> { new StringEnumConverter() }
+            };
+
+            IList<IDomainEvent> domainEvents = new List<IDomainEvent>();
+
+            try
+            {
+                // this is *the* most resource-heavy way i could think of, but it's the easiest way of knowing if
+                // the written events will fit into the size-constraints of ES
+                var eventStack = new Stack<DomainEvent>(events.Reverse());
+                while (eventStack.TryPop(out DomainEvent? item))
+                {
+                    var domainEvent = new LateBindingDomainEvent<DomainEvent>("Anonymous", item);
+
+                    // 1048576
+                    int jsonLength = JsonConvert.SerializeObject(domainEvent, options).Length;
+
+                    if (jsonLength < maxEventSize)
+                    {
+                        domainEvents.Add(domainEvent);
+                        continue;
+                    }
+
+                    IList<DomainEvent> smallerEvents = item.Split().Reverse().ToList();
+                    if (smallerEvents.Count == 1)
+                    {
+                        return Result.Error<IList<IDomainEvent>>(
+                            "domainEvents exceed maximum size supported by EventStore, and cannot be resized",
+                            ErrorCode.PrerequisiteFailed);
+                    }
+
+                    foreach (DomainEvent smallerItem in smallerEvents)
+                    {
+                        eventStack.Push(smallerItem);
+                    }
+                }
+            }
+            catch (JsonException e)
+            {
+                _logger.LogWarning(e, "unable to approximate size of DomainEvents to be written");
+                return Result.Error<IList<IDomainEvent>>("unable to approximate size of DomainEvents", ErrorCode.PrerequisiteFailed);
+            }
+
+            return Result.Success(domainEvents);
+        }
+
         private async Task<IResult> CreateObject<TObject, TIdentifier>(
             TIdentifier identifier,
             IList<DomainEvent> createEvents,
@@ -699,26 +751,13 @@ namespace Bechtle.A365.ConfigService.Implementations
                            .Where(kvp => kvp.Value.Any(r => r.IsError))
                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-        private async Task<IResult> WriteEventsInternal(IList<DomainEvent> events)
+        /// <summary>
+        ///     Wait for any ongoing projections to finish.
+        ///     This is for backwards compatibility -> ideally this would be a user-/client-issue,
+        ///     and be solved using OCC / ETags or something along those lines.
+        /// </summary>
+        private async Task WaitForAnyProjections()
         {
-            // make sure only one write is happening at the same time
-            try
-            {
-                await _writeLock.WaitAsync(TimeSpan.FromSeconds(10));
-            }
-            catch (TaskCanceledException e)
-            {
-                _logger.LogWarning(e, "timeout while waiting for other writes to complete");
-                return Result.Error("timeout while waiting for other writes to complete", ErrorCode.DbUpdateError);
-            }
-
-            // Make sure any lingering writes have time to be forwarded to Projection
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
-
-            // if we're currently projecting events, wait a little
-            // this is for backwards compatibility -> ideally this would be a user-/client-issue,
-            // and be solved using OCC / ETags or something along those lines
-            // ---
             // this is technically the wrong thing to do, because the write relies on assumptions that may or may not
             // be valid anymore, because the current projection may change data this write is relying on.
             // we're doing it this way, because of the way this service is being used:
@@ -733,33 +772,78 @@ namespace Bechtle.A365.ConfigService.Implementations
                 _logger.LogDebug("projection is currently processing events, delaying write-action");
                 await Task.Delay(TimeSpan.FromMilliseconds(100));
             }
+        }
 
-            // do this as early as possible, so we can detect if changes are made while we get ES-config and split events
-            IResult<(Guid, long)> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
-            if (lastProjectedEventResult.IsError)
+        private async Task<IResult> WriteEventsInternal(IList<DomainEvent> events)
+        {
+            // make sure only one write is happening at the same time
+            if (!await _writeLock.WaitAsync(TimeSpan.FromSeconds(10)))
             {
-                _logger.LogWarning("unable to determine which event was last projected to write safely into stream");
-                return lastProjectedEventResult;
+                _logger.LogWarning("unable to acquire write-lock");
+                return Result.Error("unable to acquire write-lock", ErrorCode.DbUpdateError);
             }
 
-            (Guid _, long lastProjectedEvent) = lastProjectedEventResult.Data;
-
-            long maxEventSize;
-            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+            try
             {
-                await _optionsProvider.LoadConfiguration(cts.Token);
-                maxEventSize = _optionsProvider.EventSizeLimited ? _optionsProvider.MaxEventSizeInBytes : long.MaxValue;
+                // Make sure any lingering writes have time to be forwarded to Projection
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                await WaitForAnyProjections();
+            }
+            catch (TaskCanceledException e)
+            {
+                _writeLock.Release();
+                _logger.LogWarning(e, "timeout while waiting for other writes to complete");
+                return Result.Error("timeout while waiting for other writes to complete", ErrorCode.DbUpdateError);
             }
 
-            // convert *our*-type of DomainEvent to the generic late-binding one
-            IResult<IList<IDomainEvent>> splitEvents = ConvertAndSplitEvents(events, maxEventSize);
-            if (splitEvents.IsError)
+            try
             {
-                return splitEvents;
+                // do this as early as possible, so we can detect if changes are made while we get ES-config and split events
+                IResult<(Guid, long)> lastProjectedEventResult = await _objectStore.GetProjectedVersion();
+                if (lastProjectedEventResult.IsError)
+                {
+                    _logger.LogWarning("unable to determine which event was last projected to write safely into stream");
+                    return lastProjectedEventResult;
+                }
+
+                (Guid _, long lastProjectedEvent) = lastProjectedEventResult.CheckedData;
+
+                long maxEventSize;
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                {
+                    await _optionsProvider.LoadConfiguration(cts.Token);
+                    maxEventSize = _optionsProvider.EventSizeLimited ? _optionsProvider.MaxEventSizeInBytes : long.MaxValue;
+                }
+
+                // convert *our*-type of DomainEvent to the generic late-binding one
+                IResult<IList<IDomainEvent>> splitEvents = ConvertAndSplitEvents(events, maxEventSize);
+                if (splitEvents.IsError)
+                {
+                    return splitEvents;
+                }
+
+                IResult result = await WriteDomainEventsInternal(splitEvents.CheckedData, lastProjectedEvent);
+
+                // same as above, make sure what we just sent out has time to be forwarded to Projection
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+                return result;
             }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "error while preparing data before writing to event-store");
+                return Result.Error("error while preparing data before writing to event-store", ErrorCode.DbUpdateError);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
+        }
 
-            IList<IDomainEvent> domainEvents = splitEvents.CheckedData;
-
+        private async Task<IResult> WriteDomainEventsInternal(
+            ICollection<IDomainEvent> domainEvents,
+            long lastProjectedEvent)
+        {
             // write all events one-by-one, because ES writes all events in a single message
             // ---
             // this is not a ServiceBase.EventStore limitation, but a EventStore.EventStore one
@@ -780,9 +864,6 @@ namespace Bechtle.A365.ConfigService.Implementations
                     ++offset;
                 }
 
-                // same as above, make sure what we just sent out has time to be forwarded to Projection
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
-
                 return Result.Success();
             }
             catch (Exception e)
@@ -793,62 +874,6 @@ namespace Bechtle.A365.ConfigService.Implementations
                     domainEvents.Count);
                 return Result.Error("unable to write events to EventStore", ErrorCode.DbUpdateError);
             }
-            finally
-            {
-                _writeLock.Release();
-            }
-        }
-
-        private IResult<IList<IDomainEvent>> ConvertAndSplitEvents(IList<DomainEvent> events, long maxEventSize)
-        {
-            var options = new JsonSerializerSettings
-            {
-                Formatting = Formatting.Indented,
-                DateFormatHandling = DateFormatHandling.IsoDateFormat,
-                Converters = new List<JsonConverter> { new StringEnumConverter() }
-            };
-
-            IList<IDomainEvent> domainEvents = new List<IDomainEvent>();
-
-            try
-            {
-                // this is *the* most resource-heavy way i could think of, but it's the easiest way of knowing if
-                // the written events will fit into the size-constraints of ES
-                var eventStack = new Stack<DomainEvent>(events.Reverse());
-                while (eventStack.TryPop(out DomainEvent? item))
-                {
-                    var domainEvent = new LateBindingDomainEvent<DomainEvent>("Anonymous", item);
-
-                    // 1048576
-                    int jsonLength = JsonConvert.SerializeObject(domainEvent, options).Length;
-
-                    if (jsonLength < maxEventSize)
-                    {
-                        domainEvents.Add(domainEvent);
-                        continue;
-                    }
-
-                    IList<DomainEvent> smallerEvents = item.Split().Reverse().ToList();
-                    if (smallerEvents.Count == 1)
-                    {
-                        return Result.Error<IList<IDomainEvent>>(
-                            "domainEvents exceed maximum size supported by EventStore, and cannot be resized",
-                            ErrorCode.PrerequisiteFailed);
-                    }
-
-                    foreach (DomainEvent smallerItem in smallerEvents)
-                    {
-                        eventStack.Push(smallerItem);
-                    }
-                }
-            }
-            catch (JsonException e)
-            {
-                _logger.LogWarning(e, "unable to approximate size of DomainEvents to be written");
-                return Result.Error<IList<IDomainEvent>>("unable to approximate size of DomainEvents", ErrorCode.PrerequisiteFailed);
-            }
-
-            return Result.Success(domainEvents);
         }
     }
 }
