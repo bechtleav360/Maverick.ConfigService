@@ -33,6 +33,11 @@ namespace Bechtle.A365.ConfigService.DomainObjects
         /// </summary>
         public List<string> Tags { get; init; } = new();
 
+        /// <summary>
+        ///     List of <see cref="EnvironmentIdentifier" /> that this <see cref="EnvironmentLayer" /> is assigned to
+        /// </summary>
+        public List<EnvironmentIdentifier> UsedInEnvironments { get; init; } = new();
+
         /// <inheritdoc />
         public EnvironmentLayer()
         {
@@ -52,6 +57,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             KeyPaths = new List<EnvironmentLayerKeyPath>(other.KeyPaths);
             Keys = new Dictionary<string, EnvironmentLayerKey>(other.Keys, StringComparer.OrdinalIgnoreCase);
             Tags = new List<string>(other.Tags);
+            UsedInEnvironments = new List<EnvironmentIdentifier>(other.UsedInEnvironments);
         }
 
         /// <inheritdoc />
@@ -74,6 +80,7 @@ namespace Bechtle.A365.ConfigService.DomainObjects
             && CreatedBy == other.CreatedBy
             && Json == other.Json
             && Keys.SequenceEqual(other.Keys)
-            && KeyPaths.SequenceEqual(other.KeyPaths);
+            && KeyPaths.SequenceEqual(other.KeyPaths)
+            && UsedInEnvironments.SequenceEqual(other.UsedInEnvironments);
     }
 }

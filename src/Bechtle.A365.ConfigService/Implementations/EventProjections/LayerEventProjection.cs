@@ -66,15 +66,12 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
             }
 
             EnvironmentLayer source = sourceEnvironmentResult.CheckedData;
-            var newLayer = new EnvironmentLayer(domainEvent.Payload.TargetIdentifier)
+            var newLayer = new EnvironmentLayer(source)
             {
                 CreatedAt = domainEvent.Timestamp.ToUniversalTime(),
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
                 CurrentVersion = (long)eventHeader.EventNumber,
-                Json = source.Json,
-                Keys = source.Keys,
-                KeyPaths = source.KeyPaths,
-                Tags = source.Tags
+                Id = domainEvent.Payload.TargetIdentifier
             };
 
             await _objectStore.Store<EnvironmentLayer, LayerIdentifier>(newLayer);
@@ -194,7 +191,7 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
                     keyVersion);
             }
 
-            EnvironmentLayer importedLayer = new(layer.Id)
+            EnvironmentLayer importedLayer = new(layer)
             {
                 CurrentVersion = (long)eventHeader.EventNumber,
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
@@ -268,7 +265,7 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
                     keyVersion);
             }
 
-            EnvironmentLayer modifiedLayer = new(layer.Id)
+            EnvironmentLayer modifiedLayer = new(layer)
             {
                 CurrentVersion = (long)eventHeader.EventNumber,
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
@@ -321,7 +318,7 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
                 modifiedTags.Remove(existingTag);
             }
 
-            EnvironmentLayer modifiedLayer = new(layer.Id)
+            EnvironmentLayer modifiedLayer = new(layer)
             {
                 ChangedAt = domainEvent.Timestamp.ToUniversalTime(),
                 ChangedBy = "Anonymous",

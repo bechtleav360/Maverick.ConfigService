@@ -10,6 +10,11 @@ namespace Bechtle.A365.ConfigService.Interfaces.Stores
     public class EnvironmentLayerMetadata : MetadataBase
     {
         /// <summary>
+        ///     List of <see cref="EnvironmentIdentifier" /> that this Layer is assigned to
+        /// </summary>
+        public List<EnvironmentIdentifier> AssignedTo { get; set; } = new();
+
+        /// <summary>
         ///     Identifier for the DomainObject in question
         /// </summary>
         public LayerIdentifier Id { get; }

@@ -316,12 +316,13 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             var metadata = new EnvironmentLayerMetadata(layer.Id)
             {
+                AssignedTo = layer.UsedInEnvironments,
                 Tags = layer.Tags,
                 ChangedAt = layer.ChangedAt,
                 ChangedBy = layer.ChangedBy,
                 CreatedAt = layer.CreatedAt,
                 CreatedBy = layer.CreatedBy,
-                KeyCount = layer.Keys.Count
+                KeyCount = layer.Keys.Count,
             };
 
             return Result.Success(metadata);
