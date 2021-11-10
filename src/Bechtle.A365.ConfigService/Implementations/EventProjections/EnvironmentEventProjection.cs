@@ -192,7 +192,7 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
 
             Page<LayerIdentifier> allLayerIds = layerIds.CheckedData;
 
-            foreach (LayerIdentifier layerId in allLayerIds.Items)
+            foreach (LayerIdentifier layerId in allLayerIds)
             {
                 IResult<EnvironmentLayer> layerResult =
                     await _objectStore.Load<EnvironmentLayer, LayerIdentifier>(layerId);

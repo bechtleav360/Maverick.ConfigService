@@ -340,7 +340,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
 
             var results = new List<EnvironmentLayerMetadata>();
-            foreach (LayerIdentifier layerId in ids.CheckedData.Items)
+            foreach (LayerIdentifier layerId in ids.CheckedData)
             {
                 IResult<EnvironmentLayerMetadata> result = await GetMetadata(layerId);
                 if (result.IsError)
@@ -634,7 +634,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 // if every item passes the check for the same root
                 // project each item into a new dict with the modified Key
-                if (page.Items.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
+                if (page.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
                     _logger.LogDebug("all keys start with given root '{Root}', re-rooting possible", root);
                     page.Items = page.Items
@@ -671,7 +671,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
                 // if every item passes the check for the same root
                 // modify the .Key property and put the entries into a new list that we return
-                if (page.Items.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
+                if (page.All(k => k.Key.StartsWith(root, StringComparison.OrdinalIgnoreCase)))
                 {
                     _logger.LogDebug("all keys start with given root '{Root}', re-rooting possible", root);
                     page.Items = page.Items.Select(

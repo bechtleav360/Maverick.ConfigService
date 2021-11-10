@@ -71,7 +71,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return ProviderError(availableEnvironments);
 
             var environment = availableEnvironments.CheckedData
-                                                   .Items
                                                    .FirstOrDefault(
                                                        e => e.Category.Equals(environmentCategory, StringComparison.InvariantCultureIgnoreCase)
                                                             && e.Name.Equals(environmentName, StringComparison.InvariantCultureIgnoreCase));
@@ -80,7 +79,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return NotFound($"no environment '{environmentCategory}/{environmentName}' found");
 
             var structure = availableStructures.CheckedData
-                                               .Items
                                                .FirstOrDefault(s => s.Name.Equals(structureName) && s.Version == structureVersion);
 
             if (structure is null)
@@ -226,7 +224,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.CheckedData.Items.ToImmutableSortedDictionary());
+                           : Ok(result.CheckedData.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {

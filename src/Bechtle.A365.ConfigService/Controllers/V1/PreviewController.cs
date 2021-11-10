@@ -89,9 +89,9 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return ProviderError(environmentResult);
             }
 
-            var structureSnapshot = new Dictionary<string, string?>(structureKeyResult.CheckedData.Items);
-            var variableSnapshot = new Dictionary<string, string?>(structureVariableResult.CheckedData.Items);
-            var environmentSnapshot = new Dictionary<string, string?>(environmentResult.CheckedData.Items);
+            var structureSnapshot = new Dictionary<string, string?>(structureKeyResult.CheckedData);
+            var variableSnapshot = new Dictionary<string, string?>(structureVariableResult.CheckedData);
+            var environmentSnapshot = new Dictionary<string, string?>(environmentResult.CheckedData);
 
             var environmentInfo = new EnvironmentCompilationInfo
             {
@@ -218,7 +218,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return ProviderError(layerResult);
                 }
 
-                foreach ((string key, string? value) in layerResult.CheckedData.Items)
+                foreach ((string key, string? value) in layerResult.CheckedData)
                 {
                     // remove existing key if it exists already...
                     if (result.ContainsKey(key))
@@ -267,7 +267,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return ProviderError(layerResult);
                 }
 
-                foreach ((string key, string? value) in layerResult.CheckedData.Items)
+                foreach ((string key, string? value) in layerResult.CheckedData)
                 {
                     // remove existing key if it exists already...
                     if (result.ContainsKey(key))
@@ -298,7 +298,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (!result.IsError)
                 {
-                    return new Dictionary<string, string?>(result.CheckedData.Items);
+                    return new Dictionary<string, string?>(result.CheckedData);
                 }
 
                 Logger.LogWarning(
@@ -323,8 +323,8 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 if (!structResult.IsError && !variableResult.IsError)
                 {
-                    return (Structure: new Dictionary<string, string?>(structResult.CheckedData.Items),
-                               Variables: new Dictionary<string, string?>(variableResult.CheckedData.Items));
+                    return (Structure: new Dictionary<string, string?>(structResult.CheckedData),
+                               Variables: new Dictionary<string, string?>(variableResult.CheckedData));
                 }
 
                 Logger.LogWarning(

@@ -94,7 +94,6 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                 }
 
                 IList<int> versions = listResult.CheckedData
-                                                .Items
                                                 .Select(id => id.Version)
                                                 .ToList();
 
@@ -195,7 +194,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
             }
 
             var results = new List<ConfigStructureMetadata>();
-            foreach (StructureIdentifier layerId in ids.CheckedData.Items)
+            foreach (StructureIdentifier layerId in ids.CheckedData)
             {
                 IResult<ConfigStructureMetadata> result = await GetMetadata(layerId);
                 if (result.IsError || result.Data is null)

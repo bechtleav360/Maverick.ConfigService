@@ -320,7 +320,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
                     return Result.Error<Page<PreparedConfigurationMetadata>>(ids.Message, ids.Code);
 
                 var results = new List<PreparedConfigurationMetadata>();
-                foreach (var configId in ids.CheckedData.Items)
+                foreach (var configId in ids.CheckedData)
                 {
                     IResult<PreparedConfigurationMetadata> result = await GetMetadata(configId);
                     if (result.IsError)

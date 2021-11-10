@@ -160,7 +160,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             List<EnvironmentIdentifier> assignedLayers = new();
             Page<EnvironmentIdentifier> environments = environmentResult.CheckedData;
 
-            foreach (EnvironmentIdentifier envId in environments.Items)
+            foreach (EnvironmentIdentifier envId in environments)
             {
                 IResult<ConfigEnvironment> envResult = await LoadObject<ConfigEnvironment, EnvironmentIdentifier>(
                                                            envId,
@@ -302,7 +302,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             }
 
             var staleConfigurationIds = new List<ConfigurationIdentifier>();
-            foreach (ConfigurationIdentifier configId in configIdResult.CheckedData.Items)
+            foreach (ConfigurationIdentifier configId in configIdResult.CheckedData)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {

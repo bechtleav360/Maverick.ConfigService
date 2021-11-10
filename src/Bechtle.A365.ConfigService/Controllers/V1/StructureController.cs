@@ -276,7 +276,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                     return ProviderError(result);
 
                 var sortedData = result.CheckedData
-                                       .Items
                                        .GroupBy(s => s.Name)
                                        .ToDictionary(
                                            g => g.Key,

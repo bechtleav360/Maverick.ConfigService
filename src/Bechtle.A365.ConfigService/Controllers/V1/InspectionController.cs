@@ -119,7 +119,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                 return ProviderError(configResult);
 
             var selectedConfigs = configResult.CheckedData
-                                              .Items
                                               .GroupBy(configId => configId.Structure.Name)
                                               .Select(
                                                   group => group.OrderByDescending(c => c.Structure.Version)
@@ -438,7 +437,6 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
                      .ForAll(
                          t => t.Result
                                .CheckedData
-                               .Items
                                .AsParallel()
                                .ForAll(
                                    key => annotatedEnv.FirstOrDefault(a => a.Key.Equals(key, StringComparison.OrdinalIgnoreCase))

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Bechtle.A365.ConfigService.Common;
 
@@ -8,7 +9,7 @@ namespace Bechtle.A365.ConfigService.Models.V1
     ///     Paged data
     /// </summary>
     /// <typeparam name="T">items contained in this Page</typeparam>
-    public class Page<T>
+    public class Page<T> : IEnumerable<T>
     {
         /// <summary>
         ///     Number of items returned in this Page
@@ -124,5 +125,11 @@ namespace Bechtle.A365.ConfigService.Models.V1
             Offset = range.Offset;
             TotalCount = totalCount;
         }
+
+        /// <inheritdoc />
+        public IEnumerator<T> GetEnumerator() => Items.GetEnumerator();
+
+        /// <inheritdoc />
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)Items).GetEnumerator();
     }
 }

@@ -351,7 +351,7 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
                 return;
             }
 
-            foreach (ConfigurationIdentifier configId in configIdResult.CheckedData.Items)
+            foreach (ConfigurationIdentifier configId in configIdResult.CheckedData)
             {
                 IResult<IDictionary<string, string>> metadataResult = await _objectStore.LoadMetadata<PreparedConfiguration, ConfigurationIdentifier>(configId);
                 if (metadataResult.IsError)
@@ -429,7 +429,7 @@ namespace Bechtle.A365.ConfigService.Implementations.EventProjections
                 return;
             }
 
-            foreach (EnvironmentIdentifier envId in envIdResult.CheckedData.Items)
+            foreach (EnvironmentIdentifier envId in envIdResult.CheckedData)
             {
                 IResult<ConfigEnvironment> environmentResult = await _objectStore.Load<ConfigEnvironment, EnvironmentIdentifier>(envId);
                 if (environmentResult.IsError)

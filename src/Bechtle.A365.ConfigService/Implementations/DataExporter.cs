@@ -80,7 +80,6 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Name = layer.Name,
                 Keys = dataResult.CheckedData
-                                 .Items
                                  .Select(
                                      k => new EnvironmentKeyExport
                                      {
@@ -126,7 +125,7 @@ namespace Bechtle.A365.ConfigService.Implementations
             {
                 Category = id.Category,
                 Name = id.Name,
-                Layers = env.CheckedData.Items.ToArray()
+                Layers = env.CheckedData.ToArray()
             };
         }
     }

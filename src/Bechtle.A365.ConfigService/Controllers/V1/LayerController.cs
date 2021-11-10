@@ -254,7 +254,7 @@ namespace Bechtle.A365.ConfigService.Controllers.V1
 
                 return result.IsError
                            ? ProviderError(result)
-                           : Ok(result.CheckedData.Items.ToImmutableSortedDictionary());
+                           : Ok(result.CheckedData.ToImmutableSortedDictionary());
             }
             catch (Exception e)
             {
