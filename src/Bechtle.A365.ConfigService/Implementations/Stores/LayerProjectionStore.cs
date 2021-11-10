@@ -316,7 +316,7 @@ namespace Bechtle.A365.ConfigService.Implementations.Stores
 
             var metadata = new EnvironmentLayerMetadata(layer.Id)
             {
-                Tags = new List<string>(),
+                Tags = layer.Tags,
                 ChangedAt = layer.ChangedAt,
                 ChangedBy = layer.ChangedBy,
                 CreatedAt = layer.CreatedAt,
